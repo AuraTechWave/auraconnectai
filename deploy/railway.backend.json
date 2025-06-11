@@ -1,0 +1,13 @@
+{
+  "name": "aura-backend",
+  "plugins": {
+    "postgresql": {
+      "enabled": true,
+      "name": "auraconnect-db"
+    }
+  },
+  "envs": {
+    "DATABASE_URL": "postgresql://postgres:aurapass@auraconnect-db.internal:5432/auraconnect",
+    "JWT_SECRET": "replace_me"
+  }
+}

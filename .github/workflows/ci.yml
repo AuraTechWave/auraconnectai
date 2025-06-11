@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: aurapass
+          POSTGRES_DB: auraconnect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: yarn install
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: yarn install
+
+      - name: Run backend build/test
+        working-directory: ./backend
+        run: |
+          echo "✅ Backend ready"

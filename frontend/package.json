@@ -1,0 +1,32 @@
+{
+  "name": "auraconnect-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "react-scripts start",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx",
+    "test": "react-scripts test --watchAll=false"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "prettier": "^3.6.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

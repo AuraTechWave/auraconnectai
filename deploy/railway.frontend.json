@@ -1,0 +1,6 @@
+{
+  "name": "aura-frontend",
+  "envs": {
+    "NEXT_PUBLIC_API_URL": "https://aura-backend.up.railway.app"
+  }
+}
