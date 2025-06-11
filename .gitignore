@@ -1,0 +1,23 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+.env
+.venv/
+.env.*
+
+# Node
+node_modules/
+*.log
+
+# React Native
+ios/build/
+android/app/build/
+
+# VSCode
+.vscode/
+
+# Docs output
+site/

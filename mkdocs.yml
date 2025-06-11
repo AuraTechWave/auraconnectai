@@ -1,0 +1,9 @@
+site_name: AuraConnect Documentation
+nav: []
+theme:
+  name: material
+markdown_extensions:
+- toc
+- tables
+- fenced_code
+- codehilite
