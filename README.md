@@ -12,3 +12,5 @@ AuraConnect is an agentic, modular, cross-platform system built for restaurants 
 chmod +x setup_dev.sh
 ./setup_dev.sh
 ```
+
+<!-- Dummy comment added for PR verification -->
