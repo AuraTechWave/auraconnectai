@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, DateTime, ForeignKey
 from backend.core.database import Base
 
+
 class Shift(Base):
     __tablename__ = "shifts"
     id = Column(Integer, primary_key=True, index=True)

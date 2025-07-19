@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from backend.core.database import Base
 
+
 class AttendanceLog(Base):
     __tablename__ = "attendance_logs"
     id = Column(Integer, primary_key=True, index=True)
