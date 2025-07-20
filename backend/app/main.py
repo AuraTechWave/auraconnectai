@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from backend.modules.staff.routes.staff_routes import router as staff_router
-from backend.modules.order.routes.order_routes import router as order_router
+from backend.modules.orders.routes.order_routes import router as order_router
 
 app = FastAPI()
 
