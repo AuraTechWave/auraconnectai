@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from ..enums.order_enums import OrderStatus
 
+
 class OrderItemOut(BaseModel):
     id: int
     order_id: int
@@ -17,12 +18,15 @@ class OrderItemOut(BaseModel):
     class Config:
         orm_mode = True
 
+
 class OrderBase(BaseModel):
     staff_id: int
     status: OrderStatus
 
+
 class OrderCreate(OrderBase):
     pass
+
 
 class OrderOut(OrderBase):
     id: int
