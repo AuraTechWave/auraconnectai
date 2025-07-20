@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
-from ..services.order_service import update_order_service, get_order_by_id as get_order_service
+from ..services.order_service import (
+    update_order_service, get_order_by_id as get_order_service
+)
 from ..schemas.order_schemas import OrderUpdate
 
 

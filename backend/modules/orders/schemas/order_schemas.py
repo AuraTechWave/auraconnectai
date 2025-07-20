@@ -27,7 +27,6 @@ class OrderItemOut(BaseModel):
         orm_mode = True
 
 
-
 class OrderBase(BaseModel):
     staff_id: int
     status: OrderStatus
