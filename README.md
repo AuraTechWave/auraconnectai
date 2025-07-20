@@ -1,14 +1,24 @@
 # AuraConnect – AI-Powered Restaurant Management Platform
 
-AuraConnect is an agentic, modular, cross-platform system built for restaurants with:
-- Smart Reservations
-- Payroll & Tax Modules
-- Offline Sync
-- POS Integration
-- White Labeling
+AuraConnect is a modular, AI-integrated restaurant platform built under AuraTechWave using FastAPI, PostgreSQL, Docker, and React.
 
-## Setup
+## 🔧 Features (in progress)
+- Menu & Inventory (CRUD APIs)
+- Order Management (FOH + BOH)
+- Payroll & Tax Module
+- Real-time Slack & Devin integration
+- Modular team-based development
+
+## 🚀 Development Setup
 ```bash
-chmod +x setup_dev.sh
-./setup_dev.sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+## 🧪 Lint & Format
+```bash
+flake8 backend/
+black backend/
 ```

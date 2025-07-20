@@ -1,28 +1,6 @@
-plugins = []
-headers = []
-redirects = []
-
-[functions]
-
-[functions."*"]
-
 [build]
-publish = "/mnt/d/Projects/auraconnectai/site"
-publishOrigin = "config"
-commandOrigin = "config"
-command = "mkdocs build"
+command = "pip install mkdocs mkdocs-material && mkdocs build"
+publish = "site"
 
 [build.environment]
 PYTHON_VERSION = "3.11"
-
-[build.processing]
-
-[build.processing.css]
-
-[build.processing.html]
-
-[build.processing.images]
-
-[build.processing.js]
-
-[build.services]

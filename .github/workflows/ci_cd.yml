@@ -20,6 +20,7 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
+          pip install flake8
       - name: Lint Backend
         run: |
           cd backend

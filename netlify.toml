@@ -1,7 +1,6 @@
-
 [build]
-  publish = "site"
-  command = "mkdocs build"
+command = "pip install -r requirements.txt && python -m mkdocs build"
+publish = "site"
 
-[context.production.environment]
-  PYTHON_VERSION = "3.11"
+[build.environment]
+PYTHON_VERSION = "3.11"
