@@ -7,11 +7,13 @@ from alembic import context
 
 from backend.core.database import Base
 from backend.modules.staff.models import staff_models, shift_models, attendance_models
+from backend.modules.orders.models import order_models
 
 # Ensure all models are imported — even if not directly used
 from backend.modules.staff.models.staff_models import StaffMember, Role
 from backend.modules.staff.models.shift_models import Shift
 from backend.modules.staff.models.attendance_models import AttendanceLog
+from backend.modules.orders.models.order_models import Order, OrderItem
 
 target_metadata = Base.metadata
 
