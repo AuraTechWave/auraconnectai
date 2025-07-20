@@ -1,10 +1,48 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from typing import List, Optional
 from backend.core.database import get_db
-from ..controllers.order_controller import update_order, get_order_by_id
+from ..controllers.order_controller import (
+    update_order, get_order_by_id, list_orders
+)
 from ..schemas.order_schemas import OrderUpdate, OrderOut
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
+
+
+@router.get("/", response_model=List[OrderOut])
+async def get_orders(
+    status: Optional[str] = Query(
+        None, description="Filter by order status"
+    ),
+    staff_id: Optional[int] = Query(
+        None, description="Filter by staff member ID"
+    ),
+    table_no: Optional[int] = Query(
+        None, description="Filter by table number"
+    ),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Number of orders to return"
+    ),
+    offset: int = Query(0, ge=0, description="Number of orders to skip"),
+    include_items: bool = Query(
+        False, description="Include order items in response"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a list of orders with optional filtering and pagination.
+
+    - **status**: Filter by order status (pending, in_progress, etc.)
+    - **staff_id**: Filter by staff member ID
+    - **table_no**: Filter by table number
+    - **limit**: Maximum number of orders to return (1-1000)
+    - **offset**: Number of orders to skip for pagination
+    - **include_items**: Whether to include order items in the response
+    """
+    return await list_orders(
+        db, status, staff_id, table_no, limit, offset, include_items
+    )
 
 
 @router.get("/{id}", response_model=OrderOut)

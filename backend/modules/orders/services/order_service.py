@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
+from typing import List, Optional
 from ..models.order_models import Order, OrderItem
 from ..schemas.order_schemas import OrderUpdate
 from ..enums.order_enums import OrderStatus
@@ -67,3 +68,31 @@ async def update_order_service(
         "message": "Order updated successfully",
         "data": order
     }
+
+
+async def get_orders_service(
+    db: Session,
+    status: Optional[str] = None,
+    staff_id: Optional[int] = None,
+    table_no: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+    include_items: bool = False
+) -> List[Order]:
+    query = db.query(Order)
+
+    if status:
+        query = query.filter(Order.status == status)
+    if staff_id:
+        query = query.filter(Order.staff_id == staff_id)
+    if table_no:
+        query = query.filter(Order.table_no == table_no)
+
+    query = query.filter(Order.deleted_at.is_(None))
+
+    query = query.offset(offset).limit(limit)
+
+    if include_items:
+        query = query.options(joinedload(Order.order_items))
+
+    return query.all()
