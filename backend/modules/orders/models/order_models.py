@@ -11,6 +11,7 @@ class Order(Base, TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     staff_id = Column(Integer, ForeignKey("staff_members.id"),
                       nullable=False, index=True)
+    table_no = Column(Integer, nullable=True, index=True)
     status = Column(String, nullable=False, index=True)
     deleted_at = Column(DateTime, nullable=True)
 

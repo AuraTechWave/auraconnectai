@@ -29,6 +29,7 @@ class OrderItemOut(BaseModel):
 
 class OrderBase(BaseModel):
     staff_id: int
+    table_no: Optional[int] = None
     status: OrderStatus
 
 
@@ -49,7 +50,7 @@ class OrderOut(OrderBase):
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
-    order_items: List[OrderItemOut] = []
+    order_items: Optional[List[OrderItemOut]] = []
 
     class Config:
         orm_mode = True
