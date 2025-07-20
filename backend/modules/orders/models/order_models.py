@@ -1,5 +1,5 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
-                         Numeric, Text)
+                        Numeric, Text)
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
