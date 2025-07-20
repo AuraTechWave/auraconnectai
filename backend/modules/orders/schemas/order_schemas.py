@@ -5,6 +5,14 @@ from decimal import Decimal
 from ..enums.order_enums import OrderStatus
 
 
+class OrderItemUpdate(BaseModel):
+    id: Optional[int] = None
+    menu_item_id: int
+    quantity: int
+    price: float
+    notes: Optional[str] = None
+
+
 class OrderItemOut(BaseModel):
     id: int
     order_id: int
@@ -26,6 +34,14 @@ class OrderBase(BaseModel):
 
 class OrderCreate(OrderBase):
     pass
+
+
+class OrderUpdate(BaseModel):
+    status: Optional[OrderStatus] = None
+    order_items: Optional[List[OrderItemUpdate]] = None
+
+    class Config:
+        orm_mode = True
 
 
 class OrderOut(OrderBase):
