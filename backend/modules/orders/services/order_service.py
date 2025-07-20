@@ -15,7 +15,7 @@ VALID_TRANSITIONS = {
 }
 
 
-def get_order_by_id(db: Session, order_id: int):
+async def get_order_by_id(db: Session, order_id: int):
     order = db.query(Order).options(joinedload(Order.order_items)).filter(
         Order.id == order_id, Order.deleted_at.is_(None)
     ).first()
