@@ -15,14 +15,17 @@ VALID_TRANSITIONS = {
 }
 
 
-async def update_order_service(order_id: int, order_update: OrderUpdate, db: Session):
+async def update_order_service(
+    order_id: int, order_update: OrderUpdate, db: Session
+):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order_update.status and order_update.status != order.status:
         current_status = OrderStatus(order.status)
-        if order_update.status not in VALID_TRANSITIONS.get(current_status, []):
+        valid_transitions = VALID_TRANSITIONS.get(current_status, [])
+        if order_update.status not in valid_transitions:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid status transition from {current_status} to "
