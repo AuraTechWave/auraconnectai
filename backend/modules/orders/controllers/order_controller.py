@@ -9,5 +9,5 @@ async def update_order(order_id: int, order_data: OrderUpdate, db: Session):
     return await update_order_service(order_id, order_data, db)
 
 
-def get_order_by_id(db: Session, order_id: int):
-    return get_order_service(db, order_id)
+async def get_order_by_id(db: Session, order_id: int):
+    return await get_order_service(db, order_id)

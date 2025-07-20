@@ -8,8 +8,8 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
 @router.get("/{id}", response_model=OrderOut)
-def get_order(id: int, db: Session = Depends(get_db)):
-    return get_order_by_id(db, id)
+async def get_order(id: int, db: Session = Depends(get_db)):
+    return await get_order_by_id(db, id)
 
 
 @router.put("/{order_id}", response_model=dict)
