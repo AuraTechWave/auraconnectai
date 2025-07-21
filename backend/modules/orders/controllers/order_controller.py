@@ -26,7 +26,7 @@ async def list_orders(
     include_items: bool = False
 ) -> List[OrderOut]:
     orders = await get_orders_service(
-        db, status=status, staff_id=staff_id, table_no=table_no, 
+        db, status=status, staff_id=staff_id, table_no=table_no,
         limit=limit, offset=offset, include_items=include_items
     )
     return [OrderOut.from_orm(order) for order in orders]
@@ -37,8 +37,10 @@ async def list_kitchen_orders(
     limit: int = 100,
     offset: int = 0
 ) -> List[OrderOut]:
-    kitchen_statuses = [OrderStatus.PENDING.value, OrderStatus.IN_KITCHEN.value]
+    kitchen_statuses = [OrderStatus.PENDING.value,
+                        OrderStatus.IN_KITCHEN.value]
     orders = await get_orders_service(
-        db, statuses=kitchen_statuses, limit=limit, offset=offset, include_items=True
+        db, statuses=kitchen_statuses, limit=limit, offset=offset,
+        include_items=True
     )
     return [OrderOut.from_orm(order) for order in orders]
