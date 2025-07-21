@@ -73,6 +73,7 @@ async def update_order_service(
 async def get_orders_service(
     db: Session,
     status: Optional[str] = None,
+    statuses: Optional[List[str]] = None,
     staff_id: Optional[int] = None,
     table_no: Optional[int] = None,
     limit: int = 100,
@@ -83,6 +84,8 @@ async def get_orders_service(
 
     if status:
         query = query.filter(Order.status == status)
+    elif statuses:
+        query = query.filter(Order.status.in_(statuses))
     if staff_id:
         query = query.filter(Order.staff_id == staff_id)
     if table_no:
