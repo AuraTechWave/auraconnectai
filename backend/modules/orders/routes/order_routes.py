@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.core.database import get_db
 from ..controllers.order_controller import (
-    update_order, get_order_by_id, list_orders
+    update_order, get_order_by_id, list_orders, list_kitchen_orders
 )
 from ..schemas.order_schemas import OrderUpdate, OrderOut
 
@@ -57,3 +57,20 @@ async def update_existing_order(
     db: Session = Depends(get_db)
 ):
     return await update_order(order_id, order_data, db)
+
+
+@router.get("/kitchen", response_model=List[OrderOut])
+async def get_kitchen_orders(
+    limit: int = Query(100, ge=1, le=1000,
+                       description="Number of orders to return"),
+    offset: int = Query(0, ge=0, description="Number of orders to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve a list of active kitchen orders (new or preparing).
+    Used for the BOH dashboard.
+
+    - **limit**: Maximum number of orders to return (1-1000)
+    - **offset**: Number of orders to skip for pagination
+    """
+    return await list_kitchen_orders(db, limit, offset)
