@@ -86,7 +86,7 @@ def sample_order_with_items(db_session):
     db_session.add(order)
     db_session.commit()
     db_session.refresh(order)
-    
+
     item1 = OrderItem(
         order_id=order.id,
         menu_item_id=101,

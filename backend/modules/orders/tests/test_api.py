@@ -52,9 +52,9 @@ class TestOrderAPI:
         """Test GET /orders with table_no filter."""
         from backend.modules.orders.models.order_models import Order
         order1 = Order(staff_id=1, table_no=5,
-                      status=OrderStatus.PENDING.value)
+                       status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, table_no=3,
-                      status=OrderStatus.PENDING.value)
+                       status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2])
         db_session.commit()
 
@@ -68,7 +68,7 @@ class TestOrderAPI:
         """Test GET /orders pagination parameters."""
         from backend.modules.orders.models.order_models import Order
         orders = [Order(staff_id=i, status=OrderStatus.PENDING.value)
-                 for i in range(5)]
+                  for i in range(5)]
         db_session.add_all(orders)
         db_session.commit()
 
@@ -104,7 +104,8 @@ class TestOrderAPI:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["detail"]
 
-    def test_get_order_by_id_soft_deleted(self, client, sample_order, db_session):
+    def test_get_order_by_id_soft_deleted(self, client, sample_order,
+                                          db_session):
         """Test GET /orders/{id} with soft-deleted order."""
         from datetime import datetime
         sample_order.deleted_at = datetime.utcnow()
@@ -117,17 +118,18 @@ class TestOrderAPI:
         """Test PUT /orders/{order_id} with valid status update."""
         update_data = {"status": "in_progress"}
         response = client.put(f"/orders/{sample_order.id}",
-                             json=update_data)
+                              json=update_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "Order updated successfully"
         assert data["data"]["status"] == "in_progress"
 
-    def test_update_order_status_invalid_transition(self, client, sample_order):
-        """Test PUT /orders/{order_id} with invalid status transition."""
+    def test_update_order_status_invalid_transition(self, client,
+                                                    sample_order):
+        """Test PUT /orders/{order_id} with invalid transition."""
         update_data = {"status": "completed"}
         response = client.put(f"/orders/{sample_order.id}",
-                             json=update_data)
+                              json=update_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Invalid status transition" in response.json()["detail"]
 
@@ -160,8 +162,9 @@ class TestOrderAPI:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "Order not found" in response.json()["detail"]
 
-    def test_update_order_combined_status_and_items(self, client, sample_order):
-        """Test PUT /orders/{order_id} updating both status and items."""
+    def test_update_order_combined_status_and_items(self, client,
+                                                    sample_order):
+        """Test PUT /orders/{order_id} updating status and items."""
         update_data = {
             "status": "in_progress",
             "order_items": [
@@ -184,7 +187,7 @@ class TestOrderAPI:
         update_data = {"status": "invalid_status"}
         response = client.put(f"/orders/{sample_order.id}", json=update_data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-        
+
         update_data = {
             "order_items": [
                 {
