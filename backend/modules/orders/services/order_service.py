@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import List, Optional
 from ..models.order_models import Order, OrderItem
-from ..schemas.order_schemas import OrderUpdate
+from ..schemas.order_schemas import OrderUpdate, OrderOut
 from ..enums.order_enums import OrderStatus
 
 VALID_TRANSITIONS = {
@@ -66,7 +66,7 @@ async def update_order_service(
 
     return {
         "message": "Order updated successfully",
-        "data": order
+        "data": OrderOut.model_validate(order)
     }
 
 

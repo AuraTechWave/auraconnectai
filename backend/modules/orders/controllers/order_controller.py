@@ -43,4 +43,4 @@ async def list_kitchen_orders(
         db, statuses=kitchen_statuses, limit=limit, offset=offset,
         include_items=True
     )
-    return [OrderOut.from_orm(order) for order in orders]
+    return [OrderOut.model_validate(order) for order in orders]
