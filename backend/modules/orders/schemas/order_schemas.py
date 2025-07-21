@@ -24,7 +24,7 @@ class OrderItemOut(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderBase(BaseModel):
@@ -42,7 +42,7 @@ class OrderUpdate(BaseModel):
     order_items: Optional[List[OrderItemUpdate]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderOut(OrderBase):
@@ -53,4 +53,4 @@ class OrderOut(OrderBase):
     order_items: Optional[List[OrderItemOut]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

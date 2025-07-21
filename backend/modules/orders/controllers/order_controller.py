@@ -27,4 +27,4 @@ async def list_orders(
     orders = await get_orders_service(
         db, status, staff_id, table_no, limit, offset, include_items
     )
-    return [OrderOut.from_orm(order) for order in orders]
+    return [OrderOut.model_validate(order) for order in orders]
