@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from backend.modules.staff.routes.staff_routes import router as staff_router
 from backend.modules.orders.routes.order_routes import router as order_router
-from backend.modules.orders.routes.kitchen_routes import router as kitchen_router
+from backend.modules.orders.routes.kitchen_routes import (
+    router as kitchen_router
+)
 
 app = FastAPI()
 

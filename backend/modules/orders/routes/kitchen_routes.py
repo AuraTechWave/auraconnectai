@@ -22,14 +22,15 @@ async def update_order_status(
 ):
     """
     Update order status from kitchen perspective.
-    
+
     Only allows updates to 'ready', 'served', or 'completed' statuses.
     Reuses existing order update logic with kitchen-specific validation.
     """
     if order_data.status and order_data.status not in KITCHEN_ALLOWED_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"Kitchen can only update status to: {', '.join([s.value for s in KITCHEN_ALLOWED_STATUSES])}"
+            detail=f"Kitchen can only update status to: "
+                   f"{', '.join([s.value for s in KITCHEN_ALLOWED_STATUSES])}"
         )
-    
+
     return await update_order(id, order_data, db)
