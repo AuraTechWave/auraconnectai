@@ -143,7 +143,7 @@ async def set_order_category(
 @router.get("/tags", response_model=List[TagOut])
 async def get_tags(
     limit: int = Query(100, ge=1, le=1000,
-                      description="Number of tags to return"),
+                       description="Number of tags to return"),
     offset: int = Query(0, ge=0, description="Number of tags to skip"),
     db: Session = Depends(get_db)
 ):
@@ -167,7 +167,7 @@ async def create_tag(
 @router.get("/categories", response_model=List[CategoryOut])
 async def get_categories(
     limit: int = Query(100, ge=1, le=1000,
-                      description="Number of categories to return"),
+                       description="Number of categories to return"),
     offset: int = Query(0, ge=0, description="Number of categories to skip"),
     db: Session = Depends(get_db)
 ):

@@ -224,7 +224,7 @@ async def remove_tag_from_order(db: Session, order_id: int, tag_id: int):
 
 
 async def set_order_category(db: Session, order_id: int,
-                           category_id: Optional[int]):
+                            category_id: Optional[int]):
     order = await get_order_by_id(db, order_id)
 
     if category_id is not None:
@@ -268,7 +268,7 @@ async def create_tag(db: Session, tag_data: TagCreate):
 
 
 async def get_tags(db: Session, limit: int = 100,
-                  offset: int = 0) -> List[Tag]:
+                   offset: int = 0) -> List[Tag]:
     return db.query(Tag).offset(offset).limit(limit).all()
 
 
@@ -293,5 +293,5 @@ async def create_category(db: Session, category_data: CategoryCreate):
 
 
 async def get_categories(db: Session, limit: int = 100,
-                        offset: int = 0) -> List[Category]:
+                         offset: int = 0) -> List[Category]:
     return db.query(Category).offset(offset).limit(limit).all()
