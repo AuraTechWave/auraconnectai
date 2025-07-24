@@ -54,7 +54,7 @@ class TaxEngine:
             breakdown=breakdown,
             applied_rules=applied_rules
         )
-    
+
     def _create_zero_tax_response(
         self, items: List[TaxCalculationItem]
     ) -> TaxCalculationResponse:
