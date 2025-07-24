@@ -213,7 +213,7 @@ class TestOrderAPI:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["is_valid"] is True
-        
+
     def test_validate_rules_compatibility_failure(self, client):
         """Test POST /orders/validate-rules with incompatible items."""
         request_data = {
@@ -228,12 +228,13 @@ class TestOrderAPI:
         data = response.json()
         assert data["is_valid"] is False
         assert "not compatible" in data["message"]
-        
+
     def test_validate_rules_validation_error(self, client):
         """Test POST /orders/validate-rules with invalid data."""
         request_data = {
             "order_items": [
-                {"menu_item_id": "invalid", "quantity": -1, "price": "not_a_number"}
+                {"menu_item_id": "invalid", "quantity": -1,
+                 "price": "not_a_number"}
             ]
         }
         response = client.post("/orders/validate-rules", json=request_data)

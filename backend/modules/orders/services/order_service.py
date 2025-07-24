@@ -2,7 +2,9 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import List, Optional
 from ..models.order_models import Order, OrderItem
-from ..schemas.order_schemas import OrderUpdate, OrderOut, OrderItemUpdate, MultiItemRuleRequest, RuleValidationResult
+from ..schemas.order_schemas import (
+    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult
+)
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
 from .inventory_service import deduct_inventory
 
@@ -111,42 +113,54 @@ async def get_orders_service(
 
 
 async def validate_multi_item_rules(
-    items: List[OrderItemUpdate], 
+    items: List[OrderItemUpdate],
     rule_types: Optional[List[MultiItemRuleType]] = None,
     db: Session = None
 ) -> RuleValidationResult:
     """
-    Validate multi-item order rules including combo deals, bulk discounts, and compatibility.
+    Validate multi-item order rules including combo deals, bulk discounts,
+    and compatibility.
     """
     if not rule_types:
-        rule_types = [MultiItemRuleType.COMBO, MultiItemRuleType.BULK_DISCOUNT, MultiItemRuleType.COMPATIBILITY]
-    
+        rule_types = [
+            MultiItemRuleType.COMBO,
+            MultiItemRuleType.BULK_DISCOUNT,
+            MultiItemRuleType.COMPATIBILITY
+        ]
+
     modified_items = []
-    
+
     for rule_type in rule_types:
         if rule_type == MultiItemRuleType.COMBO:
-            pizza_items = [item for item in items if item.menu_item_id in [101, 102, 103]]
-            drink_items = [item for item in items if item.menu_item_id in [201, 202]]
-            
+            pizza_items = [
+                item for item in items
+                if item.menu_item_id in [101, 102, 103]
+            ]
+            drink_items = [
+                item for item in items
+                if item.menu_item_id in [201, 202]
+            ]
+
             if pizza_items and drink_items:
                 pass
-                
+
         elif rule_type == MultiItemRuleType.BULK_DISCOUNT:
             total_quantity = sum(item.quantity for item in items)
             if total_quantity >= 5:
                 pass
-                
+
         elif rule_type == MultiItemRuleType.COMPATIBILITY:
             incompatible_pairs = [(101, 301), (102, 302)]
             item_ids = [item.menu_item_id for item in items]
-            
+
             for pair in incompatible_pairs:
                 if pair[0] in item_ids and pair[1] in item_ids:
                     return RuleValidationResult(
                         is_valid=False,
-                        message=f"Items {pair[0]} and {pair[1]} are not compatible"
+                        message=f"Items {pair[0]} and {pair[1]} are not "
+                                f"compatible"
                     )
-    
+
     return RuleValidationResult(
         is_valid=True,
         message="All rules passed",
