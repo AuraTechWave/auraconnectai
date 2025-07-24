@@ -5,5 +5,6 @@ psycopg2-binary
 alembic
 pydantic
 python-multipart
+boto3
 mkdocs
 mkdocs-material

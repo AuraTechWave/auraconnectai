@@ -23,6 +23,7 @@ class Order(Base, TimestampMixin):
     status = Column(String, nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"),
                          nullable=True, index=True)
+    customer_notes = Column(Text, nullable=True)
     deleted_at = Column(DateTime, nullable=True)
     scheduled_fulfillment_time = Column(DateTime, nullable=True)
     delay_reason = Column(String, nullable=True)
@@ -36,6 +37,7 @@ class Order(Base, TimestampMixin):
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")
+    attachments = relationship("OrderAttachment", back_populates="order")
 
 
 class OrderItem(Base, TimestampMixin):
@@ -74,3 +76,16 @@ class Category(Base, TimestampMixin):
     description = Column(Text, nullable=True)
 
     orders = relationship("Order", back_populates="category")
+
+
+class OrderAttachment(Base, TimestampMixin):
+    __tablename__ = "order_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"),
+                      nullable=False, index=True)
+    file_name = Column(String, nullable=False)
+    file_url = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    order = relationship("Order", back_populates="attachments")

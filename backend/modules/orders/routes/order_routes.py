@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -8,7 +8,9 @@ from ..controllers.order_controller import (
     validate_order_rules, delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
-    archive_order, restore_order, list_archived_orders
+    archive_order, restore_order, list_archived_orders,
+    update_order_notes, upload_order_attachment,
+    list_order_attachments, remove_order_attachment
 )
 from ..controllers.fraud_controller import (
     check_order_fraud, list_fraud_alerts, resolve_alert
@@ -17,7 +19,8 @@ from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut,
-    FraudCheckRequest, FraudCheckResponse
+    FraudCheckRequest, FraudCheckResponse,
+    CustomerNotesUpdate, OrderAttachmentOut
 )
 from ..enums.order_enums import CheckpointType, FraudRiskLevel
 
@@ -362,3 +365,59 @@ async def get_archived_orders_endpoint(
     return await list_archived_orders(
         db, staff_id, table_no, limit, offset
     )
+
+
+@router.put("/{order_id}/notes", response_model=dict)
+async def update_notes(
+    order_id: int,
+    notes_update: CustomerNotesUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update customer notes for an order.
+    
+    - **order_id**: ID of the order to update
+    - **customer_notes**: New customer notes text (can be null to clear notes)
+    """
+    return await update_order_notes(order_id, notes_update, db)
+
+
+@router.post("/{order_id}/attachments", response_model=dict)
+async def upload_attachment(
+    order_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a file attachment to an order.
+    
+    - **order_id**: ID of the order to attach the file to
+    - **file**: File to upload (supports common document and image formats)
+    """
+    return await upload_order_attachment(order_id, file, db)
+
+
+@router.get("/{order_id}/attachments", response_model=List[OrderAttachmentOut])
+async def get_attachments(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all attachments for an order.
+    
+    - **order_id**: ID of the order to get attachments for
+    """
+    return await list_order_attachments(order_id, db)
+
+
+@router.delete("/attachments/{attachment_id}", response_model=dict)
+async def delete_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a specific attachment.
+    
+    - **attachment_id**: ID of the attachment to delete
+    """
+    return await remove_order_attachment(attachment_id, db)

@@ -1,16 +1,18 @@
 from sqlalchemy.orm import Session, joinedload
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from typing import List, Optional
 from datetime import datetime
-from ..models.order_models import Order, OrderItem, Tag, Category
+from ..models.order_models import Order, OrderItem, Tag, Category, OrderAttachment
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
-    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut
+    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
+    CustomerNotesUpdate, OrderAttachmentOut
 )
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
                                  FraudCheckStatus)
 from .inventory_service import deduct_inventory
 from .fraud_service import perform_fraud_check
+from backend.core.file_service import file_service
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -511,3 +513,93 @@ async def get_archived_orders_service(
     query = query.options(joinedload(Order.order_items))
 
     return query.all()
+
+
+async def update_customer_notes(
+    order_id: int, notes_update: CustomerNotesUpdate, db: Session
+):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    order.customer_notes = notes_update.customer_notes
+    db.commit()
+    db.refresh(order)
+    
+    return {
+        "message": "Customer notes updated successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def add_attachment(
+    order_id: int, file: UploadFile, db: Session
+):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    try:
+        file_data = await file_service.upload_file(file, folder="orders")
+        
+        attachment = OrderAttachment(
+            order_id=order_id,
+            file_name=file_data["file_name"],
+            file_url=file_data["file_url"],
+            file_type=file_data["file_type"],
+            file_size=file_data["file_size"]
+        )
+        
+        db.add(attachment)
+        db.commit()
+        db.refresh(attachment)
+        
+        return {
+            "message": "Attachment uploaded successfully",
+            "data": OrderAttachmentOut.model_validate(attachment)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add attachment: {str(e)}"
+        )
+
+
+async def get_attachments(order_id: int, db: Session) -> List[OrderAttachmentOut]:
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    attachments = db.query(OrderAttachment).filter(
+        OrderAttachment.order_id == order_id
+    ).all()
+    
+    return [OrderAttachmentOut.model_validate(attachment) for attachment in attachments]
+
+
+async def delete_attachment(attachment_id: int, db: Session):
+    attachment = db.query(OrderAttachment).filter(
+        OrderAttachment.id == attachment_id
+    ).first()
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    
+    try:
+        file_service.delete_file(attachment.file_url)
+        
+        db.delete(attachment)
+        db.commit()
+        
+        return {"message": "Attachment deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete attachment: {str(e)}"
+        )

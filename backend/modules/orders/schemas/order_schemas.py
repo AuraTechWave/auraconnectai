@@ -65,6 +65,31 @@ class CategoryOut(CategoryBase):
         from_attributes = True
 
 
+class OrderAttachmentOut(BaseModel):
+    id: int
+    order_id: int
+    file_name: str
+    file_url: str
+    file_type: str
+    file_size: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrderAttachmentCreate(BaseModel):
+    file_name: str
+    file_url: str
+    file_type: str
+    file_size: int
+
+
+class CustomerNotesUpdate(BaseModel):
+    customer_notes: Optional[str] = None
+
+
 class OrderBase(BaseModel):
     staff_id: int
     table_no: Optional[int] = None
@@ -96,6 +121,7 @@ class DelayedOrderUpdate(OrderUpdate):
 
 class OrderOut(OrderBase):
     id: int
+    customer_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
@@ -105,6 +131,7 @@ class OrderOut(OrderBase):
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None
+    attachments: Optional[List[OrderAttachmentOut]] = []
 
     class Config:
         from_attributes = True
