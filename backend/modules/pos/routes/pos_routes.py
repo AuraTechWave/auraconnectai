@@ -1,0 +1,143 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from backend.core.database import get_db
+from ..models.pos_integration import POSIntegration
+from ..models.pos_sync_log import POSSyncLog
+from ..services.pos_bridge_service import POSBridgeService
+from ..schemas.pos_schemas import (
+    POSIntegrationCreate, POSIntegrationOut, POSSyncLogOut,
+    SyncRequest, SyncResponse
+)
+from ..enums.pos_enums import POSIntegrationStatus
+from datetime import datetime
+
+router = APIRouter(prefix="/pos", tags=["POS Integration"])
+
+
+@router.post("/integrations", response_model=POSIntegrationOut)
+async def create_pos_integration(
+    integration_data: POSIntegrationCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a new POS integration"""
+    integration = POSIntegration(
+        vendor=integration_data.vendor.value,
+        credentials=integration_data.credentials,
+        connected_on=datetime.utcnow(),
+        status=POSIntegrationStatus.ACTIVE.value
+    )
+    db.add(integration)
+    db.commit()
+    db.refresh(integration)
+    return integration
+
+
+@router.get("/integrations", response_model=List[POSIntegrationOut])
+async def list_pos_integrations(db: Session = Depends(get_db)):
+    """List all POS integrations"""
+    return db.query(POSIntegration).all()
+
+
+@router.get("/integrations/{integration_id}", response_model=POSIntegrationOut)
+async def get_pos_integration(
+    integration_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get a specific POS integration"""
+    integration = db.query(POSIntegration).filter(
+        POSIntegration.id == integration_id
+    ).first()
+    if not integration:
+        raise HTTPException(status_code=404, detail="Integration not found")
+    return integration
+
+
+@router.put("/integrations/{integration_id}/status")
+async def update_integration_status(
+    integration_id: int,
+    status: POSIntegrationStatus,
+    db: Session = Depends(get_db)
+):
+    """Update POS integration status"""
+    integration = db.query(POSIntegration).filter(
+        POSIntegration.id == integration_id
+    ).first()
+    if not integration:
+        raise HTTPException(status_code=404, detail="Integration not found")
+
+    integration.status = status.value
+    db.commit()
+    return {"message": "Status updated successfully"}
+
+
+@router.get("/integrations/{integration_id}/test")
+async def test_pos_integration(
+    integration_id: int,
+    db: Session = Depends(get_db)
+):
+    """Test POS integration connection"""
+    service = POSBridgeService(db)
+    is_connected = await service.test_integration(integration_id)
+    return {"connected": is_connected}
+
+
+@router.post("/sync", response_model=SyncResponse)
+async def sync_order_to_pos(
+    sync_request: SyncRequest,
+    db: Session = Depends(get_db)
+):
+    """Sync an order to POS system"""
+    if not sync_request.order_id or not sync_request.integration_id:
+        raise HTTPException(
+            status_code=400, detail="order_id and integration_id are required"
+        )
+
+    service = POSBridgeService(db)
+    return await service.sync_order_to_pos(
+        sync_request.order_id,
+        sync_request.integration_id
+    )
+
+
+@router.post("/sync/all/{order_id}")
+async def sync_order_to_all_pos(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """Sync an order to all active POS integrations"""
+    service = POSBridgeService(db)
+    return await service.sync_all_active_integrations(order_id)
+
+
+@router.get("/sync-logs", response_model=List[POSSyncLogOut])
+async def get_sync_logs(
+    integration_id: Optional[int] = None,
+    order_id: Optional[int] = None,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Get sync logs, optionally filtered by integration or order"""
+    query = db.query(POSSyncLog)
+    if integration_id:
+        query = query.filter(POSSyncLog.integration_id == integration_id)
+    if order_id:
+        query = query.filter(POSSyncLog.order_id == order_id)
+    return query.order_by(POSSyncLog.created_at.desc()).limit(limit).all()
+
+
+@router.delete("/integrations/{integration_id}")
+async def delete_pos_integration(
+    integration_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete a POS integration"""
+    integration = db.query(POSIntegration).filter(
+        POSIntegration.id == integration_id
+    ).first()
+    if not integration:
+        raise HTTPException(status_code=404, detail="Integration not found")
+
+    db.delete(integration)
+    db.commit()
+    return {"message": "Integration deleted successfully"}
