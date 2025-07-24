@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from backend.core.database import Base, get_db
 from backend.app.main import app
 from backend.modules.orders.models.order_models import Order, OrderItem
+from backend.modules.orders.models.inventory_models import Inventory, MenuItemInventory
 from backend.modules.orders.enums.order_enums import OrderStatus
 from backend.modules.staff.models.staff_models import StaffMember, Role  # noqa
 
@@ -103,3 +104,42 @@ def sample_order_with_items(db_session):
     db_session.add_all([item1, item2])
     db_session.commit()
     return order
+
+
+@pytest.fixture
+def sample_inventory(db_session):
+    inventory = Inventory(
+        item_name="Test Ingredient",
+        quantity=50.0,
+        unit="kg",
+        threshold=10.0,
+        vendor_id=1
+    )
+    db_session.add(inventory)
+    db_session.commit()
+    db_session.refresh(inventory)
+    return inventory
+
+
+@pytest.fixture
+def sample_inventory_with_mapping(db_session):
+    inventory = Inventory(
+        item_name="Test Ingredient",
+        quantity=50.0,
+        unit="kg",
+        threshold=10.0
+    )
+    db_session.add(inventory)
+    db_session.commit()
+    db_session.refresh(inventory)
+
+    mapping = MenuItemInventory(
+        menu_item_id=101,
+        inventory_id=inventory.id,
+        quantity_needed=2.5
+    )
+    db_session.add(mapping)
+    db_session.commit()
+    db_session.refresh(mapping)
+    
+    return inventory, mapping
