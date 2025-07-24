@@ -21,7 +21,8 @@ class Order(Base, TimestampMixin):
                       nullable=False, index=True)
     table_no = Column(Integer, nullable=True, index=True)
     status = Column(String, nullable=False, index=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True, index=True)
+    category_id = Column(Integer, ForeignKey("categories.id"),
+                         nullable=True, index=True)
     deleted_at = Column(DateTime, nullable=True)
 
     order_items = relationship("OrderItem", back_populates="order")

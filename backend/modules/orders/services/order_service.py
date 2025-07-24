@@ -179,7 +179,7 @@ async def validate_multi_item_rules(
 
 async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
     order = await get_order_by_id(db, order_id)
-    
+
     tags = db.query(Tag).filter(Tag.id.in_(tag_ids)).all()
     if len(tags) != len(tag_ids):
         found_ids = [tag.id for tag in tags]
@@ -188,14 +188,14 @@ async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
             status_code=404,
             detail=f"Tags with ids {missing_ids} not found"
         )
-    
+
     for tag in tags:
         if tag not in order.tags:
             order.tags.append(tag)
-    
+
     db.commit()
     db.refresh(order)
-    
+
     return {
         "message": "Tags added successfully",
         "data": OrderOut.model_validate(order)
@@ -204,30 +204,32 @@ async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
 
 async def remove_tag_from_order(db: Session, order_id: int, tag_id: int):
     order = await get_order_by_id(db, order_id)
-    
+
     tag = db.query(Tag).filter(Tag.id == tag_id).first()
     if not tag:
         raise HTTPException(
             status_code=404,
             detail=f"Tag with id {tag_id} not found"
         )
-    
+
     if tag in order.tags:
         order.tags.remove(tag)
         db.commit()
         db.refresh(order)
-    
+
     return {
         "message": "Tag removed successfully",
         "data": OrderOut.model_validate(order)
     }
 
 
-async def set_order_category(db: Session, order_id: int, category_id: Optional[int]):
+async def set_order_category(db: Session, order_id: int,
+                           category_id: Optional[int]):
     order = await get_order_by_id(db, order_id)
-    
+
     if category_id is not None:
-        category = db.query(Category).filter(Category.id == category_id).first()
+        category = db.query(Category).filter(
+            Category.id == category_id).first()
         if not category:
             raise HTTPException(
                 status_code=404,
@@ -236,10 +238,10 @@ async def set_order_category(db: Session, order_id: int, category_id: Optional[i
         order.category_id = category_id
     else:
         order.category_id = None
-    
+
     db.commit()
     db.refresh(order)
-    
+
     return {
         "message": "Category updated successfully",
         "data": OrderOut.model_validate(order)
@@ -253,7 +255,7 @@ async def create_tag(db: Session, tag_data: TagCreate):
             status_code=400,
             detail=f"Tag with name '{tag_data.name}' already exists"
         )
-    
+
     tag = Tag(
         name=tag_data.name,
         description=tag_data.description
@@ -261,22 +263,24 @@ async def create_tag(db: Session, tag_data: TagCreate):
     db.add(tag)
     db.commit()
     db.refresh(tag)
-    
+
     return TagOut.model_validate(tag)
 
 
-async def get_tags(db: Session, limit: int = 100, offset: int = 0) -> List[Tag]:
+async def get_tags(db: Session, limit: int = 100,
+                  offset: int = 0) -> List[Tag]:
     return db.query(Tag).offset(offset).limit(limit).all()
 
 
 async def create_category(db: Session, category_data: CategoryCreate):
-    existing_category = db.query(Category).filter(Category.name == category_data.name).first()
+    existing_category = db.query(Category).filter(
+        Category.name == category_data.name).first()
     if existing_category:
         raise HTTPException(
             status_code=400,
             detail=f"Category with name '{category_data.name}' already exists"
         )
-    
+
     category = Category(
         name=category_data.name,
         description=category_data.description
@@ -284,9 +288,10 @@ async def create_category(db: Session, category_data: CategoryCreate):
     db.add(category)
     db.commit()
     db.refresh(category)
-    
+
     return CategoryOut.model_validate(category)
 
 
-async def get_categories(db: Session, limit: int = 100, offset: int = 0) -> List[Category]:
+async def get_categories(db: Session, limit: int = 100,
+                        offset: int = 0) -> List[Category]:
     return db.query(Category).offset(offset).limit(limit).all()

@@ -66,7 +66,8 @@ async def validate_order_rules(
     )
 
 
-async def add_order_tags(order_id: int, tag_request: OrderTagRequest, db: Session):
+async def add_order_tags(order_id: int, tag_request: OrderTagRequest,
+                        db: Session):
     return await add_tags_to_order(db, order_id, tag_request.tag_ids)
 
 
@@ -74,7 +75,9 @@ async def remove_order_tag(order_id: int, tag_id: int, db: Session):
     return await remove_tag_from_order(db, order_id, tag_id)
 
 
-async def update_order_category(order_id: int, category_request: OrderCategoryRequest, db: Session):
+async def update_order_category(order_id: int,
+                               category_request: OrderCategoryRequest,
+                               db: Session):
     return await set_order_category(db, order_id, category_request.category_id)
 
 
@@ -82,15 +85,18 @@ async def create_new_tag(tag_data: TagCreate, db: Session) -> TagOut:
     return await create_tag(db, tag_data)
 
 
-async def list_tags(db: Session, limit: int = 100, offset: int = 0) -> List[TagOut]:
+async def list_tags(db: Session, limit: int = 100,
+                   offset: int = 0) -> List[TagOut]:
     tags = await get_tags(db, limit, offset)
     return [TagOut.model_validate(tag) for tag in tags]
 
 
-async def create_new_category(category_data: CategoryCreate, db: Session) -> CategoryOut:
+async def create_new_category(category_data: CategoryCreate,
+                             db: Session) -> CategoryOut:
     return await create_category(db, category_data)
 
 
-async def list_categories(db: Session, limit: int = 100, offset: int = 0) -> List[CategoryOut]:
+async def list_categories(db: Session, limit: int = 100,
+                         offset: int = 0) -> List[CategoryOut]:
     categories = await get_categories(db, limit, offset)
     return [CategoryOut.model_validate(category) for category in categories]
