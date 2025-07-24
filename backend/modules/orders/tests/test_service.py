@@ -1,12 +1,12 @@
 import pytest
 from fastapi import HTTPException
 from backend.modules.orders.services.order_service import (
-    get_order_by_id, update_order_service, get_orders_service
+    get_order_by_id, update_order_service, get_orders_service, validate_multi_item_rules
 )
 from backend.modules.orders.schemas.order_schemas import (
     OrderUpdate, OrderItemUpdate
 )
-from backend.modules.orders.enums.order_enums import OrderStatus
+from backend.modules.orders.enums.order_enums import OrderStatus, MultiItemRuleType
 from backend.modules.orders.models.order_models import Order
 from datetime import datetime
 
@@ -137,3 +137,47 @@ class TestOrderService:
 
         orders = await get_orders_service(db_session)
         assert len(orders) == 0
+
+
+class TestMultiItemRules:
+    
+    @pytest.mark.asyncio
+    async def test_combo_rule_validation_success(self):
+        """Test successful combo rule validation."""
+        items = [
+            OrderItemUpdate(menu_item_id=101, quantity=1, price=12.99),
+            OrderItemUpdate(menu_item_id=201, quantity=1, price=3.99)
+        ]
+        result = await validate_multi_item_rules(items, [MultiItemRuleType.COMBO])
+        assert result.is_valid is True
+        
+    @pytest.mark.asyncio
+    async def test_bulk_discount_rule_validation(self):
+        """Test bulk discount rule validation."""
+        items = [
+            OrderItemUpdate(menu_item_id=101, quantity=3, price=12.99),
+            OrderItemUpdate(menu_item_id=102, quantity=2, price=8.99)
+        ]
+        result = await validate_multi_item_rules(items, [MultiItemRuleType.BULK_DISCOUNT])
+        assert result.is_valid is True
+        
+    @pytest.mark.asyncio
+    async def test_compatibility_rule_failure(self):
+        """Test compatibility rule validation failure."""
+        items = [
+            OrderItemUpdate(menu_item_id=101, quantity=1, price=12.99),
+            OrderItemUpdate(menu_item_id=301, quantity=1, price=15.99)
+        ]
+        result = await validate_multi_item_rules(items, [MultiItemRuleType.COMPATIBILITY])
+        assert result.is_valid is False
+        assert "not compatible" in result.message
+        
+    @pytest.mark.asyncio
+    async def test_all_rules_validation(self):
+        """Test validation with all rule types."""
+        items = [
+            OrderItemUpdate(menu_item_id=104, quantity=2, price=10.99),
+            OrderItemUpdate(menu_item_id=105, quantity=1, price=7.99)
+        ]
+        result = await validate_multi_item_rules(items)
+        assert result.is_valid is True

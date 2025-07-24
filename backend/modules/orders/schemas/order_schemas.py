@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus
+from ..enums.order_enums import OrderStatus, MultiItemRuleType
 
 
 class OrderItemUpdate(BaseModel):
@@ -54,3 +54,14 @@ class OrderOut(OrderBase):
 
     class Config:
         from_attributes = True
+
+
+class MultiItemRuleRequest(BaseModel):
+    order_items: List[OrderItemUpdate]
+    rule_types: Optional[List[MultiItemRuleType]] = None
+
+
+class RuleValidationResult(BaseModel):
+    is_valid: bool
+    message: Optional[str] = None
+    modified_items: Optional[List[OrderItemOut]] = None
