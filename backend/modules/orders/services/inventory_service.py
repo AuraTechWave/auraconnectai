@@ -116,7 +116,8 @@ async def get_inventory_service(
 async def update_inventory_service(inventory_id: int,
                                    inventory_update: InventoryUpdate,
                                    db: Session):
-    inventory = db.query(Inventory).filter(Inventory.id == inventory_id).first()
+    inventory = db.query(Inventory).filter(
+        Inventory.id == inventory_id).first()
     if not inventory:
         raise HTTPException(status_code=404, detail="Inventory item not found")
 

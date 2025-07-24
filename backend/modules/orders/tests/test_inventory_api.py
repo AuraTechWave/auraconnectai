@@ -11,9 +11,9 @@ class TestInventoryAPI:
 
     def test_get_inventory_with_items(self, client, db_session):
         inventory1 = Inventory(item_name="Item 1", quantity=10.0,
-                              unit="kg", threshold=5.0)
+                               unit="kg", threshold=5.0)
         inventory2 = Inventory(item_name="Item 2", quantity=20.0,
-                              unit="pieces", threshold=10.0)
+                               unit="pieces", threshold=10.0)
         db_session.add_all([inventory1, inventory2])
         db_session.commit()
 
@@ -25,7 +25,7 @@ class TestInventoryAPI:
     def test_get_inventory_pagination(self, client, db_session):
         inventories = [
             Inventory(item_name=f"Item {i}", quantity=10.0,
-                     unit="kg", threshold=5.0)
+                      unit="kg", threshold=5.0)
             for i in range(5)
         ]
         db_session.add_all(inventories)

@@ -124,7 +124,8 @@ class TestInventoryService:
     async def test_get_inventory_service_pagination(self,
                                                     db_session):
         inventories = [
-            Inventory(item_name=f"Item {i}", quantity=10.0, unit="kg", threshold=5.0)
+            Inventory(item_name=f"Item {i}", quantity=10.0, unit="kg",
+                      threshold=5.0)
             for i in range(5)
         ]
         db_session.add_all(inventories)
