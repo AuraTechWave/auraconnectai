@@ -29,7 +29,7 @@ class PayrollResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PayslipOut(BaseModel):
@@ -39,4 +39,4 @@ class PayslipOut(BaseModel):
     issued_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
