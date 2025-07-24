@@ -4,7 +4,9 @@ from backend.modules.orders.routes.order_routes import router as order_router
 from backend.modules.orders.routes.kitchen_routes import (
     router as kitchen_router
 )
-from backend.modules.settings.routes.pos_sync_routes import router as pos_sync_router
+from backend.modules.settings.routes.pos_sync_routes import (
+    router as pos_sync_router
+)
 
 app = FastAPI()
 
