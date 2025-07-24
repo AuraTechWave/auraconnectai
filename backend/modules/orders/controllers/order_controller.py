@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
-    get_orders_service, validate_multi_item_rules
+    get_orders_service, validate_multi_item_rules, create_order_with_fraud_check
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
@@ -56,4 +56,16 @@ async def validate_order_rules(
         rule_request.order_items,
         rule_request.rule_types,
         db
+    )
+
+
+async def create_order_with_validation(
+    order_data: dict, 
+    db: Session,
+    skip_fraud_check: bool = False
+):
+    return await create_order_with_fraud_check(
+        db, 
+        order_data, 
+        perform_fraud_validation=not skip_fraud_check
     )

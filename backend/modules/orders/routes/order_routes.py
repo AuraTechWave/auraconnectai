@@ -4,11 +4,16 @@ from typing import List, Optional
 from backend.core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
-    validate_order_rules
+    validate_order_rules, create_order_with_validation
+)
+from ..controllers.fraud_controller import (
+    check_order_fraud, list_fraud_alerts, resolve_alert
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
+    FraudCheckRequest, FraudCheckResponse, FraudAlertOut
 )
+from ..enums.order_enums import CheckpointType, FraudRiskLevel
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -89,3 +94,57 @@ async def validate_rules(
     and compatibility restrictions.
     """
     return await validate_order_rules(rule_request, db)
+
+
+@router.post("/{order_id}/fraud-check", response_model=FraudCheckResponse)
+async def perform_order_fraud_check(
+    order_id: int,
+    checkpoint_types: Optional[List[CheckpointType]] = None,
+    force_recheck: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Perform fraud detection check on a specific order.
+    
+    - **order_id**: ID of the order to check
+    - **checkpoint_types**: Specific types of checks to perform
+    - **force_recheck**: Force recheck even if recently checked
+    """
+    fraud_request = FraudCheckRequest(
+        order_id=order_id,
+        checkpoint_types=checkpoint_types,
+        force_recheck=force_recheck
+    )
+    return await check_order_fraud(fraud_request, db)
+
+
+@router.get("/fraud-alerts", response_model=List[dict])
+async def get_fraud_alerts(
+    resolved: Optional[bool] = Query(None, description="Filter by resolution status"),
+    severity: Optional[FraudRiskLevel] = Query(None, description="Filter by severity level"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of alerts to return"),
+    offset: int = Query(0, ge=0, description="Number of alerts to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve fraud alerts with optional filtering.
+    
+    - **resolved**: Filter by resolution status
+    - **severity**: Filter by severity level (low, medium, high, critical)
+    - **limit**: Maximum number of alerts to return
+    - **offset**: Number of alerts to skip for pagination
+    """
+    return await list_fraud_alerts(db, resolved, severity, limit, offset)
+
+
+@router.put("/fraud-alerts/{alert_id}/resolve", response_model=dict)
+async def resolve_fraud_alert(
+    alert_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Resolve a fraud alert by marking it as handled.
+    
+    - **alert_id**: ID of the alert to resolve
+    """
+    return await resolve_alert(db, alert_id)
