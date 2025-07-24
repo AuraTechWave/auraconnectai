@@ -11,7 +11,9 @@ class ToastAdapter(BasePOSAdapter):
         self.headers = {
             "Authorization": f"Bearer {credentials.get('access_token')}",
             "Content-Type": "application/json",
-            "Toast-Restaurant-External-ID": credentials.get("restaurant_id", "")
+            "Toast-Restaurant-External-ID": credentials.get(
+                "restaurant_id", ""
+            )
         }
 
     async def push_order(self, order_data: Dict[str, Any]) -> SyncResponse:

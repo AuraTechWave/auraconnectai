@@ -26,9 +26,9 @@ class POSBridgeService:
         if not integration:
             return SyncResponse(success=False, message="Integration not found")
 
-        order = self.db.query(Order).options(joinedload(Order.order_items)).filter(
-            Order.id == order_id
-        ).first()
+        order = self.db.query(Order).options(
+            joinedload(Order.order_items)
+        ).filter(Order.id == order_id).first()
         if not order:
             return SyncResponse(success=False, message="Order not found")
 
@@ -127,7 +127,9 @@ class POSBridgeService:
         except Exception:
             return False
 
-    async def sync_all_active_integrations(self, order_id: int) -> Dict[str, Any]:
+    async def sync_all_active_integrations(
+        self, order_id: int
+    ) -> Dict[str, Any]:
         active_integrations = self.db.query(POSIntegration).filter(
             POSIntegration.status == "active"
         ).all()

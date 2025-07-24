@@ -14,7 +14,9 @@ class POSSyncLog(Base, TimestampMixin):
     type = Column(String, nullable=False, index=True)
     status = Column(String, nullable=False, index=True)
     message = Column(Text, nullable=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
+    order_id = Column(
+        Integer, ForeignKey("orders.id"), nullable=True, index=True
+    )
     attempt_count = Column(Integer, nullable=False, default=1)
     synced_at = Column(DateTime, nullable=False)
 
