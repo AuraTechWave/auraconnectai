@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from backend.modules.staff.models.attendance_models import AttendanceLog
 from backend.modules.staff.models.staff_models import StaffMember
 from backend.modules.staff.schemas.payroll_schemas import PayrollBreakdown
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Tuple
 
 
@@ -10,7 +10,8 @@ class PayrollEngine:
     def __init__(self, db: Session):
         self.db = db
 
-    async def calculate_hours_for_period(self, staff_id: int, period: str) -> Tuple[float, float]:
+    async def calculate_hours_for_period(self, staff_id: int,
+                                         period: str) -> Tuple[float, float]:
         year, month = period.split("-")
         start_date = datetime(int(year), int(month), 1)
         if int(month) == 12:
@@ -37,11 +38,13 @@ class PayrollEngine:
         return regular_hours, overtime_hours
 
     async def calculate_payroll(self, staff_id: int, period: str) -> dict:
-        staff = self.db.query(StaffMember).filter(StaffMember.id == staff_id).first()
+        staff = self.db.query(StaffMember).filter(
+            StaffMember.id == staff_id).first()
         if not staff:
             raise ValueError(f"Staff member with ID {staff_id} not found")
 
-        regular_hours, overtime_hours = await self.calculate_hours_for_period(staff_id, period)
+        regular_hours, overtime_hours = await self.calculate_hours_for_period(
+            staff_id, period)
 
         hourly_rate = 15.0
         overtime_rate = hourly_rate * 1.5

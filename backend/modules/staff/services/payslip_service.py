@@ -8,7 +8,8 @@ class PayslipService:
         self.db = db
 
     async def generate_payslip(self, payroll_id: int) -> Payslip:
-        payroll = self.db.query(Payroll).filter(Payroll.id == payroll_id).first()
+        payroll = self.db.query(Payroll).filter(
+            Payroll.id == payroll_id).first()
         if not payroll:
             raise ValueError(f"Payroll with ID {payroll_id} not found")
 
@@ -25,4 +26,5 @@ class PayslipService:
         return payslip
 
     async def get_payslips_for_staff(self, staff_id: int):
-        return self.db.query(Payslip).join(Payroll).filter(Payroll.staff_id == staff_id).all()
+        return self.db.query(Payslip).join(Payroll).filter(
+            Payroll.staff_id == staff_id).all()

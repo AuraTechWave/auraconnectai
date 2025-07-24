@@ -1,9 +1,12 @@
 from sqlalchemy.orm import Session
 from backend.modules.staff.services.payroll_service import calculate_payroll
-from backend.modules.staff.schemas.payroll_schemas import PayrollRequest, PayrollResponse
+from backend.modules.staff.schemas.payroll_schemas import (
+    PayrollRequest, PayrollResponse
+)
 
 
-async def process_payroll(request: PayrollRequest, db: Session) -> PayrollResponse:
+async def process_payroll(request: PayrollRequest,
+                          db: Session) -> PayrollResponse:
     return await calculate_payroll(request.staff_id, request.period, db)
 
 
