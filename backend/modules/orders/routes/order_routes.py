@@ -7,8 +7,7 @@ from ..controllers.order_controller import (
     validate_order_rules, archive_order, restore_order, list_archived_orders
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
-    ArchiveOrderResponse
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -99,7 +98,7 @@ async def archive_order_endpoint(
 ):
     """
     Archive a completed or cancelled order.
-    
+
     Only orders with status 'completed' or 'cancelled' can be archived.
     Archived orders are excluded from regular order listings by default.
     """
@@ -113,7 +112,7 @@ async def restore_order_endpoint(
 ):
     """
     Restore an archived order back to completed status.
-    
+
     Only orders with status 'archived' can be restored.
     """
     return await restore_order(order_id, db)
@@ -135,7 +134,7 @@ async def get_archived_orders_endpoint(
 ):
     """
     Retrieve archived orders with optional filtering and pagination.
-    
+
     - **staff_id**: Filter by staff member ID
     - **table_no**: Filter by table number
     - **limit**: Maximum number of orders to return (1-1000)

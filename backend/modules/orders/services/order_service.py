@@ -105,7 +105,7 @@ async def get_orders_service(
         query = query.filter(Order.table_no == table_no)
 
     query = query.filter(Order.deleted_at.is_(None))
-    
+
     if not include_archived:
         query = query.filter(Order.status != OrderStatus.ARCHIVED.value)
 
@@ -175,13 +175,13 @@ async def validate_multi_item_rules(
 
 async def archive_order_service(db: Session, order_id: int):
     order = db.query(Order).filter(
-        Order.id == order_id, 
+        Order.id == order_id,
         Order.deleted_at.is_(None)
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     current_status = OrderStatus(order.status)
     if current_status not in [OrderStatus.COMPLETED, OrderStatus.CANCELLED]:
         raise HTTPException(
@@ -189,11 +189,11 @@ async def archive_order_service(db: Session, order_id: int):
             detail=f"Only completed or cancelled orders can be archived. "
                    f"Current status: {current_status}"
         )
-    
+
     order.status = OrderStatus.ARCHIVED.value
     db.commit()
     db.refresh(order)
-    
+
     return {
         "message": "Order archived successfully",
         "data": OrderOut.model_validate(order)
@@ -205,20 +205,20 @@ async def restore_order_service(db: Session, order_id: int):
         Order.id == order_id,
         Order.deleted_at.is_(None)
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     if OrderStatus(order.status) != OrderStatus.ARCHIVED:
         raise HTTPException(
             status_code=400,
             detail="Only archived orders can be restored"
         )
-    
+
     order.status = OrderStatus.COMPLETED.value
     db.commit()
     db.refresh(order)
-    
+
     return {
         "message": "Order restored successfully",
         "data": OrderOut.model_validate(order)
@@ -236,13 +236,13 @@ async def get_archived_orders_service(
         Order.status == OrderStatus.ARCHIVED.value,
         Order.deleted_at.is_(None)
     )
-    
+
     if staff_id:
         query = query.filter(Order.staff_id == staff_id)
     if table_no:
         query = query.filter(Order.table_no == table_no)
-    
+
     query = query.offset(offset).limit(limit)
     query = query.options(joinedload(Order.order_items))
-    
+
     return query.all()

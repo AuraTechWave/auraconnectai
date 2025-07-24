@@ -203,7 +203,7 @@ class TestArchiveService:
         db_session.commit()
 
         result = await archive_order_service(db_session, order.id)
-        
+
         assert result["message"] == "Order archived successfully"
         assert result["data"].status == OrderStatus.ARCHIVED.value
 
@@ -215,7 +215,7 @@ class TestArchiveService:
         db_session.commit()
 
         result = await archive_order_service(db_session, order.id)
-        
+
         assert result["message"] == "Order archived successfully"
         assert result["data"].status == OrderStatus.ARCHIVED.value
 
@@ -228,9 +228,10 @@ class TestArchiveService:
 
         with pytest.raises(HTTPException) as exc_info:
             await archive_order_service(db_session, order.id)
-        
+
         assert exc_info.value.status_code == 400
-        assert "Only completed or cancelled orders can be archived" in exc_info.value.detail
+        assert ("Only completed or cancelled orders can be archived"
+                in exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_restore_archived_order_success(self, db_session):
@@ -240,7 +241,7 @@ class TestArchiveService:
         db_session.commit()
 
         result = await restore_order_service(db_session, order.id)
-        
+
         assert result["message"] == "Order restored successfully"
         assert result["data"].status == OrderStatus.COMPLETED.value
 
@@ -253,7 +254,7 @@ class TestArchiveService:
 
         with pytest.raises(HTTPException) as exc_info:
             await restore_order_service(db_session, order.id)
-        
+
         assert exc_info.value.status_code == 400
         assert "Only archived orders can be restored" in exc_info.value.detail
 
@@ -266,7 +267,7 @@ class TestArchiveService:
         db_session.commit()
 
         archived_orders = await get_archived_orders_service(db_session)
-        
+
         assert len(archived_orders) == 1
         assert archived_orders[0].status == OrderStatus.ARCHIVED.value
 
@@ -279,6 +280,6 @@ class TestArchiveService:
         db_session.commit()
 
         orders = await get_orders_service(db_session)
-        
+
         assert len(orders) == 1
         assert orders[0].status == OrderStatus.COMPLETED.value
