@@ -1,6 +1,6 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from typing import List, Optional, Dict
+from typing import List, Dict
 from ..models.inventory_models import Inventory, MenuItemInventory
 from ..models.order_models import OrderItem
 from ..schemas.inventory_schemas import InventoryOut, InventoryUpdate
@@ -39,7 +39,8 @@ async def deduct_inventory(db: Session, order_items: List[OrderItem]) -> Dict:
                 if not inventory_item:
                     continue
 
-                required_quantity = mapping.quantity_needed * order_item.quantity
+                required_quantity = (mapping.quantity_needed *
+                                     order_item.quantity)
 
                 if inventory_item.quantity < required_quantity:
                     insufficient_stock_items.append({
@@ -78,7 +79,10 @@ async def deduct_inventory(db: Session, order_items: List[OrderItem]) -> Dict:
         db.rollback()
         if isinstance(e, HTTPException):
             raise e
-        raise HTTPException(status_code=500, detail="Error processing inventory deduction")
+        raise HTTPException(
+            status_code=500,
+            detail="Error processing inventory deduction"
+        )
 
 
 async def check_low_stock(db: Session) -> List[Dict]:
@@ -109,9 +113,9 @@ async def get_inventory_service(
     return query.all()
 
 
-async def update_inventory_service(
-    inventory_id: int, inventory_update: InventoryUpdate, db: Session
-):
+async def update_inventory_service(inventory_id: int,
+                                   inventory_update: InventoryUpdate,
+                                   db: Session):
     inventory = db.query(Inventory).filter(Inventory.id == inventory_id).first()
     if not inventory:
         raise HTTPException(status_code=404, detail="Inventory item not found")

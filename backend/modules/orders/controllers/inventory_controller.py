@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from ..services.inventory_service import (
     get_inventory_by_id as get_inventory_service,
     check_low_stock as check_low_stock_service,
@@ -31,5 +31,7 @@ async def list_inventory(
     return [InventoryOut.model_validate(item) for item in inventory_items]
 
 
-async def update_inventory(inventory_id: int, inventory_data: InventoryUpdate, db: Session):
+async def update_inventory(inventory_id: int,
+                           inventory_data: InventoryUpdate,
+                           db: Session):
     return await update_inventory_service(inventory_id, inventory_data, db)

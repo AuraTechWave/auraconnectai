@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 from backend.core.database import get_db
 from ..controllers.inventory_controller import (
     get_inventory_by_id, check_low_stock, list_inventory, update_inventory
@@ -12,7 +12,8 @@ router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
 @router.get("/", response_model=List[InventoryOut])
 async def get_inventory(
-    limit: int = Query(100, ge=1, le=1000, description="Number of items to return"),
+    limit: int = Query(100, ge=1, le=1000,
+                       description="Number of items to return"),
     offset: int = Query(0, ge=0, description="Number of items to skip"),
     db: Session = Depends(get_db)
 ):

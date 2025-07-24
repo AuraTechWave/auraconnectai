@@ -1,7 +1,5 @@
-import pytest
 from fastapi import status
 from backend.modules.orders.models.inventory_models import Inventory
-from backend.modules.orders.enums.order_enums import OrderStatus
 
 
 class TestInventoryAPI:
@@ -12,8 +10,10 @@ class TestInventoryAPI:
         assert response.json() == []
 
     def test_get_inventory_with_items(self, client, db_session):
-        inventory1 = Inventory(item_name="Item 1", quantity=10.0, unit="kg", threshold=5.0)
-        inventory2 = Inventory(item_name="Item 2", quantity=20.0, unit="pieces", threshold=10.0)
+        inventory1 = Inventory(item_name="Item 1", quantity=10.0,
+                              unit="kg", threshold=5.0)
+        inventory2 = Inventory(item_name="Item 2", quantity=20.0,
+                              unit="pieces", threshold=10.0)
         db_session.add_all([inventory1, inventory2])
         db_session.commit()
 
@@ -24,7 +24,8 @@ class TestInventoryAPI:
 
     def test_get_inventory_pagination(self, client, db_session):
         inventories = [
-            Inventory(item_name=f"Item {i}", quantity=10.0, unit="kg", threshold=5.0)
+            Inventory(item_name=f"Item {i}", quantity=10.0,
+                     unit="kg", threshold=5.0)
             for i in range(5)
         ]
         db_session.add_all(inventories)
@@ -36,7 +37,8 @@ class TestInventoryAPI:
         assert len(data) == 2
 
     def test_get_inventory_by_id_success(self, client, sample_inventory):
-        response = client.get(f"/inventory/{sample_inventory.id}")
+        response = client.get(
+            f"/inventory/{sample_inventory.id}")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["id"] == sample_inventory.id
@@ -46,12 +48,15 @@ class TestInventoryAPI:
         response = client.get("/inventory/999")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_get_inventory_by_id_soft_deleted(self, client, db_session, sample_inventory):
+    def test_get_inventory_by_id_soft_deleted(self, client,
+                                              db_session,
+                                              sample_inventory):
         from datetime import datetime
         sample_inventory.deleted_at = datetime.utcnow()
         db_session.commit()
 
-        response = client.get(f"/inventory/{sample_inventory.id}")
+        response = client.get(
+            f"/inventory/{sample_inventory.id}")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_update_inventory_success(self, client, sample_inventory):
@@ -60,7 +65,8 @@ class TestInventoryAPI:
             "threshold": 8.0
         }
 
-        response = client.put(f"/inventory/{sample_inventory.id}", json=update_data)
+        response = client.put(
+            f"/inventory/{sample_inventory.id}", json=update_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "Inventory updated successfully"

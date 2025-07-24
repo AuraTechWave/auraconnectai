@@ -7,7 +7,9 @@ from httpx import AsyncClient
 from backend.core.database import Base, get_db
 from backend.app.main import app
 from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.models.inventory_models import Inventory, MenuItemInventory
+from backend.modules.orders.models.inventory_models import (
+    Inventory, MenuItemInventory
+)
 from backend.modules.orders.enums.order_enums import OrderStatus
 from backend.modules.staff.models.staff_models import StaffMember, Role  # noqa
 
@@ -141,5 +143,4 @@ def sample_inventory_with_mapping(db_session):
     db_session.add(mapping)
     db_session.commit()
     db_session.refresh(mapping)
-    
     return inventory, mapping

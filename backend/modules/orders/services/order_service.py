@@ -47,15 +47,14 @@ async def update_order_service(
                 detail=f"Invalid status transition from {current_status} to "
                        f"{order_update.status}"
             )
-        
-        if order_update.status == OrderStatus.IN_PROGRESS and current_status == OrderStatus.PENDING:
+        if (order_update.status == OrderStatus.IN_PROGRESS and
+                current_status == OrderStatus.PENDING):
             try:
                 result = await deduct_inventory(db, order.order_items)
                 if result.get("low_stock_alerts"):
                     pass
             except HTTPException as e:
                 raise e
-        
         order.status = order_update.status.value
 
     if order_update.order_items is not None:
