@@ -65,3 +65,19 @@ class RuleValidationResult(BaseModel):
     is_valid: bool
     message: Optional[str] = None
     modified_items: Optional[List[OrderItemOut]] = None
+
+
+class ArchiveOrderRequest(BaseModel):
+    pass
+
+
+class ArchiveOrderResponse(BaseModel):
+    message: str
+    data: OrderOut
+
+
+class ArchivedOrdersFilter(BaseModel):
+    staff_id: Optional[int] = None
+    table_no: Optional[int] = None
+    limit: int = 100
+    offset: int = 0
