@@ -2,9 +2,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
-    get_orders_service
+    get_orders_service, validate_multi_item_rules
 )
-from ..schemas.order_schemas import OrderUpdate, OrderOut
+from ..schemas.order_schemas import (
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+)
 from ..enums.order_enums import OrderStatus
 
 
@@ -44,3 +46,14 @@ async def list_kitchen_orders(
         include_items=True
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def validate_order_rules(
+    rule_request: MultiItemRuleRequest,
+    db: Session
+) -> RuleValidationResult:
+    return await validate_multi_item_rules(
+        rule_request.order_items,
+        rule_request.rule_types,
+        db
+    )

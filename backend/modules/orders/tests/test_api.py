@@ -199,3 +199,43 @@ class TestOrderAPI:
         }
         response = client.put(f"/orders/{sample_order.id}", json=update_data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_validate_rules_success(self, client):
+        """Test POST /orders/validate-rules with valid data."""
+        request_data = {
+            "order_items": [
+                {"menu_item_id": 104, "quantity": 2, "price": 10.99},
+                {"menu_item_id": 105, "quantity": 1, "price": 7.99}
+            ],
+            "rule_types": ["combo", "bulk_discount"]
+        }
+        response = client.post("/orders/validate-rules", json=request_data)
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["is_valid"] is True
+
+    def test_validate_rules_compatibility_failure(self, client):
+        """Test POST /orders/validate-rules with incompatible items."""
+        request_data = {
+            "order_items": [
+                {"menu_item_id": 101, "quantity": 1, "price": 12.99},
+                {"menu_item_id": 301, "quantity": 1, "price": 15.99}
+            ],
+            "rule_types": ["compatibility"]
+        }
+        response = client.post("/orders/validate-rules", json=request_data)
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["is_valid"] is False
+        assert "not compatible" in data["message"]
+
+    def test_validate_rules_validation_error(self, client):
+        """Test POST /orders/validate-rules with invalid data."""
+        request_data = {
+            "order_items": [
+                {"menu_item_id": "invalid", "quantity": -1,
+                 "price": "not_a_number"}
+            ]
+        }
+        response = client.post("/orders/validate-rules", json=request_data)
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

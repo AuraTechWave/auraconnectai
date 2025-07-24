@@ -3,9 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from backend.core.database import get_db
 from ..controllers.order_controller import (
-    update_order, get_order_by_id, list_orders, list_kitchen_orders
+    update_order, get_order_by_id, list_orders, list_kitchen_orders,
+    validate_order_rules
 )
-from ..schemas.order_schemas import OrderUpdate, OrderOut
+from ..schemas.order_schemas import (
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+)
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -74,3 +77,15 @@ async def get_kitchen_orders(
     - **offset**: Number of orders to skip for pagination
     """
     return await list_kitchen_orders(db, limit, offset)
+
+
+@router.post("/validate-rules", response_model=RuleValidationResult)
+async def validate_rules(
+    rule_request: MultiItemRuleRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Validate multi-item order rules including combo deals, bulk discounts,
+    and compatibility restrictions.
+    """
+    return await validate_order_rules(rule_request, db)

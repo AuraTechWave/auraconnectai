@@ -16,4 +16,9 @@ class OrderItemStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     READY = "ready"
     COMPLETED = "completed"
-    CANCELLED = "cancelled"
+
+
+class MultiItemRuleType(str, Enum):
+    COMBO = "combo"
+    BULK_DISCOUNT = "bulk_discount"
+    COMPATIBILITY = "compatibility"
