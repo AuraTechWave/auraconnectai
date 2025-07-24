@@ -4,7 +4,7 @@ from ..schemas.tax_schemas import TaxCalculationRequest, TaxCalculationResponse
 
 
 async def calculate_tax_preview(
-    request: TaxCalculationRequest, 
+    request: TaxCalculationRequest,
     db: Session
 ) -> TaxCalculationResponse:
     tax_engine = TaxEngine(db)

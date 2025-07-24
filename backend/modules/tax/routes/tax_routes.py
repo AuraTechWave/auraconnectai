@@ -14,11 +14,11 @@ async def calculate_tax(
 ):
     """
     Calculate tax for draft order or cart data.
-    
+
     - **location**: Location for jurisdiction-based tax rules
     - **order_items**: List of items with quantities and prices
     - **customer_exemptions**: Optional tax exemptions to apply
-    
+
     Returns detailed tax breakdown by line item and total amounts.
     """
     return await calculate_tax_preview(request, db)
