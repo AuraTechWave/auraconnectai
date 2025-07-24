@@ -1,21 +1,26 @@
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import List, Optional
+from datetime import datetime
 from ..models.order_models import Order, OrderItem
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult
+    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
+    DelayFulfillmentRequest
 )
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import OrderStatus, MultiItemRuleType, DelayReason
 from .inventory_service import deduct_inventory
 
 VALID_TRANSITIONS = {
-    OrderStatus.PENDING: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED],
-    OrderStatus.IN_PROGRESS: [OrderStatus.IN_KITCHEN, OrderStatus.CANCELLED],
+    OrderStatus.PENDING: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED, OrderStatus.DELAYED],
+    OrderStatus.IN_PROGRESS: [OrderStatus.IN_KITCHEN, OrderStatus.CANCELLED, OrderStatus.DELAYED],
     OrderStatus.IN_KITCHEN: [OrderStatus.READY, OrderStatus.CANCELLED],
     OrderStatus.READY: [OrderStatus.SERVED],
     OrderStatus.SERVED: [OrderStatus.COMPLETED],
     OrderStatus.COMPLETED: [],
-    OrderStatus.CANCELLED: []
+    OrderStatus.CANCELLED: [],
+    OrderStatus.DELAYED: [OrderStatus.SCHEDULED, OrderStatus.CANCELLED],
+    OrderStatus.SCHEDULED: [OrderStatus.AWAITING_FULFILLMENT, OrderStatus.CANCELLED],
+    OrderStatus.AWAITING_FULFILLMENT: [OrderStatus.PENDING, OrderStatus.CANCELLED]
 }
 
 
@@ -166,3 +171,96 @@ async def validate_multi_item_rules(
         message="All rules passed",
         modified_items=modified_items if modified_items else None
     )
+
+
+async def schedule_delayed_fulfillment(
+    order_id: int, delay_data: DelayFulfillmentRequest, db: Session
+):
+    """
+    Schedule an order for delayed fulfillment at a specified time.
+    """
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    current_status = OrderStatus(order.status)
+    if OrderStatus.DELAYED not in VALID_TRANSITIONS.get(current_status, []):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delay order with status {current_status}"
+        )
+    
+    if delay_data.scheduled_fulfillment_time <= datetime.utcnow():
+        raise HTTPException(
+            status_code=400,
+            detail="Scheduled fulfillment time must be in the future"
+        )
+    
+    order.status = OrderStatus.DELAYED.value
+    order.scheduled_fulfillment_time = delay_data.scheduled_fulfillment_time
+    order.delay_reason = delay_data.delay_reason
+    order.delay_requested_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(order)
+    
+    return {
+        "message": "Order scheduled for delayed fulfillment",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def get_scheduled_orders(
+    db: Session, 
+    from_time: Optional[datetime] = None, 
+    to_time: Optional[datetime] = None
+):
+    """
+    Retrieve orders scheduled for fulfillment within a time range.
+    """
+    query = db.query(Order).filter(
+        Order.status.in_([
+            OrderStatus.DELAYED.value,
+            OrderStatus.SCHEDULED.value,
+            OrderStatus.AWAITING_FULFILLMENT.value
+        ]),
+        Order.deleted_at.is_(None)
+    )
+    
+    if from_time:
+        query = query.filter(Order.scheduled_fulfillment_time >= from_time)
+    if to_time:
+        query = query.filter(Order.scheduled_fulfillment_time <= to_time)
+    
+    query = query.order_by(Order.scheduled_fulfillment_time)
+    
+    return query.all()
+
+
+async def process_due_delayed_orders(db: Session):
+    """
+    Process orders that are due for fulfillment based on their scheduled time.
+    """
+    current_time = datetime.utcnow()
+    
+    due_orders = db.query(Order).filter(
+        Order.status == OrderStatus.SCHEDULED.value,
+        Order.scheduled_fulfillment_time <= current_time,
+        Order.deleted_at.is_(None)
+    ).all()
+    
+    processed_orders = []
+    
+    for order in due_orders:
+        order.status = OrderStatus.AWAITING_FULFILLMENT.value
+        processed_orders.append(order)
+    
+    if processed_orders:
+        db.commit()
+        for order in processed_orders:
+            db.refresh(order)
+    
+    return {
+        "message": f"Processed {len(processed_orders)} due orders",
+        "processed_orders": [OrderOut.model_validate(order) for order in processed_orders]
+    }

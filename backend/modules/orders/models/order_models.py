@@ -14,6 +14,9 @@ class Order(Base, TimestampMixin):
     table_no = Column(Integer, nullable=True, index=True)
     status = Column(String, nullable=False, index=True)
     deleted_at = Column(DateTime, nullable=True)
+    scheduled_fulfillment_time = Column(DateTime, nullable=True)
+    delay_reason = Column(String, nullable=True)
+    delay_requested_at = Column(DateTime, nullable=True)
 
     order_items = relationship("OrderItem", back_populates="order")
 

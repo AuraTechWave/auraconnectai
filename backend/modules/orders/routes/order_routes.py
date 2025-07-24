@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from backend.core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
-    validate_order_rules
+    validate_order_rules, delay_order_fulfillment, get_delayed_orders
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
+    DelayFulfillmentRequest
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -89,3 +91,40 @@ async def validate_rules(
     and compatibility restrictions.
     """
     return await validate_order_rules(rule_request, db)
+
+
+@router.post("/{order_id}/delay", response_model=dict)
+async def delay_order(
+    order_id: int,
+    delay_data: DelayFulfillmentRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Schedule an order for delayed fulfillment at a specified time.
+    
+    - **order_id**: ID of the order to delay
+    - **scheduled_fulfillment_time**: When the order should be fulfilled
+    - **delay_reason**: Optional reason for the delay
+    - **additional_notes**: Optional additional notes about the delay
+    """
+    return await delay_order_fulfillment(order_id, delay_data, db)
+
+
+@router.get("/delayed", response_model=List[OrderOut])
+async def get_delayed_orders_endpoint(
+    from_time: Optional[datetime] = Query(
+        None, description="Filter orders scheduled from this time"
+    ),
+    to_time: Optional[datetime] = Query(
+        None, description="Filter orders scheduled until this time"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve orders scheduled for delayed fulfillment within a time range.
+    
+    - **from_time**: Optional start time filter
+    - **to_time**: Optional end time filter
+    """
+    orders = await get_delayed_orders(db, from_time, to_time)
+    return [OrderOut.model_validate(order) for order in orders]

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import OrderStatus, MultiItemRuleType, DelayReason
 
 
 class OrderItemUpdate(BaseModel):
@@ -37,6 +37,12 @@ class OrderCreate(OrderBase):
     pass
 
 
+class DelayFulfillmentRequest(BaseModel):
+    scheduled_fulfillment_time: datetime
+    delay_reason: Optional[str] = None
+    additional_notes: Optional[str] = None
+
+
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
     order_items: Optional[List[OrderItemUpdate]] = None
@@ -45,11 +51,19 @@ class OrderUpdate(BaseModel):
         from_attributes = True
 
 
+class DelayedOrderUpdate(OrderUpdate):
+    scheduled_fulfillment_time: Optional[datetime] = None
+    delay_reason: Optional[str] = None
+
+
 class OrderOut(OrderBase):
     id: int
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
+    scheduled_fulfillment_time: Optional[datetime] = None
+    delay_reason: Optional[str] = None
+    delay_requested_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
 
     class Config:
