@@ -251,25 +251,29 @@ class TestDelayedFulfillmentAPI:
             "delay_reason": DelayReason.CUSTOMER_REQUEST.value,
             "additional_notes": "Customer requested later delivery"
         }
-        
-        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
+
+        response = client.post(f"/orders/{sample_order.id}/delay",
+                               json=delay_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "Order scheduled for delayed fulfillment"
         assert data["data"]["status"] == OrderStatus.DELAYED.value
-        assert data["data"]["delay_reason"] == DelayReason.CUSTOMER_REQUEST.value
+        assert (data["data"]["delay_reason"] ==
+                DelayReason.CUSTOMER_REQUEST.value)
 
-    def test_delay_order_invalid_status(self, client, sample_order, db_session):
+    def test_delay_order_invalid_status(self, client, sample_order,
+                                        db_session):
         """Test delaying order with invalid status."""
         sample_order.status = OrderStatus.COMPLETED.value
         db_session.commit()
-        
+
         delay_data = {
             "scheduled_fulfillment_time": "2025-12-31T15:30:00",
             "delay_reason": DelayReason.CUSTOMER_REQUEST.value
         }
-        
-        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
+
+        response = client.post(f"/orders/{sample_order.id}/delay",
+                               json=delay_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Cannot delay order" in response.json()["detail"]
 
@@ -279,8 +283,9 @@ class TestDelayedFulfillmentAPI:
             "scheduled_fulfillment_time": "2020-01-01T12:00:00",
             "delay_reason": DelayReason.CUSTOMER_REQUEST.value
         }
-        
-        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
+
+        response = client.post(f"/orders/{sample_order.id}/delay",
+                               json=delay_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "must be in the future" in response.json()["detail"]
 
@@ -290,7 +295,7 @@ class TestDelayedFulfillmentAPI:
             "scheduled_fulfillment_time": "2025-12-31T15:30:00",
             "delay_reason": DelayReason.CUSTOMER_REQUEST.value
         }
-        
+
         response = client.post("/orders/999/delay", json=delay_data)
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "Order not found" in response.json()["detail"]
@@ -301,12 +306,14 @@ class TestDelayedFulfillmentAPI:
             "scheduled_fulfillment_time": "invalid-date",
             "delay_reason": "invalid_reason"
         }
-        
-        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+        response = client.post(f"/orders/{sample_order.id}/delay",
+                               json=delay_data)
+        assert (response.status_code ==
+                status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     def test_get_delayed_orders_empty(self, client):
-        """Test GET /orders/delayed returns empty list when no delayed orders exist."""
+        """Test GET /orders/delayed returns empty list."""
         response = client.get("/orders/delayed")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
@@ -314,37 +321,48 @@ class TestDelayedFulfillmentAPI:
     def test_get_delayed_orders_with_data(self, client, db_session):
         """Test GET /orders/delayed returns delayed orders."""
         from backend.modules.orders.models.order_models import Order
-        
+
         order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                      scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0))
+                       scheduled_fulfillment_time=datetime(2025, 12, 31,
+                                                            10, 0, 0))
         order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                      scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0))
+                       scheduled_fulfillment_time=datetime(2025, 12, 31,
+                                                            14, 0, 0))
         order3 = Order(staff_id=3, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2, order3])
         db_session.commit()
-        
+
         response = client.get("/orders/delayed")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 2
-        assert data[0]["status"] in [OrderStatus.DELAYED.value, OrderStatus.SCHEDULED.value]
-        assert data[1]["status"] in [OrderStatus.DELAYED.value, OrderStatus.SCHEDULED.value]
+        expected_statuses = [OrderStatus.DELAYED.value,
+                             OrderStatus.SCHEDULED.value]
+        assert data[0]["status"] in expected_statuses
+        assert data[1]["status"] in expected_statuses
 
     def test_get_delayed_orders_with_time_filters(self, client, db_session):
         """Test GET /orders/delayed with time range filters."""
         from backend.modules.orders.models.order_models import Order
-        
+
         order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                      scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0))
+                       scheduled_fulfillment_time=datetime(2025, 12, 31,
+                                                            10, 0, 0))
         order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                      scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0))
-        order3 = Order(staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
-                      scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0))
+                       scheduled_fulfillment_time=datetime(2025, 12, 31,
+                                                            14, 0, 0))
+        order3 = Order(staff_id=3,
+                       status=OrderStatus.AWAITING_FULFILLMENT.value,
+                       scheduled_fulfillment_time=datetime(2025, 12, 31,
+                                                            18, 0, 0))
         db_session.add_all([order1, order2, order3])
         db_session.commit()
-        
-        response = client.get("/orders/delayed?from_time=2025-12-31T12:00:00&to_time=2025-12-31T16:00:00")
+
+        url = ("/orders/delayed?from_time=2025-12-31T12:00:00"
+               "&to_time=2025-12-31T16:00:00")
+        response = client.get(url)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 1
-        assert data[0]["scheduled_fulfillment_time"] == "2025-12-31T14:00:00"
+        expected_time = "2025-12-31T14:00:00"
+        assert data[0]["scheduled_fulfillment_time"] == expected_time
