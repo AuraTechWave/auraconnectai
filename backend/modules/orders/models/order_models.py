@@ -27,6 +27,10 @@ class OrderItem(Base, TimestampMixin):
     menu_item_id = Column(Integer, nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
+    pricing_type = Column(String, nullable=True, default="static")
+    pricing_source = Column(String, nullable=True)
+    adjustment_reason = Column(String, nullable=True)
+    original_price = Column(Numeric(10, 2), nullable=True)
     notes = Column(Text, nullable=True)
 
     order = relationship("Order", back_populates="order_items")
