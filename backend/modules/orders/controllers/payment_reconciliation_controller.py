@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List
+from typing import Optional
 from ..services.payment_reconciliation_service import (
     create_payment_reconciliation, get_payment_reconciliation_by_id,
     update_payment_reconciliation, get_payment_reconciliations,
@@ -16,9 +17,12 @@ from ..schemas.payment_reconciliation_schemas import (
 
 async def create_reconciliation(
     reconciliation_data: PaymentReconciliationCreate,
-    db: Session
+    db: Session,
+    current_user_id: Optional[int] = None
 ) -> PaymentReconciliationOut:
-    return await create_payment_reconciliation(db, reconciliation_data)
+    return await create_payment_reconciliation(
+        db, reconciliation_data, current_user_id
+    )
 
 
 async def get_reconciliation_by_id(

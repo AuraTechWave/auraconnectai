@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from decimal import Decimal
+import logging
 from backend.core.database import get_db
 from ..controllers.payment_reconciliation_controller import (
     create_reconciliation, get_reconciliation_by_id, update_reconciliation,
@@ -15,6 +17,10 @@ from ..schemas.payment_reconciliation_schemas import (
     AutoReconcileResponse, PaymentWebhookData, WebhookResponse
 )
 from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType
+from ..models.payment_reconciliation_models import PaymentReconciliation
+from ..models.order_models import Order
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/payment-reconciliation",
@@ -124,3 +130,110 @@ async def handle_payment_webhook(
     payments are received from external POS systems.
     """
     return await handle_webhook(payment_data, db)
+
+
+@router.get("/analytics/reconciliation-summary")
+async def get_reconciliation_summary(
+    from_date: Optional[datetime] = Query(None),
+    to_date: Optional[datetime] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get reconciliation analytics and KPIs.
+
+    Returns detailed analytics including counts, totals, and variances
+    grouped by reconciliation status for the specified date range.
+    """
+    from sqlalchemy import func
+
+    query = db.query(
+        PaymentReconciliation.reconciliation_status,
+        func.count(PaymentReconciliation.id).label('count'),
+        func.sum(PaymentReconciliation.amount_expected).label(
+            'total_expected'),
+        func.sum(PaymentReconciliation.amount_received).label(
+            'total_received')
+    ).group_by(PaymentReconciliation.reconciliation_status)
+
+    if from_date:
+        query = query.filter(PaymentReconciliation.created_at >= from_date)
+    if to_date:
+        query = query.filter(PaymentReconciliation.created_at <= to_date)
+
+    results = query.all()
+
+    summary = {}
+    for result in results:
+        total_expected = float(result.total_expected or 0)
+        total_received = float(result.total_received or 0)
+        summary[result.reconciliation_status] = {
+            'count': result.count,
+            'total_expected': total_expected,
+            'total_received': total_received,
+            'variance': total_received - total_expected
+        }
+
+    return summary
+
+
+@router.post("/webhooks/pos-payment")
+async def handle_pos_payment_webhook(
+    payment_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Handle real-time payment notifications from POS.
+
+    Processes incoming payment webhooks and automatically creates
+    reconciliation records with proper status detection.
+    """
+    try:
+        order_reference = payment_data.get('order_reference')
+        amount = Decimal(str(payment_data.get('amount', 0)))
+        payment_reference = payment_data.get('payment_reference')
+
+        if not order_reference or not payment_reference:
+            logger.warning("Webhook: Missing required fields")
+            return {"status": "missing_fields"}
+
+        order = db.query(Order).filter(Order.id == order_reference).first()
+        if not order:
+            logger.warning(f"Webhook: Order {order_reference} not found")
+            return {"status": "order_not_found"}
+
+        order_total = sum(float(item.price) * item.quantity
+                          for item in order.order_items)
+        expected_amount = Decimal(str(order_total))
+
+        amount_diff = abs(amount - expected_amount)
+        if amount_diff <= Decimal('0.01'):
+            status = ReconciliationStatus.MATCHED
+            discrepancy_type = None
+            discrepancy_details = None
+        else:
+            status = ReconciliationStatus.DISCREPANCY
+            discrepancy_type = DiscrepancyType.AMOUNT_MISMATCH
+            discrepancy_details = (
+                f"Expected: ${expected_amount}, Received: ${amount}"
+            )
+
+        reconciliation_data = PaymentReconciliationCreate(
+            order_id=order.id,
+            external_payment_reference=payment_reference,
+            amount_expected=expected_amount,
+            amount_received=amount,
+            reconciliation_status=status,
+            discrepancy_type=discrepancy_type,
+            discrepancy_details=discrepancy_details
+        )
+
+        await create_reconciliation(reconciliation_data, db)
+
+        return {"status": "processed"}
+
+    except Exception as e:
+        logger.error(f"Webhook processing error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Webhook processing failed"
+        )

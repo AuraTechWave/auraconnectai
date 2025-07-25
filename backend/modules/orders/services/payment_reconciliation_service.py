@@ -2,7 +2,7 @@ import logging
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from fastapi import HTTPException
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
 from ..models.payment_reconciliation_models import PaymentReconciliation
@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 async def create_payment_reconciliation(
     db: Session,
-    reconciliation_data: PaymentReconciliationCreate
+    reconciliation_data: PaymentReconciliationCreate,
+    current_user_id: Optional[int] = None
 ) -> PaymentReconciliationOut:
     order = db.query(Order).filter(
         Order.id == reconciliation_data.order_id
@@ -28,7 +29,13 @@ async def create_payment_reconciliation(
     if not order:
         raise HTTPException(
             status_code=404,
-            detail=f"Order with id {reconciliation_data.order_id} not found"
+            detail=f"Order {reconciliation_data.order_id} not found"
+        )
+
+    if hasattr(order, 'status') and order.status in ['CANCELLED', 'REFUNDED']:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reconcile {order.status} orders"
         )
 
     existing = db.query(PaymentReconciliation).filter(
@@ -43,6 +50,20 @@ async def create_payment_reconciliation(
                    f"{reconciliation_data.external_payment_reference} "
                    f"already exists"
         )
+
+    amount_diff = abs(reconciliation_data.amount_expected -
+                      reconciliation_data.amount_received)
+    if amount_diff > Decimal('0.01'):  # More than 1 cent difference
+        reconciliation_data.reconciliation_status = (
+            ReconciliationStatus.DISCREPANCY
+        )
+        reconciliation_data.discrepancy_type = (
+            DiscrepancyType.AMOUNT_MISMATCH
+        )
+        if not reconciliation_data.discrepancy_details:
+            reconciliation_data.discrepancy_details = (
+                f"Amount difference: ${amount_diff}"
+            )
 
     reconciliation = PaymentReconciliation(
         order_id=reconciliation_data.order_id,
