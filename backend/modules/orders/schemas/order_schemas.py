@@ -73,6 +73,12 @@ class OrderCreate(OrderBase):
     pass
 
 
+class DelayFulfillmentRequest(BaseModel):
+    scheduled_fulfillment_time: datetime
+    delay_reason: Optional[str] = None
+    additional_notes: Optional[str] = None
+
+
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
     order_items: Optional[List[OrderItemUpdate]] = None
@@ -81,11 +87,19 @@ class OrderUpdate(BaseModel):
         from_attributes = True
 
 
+class DelayedOrderUpdate(OrderUpdate):
+    scheduled_fulfillment_time: Optional[datetime] = None
+    delay_reason: Optional[str] = None
+
+
 class OrderOut(OrderBase):
     id: int
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
+    scheduled_fulfillment_time: Optional[datetime] = None
+    delay_reason: Optional[str] = None
+    delay_requested_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None

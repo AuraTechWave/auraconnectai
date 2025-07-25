@@ -9,6 +9,9 @@ class OrderStatus(str, Enum):
     SERVED = "served"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    DELAYED = "delayed"
+    SCHEDULED = "scheduled"
+    AWAITING_FULFILLMENT = "awaiting_fulfillment"
     ARCHIVED = "archived"
 
 
@@ -17,6 +20,13 @@ class OrderItemStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     READY = "ready"
     COMPLETED = "completed"
+
+
+class DelayReason(str, Enum):
+    CUSTOMER_REQUEST = "customer_request"
+    RESOURCE_UNAVAILABLE = "resource_unavailable"
+    SCHEDULED_ORDER = "scheduled_order"
+    OTHER = "other"
 
 
 class MultiItemRuleType(str, Enum):

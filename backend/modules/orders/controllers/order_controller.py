@@ -1,16 +1,18 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
-    get_orders_service, validate_multi_item_rules, add_tags_to_order,
-    remove_tag_from_order, set_order_category, create_tag, get_tags,
-    create_category, get_categories, archive_order_service,
-    restore_order_service, get_archived_orders_service
+    get_orders_service, validate_multi_item_rules,
+    schedule_delayed_fulfillment, get_scheduled_orders,
+    add_tags_to_order, remove_tag_from_order, set_order_category,
+    create_tag, get_tags, create_category, get_categories,
+    archive_order_service, restore_order_service, get_archived_orders_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
-    OrderTagRequest, OrderCategoryRequest, TagCreate, TagOut,
-    CategoryCreate, CategoryOut
+    DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
+    TagCreate, TagOut, CategoryCreate, CategoryOut
 )
 from ..enums.order_enums import OrderStatus
 
@@ -65,6 +67,26 @@ async def validate_order_rules(
         rule_request.rule_types,
         db
     )
+
+
+async def delay_order_fulfillment(
+    order_id: int, delay_data: DelayFulfillmentRequest, db: Session
+):
+    """
+    Schedule an order for delayed fulfillment.
+    """
+    return await schedule_delayed_fulfillment(order_id, delay_data, db)
+
+
+async def get_delayed_orders(
+    db: Session,
+    from_time: Optional[datetime] = None,
+    to_time: Optional[datetime] = None
+):
+    """
+    Retrieve orders scheduled for delayed fulfillment.
+    """
+    return await get_scheduled_orders(db, from_time, to_time)
 
 
 async def add_order_tags(order_id: int, tag_request: OrderTagRequest,
