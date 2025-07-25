@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -244,10 +244,16 @@ class ArchivedOrdersFilter(BaseModel):
 
 
 class KitchenPrintRequest(BaseModel):
-    order_id: int
-    printer_options: Optional[Dict[str, Any]] = None
-    station_id: Optional[int] = None
-    format_options: Optional[Dict[str, Any]] = None
+    order_id: int = Field(..., gt=0, description="Order ID must be positive")
+    printer_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    station_id: Optional[int] = Field(None, ge=1, description="Station ID must be positive")
+    format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    
+    @validator('printer_options', 'format_options')
+    def validate_options(cls, v):
+        if v is None:
+            return {}
+        return v
 
 
 class KitchenPrintResponse(BaseModel):
@@ -265,6 +271,7 @@ class KitchenTicketFormat(BaseModel):
     station_name: Optional[str] = None
     timestamp: datetime
     special_instructions: Optional[str] = None
+    priority_level: Optional[int] = Field(None, ge=1, le=5, description="Priority level 1-5")
 
     class Config:
         from_attributes = True
