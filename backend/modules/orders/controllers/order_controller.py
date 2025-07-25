@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from fastapi import HTTPException
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules,
@@ -155,20 +156,41 @@ async def get_order_audit_trail(
     limit: int = 100,
     offset: int = 0
 ) -> OrderAuditResponse:
-    """Get audit trail for a specific order."""
+    """Get audit trail for a specific order with enhanced error handling."""
+    order = await get_order_by_id(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
     events_data = await get_order_audit_events_service(db, order_id, limit, offset)
     total_count = await count_order_audit_events_service(db, order_id)
     
-    events = [
-        OrderAuditEvent(
-            order_id=event.entity_id,
-            previous_status=OrderStatus(event.previous_value) if event.previous_value else None,
-            new_status=OrderStatus(event.new_value),
-            user_id=event.user_id,
-            timestamp=event.timestamp,
-            metadata=event.metadata
-        )
-        for event in events_data
-    ]
+    events = []
+    for event in events_data:
+        try:
+            previous_status = None
+            if event.previous_value:
+                try:
+                    previous_status = OrderStatus(event.previous_value)
+                except ValueError:
+                    previous_status = None  # Handle invalid enum values gracefully
+            
+            new_status = OrderStatus(event.new_value)
+            
+            events.append(OrderAuditEvent(
+                id=event.id,
+                order_id=event.entity_id,
+                action=event.action,
+                previous_status=previous_status,
+                new_status=new_status,
+                user_id=event.user_id,
+                timestamp=event.timestamp,
+                metadata=event.metadata or {}
+            ))
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Skipping malformed audit record {event.id}: {str(e)}")
+            continue
     
-    return OrderAuditResponse(events=events, total_count=total_count)
+    has_more = len(events) < total_count
+    return OrderAuditResponse(events=events, total_count=total_count, has_more=has_more)

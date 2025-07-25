@@ -41,20 +41,29 @@ async def log_order_audit_event(
     previous_status: Optional[OrderStatus],
     new_status: OrderStatus,
     user_id: int,
-    metadata: Optional[dict] = None
+    metadata: Optional[dict] = None,
+    action: str = "status_change"
 ):
-    """Log an order status change audit event."""
-    audit_event = AuditLog(
-        action="status_change",
-        module="orders",
-        user_id=user_id,
-        entity_id=order_id,
-        previous_value=previous_status.value if previous_status else None,
-        new_value=new_status.value,
-        metadata=metadata,
-        timestamp=datetime.utcnow()
-    )
-    db.add(audit_event)
+    """Log an order audit event with enhanced error handling."""
+    try:
+        audit_event = AuditLog(
+            action=action,
+            module="orders",
+            user_id=user_id,
+            entity_id=order_id,
+            previous_value=previous_status.value if previous_status else None,
+            new_value=new_status.value,
+            metadata=metadata or {},
+            timestamp=datetime.utcnow()
+        )
+        db.add(audit_event)
+        db.flush()  # Ensure the audit event is written
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to log audit event for order {order_id}: {str(e)}")
+        if "database" in str(e).lower() or "connection" in str(e).lower():
+            raise
 
 
 async def get_order_by_id(db: Session, order_id: int):
@@ -96,8 +105,12 @@ async def update_order_service(
             user_id=user_id,
             metadata={
                 "notes": getattr(order_update, 'notes', None),
-                "delay_reason": getattr(order_update, 'delay_reason', None)
-            }
+                "delay_reason": getattr(order_update, 'delay_reason', None),
+                "source": "api_update",
+                "previous_staff_id": order.staff_id,
+                "timestamp": datetime.utcnow().isoformat()
+            },
+            action="status_change"
         )
         
         if (order_update.status == OrderStatus.IN_PROGRESS and
