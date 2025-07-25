@@ -94,20 +94,24 @@ class EmployeePayment(Base, TimestampMixin):
     local_tax = Column(Numeric(12, 2), default=0.00, nullable=False)
     social_security_tax = Column(Numeric(12, 2), default=0.00, nullable=False)
     medicare_tax = Column(Numeric(12, 2), default=0.00, nullable=False)
-    
+
     # Other deductions
     insurance_deduction = Column(Numeric(12, 2), default=0.00, nullable=False)
     retirement_deduction = Column(Numeric(12, 2), default=0.00, nullable=False)
     other_deductions = Column(Numeric(12, 2), default=0.00, nullable=False)
     total_deductions = Column(Numeric(12, 2), nullable=False)
-    
+
     # Net pay
     net_pay = Column(Numeric(12, 2), nullable=False)
     currency = Column(String(3), default='USD', nullable=False)
     tenant_id = Column(Integer, nullable=True)
-    
+
     # Status and metadata
-    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING, nullable=False)
+    payment_status = Column(
+        Enum(PaymentStatus),
+        default=PaymentStatus.PENDING,
+        nullable=False
+    )
     payment_method = Column(Enum(PaymentMethod), nullable=True)
     notes = Column(Text, nullable=True)
     processed_by = Column(String(100), nullable=True)
