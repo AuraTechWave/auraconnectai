@@ -1,5 +1,6 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Numeric, Text, Table, Boolean)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
@@ -23,12 +24,22 @@ class Order(Base, TimestampMixin):
     status = Column(String, nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"),
                          nullable=True, index=True)
+    customer_notes = Column(Text, nullable=True)
     deleted_at = Column(DateTime, nullable=True)
+    scheduled_fulfillment_time = Column(DateTime, nullable=True)
+    delay_reason = Column(String, nullable=True)
+    delay_requested_at = Column(DateTime, nullable=True)
+
+    fraud_risk_score = Column(Numeric(5, 2), nullable=True, default=0.0)
+    fraud_status = Column(String, nullable=False, default="pending")
+    fraud_last_check = Column(DateTime, nullable=True)
+    fraud_flags = Column(Text, nullable=True)
 
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")
     print_tickets = relationship("PrintTicket", back_populates="order")
+    attachments = relationship("OrderAttachment", back_populates="order")
 
 
 class OrderItem(Base, TimestampMixin):
@@ -40,7 +51,12 @@ class OrderItem(Base, TimestampMixin):
     menu_item_id = Column(Integer, nullable=False)
     quantity = Column(Integer, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
+    pricing_type = Column(String, nullable=True, default="static")
+    pricing_source = Column(String, nullable=True)
+    adjustment_reason = Column(String, nullable=True)
+    original_price = Column(Numeric(10, 2), nullable=True)
     notes = Column(Text, nullable=True)
+    special_instructions = Column(JSONB, nullable=True)
 
     order = relationship("Order", back_populates="order_items")
 
@@ -94,3 +110,21 @@ class PrintStation(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, index=True)
 
     print_tickets = relationship("PrintTicket", back_populates="station")
+
+
+class OrderAttachment(Base, TimestampMixin):
+    __tablename__ = "order_attachments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"),
+                      nullable=False, index=True)
+    file_name = Column(String, nullable=False)
+    file_url = Column(String, nullable=False)
+    file_type = Column(String, nullable=False)
+    file_size = Column(Integer, nullable=False)
+    description = Column(Text, nullable=True)
+    is_public = Column(Boolean, default=False)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    deleted_at = Column(DateTime, nullable=True)
+
+    order = relationship("Order", back_populates="attachments")

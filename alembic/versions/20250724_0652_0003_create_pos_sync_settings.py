@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from datetime import datetime
 
 revision = '0003_create_pos_sync_settings'
-down_revision = '20250720_0041_0002_create_orders_tables'
+down_revision = '0002_create_orders_tables'
 branch_labels = None
 depends_on = None
 

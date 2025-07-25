@@ -2,7 +2,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '0005_add_print_ticket_tables'
-down_revision = '0004_add_order_tags_categories'
+down_revision = '20250725_0550_0006'
 branch_labels = None
 depends_on = None
 
