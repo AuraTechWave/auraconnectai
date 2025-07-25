@@ -5,12 +5,14 @@ from datetime import datetime
 from backend.core.database import get_db
 from ..controllers.payment_reconciliation_controller import (
     create_reconciliation, get_reconciliation_by_id, update_reconciliation,
-    list_reconciliations, reconcile_payments, resolve_discrepancy
+    list_reconciliations, reconcile_payments, resolve_discrepancy,
+    get_metrics, auto_reconcile, handle_webhook
 )
 from ..schemas.payment_reconciliation_schemas import (
     PaymentReconciliationCreate, PaymentReconciliationUpdate,
     PaymentReconciliationOut, ReconciliationRequest, ReconciliationResponse,
-    ReconciliationFilter, ResolutionRequest
+    ReconciliationFilter, ResolutionRequest, ReconciliationMetrics,
+    AutoReconcileResponse, PaymentWebhookData, WebhookResponse
 )
 from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType
 
@@ -84,3 +86,41 @@ async def resolve_payment_discrepancy(
     db: Session = Depends(get_db)
 ):
     return await resolve_discrepancy(reconciliation_id, resolution_data, db)
+
+
+@router.get("/metrics", response_model=ReconciliationMetrics)
+async def get_reconciliation_metrics(db: Session = Depends(get_db)):
+    """
+    Get reconciliation metrics for dashboard insights.
+
+    Returns comprehensive metrics including:
+    - Total reconciliations processed
+    - Success rates and counts by status
+    - Common discrepancy types
+    """
+    return await get_metrics(db)
+
+
+@router.post("/auto-reconcile", response_model=AutoReconcileResponse)
+async def auto_reconcile_pending(db: Session = Depends(get_db)):
+    """
+    Automatically reconcile pending reconciliations.
+
+    Uses enhanced matching logic to automatically match
+    pending reconciliations with high confidence scores.
+    """
+    return await auto_reconcile(db)
+
+
+@router.post("/webhook/payment-received", response_model=WebhookResponse)
+async def handle_payment_webhook(
+    payment_data: PaymentWebhookData,
+    db: Session = Depends(get_db)
+):
+    """
+    Handle real-time payment notification webhooks.
+
+    Automatically creates reconciliation records when
+    payments are received from external POS systems.
+    """
+    return await handle_webhook(payment_data, db)

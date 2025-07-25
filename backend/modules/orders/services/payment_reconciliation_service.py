@@ -1,5 +1,6 @@
 import logging
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from fastapi import HTTPException
 from typing import List, Dict, Any
 from datetime import datetime
@@ -12,6 +13,7 @@ from ..schemas.payment_reconciliation_schemas import (
     ReconciliationFilter, ResolutionRequest
 )
 from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType
+from ...pos.interfaces.payment_provider import MockPOSProvider
 
 logger = logging.getLogger(__name__)
 
@@ -175,15 +177,16 @@ async def perform_payment_reconciliation(
         order_total = sum(float(item.price) * item.quantity
                           for item in order.order_items)
 
-        matching_payment = None
+        best_match = None
+        best_score = 0.0
+
         for payment in pos_payments:
-            order_ref_match = (payment.get('order_reference') ==
-                               str(order.id))
-            amount_diff = abs(payment.get('amount', 0) - order_total)
-            threshold = float(request.amount_threshold)
-            if order_ref_match and amount_diff <= threshold:
-                matching_payment = payment
-                break
+            score = calculate_match_score(order, payment, order_total)
+            if score > best_score and score >= 0.5:
+                best_score = score
+                best_match = payment
+
+        matching_payment = best_match
 
         if matching_payment:
             reconciliation_data = PaymentReconciliationCreate(
@@ -238,17 +241,216 @@ async def resolve_payment_discrepancy(
                                                update_data)
 
 
-async def _get_pos_payments(db: Session, orders: List[Order]) -> List[Dict[str, Any]]:  # noqa: E501
-    mock_payments = []
-    for order in orders[:len(orders)//2]:
+def calculate_match_score(order: Order, payment: Dict[str, Any],
+                          order_total: float) -> float:
+    """Calculate matching score between order and payment."""
+    score = 0.0
+
+    if payment.get('order_reference') == str(order.id):
+        score += 0.5
+
+    amount_diff = abs(payment.get('amount', 0) - order_total)
+    if amount_diff == 0:
+        score += 0.3
+    elif amount_diff <= 1.0:
+        score += 0.2
+    elif amount_diff <= 5.0:
+        score += 0.1
+
+    payment_time = payment.get('timestamp')
+    if payment_time and hasattr(order, 'created_at'):
+        time_diff = abs((payment_time - order.created_at).total_seconds())
+        if time_diff <= 3600:
+            score += 0.2
+        elif time_diff <= 7200:
+            score += 0.1
+
+    return score
+
+
+async def _get_pos_payments(db: Session,
+                            orders: List[Order]) -> List[Dict[str, Any]]:
+    """Get payments from POS system using provider interface."""
+    provider = MockPOSProvider({})
+    order_ids = [order.id for order in orders]
+    return await provider.get_payments(order_ids=order_ids)
+
+
+async def get_reconciliation_metrics(db: Session) -> Dict[str, Any]:
+    """Get reconciliation metrics for dashboard."""
+    total_reconciled = db.query(PaymentReconciliation).count()
+
+    matched_count = db.query(PaymentReconciliation).filter(
+        PaymentReconciliation.reconciliation_status ==
+        ReconciliationStatus.MATCHED.value
+    ).count()
+
+    discrepancy_count = db.query(PaymentReconciliation).filter(
+        PaymentReconciliation.reconciliation_status ==
+        ReconciliationStatus.DISCREPANCY.value
+    ).count()
+
+    resolved_count = db.query(PaymentReconciliation).filter(
+        PaymentReconciliation.reconciliation_status ==
+        ReconciliationStatus.RESOLVED.value
+    ).count()
+
+    success_rate = ((matched_count + resolved_count) / total_reconciled *
+                    100 if total_reconciled > 0 else 0)
+
+    discrepancy_types = db.query(
+        PaymentReconciliation.discrepancy_type,
+        func.count(PaymentReconciliation.id).label('count')
+    ).filter(
+        PaymentReconciliation.discrepancy_type.isnot(None)
+    ).group_by(
+        PaymentReconciliation.discrepancy_type
+    ).order_by(
+        func.count(PaymentReconciliation.id).desc()
+    ).limit(5).all()
+
+    return {
+        'total_reconciled': total_reconciled,
+        'matched_count': matched_count,
+        'discrepancy_count': discrepancy_count,
+        'resolved_count': resolved_count,
+        'success_rate': round(success_rate, 2),
+        'common_discrepancy_types': [
+            {'type': dt[0], 'count': dt[1]} for dt in discrepancy_types
+        ]
+    }
+
+
+async def auto_reconcile_pending(db: Session) -> Dict[str, Any]:
+    """Automatically reconcile pending reconciliations."""
+    pending_reconciliations = db.query(PaymentReconciliation).filter(
+        PaymentReconciliation.reconciliation_status ==
+        ReconciliationStatus.PENDING.value
+    ).all()
+
+    processed = 0
+    matched = 0
+
+    for reconciliation in pending_reconciliations:
+        provider = MockPOSProvider({})
+        payments = await provider.get_payments(
+            order_ids=[reconciliation.order_id]
+        )
+
+        order = db.query(Order).filter(
+            Order.id == reconciliation.order_id
+        ).first()
+
+        if order and payments:
+            order_total = sum(float(item.price) * item.quantity
+                              for item in order.order_items)
+
+            best_match = None
+            best_score = 0.0
+
+            for payment in payments:
+                score = calculate_match_score(order, payment, order_total)
+                if score > best_score and score >= 0.7:
+                    best_score = score
+                    best_match = payment
+
+            if best_match:
+                status = ReconciliationStatus.MATCHED.value
+                reconciliation.reconciliation_status = status
+                amount = Decimal(str(best_match['amount']))
+                reconciliation.amount_received = amount
+                ref = best_match['reference']
+                reconciliation.external_payment_reference = ref
+                matched += 1
+
+        processed += 1
+
+    db.commit()
+
+    return {
+        'total_processed': processed,
+        'auto_matched': matched,
+        'remaining_pending': processed - matched
+    }
+
+
+async def handle_payment_webhook(db: Session,
+                                 payment_data: Dict[str, Any]
+                                 ) -> Dict[str, Any]:
+    """Handle incoming payment webhook notification."""
+    try:
+        payment_reference = payment_data.get('reference')
+        order_reference = payment_data.get('order_reference')
+        amount = Decimal(str(payment_data.get('amount', 0)))
+
+        if not payment_reference or not order_reference:
+            raise HTTPException(
+                status_code=400,
+                detail="Missing required payment reference or order reference"
+            )
+
+        order = db.query(Order).filter(
+            Order.id == int(order_reference)
+        ).first()
+
+        if not order:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Order {order_reference} not found"
+            )
+
+        existing = db.query(PaymentReconciliation).filter(
+            PaymentReconciliation.external_payment_reference ==
+            payment_reference
+        ).first()
+
+        if existing:
+            return {
+                'status': 'already_exists',
+                'reconciliation_id': existing.id,
+                'message': f"Reconciliation for payment {payment_reference} "
+                          f"already exists"
+            }
+
         order_total = sum(float(item.price) * item.quantity
                           for item in order.order_items)
-        timestamp = datetime.utcnow().timestamp()
-        mock_payments.append({
-            'reference': f"POS_{order.id}_{timestamp}",
-            'order_reference': str(order.id),
-            'amount': order_total,
-            'timestamp': datetime.utcnow()
-        })
+        expected_amount = Decimal(str(order_total))
 
-    return mock_payments
+        amount_diff = abs(float(amount - expected_amount))
+        if amount_diff <= 0.01:
+            status = ReconciliationStatus.MATCHED
+            discrepancy_type = None
+            discrepancy_details = None
+        else:
+            status = ReconciliationStatus.DISCREPANCY
+            discrepancy_type = DiscrepancyType.AMOUNT_MISMATCH
+            details = f"Expected: ${expected_amount}, Received: ${amount}"
+            discrepancy_details = details
+
+        reconciliation_data = PaymentReconciliationCreate(
+            order_id=order.id,
+            external_payment_reference=payment_reference,
+            amount_expected=expected_amount,
+            amount_received=amount,
+            reconciliation_status=status,
+            discrepancy_type=discrepancy_type,
+            discrepancy_details=discrepancy_details
+        )
+
+        reconciliation = await create_payment_reconciliation(
+            db, reconciliation_data)
+
+        return {
+            'status': 'created',
+            'reconciliation_id': reconciliation.id,
+            'reconciliation_status': status.value,
+            'message': f"Reconciliation created for payment "
+                      f"{payment_reference}"
+        }
+
+    except Exception as e:
+        logger.error(f"Error handling payment webhook: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing payment webhook: {str(e)}"
+        )

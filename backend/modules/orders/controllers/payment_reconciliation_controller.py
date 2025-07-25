@@ -3,12 +3,14 @@ from typing import List
 from ..services.payment_reconciliation_service import (
     create_payment_reconciliation, get_payment_reconciliation_by_id,
     update_payment_reconciliation, get_payment_reconciliations,
-    perform_payment_reconciliation, resolve_payment_discrepancy
+    perform_payment_reconciliation, resolve_payment_discrepancy,
+    get_reconciliation_metrics, auto_reconcile_pending, handle_payment_webhook
 )
 from ..schemas.payment_reconciliation_schemas import (
     PaymentReconciliationCreate, PaymentReconciliationUpdate,
     PaymentReconciliationOut, ReconciliationRequest, ReconciliationResponse,
-    ReconciliationFilter, ResolutionRequest
+    ReconciliationFilter, ResolutionRequest, ReconciliationMetrics,
+    AutoReconcileResponse, PaymentWebhookData, WebhookResponse
 )
 
 
@@ -57,3 +59,21 @@ async def resolve_discrepancy(
     return await resolve_payment_discrepancy(
         db, reconciliation_id, resolution_data
     )
+
+
+async def get_metrics(db: Session) -> ReconciliationMetrics:
+    metrics_data = await get_reconciliation_metrics(db)
+    return ReconciliationMetrics(**metrics_data)
+
+
+async def auto_reconcile(db: Session) -> AutoReconcileResponse:
+    result = await auto_reconcile_pending(db)
+    return AutoReconcileResponse(**result)
+
+
+async def handle_webhook(
+    webhook_data: PaymentWebhookData,
+    db: Session
+) -> WebhookResponse:
+    result = await handle_payment_webhook(db, webhook_data.dict())
+    return WebhookResponse(**result)

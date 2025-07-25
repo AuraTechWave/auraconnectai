@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from ..enums.payment_enums import (
@@ -71,3 +71,34 @@ class ResolutionRequest(BaseModel):
     reconciliation_action: ReconciliationAction
     resolution_notes: Optional[str] = None
     resolved_by: int
+
+
+class ReconciliationMetrics(BaseModel):
+    total_reconciled: int
+    matched_count: int
+    discrepancy_count: int
+    resolved_count: int
+    success_rate: float
+    common_discrepancy_types: List[Dict[str, Any]]
+
+
+class AutoReconcileResponse(BaseModel):
+    total_processed: int
+    auto_matched: int
+    remaining_pending: int
+
+
+class PaymentWebhookData(BaseModel):
+    reference: str = Field(..., min_length=1)
+    order_reference: str = Field(..., min_length=1)
+    amount: Decimal = Field(..., gt=0)
+    payment_method: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    status: Optional[str] = None
+
+
+class WebhookResponse(BaseModel):
+    status: str
+    reconciliation_id: Optional[int] = None
+    reconciliation_status: Optional[str] = None
+    message: str

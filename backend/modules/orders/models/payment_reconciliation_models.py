@@ -1,5 +1,5 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
-                        Numeric, Text)
+                        Numeric, Text, UniqueConstraint)
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
@@ -22,5 +22,10 @@ class PaymentReconciliation(Base, TimestampMixin):
     resolved_at = Column(DateTime, nullable=True)
     resolved_by = Column(Integer, ForeignKey("staff_members.id"),
                          nullable=True, index=True)
+
+    __table_args__ = (
+        UniqueConstraint('order_id', 'external_payment_reference',
+                         name='uq_payment_reconciliation_order_reference'),
+    )
 
     order = relationship("Order", back_populates="payment_reconciliations")
