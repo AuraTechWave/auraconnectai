@@ -130,14 +130,22 @@ class EmployeePaymentTaxApplication(Base, TimestampMixin):
     __tablename__ = "employee_payment_tax_applications"
 
     id = Column(Integer, primary_key=True, index=True)
-    employee_payment_id = Column(Integer, ForeignKey("employee_payments.id"), nullable=False)
-    tax_rule_id = Column(Integer, ForeignKey("payroll_tax_rules.id"), nullable=False)
-    
+    employee_payment_id = Column(
+        Integer,
+        ForeignKey("employee_payments.id"),
+        nullable=False
+    )
+    tax_rule_id = Column(
+        Integer,
+        ForeignKey("payroll_tax_rules.id"),
+        nullable=False
+    )
+
     # Tax calculation details
     taxable_amount = Column(Numeric(12, 2), nullable=False)
     calculated_tax = Column(Numeric(12, 2), nullable=False)
     effective_rate = Column(Numeric(5, 4), nullable=False)
-    
+
     # Audit information
     calculation_date = Column(DateTime, nullable=False)
     calculation_method = Column(String(50), nullable=True)
