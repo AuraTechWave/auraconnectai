@@ -7,12 +7,14 @@ from ..services.order_service import (
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
-    archive_order_service, restore_order_service, get_archived_orders_service
+    archive_order_service, restore_order_service, get_archived_orders_service,
+    generate_kitchen_print_ticket_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut,
+    KitchenPrintRequest, KitchenPrintResponse
 )
 from ..enums.order_enums import OrderStatus
 
@@ -145,3 +147,11 @@ async def list_archived_orders(
         limit=limit, offset=offset
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def generate_kitchen_print_ticket(
+    order_id: int, 
+    print_request: KitchenPrintRequest, 
+    db: Session
+) -> KitchenPrintResponse:
+    return await generate_kitchen_print_ticket_service(order_id, print_request, db)

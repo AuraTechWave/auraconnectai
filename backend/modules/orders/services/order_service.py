@@ -5,7 +5,8 @@ from datetime import datetime
 from ..models.order_models import Order, OrderItem, Tag, Category
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
-    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut
+    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
+    KitchenPrintRequest, KitchenPrintResponse, KitchenTicketFormat
 )
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
 from .inventory_service import deduct_inventory
@@ -482,3 +483,80 @@ async def get_archived_orders_service(
     query = query.options(joinedload(Order.order_items))
 
     return query.all()
+
+
+async def generate_kitchen_print_ticket_service(
+    order_id: int, 
+    print_request: KitchenPrintRequest, 
+    db: Session
+) -> KitchenPrintResponse:
+    """
+    Generate and send kitchen print ticket for an order.
+    """
+    order = await get_order_by_id(db, order_id)
+    
+    kitchen_statuses = [OrderStatus.PENDING.value, OrderStatus.IN_KITCHEN.value]
+    if order.status not in kitchen_statuses:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot print ticket for order with status {order.status}"
+        )
+    
+    ticket_data = _format_kitchen_ticket(order, print_request)
+    
+    from ...pos.services.pos_bridge_service import POSBridgeService
+    pos_service = POSBridgeService(db)
+    
+    try:
+        order_data = pos_service._transform_order_to_dict(order)
+        
+        print_data = {
+            **order_data,
+            "print_type": "kitchen_ticket",
+            "station_id": print_request.station_id,
+            "format_options": print_request.format_options or {}
+        }
+        
+        sync_result = await pos_service.sync_all_active_integrations(
+            order_id, tenant_id=None, team_id=None
+        )
+        
+        if sync_result.get("results") and any(r["success"] for r in sync_result["results"]):
+            return KitchenPrintResponse(
+                success=True,
+                message="Kitchen ticket printed successfully",
+                ticket_id=f"ticket_{order_id}_{datetime.utcnow().timestamp()}",
+                print_timestamp=datetime.utcnow()
+            )
+        else:
+            return KitchenPrintResponse(
+                success=False,
+                message="Failed to print kitchen ticket - no active POS integrations"
+            )
+            
+    except Exception as e:
+        return KitchenPrintResponse(
+            success=False,
+            message=f"Print failed: {str(e)}"
+        )
+
+
+def _format_kitchen_ticket(order: Order, print_request: KitchenPrintRequest) -> KitchenTicketFormat:
+    """Format order data for kitchen ticket display."""
+    items_data = []
+    for item in order.order_items:
+        items_data.append({
+            "menu_item_id": item.menu_item_id,
+            "quantity": item.quantity,
+            "price": float(item.price),
+            "notes": item.notes
+        })
+    
+    return KitchenTicketFormat(
+        order_id=order.id,
+        table_no=order.table_no,
+        items=items_data,
+        station_name=None,
+        timestamp=datetime.utcnow(),
+        special_instructions=None
+    )

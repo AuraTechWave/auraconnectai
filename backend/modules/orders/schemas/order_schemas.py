@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
@@ -141,3 +141,29 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class KitchenPrintRequest(BaseModel):
+    order_id: int
+    printer_options: Optional[Dict[str, Any]] = None
+    station_id: Optional[int] = None
+    format_options: Optional[Dict[str, Any]] = None
+
+
+class KitchenPrintResponse(BaseModel):
+    success: bool
+    message: str
+    ticket_id: Optional[str] = None
+    print_timestamp: Optional[datetime] = None
+
+
+class KitchenTicketFormat(BaseModel):
+    order_id: int
+    table_no: Optional[int] = None
+    items: List[Dict[str, Any]]
+    station_name: Optional[str] = None
+    timestamp: datetime
+    special_instructions: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
