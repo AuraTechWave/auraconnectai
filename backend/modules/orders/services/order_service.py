@@ -486,42 +486,44 @@ async def get_archived_orders_service(
 
 
 async def generate_kitchen_print_ticket_service(
-    order_id: int, 
-    print_request: KitchenPrintRequest, 
+    order_id: int,
+    print_request: KitchenPrintRequest,
     db: Session
 ) -> KitchenPrintResponse:
     """
     Generate and send kitchen print ticket for an order.
     """
     order = await get_order_by_id(db, order_id)
-    
-    kitchen_statuses = [OrderStatus.PENDING.value, OrderStatus.IN_KITCHEN.value]
+
+    kitchen_statuses = [
+        OrderStatus.PENDING.value, OrderStatus.IN_KITCHEN.value
+    ]
     if order.status not in kitchen_statuses:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot print ticket for order with status {order.status}"
         )
-    
-    ticket_data = _format_kitchen_ticket(order, print_request)
-    
+
+    _format_kitchen_ticket(order, print_request)
+
     from ...pos.services.pos_bridge_service import POSBridgeService
     pos_service = POSBridgeService(db)
-    
+
     try:
         order_data = pos_service._transform_order_to_dict(order)
-        
-        print_data = {
-            **order_data,
+
+        order_data.update({
             "print_type": "kitchen_ticket",
             "station_id": print_request.station_id,
             "format_options": print_request.format_options or {}
-        }
-        
+        })
+
         sync_result = await pos_service.sync_all_active_integrations(
             order_id, tenant_id=None, team_id=None
         )
-        
-        if sync_result.get("results") and any(r["success"] for r in sync_result["results"]):
+
+        if (sync_result.get("results") and
+                any(r["success"] for r in sync_result["results"])):
             return KitchenPrintResponse(
                 success=True,
                 message="Kitchen ticket printed successfully",
@@ -531,9 +533,9 @@ async def generate_kitchen_print_ticket_service(
         else:
             return KitchenPrintResponse(
                 success=False,
-                message="Failed to print kitchen ticket - no active POS integrations"
+                message="Failed to print - no active POS integrations"
             )
-            
+
     except Exception as e:
         return KitchenPrintResponse(
             success=False,
@@ -541,7 +543,9 @@ async def generate_kitchen_print_ticket_service(
         )
 
 
-def _format_kitchen_ticket(order: Order, print_request: KitchenPrintRequest) -> KitchenTicketFormat:
+def _format_kitchen_ticket(
+    order: Order, print_request: KitchenPrintRequest
+) -> KitchenTicketFormat:
     """Format order data for kitchen ticket display."""
     items_data = []
     for item in order.order_items:
@@ -551,7 +555,7 @@ def _format_kitchen_ticket(order: Order, print_request: KitchenPrintRequest) -> 
             "price": float(item.price),
             "notes": item.notes
         })
-    
+
     return KitchenTicketFormat(
         order_id=order.id,
         table_no=order.table_no,

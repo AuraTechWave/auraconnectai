@@ -1,8 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.core.database import get_db
-from ..controllers.order_controller import update_order, generate_kitchen_print_ticket
-from ..schemas.order_schemas import OrderUpdate, KitchenPrintRequest, KitchenPrintResponse
+from ..controllers.order_controller import (
+    update_order, generate_kitchen_print_ticket
+)
+from ..schemas.order_schemas import (
+    OrderUpdate, KitchenPrintRequest, KitchenPrintResponse
+)
 from ..enums.order_enums import OrderStatus
 
 router = APIRouter(prefix="/kitchen/orders", tags=["Kitchen"])
@@ -44,7 +48,7 @@ async def print_kitchen_ticket(
 ):
     """
     Generate and print kitchen ticket for an order.
-    
+
     Validates order is in appropriate status and routes to POS for printing.
     """
     return await generate_kitchen_print_ticket(id, print_request, db)

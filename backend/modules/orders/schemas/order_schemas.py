@@ -164,6 +164,6 @@ class KitchenTicketFormat(BaseModel):
     station_name: Optional[str] = None
     timestamp: datetime
     special_instructions: Optional[str] = None
-    
+
     class Config:
         from_attributes = True

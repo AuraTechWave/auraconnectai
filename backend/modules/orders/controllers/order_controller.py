@@ -150,8 +150,10 @@ async def list_archived_orders(
 
 
 async def generate_kitchen_print_ticket(
-    order_id: int, 
-    print_request: KitchenPrintRequest, 
+    order_id: int,
+    print_request: KitchenPrintRequest,
     db: Session
 ) -> KitchenPrintResponse:
-    return await generate_kitchen_print_ticket_service(order_id, print_request, db)
+    return await generate_kitchen_print_ticket_service(
+        order_id, print_request, db
+    )
