@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import List, Optional
-from ..models.order_models import Order, OrderItem
+from ..models.order_models import Order, OrderItem, Tag, Category
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult
+    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
+    TagCreate, TagOut, CategoryCreate, CategoryOut
 )
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
 from .inventory_service import deduct_inventory
@@ -88,6 +89,8 @@ async def get_orders_service(
     statuses: Optional[List[str]] = None,
     staff_id: Optional[int] = None,
     table_no: Optional[int] = None,
+    tag_ids: Optional[List[int]] = None,
+    category_id: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
     include_items: bool = False,
@@ -103,6 +106,10 @@ async def get_orders_service(
         query = query.filter(Order.staff_id == staff_id)
     if table_no:
         query = query.filter(Order.table_no == table_no)
+    if tag_ids:
+        query = query.join(Order.tags).filter(Tag.id.in_(tag_ids))
+    if category_id:
+        query = query.filter(Order.category_id == category_id)
 
     query = query.filter(Order.deleted_at.is_(None))
 
@@ -113,6 +120,8 @@ async def get_orders_service(
 
     if include_items:
         query = query.options(joinedload(Order.order_items))
+
+    query = query.options(joinedload(Order.tags), joinedload(Order.category))
 
     return query.all()
 
@@ -171,6 +180,126 @@ async def validate_multi_item_rules(
         message="All rules passed",
         modified_items=modified_items if modified_items else None
     )
+
+
+async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
+    order = await get_order_by_id(db, order_id)
+
+    tags = db.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+    if len(tags) != len(tag_ids):
+        found_ids = [tag.id for tag in tags]
+        missing_ids = [tag_id for tag_id in tag_ids if tag_id not in found_ids]
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tags with ids {missing_ids} not found"
+        )
+
+    for tag in tags:
+        if tag not in order.tags:
+            order.tags.append(tag)
+
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "message": "Tags added successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def remove_tag_from_order(db: Session, order_id: int, tag_id: int):
+    order = await get_order_by_id(db, order_id)
+
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+    if not tag:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Tag with id {tag_id} not found"
+        )
+
+    if tag in order.tags:
+        order.tags.remove(tag)
+        db.commit()
+        db.refresh(order)
+
+    return {
+        "message": "Tag removed successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def set_order_category(db: Session, order_id: int,
+                             category_id: Optional[int]):
+    order = await get_order_by_id(db, order_id)
+
+    if category_id is not None:
+        category = db.query(Category).filter(
+            Category.id == category_id).first()
+        if not category:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Category with id {category_id} not found"
+            )
+        order.category_id = category_id
+    else:
+        order.category_id = None
+
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "message": "Category updated successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def create_tag(db: Session, tag_data: TagCreate):
+    existing_tag = db.query(Tag).filter(Tag.name == tag_data.name).first()
+    if existing_tag:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tag with name '{tag_data.name}' already exists"
+        )
+
+    tag = Tag(
+        name=tag_data.name,
+        description=tag_data.description
+    )
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+
+    return TagOut.model_validate(tag)
+
+
+async def get_tags(db: Session, limit: int = 100,
+                   offset: int = 0) -> List[Tag]:
+    return db.query(Tag).offset(offset).limit(limit).all()
+
+
+async def create_category(db: Session, category_data: CategoryCreate):
+    existing_category = db.query(Category).filter(
+        Category.name == category_data.name).first()
+    if existing_category:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Category with name '{category_data.name}' already exists"
+        )
+
+    category = Category(
+        name=category_data.name,
+        description=category_data.description
+    )
+    db.add(category)
+    db.commit()
+    db.refresh(category)
+
+    return CategoryOut.model_validate(category)
+
+
+async def get_categories(db: Session, limit: int = 100,
+                         offset: int = 0) -> List[Category]:
+    return db.query(Category).offset(offset).limit(limit).all()
 
 
 async def archive_order_service(db: Session, order_id: int):

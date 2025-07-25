@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -20,6 +20,42 @@ class OrderItemOut(BaseModel):
     quantity: int
     price: Decimal
     notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TagBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = None
+
+
+class TagCreate(TagBase):
+    pass
+
+
+class TagOut(TagBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CategoryBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = None
+
+
+class CategoryCreate(CategoryBase):
+    pass
+
+
+class CategoryOut(CategoryBase):
+    id: int
     created_at: datetime
     updated_at: datetime
 
@@ -51,6 +87,8 @@ class OrderOut(OrderBase):
     updated_at: datetime
     deleted_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
+    tags: Optional[List[TagOut]] = []
+    category: Optional[CategoryOut] = None
 
     class Config:
         from_attributes = True
@@ -65,6 +103,14 @@ class RuleValidationResult(BaseModel):
     is_valid: bool
     message: Optional[str] = None
     modified_items: Optional[List[OrderItemOut]] = None
+
+
+class OrderTagRequest(BaseModel):
+    tag_ids: List[int]
+
+
+class OrderCategoryRequest(BaseModel):
+    category_id: Optional[int] = None
 
 
 class ArchiveOrderRequest(BaseModel):
