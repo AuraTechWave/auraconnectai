@@ -14,8 +14,9 @@ VALID_TRANSITIONS = {
     OrderStatus.IN_KITCHEN: [OrderStatus.READY, OrderStatus.CANCELLED],
     OrderStatus.READY: [OrderStatus.SERVED],
     OrderStatus.SERVED: [OrderStatus.COMPLETED],
-    OrderStatus.COMPLETED: [],
-    OrderStatus.CANCELLED: []
+    OrderStatus.COMPLETED: [OrderStatus.ARCHIVED],
+    OrderStatus.CANCELLED: [OrderStatus.ARCHIVED],
+    OrderStatus.ARCHIVED: [OrderStatus.COMPLETED]
 }
 
 
@@ -89,7 +90,8 @@ async def get_orders_service(
     table_no: Optional[int] = None,
     limit: int = 100,
     offset: int = 0,
-    include_items: bool = False
+    include_items: bool = False,
+    include_archived: bool = False
 ) -> List[Order]:
     query = db.query(Order)
 
@@ -103,6 +105,9 @@ async def get_orders_service(
         query = query.filter(Order.table_no == table_no)
 
     query = query.filter(Order.deleted_at.is_(None))
+
+    if not include_archived:
+        query = query.filter(Order.status != OrderStatus.ARCHIVED.value)
 
     query = query.offset(offset).limit(limit)
 
@@ -166,3 +171,78 @@ async def validate_multi_item_rules(
         message="All rules passed",
         modified_items=modified_items if modified_items else None
     )
+
+
+async def archive_order_service(db: Session, order_id: int):
+    order = db.query(Order).filter(
+        Order.id == order_id,
+        Order.deleted_at.is_(None)
+    ).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    current_status = OrderStatus(order.status)
+    if current_status not in [OrderStatus.COMPLETED, OrderStatus.CANCELLED]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only completed or cancelled orders can be archived. "
+                   f"Current status: {current_status}"
+        )
+
+    order.status = OrderStatus.ARCHIVED.value
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "message": "Order archived successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def restore_order_service(db: Session, order_id: int):
+    order = db.query(Order).filter(
+        Order.id == order_id,
+        Order.deleted_at.is_(None)
+    ).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    if OrderStatus(order.status) != OrderStatus.ARCHIVED:
+        raise HTTPException(
+            status_code=400,
+            detail="Only archived orders can be restored"
+        )
+
+    order.status = OrderStatus.COMPLETED.value
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "message": "Order restored successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def get_archived_orders_service(
+    db: Session,
+    staff_id: Optional[int] = None,
+    table_no: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> List[Order]:
+    query = db.query(Order).filter(
+        Order.status == OrderStatus.ARCHIVED.value,
+        Order.deleted_at.is_(None)
+    )
+
+    if staff_id:
+        query = query.filter(Order.staff_id == staff_id)
+    if table_no:
+        query = query.filter(Order.table_no == table_no)
+
+    query = query.offset(offset).limit(limit)
+    query = query.options(joinedload(Order.order_items))
+
+    return query.all()

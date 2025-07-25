@@ -2,7 +2,8 @@ import pytest
 from fastapi import HTTPException
 from backend.modules.orders.services.order_service import (
     get_order_by_id, update_order_service, get_orders_service,
-    validate_multi_item_rules
+    validate_multi_item_rules, archive_order_service, restore_order_service,
+    get_archived_orders_service
 )
 from backend.modules.orders.schemas.order_schemas import (
     OrderUpdate, OrderItemUpdate
@@ -190,3 +191,95 @@ class TestMultiItemRules:
         ]
         result = await validate_multi_item_rules(items)
         assert result.is_valid is True
+
+
+class TestArchiveService:
+
+    @pytest.mark.asyncio
+    async def test_archive_completed_order_success(self, db_session):
+        """Test successful archiving of completed order."""
+        order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await archive_order_service(db_session, order.id)
+
+        assert result["message"] == "Order archived successfully"
+        assert result["data"].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_archive_cancelled_order_success(self, db_session):
+        """Test successful archiving of cancelled order."""
+        order = Order(staff_id=1, status=OrderStatus.CANCELLED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await archive_order_service(db_session, order.id)
+
+        assert result["message"] == "Order archived successfully"
+        assert result["data"].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_archive_pending_order_failure(self, db_session):
+        """Test that pending orders cannot be archived."""
+        order = Order(staff_id=1, status=OrderStatus.PENDING.value)
+        db_session.add(order)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await archive_order_service(db_session, order.id)
+
+        assert exc_info.value.status_code == 400
+        assert ("Only completed or cancelled orders can be archived"
+                in exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_restore_archived_order_success(self, db_session):
+        """Test successful restoration of archived order."""
+        order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await restore_order_service(db_session, order.id)
+
+        assert result["message"] == "Order restored successfully"
+        assert result["data"].status == OrderStatus.COMPLETED.value
+
+    @pytest.mark.asyncio
+    async def test_restore_non_archived_order_failure(self, db_session):
+        """Test that non-archived orders cannot be restored."""
+        order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await restore_order_service(db_session, order.id)
+
+        assert exc_info.value.status_code == 400
+        assert "Only archived orders can be restored" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_get_archived_orders_filtering(self, db_session):
+        """Test filtering of archived orders."""
+        archived_order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        completed_order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add_all([archived_order, completed_order])
+        db_session.commit()
+
+        archived_orders = await get_archived_orders_service(db_session)
+
+        assert len(archived_orders) == 1
+        assert archived_orders[0].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_get_orders_excludes_archived_by_default(self, db_session):
+        """Test that regular order queries exclude archived orders."""
+        archived_order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        completed_order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add_all([archived_order, completed_order])
+        db_session.commit()
+
+        orders = await get_orders_service(db_session)
+
+        assert len(orders) == 1
+        assert orders[0].status == OrderStatus.COMPLETED.value
