@@ -148,3 +148,13 @@ class ArchivedOrdersFilter(BaseModel):
 class OrderPriorityUpdate(BaseModel):
     priority: OrderPriority
     reason: Optional[str] = None
+
+
+class OrderPriorityResponse(BaseModel):
+    success: bool = True
+    message: str
+    order: OrderOut
+    previous_priority: str
+    priority_updated_at: datetime
+    
+    model_config = {"from_attributes": True}

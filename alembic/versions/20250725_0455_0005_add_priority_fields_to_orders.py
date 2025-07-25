@@ -15,8 +15,12 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.add_column('orders', sa.Column('priority', sa.String(), nullable=False, default='normal'))
+    op.add_column('orders', sa.Column('priority', sa.String(), nullable=True))
     op.add_column('orders', sa.Column('priority_updated_at', sa.DateTime(), nullable=True))
+    
+    op.execute("UPDATE orders SET priority = 'normal' WHERE priority IS NULL")
+    
+    op.alter_column('orders', 'priority', nullable=False)
     op.create_index('ix_orders_priority', 'orders', ['priority'])
 
 def downgrade():

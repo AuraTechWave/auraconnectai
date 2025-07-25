@@ -13,7 +13,8 @@ from ..services.order_service import (
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
+    OrderPriorityResponse
 )
 from ..enums.order_enums import OrderStatus
 
@@ -42,7 +43,7 @@ async def list_orders(
         tag_ids=tag_ids, category_id=category_id,
         limit=limit, offset=offset, include_items=include_items
     )
-    return [OrderOut.from_orm(order) for order in orders]
+    return [OrderOut.model_validate(order) for order in orders]
 
 
 async def list_kitchen_orders(

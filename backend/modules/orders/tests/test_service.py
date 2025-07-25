@@ -460,8 +460,9 @@ class TestOrderPriority:
         priority_data = OrderPriorityUpdate(priority=OrderPriority.HIGH, reason="Rush order")
         result = await update_order_priority_service(sample_order.id, priority_data, db_session)
         
-        assert result["message"] == f"Order priority updated to {OrderPriority.HIGH}"
-        assert result["data"].priority == OrderPriority.HIGH.value
+        assert result.message == "Order priority updated to high"
+        assert result.order.priority == "high"
+        assert result.previous_priority == "normal"
         
         db_session.refresh(sample_order)
         assert sample_order.priority == OrderPriority.HIGH.value
@@ -503,4 +504,4 @@ class TestOrderPriority:
         if high_index is not None and normal_index is not None:
             assert high_index < normal_index
         if normal_index is not None and low_index is not None:
-            assert normal_index < low_index</str>
+            assert normal_index < low_index

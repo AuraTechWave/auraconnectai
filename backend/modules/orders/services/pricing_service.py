@@ -192,12 +192,12 @@ class PricingService:
             adjustments=[],
             confidence_score=1.0,
             pricing_source="static_fallback",
-            timestamp=datetime.now()
+            timestamp=datetime.utcnow()
         )
 
     def _build_pricing_context(self) -> PricingContext:
-        current_hour = datetime.now().hour
-        current_day = datetime.now().strftime("%A").lower()
+        current_hour = datetime.utcnow().hour
+        current_day = datetime.utcnow().strftime("%A").lower()
 
         time_of_day = "off_peak"
         if 6 <= current_hour < 10:

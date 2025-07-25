@@ -3,6 +3,7 @@ from sqlalchemy import case
 from fastapi import HTTPException
 from typing import List, Optional
 from datetime import datetime
+import logging
 from ..models.order_models import Order, OrderItem, Tag, Category
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
@@ -11,6 +12,8 @@ from ..schemas.order_schemas import (
 )
 from ..enums.order_enums import OrderStatus, MultiItemRuleType, OrderPriority
 from .inventory_service import deduct_inventory
+
+logger = logging.getLogger(__name__)
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -160,16 +163,28 @@ async def update_order_priority_service(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    order.priority = priority_data.priority.value
-    order.priority_updated_at = datetime.now()
+    previous_priority = order.priority
+    
+    validate_priority_escalation(previous_priority, priority_data.priority)
+    
+    order.priority = priority_data.priority
+    order.priority_updated_at = datetime.utcnow()
     
     db.commit()
     db.refresh(order)
     
-    return {
-        "message": f"Order priority updated to {priority_data.priority}",
-        "data": OrderOut.model_validate(order)
-    }
+    logger.info(
+        f"Order {order_id} priority changed from {previous_priority.value} "
+        f"to {priority_data.priority.value}. Reason: {priority_data.reason or 'Not specified'}"
+    )
+    
+    from ..schemas.order_schemas import OrderPriorityResponse
+    return OrderPriorityResponse(
+        message=f"Order priority updated to {priority_data.priority.value}",
+        order=OrderOut.model_validate(order),
+        previous_priority=previous_priority.value,
+        priority_updated_at=order.priority_updated_at
+    )
 
 
 async def validate_multi_item_rules(
@@ -516,3 +531,44 @@ async def get_archived_orders_service(
     query = query.options(joinedload(Order.order_items))
 
     return query.all()
+
+
+def validate_priority_escalation(
+    current_priority: OrderPriority,
+    new_priority: OrderPriority,
+    user_permissions: Optional[List[str]] = None
+) -> bool:
+    """
+    Validate priority escalation based on business rules.
+    
+    Args:
+        current_priority: Current order priority
+        new_priority: Requested new priority
+        user_permissions: List of user permissions (for future use)
+    
+    Returns:
+        bool: True if escalation is allowed
+    
+    Raises:
+        HTTPException: If escalation is not allowed
+    """
+    priority_levels = {
+        OrderPriority.LOW: 1,
+        OrderPriority.NORMAL: 2,
+        OrderPriority.HIGH: 3,
+        OrderPriority.URGENT: 4
+    }
+    
+    current_level = priority_levels[current_priority]
+    new_level = priority_levels[new_priority]
+    
+    if new_level <= current_level:
+        return True
+    
+    level_jump = new_level - current_level
+    if level_jump > 2:
+        logger.warning(
+            f"Large priority jump detected: {current_priority.value} to {new_priority.value}"
+        )
+    
+    return True
