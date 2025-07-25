@@ -256,7 +256,7 @@ async def get_order_audit_trail(
                 new_status=new_status,
                 user_id=event.user_id,
                 timestamp=event.timestamp,
-                metadata=event.metadata or {}
+                metadata=event.audit_metadata or {}
             ))
         except Exception as e:
             import logging

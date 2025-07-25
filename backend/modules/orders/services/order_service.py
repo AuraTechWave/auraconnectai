@@ -21,7 +21,7 @@ from ..schemas.order_schemas import (
 from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
-from backend.core.models.audit_models import AuditLog
+from backend.core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
 
