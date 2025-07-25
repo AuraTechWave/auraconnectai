@@ -30,16 +30,14 @@ jobs:
 
       - name: Test Python imports
         run: |
-          cd backend
-          python -c "import sys; sys.path.append('.'); from app.main import app; print('✅ Backend imports successful')"
+          export PYTHONPATH="${GITHUB_WORKSPACE}:$PYTHONPATH"
+          python -c "from backend.app.main import app; print('✅ Backend imports successful')"
         
       - name: Check Alembic configuration
         run: |
+          export PYTHONPATH="${GITHUB_WORKSPACE}:$PYTHONPATH"
           cd backend
           python -c "
-          import sys
-          sys.path.append('.')
-          sys.path.append('../')
           try:
               from alembic.config import Config
               from alembic import command

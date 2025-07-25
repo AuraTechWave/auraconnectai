@@ -342,3 +342,52 @@ class KitchenTicketFormat(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AutoCancellationConfigBase(BaseModel):
+    tenant_id: Optional[int] = None
+    team_id: Optional[int] = None
+    status: OrderStatus
+    threshold_minutes: int = Field(
+        ..., gt=0, description="Time threshold in minutes"
+    )
+    enabled: bool = True
+    updated_by: int
+
+    @validator('status')
+    def validate_cancellable_status(cls, v):
+        cancellable_statuses = [
+            OrderStatus.PENDING, OrderStatus.IN_PROGRESS,
+            OrderStatus.IN_KITCHEN
+        ]
+        if v not in cancellable_statuses:
+            raise ValueError(
+                f"Status {v} cannot be auto-cancelled. "
+                f"Only {[s.value for s in cancellable_statuses]} are allowed."
+            )
+        return v
+
+
+class AutoCancellationConfigCreate(AutoCancellationConfigBase):
+    pass
+
+
+class AutoCancellationConfigUpdate(BaseModel):
+    threshold_minutes: Optional[int] = Field(None, gt=0)
+    enabled: Optional[bool] = None
+    updated_by: int
+
+
+class AutoCancellationConfigOut(AutoCancellationConfigBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class StaleCancellationResponse(BaseModel):
+    cancelled_count: int
+    cancelled_orders: List[int]
+    message: str

@@ -1,5 +1,5 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
-                        Numeric, Text, Table, Enum, Boolean)
+                        Numeric, Text, Table, Enum, Boolean, Index)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
@@ -157,3 +157,27 @@ class OrderAttachment(Base, TimestampMixin):
     deleted_at = Column(DateTime, nullable=True)
 
     order = relationship("Order", back_populates="attachments")
+
+
+class AutoCancellationConfig(Base, TimestampMixin):
+    __tablename__ = "auto_cancellation_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True, index=True)
+    team_id = Column(Integer, nullable=True, index=True)
+    status = Column(String, nullable=False, index=True)
+    threshold_minutes = Column(Integer, nullable=False)
+    enabled = Column(Boolean, nullable=False, default=True)
+    updated_by = Column(
+        Integer, ForeignKey("staff_members.id"), nullable=False
+    )
+
+    updated_by_staff = relationship("StaffMember")
+
+    __table_args__ = (
+        Index(
+            'idx_auto_cancel_config_unique',
+            'tenant_id', 'team_id', 'status',
+            unique=True
+        ),
+    )
