@@ -8,6 +8,7 @@ from ..schemas.order_schemas import (
     DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
     KitchenPrintRequest, KitchenPrintResponse, KitchenTicketFormat
 )
+from ...pos.services.pos_bridge_service import POSBridgeService
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
 from .inventory_service import deduct_inventory
 
@@ -504,18 +505,19 @@ async def generate_kitchen_print_ticket_service(
             detail=f"Cannot print ticket for order with status {order.status}"
         )
 
-    _format_kitchen_ticket(order, print_request)
+    ticket_data = _format_kitchen_ticket(order, print_request)
+    ticket_content = _generate_ticket_content(ticket_data)
 
-    from ...pos.services.pos_bridge_service import POSBridgeService
     pos_service = POSBridgeService(db)
 
     try:
         order_data = pos_service._transform_order_to_dict(order)
-
         order_data.update({
             "print_type": "kitchen_ticket",
             "station_id": print_request.station_id,
-            "format_options": print_request.format_options or {}
+            "format_options": print_request.format_options or {},
+            "ticket_content": ticket_content,
+            "ticket_data": ticket_data.model_dump()
         })
 
         sync_result = await pos_service.sync_all_active_integrations(
@@ -533,13 +535,15 @@ async def generate_kitchen_print_ticket_service(
         else:
             return KitchenPrintResponse(
                 success=False,
-                message="Failed to print - no active POS integrations"
+                message="Failed to print - no active POS integrations",
+                error_code="NO_POS_INTEGRATION"
             )
 
     except Exception as e:
         return KitchenPrintResponse(
             success=False,
-            message=f"Print failed: {str(e)}"
+            message=f"Print failed: {str(e)}",
+            error_code="PRINT_ERROR"
         )
 
 
@@ -564,3 +568,23 @@ def _format_kitchen_ticket(
         timestamp=datetime.utcnow(),
         special_instructions=None
     )
+
+
+def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
+    """Generate formatted ticket content for thermal printers."""
+    content = f"ORDER #{ticket_data.order_id}\n"
+    content += f"TABLE: {ticket_data.table_no or 'TAKEOUT'}\n"
+    content += "=" * 32 + "\n"
+
+    for item in ticket_data.items:
+        content += f"{item['quantity']}x ITEM #{item['menu_item_id']}\n"
+        if item['notes']:
+            content += f"   * {item['notes']}\n"
+
+    content += "=" * 32 + "\n"
+    content += f"Time: {ticket_data.timestamp.strftime('%H:%M')}\n"
+
+    if ticket_data.special_instructions:
+        content += f"SPECIAL: {ticket_data.special_instructions}\n"
+
+    return content

@@ -155,6 +155,7 @@ class KitchenPrintResponse(BaseModel):
     message: str
     ticket_id: Optional[str] = None
     print_timestamp: Optional[datetime] = None
+    error_code: Optional[str] = None
 
 
 class KitchenTicketFormat(BaseModel):
