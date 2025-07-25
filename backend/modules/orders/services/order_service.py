@@ -52,7 +52,7 @@ async def log_order_audit_event(
         previous_value=previous_status.value if previous_status else None,
         new_value=new_status.value,
         metadata=metadata,
-        timestamp=func.now()
+        timestamp=datetime.utcnow()
     )
     db.add(audit_event)
 
@@ -72,7 +72,7 @@ async def get_order_by_id(db: Session, order_id: int):
 
 
 async def update_order_service(
-    order_id: int, order_update: OrderUpdate, db: Session
+    order_id: int, order_update: OrderUpdate, db: Session, user_id: int
 ):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
@@ -93,7 +93,7 @@ async def update_order_service(
             order_id=order.id,
             previous_status=current_status,
             new_status=order_update.status,
-            user_id=order.staff_id,
+            user_id=user_id,
             metadata={
                 "notes": getattr(order_update, 'notes', None),
                 "delay_reason": getattr(order_update, 'delay_reason', None)

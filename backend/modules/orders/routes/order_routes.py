@@ -72,9 +72,10 @@ async def get_order(id: int, db: Session = Depends(get_db)):
 async def update_existing_order(
     order_id: int,
     order_data: OrderUpdate,
+    user_id: int,
     db: Session = Depends(get_db)
 ):
-    return await update_order(order_id, order_data, db)
+    return await update_order(order_id, order_data, db, user_id)
 
 
 @router.get("/kitchen", response_model=List[OrderOut])

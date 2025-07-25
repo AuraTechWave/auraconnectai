@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = '20250725_0454_0005'
-down_revision = '20250724_1715_0004'
+down_revision = '0004_add_order_tags_categories'
 branch_labels = None
 depends_on = None
 

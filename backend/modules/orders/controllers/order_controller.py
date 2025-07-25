@@ -19,8 +19,8 @@ from ..schemas.order_schemas import (
 from ..enums.order_enums import OrderStatus
 
 
-async def update_order(order_id: int, order_data: OrderUpdate, db: Session):
-    return await update_order_service(order_id, order_data, db)
+async def update_order(order_id: int, order_data: OrderUpdate, db: Session, user_id: int):
+    return await update_order_service(order_id, order_data, db, user_id)
 
 
 async def get_order_by_id(db: Session, order_id: int):

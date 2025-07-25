@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from decimal import Decimal
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
@@ -149,7 +149,7 @@ class OrderAuditEvent(BaseModel):
     new_status: OrderStatus
     user_id: int
     timestamp: datetime
-    metadata: Optional[dict] = None
+    metadata: Optional[Dict] = None
 
     class Config:
         from_attributes = True
