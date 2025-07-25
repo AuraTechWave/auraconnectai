@@ -63,12 +63,25 @@ async def update_order_service(
         db.query(OrderItem).filter(OrderItem.order_id == order_id).delete()
 
         for item_data in order_update.order_items:
+            processed_notes = item_data.notes or ""
+            if item_data.special_instructions:
+                instruction_texts = []
+                for instruction in item_data.special_instructions:
+                    priority_prefix = f"[P{instruction.priority}] " if instruction.priority else ""
+                    station_prefix = f"[{instruction.target_station}] " if instruction.target_station else ""
+                    instruction_text = f"{priority_prefix}{station_prefix}{instruction.instruction_type.value.upper()}: {instruction.description}"
+                    instruction_texts.append(instruction_text)
+                
+                if instruction_texts:
+                    structured_notes = " | ".join(instruction_texts)
+                    processed_notes = f"{processed_notes} | {structured_notes}" if processed_notes else structured_notes
+
             new_item = OrderItem(
                 order_id=order_id,
                 menu_item_id=item_data.menu_item_id,
                 quantity=item_data.quantity,
                 price=item_data.price,
-                notes=item_data.notes
+                notes=processed_notes
             )
             db.add(new_item)
 

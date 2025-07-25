@@ -5,9 +5,9 @@ from ..services.order_service import (
     get_orders_service, validate_multi_item_rules
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult, OrderItemUpdate
 )
-from ..enums.order_enums import OrderStatus
+from ..enums.order_enums import OrderStatus, SpecialInstructionType
 
 
 async def update_order(order_id: int, order_data: OrderUpdate, db: Session):
@@ -57,3 +57,23 @@ async def validate_order_rules(
         rule_request.rule_types,
         db
     )
+
+
+async def validate_special_instructions(
+    order_items: List[OrderItemUpdate],
+    db: Session
+) -> dict:
+    validation_results = []
+    for item in order_items:
+        if item.special_instructions:
+            for instruction in item.special_instructions:
+                if instruction.priority and (instruction.priority < 1 or instruction.priority > 5):
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": f"Priority must be between 1-5, got {instruction.priority}"
+                    })
+    
+    return {
+        "valid": len(validation_results) == 0,
+        "errors": validation_results
+    }

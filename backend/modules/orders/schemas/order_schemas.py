@@ -2,7 +2,17 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import OrderStatus, MultiItemRuleType, SpecialInstructionType
+
+
+class SpecialInstructionBase(BaseModel):
+    instruction_type: SpecialInstructionType
+    description: str
+    priority: Optional[int] = None
+    target_station: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class OrderItemUpdate(BaseModel):
@@ -11,6 +21,7 @@ class OrderItemUpdate(BaseModel):
     quantity: int
     price: float
     notes: Optional[str] = None
+    special_instructions: Optional[List[SpecialInstructionBase]] = None
 
 
 class OrderItemOut(BaseModel):
@@ -20,6 +31,7 @@ class OrderItemOut(BaseModel):
     quantity: int
     price: Decimal
     notes: Optional[str] = None
+    special_instructions: Optional[List[SpecialInstructionBase]] = None
     created_at: datetime
     updated_at: datetime
 

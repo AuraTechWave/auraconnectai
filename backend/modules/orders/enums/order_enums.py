@@ -22,3 +22,12 @@ class MultiItemRuleType(str, Enum):
     COMBO = "combo"
     BULK_DISCOUNT = "bulk_discount"
     COMPATIBILITY = "compatibility"
+
+
+class SpecialInstructionType(str, Enum):
+    ALLERGEN = "allergen"
+    PREPARATION = "preparation"
+    TIMING = "timing"
+    TEMPERATURE = "temperature"
+    PRESENTATION = "presentation"
+    GENERAL = "general"

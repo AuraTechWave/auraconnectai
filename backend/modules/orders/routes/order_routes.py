@@ -4,10 +4,10 @@ from typing import List, Optional
 from backend.core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
-    validate_order_rules
+    validate_order_rules, validate_special_instructions
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult
+    OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult, OrderItemUpdate
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -89,3 +89,15 @@ async def validate_rules(
     and compatibility restrictions.
     """
     return await validate_order_rules(rule_request, db)
+
+
+@router.post("/validate-special-instructions")
+async def validate_special_instructions_endpoint(
+    order_items: List[OrderItemUpdate],
+    db: Session = Depends(get_db)
+):
+    """
+    Validate special instructions for order items including priority ranges
+    and instruction type validation.
+    """
+    return await validate_special_instructions(order_items, db)
