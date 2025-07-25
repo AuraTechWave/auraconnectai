@@ -27,6 +27,8 @@ class Order(Base, TimestampMixin):
     scheduled_fulfillment_time = Column(DateTime, nullable=True)
     delay_reason = Column(String, nullable=True)
     delay_requested_at = Column(DateTime, nullable=True)
+    priority = Column(String, nullable=False, default="normal", index=True)
+    priority_updated_at = Column(DateTime, nullable=True)
 
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")

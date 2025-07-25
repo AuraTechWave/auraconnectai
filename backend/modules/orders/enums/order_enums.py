@@ -62,3 +62,10 @@ class CategoryType(str, Enum):
     TAKEOUT = "takeout"
     DELIVERY = "delivery"
     CATERING = "catering"
+
+
+class OrderPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"

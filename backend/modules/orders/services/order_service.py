@@ -1,13 +1,15 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import case
 from fastapi import HTTPException
 from typing import List, Optional
 from datetime import datetime
 from ..models.order_models import Order, OrderItem, Tag, Category
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
-    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut
+    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
+    OrderPriorityUpdate
 )
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import OrderStatus, MultiItemRuleType, OrderPriority
 from .inventory_service import deduct_inventory
 
 VALID_TRANSITIONS = {
@@ -128,6 +130,17 @@ async def get_orders_service(
     if not include_archived:
         query = query.filter(Order.status != OrderStatus.ARCHIVED.value)
 
+    query = query.order_by(
+        case(
+            (Order.priority == OrderPriority.URGENT.value, 1),
+            (Order.priority == OrderPriority.HIGH.value, 2),
+            (Order.priority == OrderPriority.NORMAL.value, 3),
+            (Order.priority == OrderPriority.LOW.value, 4),
+            else_=5
+        ),
+        Order.created_at
+    )
+
     query = query.offset(offset).limit(limit)
 
     if include_items:
@@ -136,6 +149,27 @@ async def get_orders_service(
     query = query.options(joinedload(Order.tags), joinedload(Order.category))
 
     return query.all()
+
+
+async def update_order_priority_service(
+    order_id: int, 
+    priority_data: OrderPriorityUpdate, 
+    db: Session
+):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    order.priority = priority_data.priority.value
+    order.priority_updated_at = datetime.now()
+    
+    db.commit()
+    db.refresh(order)
+    
+    return {
+        "message": f"Order priority updated to {priority_data.priority}",
+        "data": OrderOut.model_validate(order)
+    }
 
 
 async def validate_multi_item_rules(

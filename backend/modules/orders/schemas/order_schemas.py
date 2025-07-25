@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import OrderStatus, MultiItemRuleType, OrderPriority
 
 
 class OrderItemUpdate(BaseModel):
@@ -100,6 +100,8 @@ class OrderOut(OrderBase):
     scheduled_fulfillment_time: Optional[datetime] = None
     delay_reason: Optional[str] = None
     delay_requested_at: Optional[datetime] = None
+    priority: str = "normal"
+    priority_updated_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None
@@ -141,3 +143,8 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class OrderPriorityUpdate(BaseModel):
+    priority: OrderPriority
+    reason: Optional[str] = None

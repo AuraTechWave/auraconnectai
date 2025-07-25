@@ -7,12 +7,13 @@ from ..services.order_service import (
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
-    archive_order_service, restore_order_service, get_archived_orders_service
+    archive_order_service, restore_order_service, get_archived_orders_service,
+    update_order_priority_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate
 )
 from ..enums.order_enums import OrderStatus
 
@@ -145,3 +146,11 @@ async def list_archived_orders(
         limit=limit, offset=offset
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def update_order_priority(
+    order_id: int,
+    priority_data: OrderPriorityUpdate,
+    db: Session
+):
+    return await update_order_priority_service(order_id, priority_data, db)

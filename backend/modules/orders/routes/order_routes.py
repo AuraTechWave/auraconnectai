@@ -8,12 +8,12 @@ from ..controllers.order_controller import (
     validate_order_rules, delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
-    archive_order, restore_order, list_archived_orders
+    archive_order, restore_order, list_archived_orders, update_order_priority
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -300,3 +300,18 @@ async def get_archived_orders_endpoint(
     return await list_archived_orders(
         db, staff_id, table_no, limit, offset
     )
+
+
+@router.put("/{order_id}/priority", response_model=dict)
+async def update_priority(
+    order_id: int,
+    priority_data: OrderPriorityUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update the priority of an order.
+    
+    - **order_id**: ID of the order to update
+    - **priority_data**: New priority information with optional reason
+    """
+    return await update_order_priority(order_id, priority_data, db)

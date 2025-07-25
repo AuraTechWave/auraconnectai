@@ -5,13 +5,13 @@ from backend.modules.orders.services.order_service import (
     validate_multi_item_rules, schedule_delayed_fulfillment,
     get_scheduled_orders, process_due_delayed_orders,
     archive_order_service, restore_order_service,
-    get_archived_orders_service
+    get_archived_orders_service, update_order_priority_service
 )
 from backend.modules.orders.schemas.order_schemas import (
-    OrderUpdate, OrderItemUpdate, DelayFulfillmentRequest
+    OrderUpdate, OrderItemUpdate, DelayFulfillmentRequest, OrderPriorityUpdate
 )
 from backend.modules.orders.enums.order_enums import (
-    OrderStatus, MultiItemRuleType, DelayReason
+    OrderStatus, MultiItemRuleType, DelayReason, OrderPriority
 )
 from backend.modules.orders.models.order_models import Order
 from datetime import datetime
@@ -450,3 +450,57 @@ class TestArchiveService:
 
         assert len(orders) == 1
         assert orders[0].status == OrderStatus.COMPLETED.value
+
+
+class TestOrderPriority:
+
+    @pytest.mark.asyncio
+    async def test_update_order_priority_success(self, db_session, sample_order):
+        """Test successful order priority update."""
+        priority_data = OrderPriorityUpdate(priority=OrderPriority.HIGH, reason="Rush order")
+        result = await update_order_priority_service(sample_order.id, priority_data, db_session)
+        
+        assert result["message"] == f"Order priority updated to {OrderPriority.HIGH}"
+        assert result["data"].priority == OrderPriority.HIGH.value
+        
+        db_session.refresh(sample_order)
+        assert sample_order.priority == OrderPriority.HIGH.value
+        assert sample_order.priority_updated_at is not None
+
+    @pytest.mark.asyncio
+    async def test_update_order_priority_order_not_found(self, db_session):
+        """Test priority update with non-existent order ID."""
+        priority_data = OrderPriorityUpdate(priority=OrderPriority.URGENT)
+        with pytest.raises(HTTPException) as exc_info:
+            await update_order_priority_service(999, priority_data, db_session)
+        assert exc_info.value.status_code == 404
+        assert "Order not found" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_get_orders_priority_sorting(self, db_session):
+        """Test that orders are sorted by priority correctly."""
+        from backend.modules.orders.models.order_models import Order
+        
+        order_low = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.LOW.value)
+        order_normal = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.NORMAL.value)
+        order_high = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.HIGH.value)
+        order_urgent = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.URGENT.value)
+        
+        db_session.add_all([order_low, order_normal, order_high, order_urgent])
+        db_session.commit()
+        
+        orders = await get_orders_service(db_session, limit=10)
+        
+        priorities = [order.priority for order in orders]
+        
+        urgent_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.URGENT.value), None)
+        high_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.HIGH.value), None)
+        normal_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.NORMAL.value), None)
+        low_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.LOW.value), None)
+        
+        if urgent_index is not None and high_index is not None:
+            assert urgent_index < high_index
+        if high_index is not None and normal_index is not None:
+            assert high_index < normal_index
+        if normal_index is not None and low_index is not None:
+            assert normal_index < low_index</str>
