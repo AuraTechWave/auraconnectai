@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from fastapi import UploadFile
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules,
@@ -8,12 +9,14 @@ from ..services.order_service import (
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
-    archive_order_service, restore_order_service, get_archived_orders_service
+    archive_order_service, restore_order_service, get_archived_orders_service,
+    update_customer_notes, add_attachment, get_attachments, delete_attachment
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut,
+    CustomerNotesUpdate, OrderAttachmentOut
 )
 from ..enums.order_enums import OrderStatus
 
@@ -158,3 +161,29 @@ async def list_archived_orders(
         limit=limit, offset=offset
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def update_order_notes(
+    order_id: int, notes_update: CustomerNotesUpdate, db: Session
+):
+    return await update_customer_notes(order_id, notes_update, db)
+
+
+async def upload_order_attachment(
+    order_id: int,
+    file: UploadFile,
+    db: Session,
+    description: Optional[str] = None,
+    is_public: bool = False
+):
+    return await add_attachment(order_id, file, db, description, is_public)
+
+
+async def list_order_attachments(
+    order_id: int, db: Session
+) -> List[OrderAttachmentOut]:
+    return await get_attachments(order_id, db)
+
+
+async def remove_order_attachment(attachment_id: int, db: Session):
+    return await delete_attachment(attachment_id, db)
