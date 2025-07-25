@@ -2,11 +2,13 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List, Optional
 from datetime import datetime
+import json
 from ..schemas.print_ticket_schemas import (
     PrintTicketRequest, PrintTicketResponse, PrintQueueStatus,
     PrintTicketStatusUpdate, PrintQueueItem
 )
 from ..enums.order_enums import PrintStatus, TicketType
+from ..models.order_models import PrintTicket, PrintStation
 from ..services.order_service import get_order_by_id
 
 
@@ -22,20 +24,30 @@ async def generate_print_ticket(
     )
 
     ticket_data = {
-        "id": _generate_ticket_id(),
         "order_id": request.order_id,
-        "ticket_type": request.ticket_type,
-        "status": PrintStatus.PENDING,
+        "ticket_type": request.ticket_type.value,
+        "status": PrintStatus.PENDING.value,
         "station_id": station_id,
         "priority": request.priority,
         "ticket_content": ticket_content,
-        "created_at": datetime.utcnow(),
         "retry_count": 0
     }
 
-    await _add_to_print_queue(ticket_data, db)
+    ticket = await _add_to_print_queue(ticket_data, db)
 
-    return PrintTicketResponse(**ticket_data)
+    return PrintTicketResponse(
+        id=ticket.id,
+        order_id=ticket.order_id,
+        ticket_type=TicketType(ticket.ticket_type),
+        status=PrintStatus(ticket.status),
+        station_id=ticket.station_id,
+        priority=ticket.priority,
+        ticket_content=ticket.ticket_content,
+        created_at=ticket.created_at,
+        printed_at=ticket.printed_at,
+        failed_at=ticket.failed_at,
+        error_message=ticket.error_message
+    )
 
 
 async def get_print_queue(db: Session) -> PrintQueueStatus:
@@ -69,17 +81,29 @@ async def update_print_ticket_status(
             detail=f"Print ticket with id {ticket_id} not found"
         )
 
-    ticket["status"] = status_update.status
+    ticket.status = status_update.status.value
     if status_update.status == PrintStatus.PRINTED:
-        ticket["printed_at"] = datetime.utcnow()
+        ticket.printed_at = datetime.utcnow()
     elif status_update.status == PrintStatus.FAILED:
-        ticket["failed_at"] = datetime.utcnow()
-        ticket["error_message"] = status_update.error_message
-        ticket["retry_count"] = ticket.get("retry_count", 0) + 1
+        ticket.failed_at = datetime.utcnow()
+        ticket.error_message = status_update.error_message
+        ticket.retry_count = ticket.retry_count + 1
 
     await _update_ticket_in_db(ticket, db)
 
-    return PrintTicketResponse(**ticket)
+    return PrintTicketResponse(
+        id=ticket.id,
+        order_id=ticket.order_id,
+        ticket_type=TicketType(ticket.ticket_type),
+        status=PrintStatus(ticket.status),
+        station_id=ticket.station_id,
+        priority=ticket.priority,
+        ticket_content=ticket.ticket_content,
+        created_at=ticket.created_at,
+        printed_at=ticket.printed_at,
+        failed_at=ticket.failed_at,
+        error_message=ticket.error_message
+    )
 
 
 async def retry_failed_tickets(
@@ -89,10 +113,23 @@ async def retry_failed_tickets(
     retried_tickets = []
 
     for ticket in failed_tickets:
-        ticket["status"] = PrintStatus.PENDING
-        ticket["error_message"] = None
+        ticket.status = PrintStatus.PENDING.value
+        ticket.error_message = None
         await _update_ticket_in_db(ticket, db)
-        retried_tickets.append(PrintTicketResponse(**ticket))
+        
+        retried_tickets.append(PrintTicketResponse(
+            id=ticket.id,
+            order_id=ticket.order_id,
+            ticket_type=TicketType(ticket.ticket_type),
+            status=PrintStatus(ticket.status),
+            station_id=ticket.station_id,
+            priority=ticket.priority,
+            ticket_content=ticket.ticket_content,
+            created_at=ticket.created_at,
+            printed_at=ticket.printed_at,
+            failed_at=ticket.failed_at,
+            error_message=ticket.error_message
+        ))
 
     return retried_tickets
 
@@ -117,6 +154,18 @@ async def _format_ticket_content(order, ticket_type: TicketType) -> str:
 async def _route_to_station(
     order, ticket_type: TicketType, db: Session
 ) -> Optional[int]:
+    stations = db.query(PrintStation).filter(
+        PrintStation.is_active == True
+    ).all()
+    
+    for station in stations:
+        try:
+            supported_types = json.loads(station.ticket_types)
+            if ticket_type.value in supported_types:
+                return station.id
+        except (json.JSONDecodeError, TypeError):
+            continue
+    
     station_mapping = {
         TicketType.KITCHEN: 1,
         TicketType.BAR: 2,
@@ -127,26 +176,46 @@ async def _route_to_station(
     return station_mapping.get(ticket_type)
 
 
-async def _add_to_print_queue(ticket_data: dict, db: Session):
-    pass
+async def _add_to_print_queue(ticket_data: dict, db: Session) -> PrintTicket:
+    ticket = PrintTicket(**ticket_data)
+    db.add(ticket)
+    db.commit()
+    db.refresh(ticket)
+    return ticket
 
 
 async def _get_queue_items(db: Session) -> List[PrintQueueItem]:
-    return []
+    tickets = db.query(PrintTicket).filter(
+        PrintTicket.status.in_([
+            PrintStatus.PENDING.value,
+            PrintStatus.PRINTING.value,
+            PrintStatus.FAILED.value
+        ])
+    ).order_by(PrintTicket.priority.desc(), PrintTicket.created_at.asc()).all()
+    
+    return [PrintQueueItem(
+        id=ticket.id,
+        order_id=ticket.order_id,
+        ticket_type=TicketType(ticket.ticket_type),
+        status=PrintStatus(ticket.status),
+        station_id=ticket.station_id,
+        priority=ticket.priority,
+        created_at=ticket.created_at,
+        retry_count=ticket.retry_count
+    ) for ticket in tickets]
 
 
-async def _get_ticket_by_id(ticket_id: int, db: Session):
-    return None
+async def _get_ticket_by_id(ticket_id: int, db: Session) -> Optional[PrintTicket]:
+    return db.query(PrintTicket).filter(PrintTicket.id == ticket_id).first()
 
 
-async def _update_ticket_in_db(ticket: dict, db: Session):
-    pass
+async def _update_ticket_in_db(ticket: PrintTicket, db: Session):
+    db.commit()
+    db.refresh(ticket)
 
 
-async def _get_failed_tickets(db: Session, max_retries: int):
-    return []
-
-
-def _generate_ticket_id() -> int:
-    import time
-    return int(time.time() * 1000)
+async def _get_failed_tickets(db: Session, max_retries: int) -> List[PrintTicket]:
+    return db.query(PrintTicket).filter(
+        PrintTicket.status == PrintStatus.FAILED.value,
+        PrintTicket.retry_count < max_retries
+    ).all()
