@@ -520,7 +520,11 @@ async def get_archived_orders_service(
 async def update_customer_notes(
     order_id: int, notes_update: CustomerNotesUpdate, db: Session
 ):
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).options(
+        joinedload(Order.attachments),
+        joinedload(Order.tags),
+        joinedload(Order.category)
+    ).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     order.customer_notes = notes_update.customer_notes
@@ -570,12 +574,15 @@ async def add_attachment(
 
 async def get_attachments(order_id: int,
                           db: Session) -> List[OrderAttachmentOut]:
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).options(joinedload(Order.attachments)).filter(
+        Order.id == order_id
+    ).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
     attachments = db.query(OrderAttachment).filter(
-        OrderAttachment.order_id == order_id
+        OrderAttachment.order_id == order_id,
+        OrderAttachment.deleted_at.is_(None)
     ).all()
 
     return [OrderAttachmentOut.model_validate(attachment)
@@ -584,7 +591,8 @@ async def get_attachments(order_id: int,
 
 async def delete_attachment(attachment_id: int, db: Session):
     attachment = db.query(OrderAttachment).filter(
-        OrderAttachment.id == attachment_id
+        OrderAttachment.id == attachment_id,
+        OrderAttachment.deleted_at.is_(None)
     ).first()
 
     if not attachment:
@@ -593,10 +601,13 @@ async def delete_attachment(attachment_id: int, db: Session):
     try:
         file_service.delete_file(attachment.file_url)
 
-        db.delete(attachment)
+        attachment.deleted_at = datetime.utcnow()
         db.commit()
 
-        return {"message": "Attachment deleted successfully"}
+        return {
+            "message": "Attachment deleted successfully",
+            "data": {"id": attachment_id}
+        }
 
     except Exception as e:
         db.rollback()

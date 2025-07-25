@@ -24,13 +24,15 @@ class FileService:
             'pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png', 'gif', 'bmp'
         }
 
-    def _validate_file(self, file: UploadFile) -> None:
-        if file.size and file.size > self.max_file_size:
+    async def _validate_file(self, file: UploadFile) -> None:
+        content = await file.read()
+        if len(content) > self.max_file_size:
             raise HTTPException(
                 status_code=413,
                 detail=f"File size exceeds maximum allowed size of "
                        f"{self.max_file_size} bytes"
             )
+        await file.seek(0)
         if file.filename:
             extension = file.filename.split('.')[-1].lower()
             if extension not in self.allowed_extensions:
@@ -43,7 +45,7 @@ class FileService:
     async def upload_file(self, file: UploadFile,
                           folder: str = "orders") -> dict:
         try:
-            self._validate_file(file)
+            await self._validate_file(file)
             file_id = str(uuid.uuid4())
             file_extension = (file.filename.split('.')[-1]
                               if file.filename else 'bin')
@@ -53,6 +55,7 @@ class FileService:
                 Bucket=self.bucket_name,
                 Key=s3_key,
                 Body=file_content,
+                ContentType=file.content_type or 'application/octet-stream'
             )
             file_url = (f"https://{self.bucket_name}.s3.amazonaws.com/"
                         f"{s3_key}")
