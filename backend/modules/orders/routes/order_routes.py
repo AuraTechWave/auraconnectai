@@ -1,23 +1,32 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Path, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from backend.core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
-    validate_order_rules, delay_order_fulfillment, get_delayed_orders,
+    validate_order_rules, validate_special_instructions,
+    delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
-    archive_order, restore_order, list_archived_orders, update_order_priority
+    archive_order, restore_order, list_archived_orders, update_order_priority,
+    get_order_audit_trail, update_order_notes, upload_order_attachment,
+    list_order_attachments, remove_order_attachment
+)
+from ..services.order_service import get_orders_service
+from ..controllers.fraud_controller import (
+    check_order_fraud, list_fraud_alerts, resolve_alert
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
-    OrderPriorityResponse
+    OrderPriorityResponse, OrderAuditResponse, FraudCheckRequest, 
+    FraudCheckResponse, CustomerNotesUpdate, OrderAttachmentOut, 
+    AttachmentResponse, OrderItemUpdate
 )
 from ..models.order_models import Order
-from ..enums.order_enums import OrderPriority
+from ..enums.order_enums import OrderPriority, CheckpointType, FraudRiskLevel
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -75,9 +84,10 @@ async def get_order(id: int, db: Session = Depends(get_db)):
 async def update_existing_order(
     order_id: int,
     order_data: OrderUpdate,
+    user_id: int,
     db: Session = Depends(get_db)
 ):
-    return await update_order(order_id, order_data, db)
+    return await update_order(order_id, order_data, db, user_id)
 
 
 @router.get("/kitchen", response_model=List[OrderOut])
@@ -107,6 +117,75 @@ async def validate_rules(
     and compatibility restrictions.
     """
     return await validate_order_rules(rule_request, db)
+
+
+@router.post("/validate-special-instructions")
+async def validate_special_instructions_endpoint(
+    order_items: List[OrderItemUpdate],
+    db: Session = Depends(get_db)
+):
+    """
+    Validate special instructions for order items including priority ranges
+    and instruction type validation.
+    """
+    return await validate_special_instructions(order_items, db)
+
+
+@router.post("/{order_id}/fraud-check", response_model=FraudCheckResponse)
+async def perform_order_fraud_check(
+    order_id: int,
+    checkpoint_types: Optional[List[CheckpointType]] = None,
+    force_recheck: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Perform fraud detection check on a specific order.
+
+    - **order_id**: ID of the order to check
+    - **checkpoint_types**: Specific types of checks to perform
+    - **force_recheck**: Force recheck even if recently checked
+    """
+    fraud_request = FraudCheckRequest(
+        order_id=order_id,
+        checkpoint_types=checkpoint_types,
+        force_recheck=force_recheck
+    )
+    return await check_order_fraud(fraud_request, db)
+
+
+@router.get("/fraud-alerts", response_model=List[dict])
+async def get_fraud_alerts(
+    resolved: Optional[bool] = Query(
+        None, description="Filter by resolution status"),
+    severity: Optional[FraudRiskLevel] = Query(
+        None, description="Filter by severity level"),
+    limit: int = Query(100, ge=1, le=1000,
+                       description="Number of alerts to return"),
+    offset: int = Query(0, ge=0, description="Number of alerts to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve fraud alerts with optional filtering.
+
+    - **resolved**: Filter by resolution status
+    - **severity**: Filter by severity level (low, medium, high, critical)
+    - **limit**: Maximum number of alerts to return
+    - **offset**: Number of alerts to skip for pagination
+    """
+    return await list_fraud_alerts(db, resolved, severity, limit, offset)
+
+
+@router.put("/fraud-alerts/{alert_id}/resolve", response_model=dict)
+async def resolve_fraud_alert(
+    alert_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Resolve a fraud alert by marking it as handled.
+
+    - **alert_id**: ID of the alert to resolve
+    """
+    return await resolve_alert(db, alert_id)
 
 
 @router.post("/{order_id}/delay", response_model=dict)
@@ -230,7 +309,7 @@ async def create_category(
     Create a new category.
 
     - **name**: Name of the category (must be unique)
-    - **description**: Optional description of the category
+    - **description**: Optional description of the tag
     """
     return await create_new_category(category_data, db)
 
@@ -374,3 +453,82 @@ async def get_priority_distribution(
         (row.priority.value if hasattr(row.priority, 'value') else str(row.priority)): row.count 
         for row in results
     }
+
+
+@router.get("/{order_id}/audit", response_model=OrderAuditResponse)
+async def get_order_audit_history(
+    order_id: int,
+    limit: int = Query(100, ge=1, le=1000,
+                       description="Number of audit events to return"),
+    offset: int = Query(0, ge=0, description="Number of audit events to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve audit trail for a specific order showing all status changes.
+
+    - **order_id**: ID of the order to get audit history for
+    - **limit**: Maximum number of audit events to return (1-1000)
+    - **offset**: Number of audit events to skip for pagination
+    """
+    return await get_order_audit_trail(db, order_id, limit, offset)
+
+
+@router.put("/{order_id}/notes", response_model=dict)
+async def update_notes(
+    order_id: int,
+    notes_update: CustomerNotesUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Update customer notes for an order.
+    - **order_id**: ID of the order to update
+    - **customer_notes**: New customer notes text (can be null to clear notes)
+    """
+    return await update_order_notes(order_id, notes_update, db)
+
+
+@router.post("/{order_id}/attachments", response_model=AttachmentResponse)
+async def upload_attachment(
+    order_id: int,
+    file: UploadFile = File(...),
+    description: Optional[str] = None,
+    is_public: bool = False,
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a file attachment to an order.
+    - **order_id**: ID of the order to attach the file to
+    - **file**: File to upload (supports common document and image formats)
+    """
+    result = await upload_order_attachment(
+        order_id, file, db, description, is_public
+    )
+    return AttachmentResponse(
+        success=True,
+        message=result["message"],
+        data=result["data"]
+    )
+
+
+@router.get("/{order_id}/attachments", response_model=List[OrderAttachmentOut])
+async def get_attachments(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all attachments for an order.
+    - **order_id**: ID of the order to get attachments for
+    """
+    return await list_order_attachments(order_id, db)
+
+
+@router.delete("/attachments/{attachment_id}", response_model=dict)
+async def delete_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a specific attachment.
+    - **attachment_id**: ID of the attachment to delete
+    """
+    return await remove_order_attachment(attachment_id, db)

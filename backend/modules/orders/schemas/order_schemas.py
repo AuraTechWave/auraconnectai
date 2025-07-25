@@ -1,8 +1,28 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType, OrderPriority
+from enum import Enum
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
+                                 FraudCheckStatus, FraudRiskLevel,
+                                 CheckpointType, SpecialInstructionType)
+
+
+class SpecialInstructionBase(BaseModel):
+    instruction_type: SpecialInstructionType
+    description: str
+    priority: Optional[int] = None
+    target_station: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AuditAction(str, Enum):
+    STATUS_CHANGE = "status_change"
+    CREATION = "creation"
+    MODIFICATION = "modification"
+    DELETION = "deletion"
 
 
 class OrderItemUpdate(BaseModel):
@@ -11,6 +31,7 @@ class OrderItemUpdate(BaseModel):
     quantity: int
     price: float
     notes: Optional[str] = None
+    special_instructions: Optional[List[SpecialInstructionBase]] = None
 
 
 class OrderItemOut(BaseModel):
@@ -20,8 +41,20 @@ class OrderItemOut(BaseModel):
     quantity: int
     price: Decimal
     notes: Optional[str] = None
+    special_instructions: Optional[List[SpecialInstructionBase]] = None
     created_at: datetime
     updated_at: datetime
+
+    @classmethod
+    def from_orm_with_instructions(cls, orm_obj):
+        """Create OrderItemOut with parsed special_instructions from JSON"""
+        data = cls.model_validate(orm_obj)
+        if orm_obj.special_instructions:
+            data.special_instructions = [
+                SpecialInstructionBase(**instr)
+                for instr in orm_obj.special_instructions
+            ]
+        return data
 
     class Config:
         from_attributes = True
@@ -63,6 +96,40 @@ class CategoryOut(CategoryBase):
         from_attributes = True
 
 
+class OrderAttachmentOut(BaseModel):
+    id: int
+    order_id: int
+    file_name: str
+    file_url: str
+    file_type: str
+    file_size: int
+    description: Optional[str] = None
+    is_public: bool = False
+    uploaded_by: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AttachmentResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[OrderAttachmentOut] = None
+
+
+class OrderAttachmentCreate(BaseModel):
+    file_name: str
+    file_url: str
+    file_type: str
+    file_size: int
+
+
+class CustomerNotesUpdate(BaseModel):
+    customer_notes: Optional[str] = None
+
+
 class OrderBase(BaseModel):
     staff_id: int
     table_no: Optional[int] = None
@@ -94,6 +161,7 @@ class DelayedOrderUpdate(OrderUpdate):
 
 class OrderOut(OrderBase):
     id: int
+    customer_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime] = None
@@ -105,6 +173,7 @@ class OrderOut(OrderBase):
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None
+    attachments: Optional[List[OrderAttachmentOut]] = []
 
     class Config:
         from_attributes = True
@@ -119,6 +188,45 @@ class RuleValidationResult(BaseModel):
     is_valid: bool
     message: Optional[str] = None
     modified_items: Optional[List[OrderItemOut]] = None
+
+
+class FraudCheckRequest(BaseModel):
+    order_id: int
+    checkpoint_types: Optional[List[CheckpointType]] = None
+    force_recheck: bool = False
+
+
+class FraudCheckResponse(BaseModel):
+    order_id: int
+    risk_score: float
+    risk_level: FraudRiskLevel
+    status: FraudCheckStatus
+    flags: Optional[List[str]] = None
+    checked_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FraudAlertCreate(BaseModel):
+    order_id: int
+    alert_type: str
+    severity: FraudRiskLevel
+    description: str
+    metadata: Optional[dict] = None
+
+
+class FraudAlertOut(BaseModel):
+    id: int
+    order_id: int
+    alert_type: str
+    severity: FraudRiskLevel
+    description: str
+    resolved: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class OrderTagRequest(BaseModel):
@@ -165,3 +273,70 @@ class OrderPriorityResponse(BaseModel):
     data: OrderOut
     
     model_config = {"from_attributes": True}
+
+
+class OrderAuditEvent(BaseModel):
+    id: int = Field(..., description="Audit log ID")
+    order_id: int
+    action: str = Field(..., description="Type of action performed")
+    previous_status: Optional[OrderStatus] = None
+    new_status: OrderStatus
+    user_id: int
+    timestamp: datetime
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    class Config:
+        from_attributes = True
+
+
+class OrderAuditResponse(BaseModel):
+    events: List[OrderAuditEvent]
+    total_count: int
+    has_more: bool = Field(..., description="Whether there are more records")
+
+    @validator('has_more', always=True)
+    def calculate_has_more(cls, v, values):
+        events = values.get('events', [])
+        total_count = values.get('total_count', 0)
+        return len(events) < total_count
+
+    class Config:
+        from_attributes = True
+
+
+class KitchenPrintRequest(BaseModel):
+    order_id: int = Field(..., gt=0, description="Order ID must be positive")
+    printer_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    station_id: Optional[int] = Field(
+        None, ge=1, description="Station ID must be positive"
+    )
+    format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    @validator('printer_options', 'format_options')
+    def validate_options(cls, v):
+        if v is None:
+            return {}
+        return v
+
+
+class KitchenPrintResponse(BaseModel):
+    success: bool
+    message: str
+    ticket_id: Optional[str] = None
+    print_timestamp: Optional[datetime] = None
+    error_code: Optional[str] = None
+
+
+class KitchenTicketFormat(BaseModel):
+    order_id: int
+    table_no: Optional[int] = None
+    items: List[Dict[str, Any]]
+    station_name: Optional[str] = None
+    timestamp: datetime
+    special_instructions: Optional[str] = None
+    priority_level: Optional[int] = Field(
+        None, ge=1, le=5, description="Priority level 1-5"
+    )
+
+    class Config:
+        from_attributes = True
