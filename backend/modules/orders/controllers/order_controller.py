@@ -25,7 +25,8 @@ from ..schemas.order_schemas import (
 from ..enums.order_enums import OrderStatus
 
 
-async def update_order(order_id: int, order_data: OrderUpdate, db: Session, user_id: int):
+async def update_order(order_id: int, order_data: OrderUpdate, db: Session,
+                       user_id: int):
     return await update_order_service(order_id, order_data, db, user_id)
 
 
@@ -220,10 +221,11 @@ async def get_order_audit_trail(
     order = await get_order_by_id(db, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
-    events_data = await get_order_audit_events_service(db, order_id, limit, offset)
+
+    events_data = await get_order_audit_events_service(db, order_id, limit,
+                                                       offset)
     total_count = await count_order_audit_events_service(db, order_id)
-    
+
     events = []
     for event in events_data:
         try:
@@ -232,10 +234,9 @@ async def get_order_audit_trail(
                 try:
                     previous_status = OrderStatus(event.previous_value)
                 except ValueError:
-                    previous_status = None  # Handle invalid enum values gracefully
-            
+                    previous_status = None
+
             new_status = OrderStatus(event.new_value)
-            
             events.append(OrderAuditEvent(
                 id=event.id,
                 order_id=event.entity_id,
@@ -249,11 +250,12 @@ async def get_order_audit_trail(
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning(f"Skipping malformed audit record {event.id}: {str(e)}")
+            logger.warning(f"Skipping malformed audit record "
+                           f"{event.id}: {str(e)}")
             continue
-    
     has_more = len(events) < total_count
-    return OrderAuditResponse(events=events, total_count=total_count, has_more=has_more)
+    return OrderAuditResponse(events=events, total_count=total_count,
+                              has_more=has_more)
 
 
 async def generate_kitchen_print_ticket(

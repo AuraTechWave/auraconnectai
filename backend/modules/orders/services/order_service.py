@@ -2,7 +2,6 @@ import logging
 import re
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.sql import func
 from sqlalchemy.orm import Session, joinedload
 
 from fastapi import HTTPException, UploadFile
@@ -137,7 +136,8 @@ async def log_order_audit_event(
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to log audit event for order {order_id}: {str(e)}")
+        logger.warning(f"Failed to log audit event for order "
+                       f"{order_id}: {str(e)}")
         if "database" in str(e).lower() or "connection" in str(e).lower():
             raise
 
@@ -172,7 +172,7 @@ async def update_order_service(
                 detail=f"Invalid status transition from {current_status} to "
                        f"{order_update.status}"
             )
-        
+
         await log_order_audit_event(
             db=db,
             order_id=order.id,
@@ -188,7 +188,7 @@ async def update_order_service(
             },
             action="status_change"
         )
-        
+
         if (order_update.status == OrderStatus.IN_PROGRESS and
                 current_status == OrderStatus.PENDING):
             try:

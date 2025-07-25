@@ -385,7 +385,8 @@ async def get_archived_orders_endpoint(
 @router.get("/{order_id}/audit", response_model=OrderAuditResponse)
 async def get_order_audit_history(
     order_id: int,
-    limit: int = Query(100, ge=1, le=1000, description="Number of audit events to return"),
+    limit: int = Query(100, ge=1, le=1000,
+                       description="Number of audit events to return"),
     offset: int = Query(0, ge=0, description="Number of audit events to skip"),
     db: Session = Depends(get_db)
 ):

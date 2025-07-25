@@ -269,7 +269,7 @@ class OrderAuditResponse(BaseModel):
     events: List[OrderAuditEvent]
     total_count: int
     has_more: bool = Field(..., description="Whether there are more records")
-    
+
     @validator('has_more', always=True)
     def calculate_has_more(cls, v, values):
         events = values.get('events', [])
