@@ -88,4 +88,5 @@ class OrderAttachment(Base, TimestampMixin):
     file_url = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     file_size = Column(Integer, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
     order = relationship("Order", back_populates="attachments")
