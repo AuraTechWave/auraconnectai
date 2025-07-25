@@ -220,7 +220,8 @@ class POSBridgeService:
     def _resolve_menu_item_id_sync(
         self, pos_item_data: Dict[str, Any], vendor: str
     ) -> int:
-        external_id = pos_item_data.get("id") or pos_item_data.get("menuItemId")
+        external_id = (pos_item_data.get("id") or
+                       pos_item_data.get("menuItemId"))
         item_name = pos_item_data.get("name") or pos_item_data.get("itemName")
 
         if external_id:
@@ -275,7 +276,8 @@ class POSBridgeService:
             else:
                 return float(price_data)
         except (ValueError, TypeError):
-            logger.warning(f"Invalid price data: {price_data} for vendor: {vendor}")
+            logger.warning(f"Invalid price data: {price_data} for vendor: "
+                           f"{vendor}")
             return 0.0
 
     def _validate_pos_order_sync(self, order_data: Dict[str, Any]) -> bool:
@@ -290,10 +292,12 @@ class POSBridgeService:
             if not all(key in item for key in ["quantity", "price"]):
                 return False
 
-            if not isinstance(item["quantity"], (int, float)) or item["quantity"] <= 0:
+            if (not isinstance(item["quantity"], (int, float)) or
+                    item["quantity"] <= 0):
                 return False
 
-            if not isinstance(item["price"], (int, float)) or item["price"] < 0:
+            if (not isinstance(item["price"], (int, float)) or
+                    item["price"] < 0):
                 return False
 
         return True
