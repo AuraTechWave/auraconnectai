@@ -1,7 +1,14 @@
-from sqlalchemy.orm import Session, joinedload
-from fastapi import HTTPException, UploadFile
-from typing import List, Optional
+import logging
+import re
 from datetime import datetime
+from typing import List, Optional
+
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.orm import Session, joinedload
+
+from backend.core.file_service import file_service
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus)
 from ..models.order_models import (
     Order, OrderItem, Tag, Category, OrderAttachment
 )
@@ -12,15 +19,10 @@ from ..schemas.order_schemas import (
     CustomerNotesUpdate, OrderAttachmentOut, SpecialInstructionBase
 )
 from ...pos.services.pos_bridge_service import POSBridgeService
-from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
-                                 FraudCheckStatus)
-import logging
+from .fraud_service import perform_fraud_check
+from .inventory_service import deduct_inventory
 
 logger = logging.getLogger(__name__)
-from .inventory_service import deduct_inventory
-from .fraud_service import perform_fraud_check
-from backend.core.file_service import file_service
-import re
 
 
 def serialize_instructions_to_notes(
@@ -610,32 +612,36 @@ async def generate_kitchen_print_ticket_service(
     db: Session
 ) -> KitchenPrintResponse:
     """Generate and send kitchen print ticket for an order."""
-    
+
     try:
         order = await get_order_by_id(db, order_id)
         _validate_order_for_printing(order)
-        
+
         ticket_data = _format_kitchen_ticket(order, print_request)
         ticket_content = _generate_ticket_content(ticket_data)
-        
-        print_result = await _send_to_pos_printer(order, print_request, ticket_content, ticket_data, db)
-        
+
+        print_result = await _send_to_pos_printer(
+            order, print_request, ticket_content, ticket_data, db
+        )
+
         if print_result["success"]:
             logger.info(f"Kitchen ticket printed for order {order_id}")
-            
+
             return KitchenPrintResponse(
                 success=True,
                 message="Kitchen ticket printed successfully",
-                ticket_id=f"ticket_{order_id}_{int(datetime.utcnow().timestamp())}",
+                ticket_id=(f"ticket_{order_id}_"
+                           f"{int(datetime.utcnow().timestamp())}"),
                 print_timestamp=datetime.utcnow()
             )
         else:
             return KitchenPrintResponse(
                 success=False,
-                message=f"Print failed: {print_result.get('error', 'Unknown error')}",
+                message=(f"Print failed: "
+                         f"{print_result.get('error', 'Unknown error')}"),
                 error_code=print_result.get('error_code', 'PRINT_ERROR')
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
@@ -650,18 +656,18 @@ async def generate_kitchen_print_ticket_service(
 def _validate_order_for_printing(order: Order) -> None:
     """Validate order can be printed to kitchen."""
     PRINTABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.IN_KITCHEN}
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-        
+
     if OrderStatus(order.status) not in PRINTABLE_STATUSES:
         valid_statuses = [s.value for s in PRINTABLE_STATUSES]
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot print ticket for order with status {order.status}. "
-                   f"Valid statuses: {valid_statuses}"
+            detail=(f"Cannot print ticket for order with status "
+                    f"{order.status}. Valid statuses: {valid_statuses}")
         )
-    
+
     if not order.order_items:
         raise HTTPException(
             status_code=400,
@@ -670,15 +676,15 @@ def _validate_order_for_printing(order: Order) -> None:
 
 
 async def _send_to_pos_printer(
-    order: Order, 
-    print_request: KitchenPrintRequest, 
+    order: Order,
+    print_request: KitchenPrintRequest,
     ticket_content: str,
     ticket_data: KitchenTicketFormat,
     db: Session
 ) -> dict:
     """Send ticket to POS printer and return result."""
     pos_service = POSBridgeService(db)
-    
+
     try:
         order_data = pos_service._transform_order_to_dict(order)
         order_data.update({
@@ -715,7 +721,7 @@ def _format_kitchen_ticket(
     order: Order, print_request: KitchenPrintRequest
 ) -> KitchenTicketFormat:
     """Format order data for kitchen ticket display."""
-    
+
     items_data = []
     for item in order.order_items:
         item_data = {
@@ -725,12 +731,12 @@ def _format_kitchen_ticket(
             "notes": item.notes or "",
             "special_requests": getattr(item, 'special_requests', None)
         }
-        
+
         if hasattr(item, 'cooking_instructions'):
             item_data["cooking_instructions"] = item.cooking_instructions
-            
+
         items_data.append(item_data)
-    
+
     return KitchenTicketFormat(
         order_id=order.id,
         table_no=order.table_no,
@@ -746,7 +752,7 @@ def _determine_station_name(station_id: Optional[int]) -> Optional[str]:
     """Map station ID to station name."""
     STATION_MAPPING = {
         1: "Grill Station",
-        2: "Prep Station", 
+        2: "Prep Station",
         3: "Salad Station",
         4: "Dessert Station"
     }
@@ -756,10 +762,10 @@ def _determine_station_name(station_id: Optional[int]) -> Optional[str]:
 def _extract_special_instructions(order: Order) -> Optional[str]:
     """Extract special instructions from order."""
     instructions = []
-    
+
     if hasattr(order, 'customer_notes') and order.customer_notes:
         instructions.append(f"Customer: {order.customer_notes}")
-    
+
     # Add item-specific special instructions
     for item in order.order_items:
         if hasattr(item, 'special_instructions') and item.special_instructions:
@@ -767,8 +773,9 @@ def _extract_special_instructions(order: Order) -> Optional[str]:
                 if isinstance(instruction, dict):
                     desc = instruction.get('description', '')
                     if desc:
-                        instructions.append(f"Item {item.menu_item_id}: {desc}")
-    
+                        item_desc = f"Item {item.menu_item_id}: {desc}"
+                        instructions.append(item_desc)
+
     return "; ".join(instructions) if instructions else None
 
 
@@ -778,7 +785,7 @@ def _determine_priority(order: Order) -> Optional[int]:
         return 3  # Normal priority
     elif order.status == OrderStatus.IN_KITCHEN.value:
         return 4  # Higher priority for orders already in kitchen
-    
+
     return 3
 
 
@@ -786,24 +793,26 @@ def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
     """Generate formatted ticket content for thermal printers."""
     content = f"ORDER #{ticket_data.order_id}\n"
     content += f"TABLE: {ticket_data.table_no or 'TAKEOUT'}\n"
-    
+
     if ticket_data.station_name:
         content += f"STATION: {ticket_data.station_name}\n"
     if ticket_data.priority_level:
         priority_text = "★" * ticket_data.priority_level
-        content += f"PRIORITY: {priority_text} ({ticket_data.priority_level}/5)\n"
-    
+        priority_line = (f"PRIORITY: {priority_text} "
+                         f"({ticket_data.priority_level}/5)\n")
+        content += priority_line
+
     content += "=" * 32 + "\n"
 
     for item in ticket_data.items:
         content += f"{item['quantity']}x ITEM #{item['menu_item_id']}\n"
-        
+
         if item.get('notes'):
             content += f"   * {item['notes']}\n"
-            
+
         if item.get('special_requests'):
             content += f"   >> {item['special_requests']}\n"
-            
+
         # Add cooking instructions
         if item.get('cooking_instructions'):
             content += f"   COOK: {item['cooking_instructions']}\n"
