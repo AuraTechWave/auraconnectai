@@ -141,3 +141,23 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class OrderAuditEvent(BaseModel):
+    order_id: int
+    previous_status: Optional[OrderStatus] = None
+    new_status: OrderStatus
+    user_id: int
+    timestamp: datetime
+    metadata: Optional[dict] = None
+
+    class Config:
+        from_attributes = True
+
+
+class OrderAuditResponse(BaseModel):
+    events: List[OrderAuditEvent]
+    total_count: int
+
+    class Config:
+        from_attributes = True

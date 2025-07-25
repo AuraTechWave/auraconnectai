@@ -8,12 +8,12 @@ from ..controllers.order_controller import (
     validate_order_rules, delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
-    archive_order, restore_order, list_archived_orders
+    archive_order, restore_order, list_archived_orders, get_order_audit_trail
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderAuditResponse
 )
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -300,3 +300,20 @@ async def get_archived_orders_endpoint(
     return await list_archived_orders(
         db, staff_id, table_no, limit, offset
     )
+
+
+@router.get("/{order_id}/audit", response_model=OrderAuditResponse)
+async def get_order_audit_history(
+    order_id: int,
+    limit: int = Query(100, ge=1, le=1000, description="Number of audit events to return"),
+    offset: int = Query(0, ge=0, description="Number of audit events to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve audit trail for a specific order showing all status changes.
+
+    - **order_id**: ID of the order to get audit history for
+    - **limit**: Maximum number of audit events to return (1-1000)
+    - **offset**: Number of audit events to skip for pagination
+    """
+    return await get_order_audit_trail(db, order_id, limit, offset)

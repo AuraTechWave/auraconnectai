@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import List, Optional
 from datetime import datetime
+from sqlalchemy.sql import func
 from ..models.order_models import Order, OrderItem, Tag, Category
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
@@ -9,6 +10,7 @@ from ..schemas.order_schemas import (
 )
 from ..enums.order_enums import OrderStatus, MultiItemRuleType
 from .inventory_service import deduct_inventory
+from backend.core.models.audit_models import AuditLog
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -31,6 +33,28 @@ VALID_TRANSITIONS = {
     ],
     OrderStatus.ARCHIVED: [OrderStatus.COMPLETED]
 }
+
+
+async def log_order_audit_event(
+    db: Session,
+    order_id: int,
+    previous_status: Optional[OrderStatus],
+    new_status: OrderStatus,
+    user_id: int,
+    metadata: Optional[dict] = None
+):
+    """Log an order status change audit event."""
+    audit_event = AuditLog(
+        action="status_change",
+        module="orders",
+        user_id=user_id,
+        entity_id=order_id,
+        previous_value=previous_status.value if previous_status else None,
+        new_value=new_status.value,
+        metadata=metadata,
+        timestamp=func.now()
+    )
+    db.add(audit_event)
 
 
 async def get_order_by_id(db: Session, order_id: int):
@@ -63,6 +87,19 @@ async def update_order_service(
                 detail=f"Invalid status transition from {current_status} to "
                        f"{order_update.status}"
             )
+        
+        await log_order_audit_event(
+            db=db,
+            order_id=order.id,
+            previous_status=current_status,
+            new_status=order_update.status,
+            user_id=order.staff_id,
+            metadata={
+                "notes": getattr(order_update, 'notes', None),
+                "delay_reason": getattr(order_update, 'delay_reason', None)
+            }
+        )
+        
         if (order_update.status == OrderStatus.IN_PROGRESS and
                 current_status == OrderStatus.PENDING):
             try:
@@ -482,3 +519,29 @@ async def get_archived_orders_service(
     query = query.options(joinedload(Order.order_items))
 
     return query.all()
+
+
+async def get_order_audit_events_service(
+    db: Session,
+    order_id: int,
+    limit: int = 100,
+    offset: int = 0
+) -> List[AuditLog]:
+    """Retrieve audit events for a specific order."""
+    return db.query(AuditLog).filter(
+        AuditLog.module == "orders",
+        AuditLog.action == "status_change",
+        AuditLog.entity_id == order_id
+    ).order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
+
+
+async def count_order_audit_events_service(
+    db: Session,
+    order_id: int
+) -> int:
+    """Count total audit events for a specific order."""
+    return db.query(AuditLog).filter(
+        AuditLog.module == "orders",
+        AuditLog.action == "status_change",
+        AuditLog.entity_id == order_id
+    ).count()

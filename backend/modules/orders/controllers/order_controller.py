@@ -7,12 +7,14 @@ from ..services.order_service import (
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
-    archive_order_service, restore_order_service, get_archived_orders_service
+    archive_order_service, restore_order_service, get_archived_orders_service,
+    get_order_audit_events_service, count_order_audit_events_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut
+    TagCreate, TagOut, CategoryCreate, CategoryOut,
+    OrderAuditResponse, OrderAuditEvent
 )
 from ..enums.order_enums import OrderStatus
 
@@ -145,3 +147,28 @@ async def list_archived_orders(
         limit=limit, offset=offset
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def get_order_audit_trail(
+    db: Session,
+    order_id: int,
+    limit: int = 100,
+    offset: int = 0
+) -> OrderAuditResponse:
+    """Get audit trail for a specific order."""
+    events_data = await get_order_audit_events_service(db, order_id, limit, offset)
+    total_count = await count_order_audit_events_service(db, order_id)
+    
+    events = [
+        OrderAuditEvent(
+            order_id=event.entity_id,
+            previous_status=OrderStatus(event.previous_value) if event.previous_value else None,
+            new_status=OrderStatus(event.new_value),
+            user_id=event.user_id,
+            timestamp=event.timestamp,
+            metadata=event.metadata
+        )
+        for event in events_data
+    ]
+    
+    return OrderAuditResponse(events=events, total_count=total_count)
