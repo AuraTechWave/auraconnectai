@@ -21,7 +21,9 @@ from backend.modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
 )
 from backend.modules.pos.routes.pos_routes import router as pos_router
-from backend.modules.orders.routes.webhook_routes import router as webhook_router
+from backend.modules.orders.routes.webhook_routes import (
+    router as webhook_router
+)
 
 app = FastAPI()
 
