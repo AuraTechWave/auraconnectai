@@ -65,7 +65,8 @@ class RecommendationService:
                     )
                     if demand_adjustment != 0:
                         adjustment_amount = (
-                            request.base_price * Decimal(str(demand_adjustment))
+                            request.base_price *
+                            Decimal(str(demand_adjustment))
                         )
                         calculated_price += adjustment_amount
                         adjustments.append(PriceAdjustment(
@@ -128,7 +129,8 @@ class RecommendationService:
                 status_code=500,
                 detail="Failed to calculate dynamic price"
             )
-    
+
+
     def _calculate_time_adjustment(self, time_of_day: str) -> float:
         time_adjustments = {
             "breakfast": -0.05,
