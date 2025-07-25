@@ -79,6 +79,7 @@ def parse_notes_to_instructions(notes: str) -> List[dict]:
 
     return instructions
 
+
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
         OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED, OrderStatus.DELAYED
