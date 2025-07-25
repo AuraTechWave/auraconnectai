@@ -144,11 +144,18 @@ class EmployeePaymentTaxApplication(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     # Relationships
-    employee_payment = relationship("EmployeePayment", back_populates="tax_applications")
+    employee_payment = relationship(
+        "EmployeePayment",
+        back_populates="tax_applications"
+    )
     tax_rule = relationship("TaxRule", back_populates="tax_applications")
-    
+
     __table_args__ = (
-        UniqueConstraint('employee_payment_id', 'tax_rule_id', name='uq_payment_tax_rule'),
+        UniqueConstraint(
+            'employee_payment_id',
+            'tax_rule_id',
+            name='uq_payment_tax_rule'
+        ),
         Index('ix_tax_applications_payment_id', 'employee_payment_id'),
         Index('ix_tax_applications_tax_rule_id', 'tax_rule_id'),
         Index('ix_tax_applications_calculation_date', 'calculation_date'),
