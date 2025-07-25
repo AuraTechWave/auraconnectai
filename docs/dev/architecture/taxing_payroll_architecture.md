@@ -106,6 +106,90 @@ This module automates tax calculations and staff payroll based on configured rul
 
 ---
 
+## 6.1. New Dedicated Payroll Module Schema
+
+### Table: `payroll_tax_rules`
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer (PK) | Primary key |
+| region | String | Tax jurisdiction/region |
+| tax_type | String | "percentage" or "fixed" |
+| rate | Decimal(10,4) | Tax rate value |
+| effective_date | DateTime | When rule becomes active |
+| expiry_date | DateTime (nullable) | When rule expires |
+
+### Table: `payroll_policies`
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer (PK) | Primary key |
+| policy_name | String | Policy identifier |
+| basic_pay | Decimal(10,2) | Base salary amount |
+| allowances | JSONB | Structured allowances data |
+| deductions | JSONB | Structured deductions data |
+| effective_date | DateTime | Policy effective date |
+
+### Table: `employee_payments`
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer (PK) | Primary key |
+| staff_id | Integer (FK) | References staff_members.id |
+| period_start | DateTime | Pay period start |
+| period_end | DateTime | Pay period end |
+| gross_earnings | Decimal(10,2) | Total earnings before deductions |
+| deductions_total | Decimal(10,2) | Total deductions |
+| taxes_total | Decimal(10,2) | Total tax amount |
+| net_pay | Decimal(10,2) | Final pay amount |
+| status | Enum | PENDING/PROCESSED/PAID |
+| processed_at | DateTime (nullable) | Processing timestamp |
+
+### ER Diagram
+```mermaid
+erDiagram
+    staff_members ||--o{ employee_payments : "has payments"
+    payroll_policies ||--o{ employee_payments : "applies to"
+    payroll_tax_rules ||--o{ employee_payments : "calculates taxes"
+    
+    staff_members {
+        int id PK
+        string name
+        string email
+        int role_id FK
+    }
+    
+    employee_payments {
+        int id PK
+        int staff_id FK
+        datetime period_start
+        datetime period_end
+        decimal gross_earnings
+        decimal deductions_total
+        decimal taxes_total
+        decimal net_pay
+        enum status
+        datetime processed_at
+    }
+    
+    payroll_policies {
+        int id PK
+        string policy_name
+        decimal basic_pay
+        jsonb allowances
+        jsonb deductions
+        datetime effective_date
+    }
+    
+    payroll_tax_rules {
+        int id PK
+        string region
+        string tax_type
+        decimal rate
+        datetime effective_date
+        datetime expiry_date
+    }
+```
+
+---
+
 ## 7. 🛠️ Code Stub
 
 ```ts
