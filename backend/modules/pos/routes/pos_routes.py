@@ -5,6 +5,7 @@ from datetime import datetime
 import hmac
 import hashlib
 import logging
+from fastapi_limiter.depends import RateLimiter
 from backend.core.database import get_db
 from ..models.pos_integration import POSIntegration
 from ..models.pos_sync_log import POSSyncLog
@@ -152,7 +153,8 @@ async def delete_pos_integration(
 async def pos_webhook_receiver(
     integration_id: int,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    ratelimit: dict = Depends(RateLimiter(times=100, seconds=60))
 ):
     """Receive webhook notifications from POS systems for new orders"""
     try:
