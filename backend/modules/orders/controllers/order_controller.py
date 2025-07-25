@@ -20,7 +20,8 @@ from ..schemas.order_schemas import (
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
     OrderAuditResponse, OrderAuditEvent,
     KitchenPrintRequest, KitchenPrintResponse,
-    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
+    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate,
+    AutoCancellationConfigOut
 )
 from ..enums.order_enums import OrderStatus, OrderPriority
 
@@ -303,3 +304,45 @@ async def list_order_attachments(
 
 async def remove_order_attachment(attachment_id: int, db: Session):
     return await delete_attachment(attachment_id, db)
+
+
+async def get_auto_cancellation_configs_controller(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    status: Optional[OrderStatus] = None
+):
+    """Get auto-cancellation configurations."""
+    from ..services.order_service import get_auto_cancellation_configs
+    return await get_auto_cancellation_configs(db, tenant_id, team_id, status)
+
+
+async def create_auto_cancellation_config_controller(
+    config_data: dict,
+    db: Session
+):
+    """Create or update auto-cancellation configuration."""
+    from ..services.order_service import create_or_update_auto_cancellation_config
+    return await create_or_update_auto_cancellation_config(db, config_data)
+
+
+async def trigger_stale_order_cancellation_controller(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    system_user_id: int = 1
+):
+    """Manually trigger stale order cancellation process."""
+    from ..services.order_service import cancel_stale_orders
+    return await cancel_stale_orders(db, tenant_id, team_id, system_user_id)
+
+
+async def detect_stale_orders_controller(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None
+):
+    """Detect stale orders without cancelling them."""
+    from ..services.order_service import detect_stale_orders
+    orders = await detect_stale_orders(db, tenant_id, team_id)
+    return [OrderOut.model_validate(order) for order in orders]
