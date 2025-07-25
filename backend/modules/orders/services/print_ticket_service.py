@@ -116,7 +116,6 @@ async def retry_failed_tickets(
         ticket.status = PrintStatus.PENDING.value
         ticket.error_message = None
         await _update_ticket_in_db(ticket, db)
-        
         retried_tickets.append(PrintTicketResponse(
             id=ticket.id,
             order_id=ticket.order_id,
@@ -155,9 +154,8 @@ async def _route_to_station(
     order, ticket_type: TicketType, db: Session
 ) -> Optional[int]:
     stations = db.query(PrintStation).filter(
-        PrintStation.is_active == True
+        PrintStation.is_active
     ).all()
-    
     for station in stations:
         try:
             supported_types = json.loads(station.ticket_types)
@@ -165,7 +163,6 @@ async def _route_to_station(
                 return station.id
         except (json.JSONDecodeError, TypeError):
             continue
-    
     station_mapping = {
         TicketType.KITCHEN: 1,
         TicketType.BAR: 2,
@@ -192,7 +189,6 @@ async def _get_queue_items(db: Session) -> List[PrintQueueItem]:
             PrintStatus.FAILED.value
         ])
     ).order_by(PrintTicket.priority.desc(), PrintTicket.created_at.asc()).all()
-    
     return [PrintQueueItem(
         id=ticket.id,
         order_id=ticket.order_id,
@@ -205,7 +201,8 @@ async def _get_queue_items(db: Session) -> List[PrintQueueItem]:
     ) for ticket in tickets]
 
 
-async def _get_ticket_by_id(ticket_id: int, db: Session) -> Optional[PrintTicket]:
+async def _get_ticket_by_id(ticket_id: int,
+                            db: Session) -> Optional[PrintTicket]:
     return db.query(PrintTicket).filter(PrintTicket.id == ticket_id).first()
 
 
@@ -214,7 +211,8 @@ async def _update_ticket_in_db(ticket: PrintTicket, db: Session):
     db.refresh(ticket)
 
 
-async def _get_failed_tickets(db: Session, max_retries: int) -> List[PrintTicket]:
+async def _get_failed_tickets(db: Session,
+                              max_retries: int) -> List[PrintTicket]:
     return db.query(PrintTicket).filter(
         PrintTicket.status == PrintStatus.FAILED.value,
         PrintTicket.retry_count < max_retries

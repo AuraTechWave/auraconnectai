@@ -85,10 +85,12 @@ class PrintTicket(Base, TimestampMixin):
     __tablename__ = "print_tickets"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"),
+                      nullable=False, index=True)
     ticket_type = Column(String, nullable=False, index=True)
     status = Column(String, nullable=False, default="pending", index=True)
-    station_id = Column(Integer, ForeignKey("print_stations.id"), nullable=True, index=True)
+    station_id = Column(Integer, ForeignKey("print_stations.id"),
+                        nullable=True, index=True)
     priority = Column(Integer, nullable=False, default=1)
     ticket_content = Column(Text, nullable=False)
     printed_at = Column(DateTime, nullable=True)
