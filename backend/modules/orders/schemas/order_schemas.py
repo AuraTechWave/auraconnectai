@@ -37,6 +37,17 @@ class OrderItemOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @classmethod
+    def from_orm_with_instructions(cls, orm_obj):
+        """Create OrderItemOut with parsed special_instructions from JSON"""
+        data = cls.model_validate(orm_obj)
+        if orm_obj.special_instructions:
+            data.special_instructions = [
+                SpecialInstructionBase(**instr)
+                for instr in orm_obj.special_instructions
+            ]
+        return data
+
     class Config:
         from_attributes = True
 
