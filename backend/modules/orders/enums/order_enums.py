@@ -12,6 +12,7 @@ class OrderStatus(str, Enum):
     DELAYED = "delayed"
     SCHEDULED = "scheduled"
     AWAITING_FULFILLMENT = "awaiting_fulfillment"
+    ARCHIVED = "archived"
 
 
 class OrderItemStatus(str, Enum):

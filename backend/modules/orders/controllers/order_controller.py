@@ -4,7 +4,8 @@ from datetime import datetime
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules,
-    schedule_delayed_fulfillment, get_scheduled_orders
+    schedule_delayed_fulfillment, get_scheduled_orders,
+    archive_order_service, restore_order_service, get_archived_orders_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
@@ -80,3 +81,25 @@ async def get_delayed_orders(
     Retrieve orders scheduled for delayed fulfillment.
     """
     return await get_scheduled_orders(db, from_time, to_time)
+
+
+async def archive_order(order_id: int, db: Session):
+    return await archive_order_service(db, order_id)
+
+
+async def restore_order(order_id: int, db: Session):
+    return await restore_order_service(db, order_id)
+
+
+async def list_archived_orders(
+    db: Session,
+    staff_id: Optional[int] = None,
+    table_no: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> List[OrderOut]:
+    orders = await get_archived_orders_service(
+        db, staff_id=staff_id, table_no=table_no,
+        limit=limit, offset=offset
+    )
+    return [OrderOut.model_validate(order) for order in orders]
