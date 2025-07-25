@@ -35,6 +35,21 @@ class MultiItemRuleType(str, Enum):
     COMPATIBILITY = "compatibility"
 
 
+class PricingType(str, Enum):
+    STATIC = "static"
+    DYNAMIC = "dynamic"
+    HYBRID = "hybrid"
+
+
+class PricingAdjustmentReason(str, Enum):
+    DEMAND = "demand"
+    TIME_BASED = "time_based"
+    INVENTORY = "inventory"
+    AI_RECOMMENDATION = "ai_recommendation"
+    WEATHER = "weather"
+    SPECIAL_EVENT = "special_event"
+
+
 class TagType(str, Enum):
     PRIORITY = "priority"
     DIETARY = "dietary"
