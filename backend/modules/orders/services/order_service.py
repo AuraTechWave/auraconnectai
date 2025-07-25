@@ -8,6 +8,7 @@ from fastapi import HTTPException, UploadFile
 from backend.core.file_service import file_service
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
                                  FraudCheckStatus)
+from ..enums.webhook_enums import WebhookEventType
 from ..models.order_models import (
     Order, OrderItem, Tag, Category, OrderAttachment, AutoCancellationConfig
 )
@@ -21,6 +22,7 @@ from ..schemas.order_schemas import (
 from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
+from .webhook_service import WebhookService
 from backend.core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
@@ -166,6 +168,9 @@ async def update_order_service(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
+    previous_status = order.status
+    status_changed = False
+
     if order_update.status and order_update.status != order.status:
         current_status = OrderStatus(order.status)
         valid_transitions = VALID_TRANSITIONS.get(current_status, [])
@@ -201,6 +206,7 @@ async def update_order_service(
             except HTTPException as e:
                 raise e
         order.status = order_update.status.value
+        status_changed = True
 
     if order_update.order_items is not None:
         existing_items = {item.menu_item_id: item
@@ -235,6 +241,23 @@ async def update_order_service(
 
     db.commit()
     db.refresh(order)
+
+    if status_changed:
+        webhook_service = WebhookService(db)
+
+        if order.status == OrderStatus.COMPLETED.value:
+            event_type = WebhookEventType.ORDER_COMPLETED
+        elif order.status == OrderStatus.CANCELLED.value:
+            event_type = WebhookEventType.ORDER_CANCELLED
+        else:
+            event_type = WebhookEventType.ORDER_STATUS_CHANGED
+
+        await webhook_service.trigger_webhook(
+            order_id=order.id,
+            event_type=event_type,
+            previous_status=previous_status,
+            new_status=order.status
+        )
 
     return {
         "message": "Order updated successfully",
@@ -448,6 +471,14 @@ async def create_order_with_fraud_check(
             order.status = "pending_review"
 
     db.commit()
+    db.refresh(order)
+
+    webhook_service = WebhookService(db)
+    await webhook_service.trigger_webhook(
+        order_id=order.id,
+        event_type=WebhookEventType.ORDER_CREATED
+    )
+
     return order
 
 

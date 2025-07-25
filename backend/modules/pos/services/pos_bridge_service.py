@@ -420,6 +420,15 @@ class POSBridgeService:
                 transform_result.order_data, external_id, tenant_id, team_id
             )
 
+            from ...orders.services.webhook_service import WebhookService
+            from ...orders.enums.webhook_enums import WebhookEventType
+
+            webhook_service = WebhookService(self.db)
+            await webhook_service.trigger_webhook(
+                order_id=order.id,
+                event_type=WebhookEventType.ORDER_CREATED
+            )
+
             sync_log = POSSyncLog(
                 integration_id=integration.id,
                 type=POSSyncType.ORDER_PULL.value,

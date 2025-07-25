@@ -21,6 +21,9 @@ from backend.modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
 )
 from backend.modules.pos.routes.pos_routes import router as pos_router
+from backend.modules.orders.routes.webhook_routes import (
+    router as webhook_router
+)
 
 app = FastAPI()
 
@@ -34,6 +37,7 @@ app.include_router(pricing_router)
 app.include_router(tax_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
+app.include_router(webhook_router)
 
 
 @app.get("/")
