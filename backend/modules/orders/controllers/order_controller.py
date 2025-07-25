@@ -10,19 +10,19 @@ from ..services.order_service import (
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
     archive_order_service, restore_order_service, get_archived_orders_service,
-    get_order_audit_events_service, count_order_audit_events_service,
-    generate_kitchen_print_ticket_service,
+    update_order_priority_service, get_order_audit_events_service,
+    count_order_audit_events_service, generate_kitchen_print_ticket_service,
     update_customer_notes, add_attachment, get_attachments, delete_attachment
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut,
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
     OrderAuditResponse, OrderAuditEvent,
     KitchenPrintRequest, KitchenPrintResponse,
     CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
 )
-from ..enums.order_enums import OrderStatus
+from ..enums.order_enums import OrderStatus, OrderPriority
 
 
 async def update_order(order_id: int, order_data: OrderUpdate, db: Session,
@@ -41,16 +41,19 @@ async def list_orders(
     table_no: Optional[int] = None,
     tag_ids: Optional[List[int]] = None,
     category_id: Optional[int] = None,
+    priority: Optional[OrderPriority] = None,
+    min_priority: Optional[OrderPriority] = None,
     limit: int = 100,
     offset: int = 0,
     include_items: bool = False
 ) -> List[OrderOut]:
     orders = await get_orders_service(
         db, status=status, staff_id=staff_id, table_no=table_no,
-        tag_ids=tag_ids, category_id=category_id,
-        limit=limit, offset=offset, include_items=include_items
+        tag_ids=tag_ids, category_id=category_id, priority=priority,
+        min_priority=min_priority, limit=limit, offset=offset,
+        include_items=include_items
     )
-    return [OrderOut.from_orm(order) for order in orders]
+    return [OrderOut.model_validate(order) for order in orders]
 
 
 async def list_kitchen_orders(
@@ -209,6 +212,14 @@ async def list_archived_orders(
         limit=limit, offset=offset
     )
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def update_order_priority(
+    order_id: int,
+    priority_data: OrderPriorityUpdate,
+    db: Session
+):
+    return await update_order_priority_service(order_id, priority_data, db)
 
 
 async def get_order_audit_trail(

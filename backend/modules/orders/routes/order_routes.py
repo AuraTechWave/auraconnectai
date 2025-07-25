@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Path, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -9,22 +9,24 @@ from ..controllers.order_controller import (
     delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
-    archive_order, restore_order, list_archived_orders, get_order_audit_trail,
-    update_order_notes, upload_order_attachment,
+    archive_order, restore_order, list_archived_orders, update_order_priority,
+    get_order_audit_trail, update_order_notes, upload_order_attachment,
     list_order_attachments, remove_order_attachment
 )
+from ..services.order_service import get_orders_service
 from ..controllers.fraud_controller import (
     check_order_fraud, list_fraud_alerts, resolve_alert
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
-    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderAuditResponse,
-    FraudCheckRequest, FraudCheckResponse,
-    CustomerNotesUpdate, OrderAttachmentOut, AttachmentResponse,
-    OrderItemUpdate
+    TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
+    OrderPriorityResponse, OrderAuditResponse, FraudCheckRequest,
+    FraudCheckResponse, CustomerNotesUpdate, OrderAttachmentOut,
+    AttachmentResponse, OrderItemUpdate
 )
-from ..enums.order_enums import CheckpointType, FraudRiskLevel
+from ..models.order_models import Order
+from ..enums.order_enums import OrderPriority, CheckpointType, FraudRiskLevel
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -380,6 +382,84 @@ async def get_archived_orders_endpoint(
     return await list_archived_orders(
         db, staff_id, table_no, limit, offset
     )
+
+
+@router.put("/{order_id}/priority", response_model=OrderPriorityResponse)
+async def update_priority(
+    order_id: int = Path(..., gt=0, description="Order ID to update"),
+    priority_data: OrderPriorityUpdate = Body(
+        ..., description="Priority update data"),
+    db: Session = Depends(get_db)
+):
+    """
+    Update the priority of an order.
+
+    Priority levels (highest to lowest):
+    - URGENT: Critical orders requiring immediate attention
+    - HIGH: Important orders that should be prioritized
+    - NORMAL: Standard priority (default)
+    - LOW: Orders that can wait if needed
+
+    **Notes:**
+    - Cannot change priority for completed or cancelled orders
+    - Priority changes are logged with timestamps
+    - Kitchen display will reflect new priority immediately
+    """
+    return await update_order_priority(order_id, priority_data, db)
+
+
+@router.get("/queue", response_model=List[OrderOut])
+async def get_kitchen_queue(
+    priority_filter: Optional[OrderPriority] = Query(
+        None, description="Filter by minimum priority"),
+    db: Session = Depends(get_db)
+):
+    """Get kitchen queue sorted by priority."""
+    from ..enums.order_enums import OrderStatus
+
+    kitchen_statuses = [OrderStatus.PENDING.value,
+                        OrderStatus.IN_PROGRESS.value]
+
+    orders = await get_orders_service(
+        db=db,
+        status=None,
+        min_priority=priority_filter,
+        include_items=True,
+        limit=50
+    )
+
+    kitchen_orders = [order for order in orders
+                      if order.status in kitchen_statuses]
+    return kitchen_orders
+
+
+@router.get("/analytics/priority-distribution")
+async def get_priority_distribution(
+    date_from: Optional[datetime] = Query(
+        None, description="Start date for analysis"),
+    date_to: Optional[datetime] = Query(
+        None, description="End date for analysis"),
+    db: Session = Depends(get_db)
+):
+    """Get distribution of orders by priority level."""
+    from sqlalchemy import func
+
+    query = db.query(
+        Order.priority,
+        func.count(Order.id).label('count')
+    ).group_by(Order.priority)
+
+    if date_from:
+        query = query.filter(Order.created_at >= date_from)
+    if date_to:
+        query = query.filter(Order.created_at <= date_to)
+
+    results = query.all()
+    return {
+        (row.priority.value if hasattr(row.priority, 'value')
+         else str(row.priority)): row.count
+        for row in results
+    }
 
 
 @router.get("/{order_id}/audit", response_model=OrderAuditResponse)

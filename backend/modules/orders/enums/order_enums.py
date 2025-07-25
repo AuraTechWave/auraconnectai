@@ -94,6 +94,13 @@ class CategoryType(str, Enum):
     CATERING = "catering"
 
 
+class OrderPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
+
 class PrintStatus(str, Enum):
     PENDING = "pending"
     PRINTING = "printing"

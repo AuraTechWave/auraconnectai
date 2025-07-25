@@ -31,7 +31,7 @@ class RecommendationService:
 
             if cache_key in self.cache:
                 cached_result, timestamp = self.cache[cache_key]
-                if (datetime.now() - timestamp).seconds < self.cache_ttl:
+                if (datetime.utcnow() - timestamp).seconds < self.cache_ttl:
                     return cached_result
 
             await asyncio.sleep(0.1)
@@ -116,10 +116,10 @@ class RecommendationService:
                 adjustments=adjustments,
                 confidence_score=random.uniform(0.7, 0.95),
                 pricing_source="ai_recommendation_service",
-                timestamp=datetime.now()
+                timestamp=datetime.utcnow()
             )
 
-            self.cache[cache_key] = (response, datetime.now())
+            self.cache[cache_key] = (response, datetime.utcnow())
 
             return response
 

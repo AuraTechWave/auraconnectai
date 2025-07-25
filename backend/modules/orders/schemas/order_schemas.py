@@ -3,7 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
                                  FraudCheckStatus, FraudRiskLevel,
                                  CheckpointType, SpecialInstructionType)
 
@@ -168,6 +168,8 @@ class OrderOut(OrderBase):
     scheduled_fulfillment_time: Optional[datetime] = None
     delay_reason: Optional[str] = None
     delay_requested_at: Optional[datetime] = None
+    priority: OrderPriority = OrderPriority.NORMAL
+    priority_updated_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None
@@ -249,6 +251,30 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class OrderPriorityUpdate(BaseModel):
+    priority: OrderPriority = Field(
+        ..., description="New priority level for the order")
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Reason for priority change")
+
+    @validator('reason')
+    def validate_reason(cls, v):
+        if v and len(v.strip()) == 0:
+            return None
+        return v
+
+
+class OrderPriorityResponse(BaseModel):
+    message: str
+    previous_priority: str
+    new_priority: str
+    updated_at: datetime
+    reason: Optional[str] = None
+    data: OrderOut
+
+    model_config = {"from_attributes": True}
 
 
 class OrderAuditEvent(BaseModel):
