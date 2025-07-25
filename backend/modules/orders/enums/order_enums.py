@@ -33,3 +33,17 @@ class MultiItemRuleType(str, Enum):
     COMBO = "combo"
     BULK_DISCOUNT = "bulk_discount"
     COMPATIBILITY = "compatibility"
+
+
+class TagType(str, Enum):
+    PRIORITY = "priority"
+    DIETARY = "dietary"
+    SPECIAL = "special"
+    CUSTOM = "custom"
+
+
+class CategoryType(str, Enum):
+    DINE_IN = "dine_in"
+    TAKEOUT = "takeout"
+    DELIVERY = "delivery"
+    CATERING = "catering"
