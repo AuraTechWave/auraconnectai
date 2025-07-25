@@ -6,14 +6,21 @@ from sqlalchemy import pool
 from alembic import context
 
 from backend.core.database import Base
-from backend.modules.staff.models import staff_models, shift_models, attendance_models
+from backend.modules.staff.models import staff_models, shift_models, attendance_models, payroll_models
 from backend.modules.orders.models import order_models
+from backend.modules.tax.models import tax_models
+from backend.modules.payroll.models import payroll_models as new_payroll_models
 
 # Ensure all models are imported — even if not directly used
 from backend.modules.staff.models.staff_models import StaffMember, Role
 from backend.modules.staff.models.shift_models import Shift
 from backend.modules.staff.models.attendance_models import AttendanceLog
+from backend.modules.staff.models.payroll_models import Payroll, Payslip
 from backend.modules.orders.models.order_models import Order, OrderItem
+from backend.modules.tax.models.tax_models import TaxRule as ExistingTaxRule
+from backend.modules.payroll.models.payroll_models import (
+    TaxRule, PayrollPolicy, EmployeePayment, EmployeePaymentTaxApplication
+)
 
 target_metadata = Base.metadata
 
@@ -31,7 +38,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+# target_metadata = Base.metadata  # Already set above
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
