@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from pydantic import BaseModel, Field, validator
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
@@ -241,3 +241,41 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class KitchenPrintRequest(BaseModel):
+    order_id: int = Field(..., gt=0, description="Order ID must be positive")
+    printer_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    station_id: Optional[int] = Field(
+        None, ge=1, description="Station ID must be positive"
+    )
+    format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    @validator('printer_options', 'format_options')
+    def validate_options(cls, v):
+        if v is None:
+            return {}
+        return v
+
+
+class KitchenPrintResponse(BaseModel):
+    success: bool
+    message: str
+    ticket_id: Optional[str] = None
+    print_timestamp: Optional[datetime] = None
+    error_code: Optional[str] = None
+
+
+class KitchenTicketFormat(BaseModel):
+    order_id: int
+    table_no: Optional[int] = None
+    items: List[Dict[str, Any]]
+    station_name: Optional[str] = None
+    timestamp: datetime
+    special_instructions: Optional[str] = None
+    priority_level: Optional[int] = Field(
+        None, ge=1, le=5, description="Priority level 1-5"
+    )
+
+    class Config:
+        from_attributes = True
