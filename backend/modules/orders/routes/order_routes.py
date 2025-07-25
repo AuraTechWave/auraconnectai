@@ -20,7 +20,7 @@ from ..schemas.order_schemas import (
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut,
     FraudCheckRequest, FraudCheckResponse,
-    CustomerNotesUpdate, OrderAttachmentOut
+    CustomerNotesUpdate, OrderAttachmentOut, AttachmentResponse
 )
 from ..enums.order_enums import CheckpointType, FraudRiskLevel
 
@@ -381,10 +381,12 @@ async def update_notes(
     return await update_order_notes(order_id, notes_update, db)
 
 
-@router.post("/{order_id}/attachments", response_model=dict)
+@router.post("/{order_id}/attachments", response_model=AttachmentResponse)
 async def upload_attachment(
     order_id: int,
     file: UploadFile = File(...),
+    description: Optional[str] = None,
+    is_public: bool = False,
     db: Session = Depends(get_db)
 ):
     """
@@ -392,7 +394,14 @@ async def upload_attachment(
     - **order_id**: ID of the order to attach the file to
     - **file**: File to upload (supports common document and image formats)
     """
-    return await upload_order_attachment(order_id, file, db)
+    result = await upload_order_attachment(
+        order_id, file, db, description, is_public
+    )
+    return AttachmentResponse(
+        success=True,
+        message=result["message"],
+        data=result["data"]
+    )
 
 
 @router.get("/{order_id}/attachments", response_model=List[OrderAttachmentOut])

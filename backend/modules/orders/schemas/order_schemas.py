@@ -72,11 +72,20 @@ class OrderAttachmentOut(BaseModel):
     file_url: str
     file_type: str
     file_size: int
+    description: Optional[str] = None
+    is_public: bool = False
+    uploaded_by: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class AttachmentResponse(BaseModel):
+    success: bool
+    message: str
+    data: Optional[OrderAttachmentOut] = None
 
 
 class OrderAttachmentCreate(BaseModel):

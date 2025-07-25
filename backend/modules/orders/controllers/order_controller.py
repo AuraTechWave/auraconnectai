@@ -170,9 +170,13 @@ async def update_order_notes(
 
 
 async def upload_order_attachment(
-    order_id: int, file: UploadFile, db: Session
+    order_id: int,
+    file: UploadFile,
+    db: Session,
+    description: Optional[str] = None,
+    is_public: bool = False
 ):
-    return await add_attachment(order_id, file, db)
+    return await add_attachment(order_id, file, db, description, is_public)
 
 
 async def list_order_attachments(

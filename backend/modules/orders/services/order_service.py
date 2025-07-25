@@ -538,7 +538,11 @@ async def update_customer_notes(
 
 
 async def add_attachment(
-    order_id: int, file: UploadFile, db: Session
+    order_id: int,
+    file: UploadFile,
+    db: Session,
+    description: Optional[str] = None,
+    is_public: bool = False
 ):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
@@ -551,7 +555,9 @@ async def add_attachment(
             file_name=file_data["file_name"],
             file_url=file_data["file_url"],
             file_type=file_data["file_type"],
-            file_size=file_data["file_size"]
+            file_size=file_data["file_size"],
+            description=description,
+            is_public=is_public
         )
         db.add(attachment)
         db.commit()
