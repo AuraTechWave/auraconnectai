@@ -4,10 +4,10 @@ from datetime import datetime, date
 from unittest.mock import Mock, MagicMock
 from sqlalchemy.orm import Session
 
-from ..services.payroll_tax_engine import PayrollTaxEngine
-from ..models.payroll_models import TaxRule
-from ..enums.payroll_enums import TaxType
-from ..schemas.payroll_tax_schemas import PayrollTaxCalculationRequest
+from modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
+from modules.payroll.models.payroll_models import TaxRule
+from modules.payroll.enums.payroll_enums import TaxType
+from modules.payroll.schemas.payroll_tax_schemas import PayrollTaxCalculationRequest
 
 
 class TestPayrollTaxEngine:
@@ -362,7 +362,7 @@ class TestPayrollTaxEngine:
     
     def test_save_tax_applications(self, tax_engine, mock_db):
         """Test saving tax applications to database."""
-        from ..schemas.payroll_tax_schemas import TaxApplicationDetail
+        from modules.payroll.schemas.payroll_tax_schemas import TaxApplicationDetail
         
         # Create sample tax applications
         applications = [

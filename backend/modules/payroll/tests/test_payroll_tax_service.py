@@ -4,10 +4,10 @@ from datetime import datetime, date
 from unittest.mock import Mock, MagicMock, patch
 from sqlalchemy.orm import Session
 
-from ..services.payroll_tax_service import PayrollTaxService
-from ..services.payroll_tax_engine import PayrollTaxEngine
-from ..models.payroll_models import EmployeePayment, PayrollPolicy
-from ..schemas.payroll_tax_schemas import (
+from modules.payroll.services.payroll_tax_service import PayrollTaxService
+from modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
+from modules.payroll.models.payroll_models import EmployeePayment, PayrollPolicy
+from modules.payroll.schemas.payroll_tax_schemas import (
     PayrollTaxServiceRequest, PayrollTaxCalculationResponse,
     TaxBreakdown, TaxRuleValidationRequest
 )
@@ -29,7 +29,7 @@ class TestPayrollTaxService:
     @pytest.fixture
     def tax_service(self, mock_db):
         """Tax service instance with mocked dependencies."""
-        with patch('backend.modules.payroll.services.payroll_tax_service.PayrollTaxEngine') as mock_engine_class:
+        with patch('modules.payroll.services.payroll_tax_service.PayrollTaxEngine') as mock_engine_class:
             service = PayrollTaxService(mock_db)
             service.tax_engine = Mock(spec=PayrollTaxEngine)
             return service
