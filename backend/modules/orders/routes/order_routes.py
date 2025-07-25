@@ -693,3 +693,58 @@ async def scheduled_auto_cancellation(
     return await scheduler.run_auto_cancellation(
         tenant_id, team_id, system_user_id
     )
+
+
+@router.post("/auto-cancellation/create-defaults")
+async def create_default_auto_cancellation_configs(
+    tenant_id: Optional[int] = Query(None),
+    updated_by: int = Query(1),
+    db: Session = Depends(get_db)
+):
+    """Create default auto-cancellation configurations."""
+    from ..controllers.order_controller import (
+        create_default_configs_controller
+    )
+    configs = await create_default_configs_controller(
+        db, tenant_id, updated_by
+    )
+    return {
+        "message": f"Created {len(configs)} default configurations",
+        "configs": [
+            AutoCancellationConfigOut.model_validate(c) for c in configs
+        ]
+    }
+
+
+@router.get("/auto-cancellation/metrics")
+async def get_auto_cancellation_metrics(
+    from_date: Optional[datetime] = Query(None),
+    to_date: Optional[datetime] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get auto-cancellation metrics and statistics."""
+    from sqlalchemy import func
+    from backend.core.compliance import AuditLog
+
+    query = db.query(
+        func.count(AuditLog.id).label('total_cancellations'),
+        func.date(AuditLog.timestamp).label('date')
+    ).filter(
+        AuditLog.action == 'auto_cancellation',
+        AuditLog.module == 'orders'
+    ).group_by(func.date(AuditLog.timestamp))
+
+    if from_date:
+        query = query.filter(AuditLog.timestamp >= from_date)
+    if to_date:
+        query = query.filter(AuditLog.timestamp <= to_date)
+
+    results = query.all()
+
+    return {
+        "total_auto_cancelled": sum(r.total_cancellations for r in results),
+        "daily_breakdown": [
+            {"date": r.date.isoformat(), "count": r.total_cancellations}
+            for r in results
+        ]
+    }

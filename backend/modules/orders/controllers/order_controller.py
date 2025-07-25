@@ -346,3 +346,17 @@ async def detect_stale_orders_controller(
     from ..services.order_service import detect_stale_orders
     orders = await detect_stale_orders(db, tenant_id, team_id)
     return [OrderOut.model_validate(order) for order in orders]
+
+
+async def create_default_configs_controller(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    updated_by: int = 1
+):
+    """Create default auto-cancellation configurations."""
+    from ..services.order_service import (
+        create_default_auto_cancellation_configs
+    )
+    return await create_default_auto_cancellation_configs(
+        db, tenant_id, updated_by
+    )
