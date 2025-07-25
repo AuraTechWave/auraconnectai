@@ -5,7 +5,8 @@ from ..models.order_models import Order, OrderItem
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult
 )
-from ..enums.order_enums import OrderStatus, MultiItemRuleType, FraudCheckStatus
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus)
 from .inventory_service import deduct_inventory
 from .fraud_service import perform_fraud_check
 
@@ -177,18 +178,20 @@ async def create_order_with_fraud_check(
     order = Order(**order_data)
     db.add(order)
     db.flush()
-    
+
     if perform_fraud_validation:
-        fraud_result = await perform_fraud_check(db, order.id, force_recheck=True)
-        
+        fraud_result = await perform_fraud_check(
+            db, order.id, force_recheck=True)
+
         if fraud_result.status == FraudCheckStatus.FAILED:
             db.rollback()
             raise HTTPException(
                 status_code=400,
-                detail=f"Order blocked due to fraud detection. Risk level: {fraud_result.risk_level.value}"
+                detail=f"Order blocked due to fraud detection. "
+                       f"Risk level: {fraud_result.risk_level.value}"
             )
         elif fraud_result.status == FraudCheckStatus.MANUAL_REVIEW:
             order.status = "pending_review"
-    
+
     db.commit()
     return order

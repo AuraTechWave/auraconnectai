@@ -4,13 +4,13 @@ from ..services.fraud_service import (
     perform_fraud_check, get_fraud_alerts, resolve_fraud_alert
 )
 from ..schemas.order_schemas import (
-    FraudCheckRequest, FraudCheckResponse, FraudAlertOut
+    FraudCheckRequest, FraudCheckResponse
 )
-from ..enums.order_enums import FraudRiskLevel, CheckpointType
+from ..enums.order_enums import FraudRiskLevel
 
 
 async def check_order_fraud(
-    fraud_request: FraudCheckRequest, 
+    fraud_request: FraudCheckRequest,
     db: Session
 ) -> FraudCheckResponse:
     return await perform_fraud_check(

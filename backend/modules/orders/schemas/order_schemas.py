@@ -2,7 +2,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType, FraudCheckStatus, FraudRiskLevel, CheckpointType
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus, FraudRiskLevel,
+                                 CheckpointType)
 
 
 class OrderItemUpdate(BaseModel):
@@ -80,7 +82,7 @@ class FraudCheckResponse(BaseModel):
     status: FraudCheckStatus
     flags: Optional[List[str]] = None
     checked_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -101,6 +103,6 @@ class FraudAlertOut(BaseModel):
     description: str
     resolved: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True

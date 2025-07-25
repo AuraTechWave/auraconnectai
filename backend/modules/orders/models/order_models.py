@@ -14,7 +14,7 @@ class Order(Base, TimestampMixin):
     table_no = Column(Integer, nullable=True, index=True)
     status = Column(String, nullable=False, index=True)
     deleted_at = Column(DateTime, nullable=True)
-    
+
     fraud_risk_score = Column(Numeric(5, 2), nullable=True, default=0.0)
     fraud_status = Column(String, nullable=False, default="pending")
     fraud_last_check = Column(DateTime, nullable=True)
