@@ -92,3 +92,18 @@ class CategoryType(str, Enum):
     TAKEOUT = "takeout"
     DELIVERY = "delivery"
     CATERING = "catering"
+
+
+class PrintStatus(str, Enum):
+    PENDING = "pending"
+    PRINTING = "printing"
+    PRINTED = "printed"
+    FAILED = "failed"
+
+
+class TicketType(str, Enum):
+    KITCHEN = "kitchen"
+    BAR = "bar"
+    GRILL = "grill"
+    COLD_PREP = "cold_prep"
+    HOT_PREP = "hot_prep"

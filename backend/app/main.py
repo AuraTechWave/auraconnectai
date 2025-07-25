@@ -10,6 +10,9 @@ from backend.modules.orders.routes.inventory_routes import (
 from backend.modules.orders.routes.kitchen_routes import (
     router as kitchen_router
 )
+from backend.modules.orders.routes.print_ticket_routes import (
+    router as print_ticket_router
+)
 from backend.modules.orders.routes.pricing_routes import (
     router as pricing_router
 )
@@ -26,6 +29,7 @@ app.include_router(payroll_router)
 app.include_router(order_router)
 app.include_router(inventory_router)
 app.include_router(kitchen_router)
+app.include_router(print_ticket_router)
 app.include_router(pricing_router)
 app.include_router(tax_router)
 app.include_router(pos_sync_router)

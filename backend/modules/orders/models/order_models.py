@@ -39,6 +39,7 @@ class Order(Base, TimestampMixin):
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")
+    print_tickets = relationship("PrintTicket", back_populates="order")
     attachments = relationship("OrderAttachment", back_populates="order")
 
 
@@ -79,6 +80,39 @@ class Category(Base, TimestampMixin):
     description = Column(Text, nullable=True)
 
     orders = relationship("Order", back_populates="category")
+
+
+class PrintTicket(Base, TimestampMixin):
+    __tablename__ = "print_tickets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"),
+                      nullable=False, index=True)
+    ticket_type = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False, default="pending", index=True)
+    station_id = Column(Integer, ForeignKey("print_stations.id"),
+                        nullable=True, index=True)
+    priority = Column(Integer, nullable=False, default=1)
+    ticket_content = Column(Text, nullable=False)
+    printed_at = Column(DateTime, nullable=True)
+    failed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    retry_count = Column(Integer, default=0)
+
+    order = relationship("Order", back_populates="print_tickets")
+    station = relationship("PrintStation", back_populates="print_tickets")
+
+
+class PrintStation(Base, TimestampMixin):
+    __tablename__ = "print_stations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, unique=True, index=True)
+    ticket_types = Column(String, nullable=False)
+    printer_config = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True, index=True)
+
+    print_tickets = relationship("PrintTicket", back_populates="station")
 
 
 class OrderAttachment(Base, TimestampMixin):
