@@ -20,8 +20,7 @@ from ..schemas.order_schemas import (
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
     OrderAuditResponse, OrderAuditEvent,
     KitchenPrintRequest, KitchenPrintResponse,
-    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate,
-    AutoCancellationConfigOut
+    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
 )
 from ..enums.order_enums import OrderStatus, OrderPriority
 
@@ -318,11 +317,12 @@ async def get_auto_cancellation_configs_controller(
 
 
 async def create_auto_cancellation_config_controller(
-    config_data: dict,
-    db: Session
+    config_data: dict, db: Session
 ):
     """Create or update auto-cancellation configuration."""
-    from ..services.order_service import create_or_update_auto_cancellation_config
+    from ..services.order_service import (
+        create_or_update_auto_cancellation_config
+    )
     return await create_or_update_auto_cancellation_config(db, config_data)
 
 

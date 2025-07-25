@@ -168,10 +168,16 @@ class AutoCancellationConfig(Base, TimestampMixin):
     status = Column(String, nullable=False, index=True)
     threshold_minutes = Column(Integer, nullable=False)
     enabled = Column(Boolean, nullable=False, default=True)
-    updated_by = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
+    updated_by = Column(
+        Integer, ForeignKey("staff_members.id"), nullable=False
+    )
 
     updated_by_staff = relationship("StaffMember")
 
     __table_args__ = (
-        Index('idx_auto_cancel_config_unique', 'tenant_id', 'team_id', 'status', unique=True),
+        Index(
+            'idx_auto_cancel_config_unique',
+            'tenant_id', 'team_id', 'status',
+            unique=True
+        ),
     )

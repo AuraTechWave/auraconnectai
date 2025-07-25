@@ -1144,14 +1144,14 @@ async def get_auto_cancellation_configs(
 ):
     """Get auto-cancellation configurations with optional filtering."""
     query = db.query(AutoCancellationConfig)
-    
+
     if tenant_id is not None:
         query = query.filter(AutoCancellationConfig.tenant_id == tenant_id)
     if team_id is not None:
         query = query.filter(AutoCancellationConfig.team_id == team_id)
     if status is not None:
         query = query.filter(AutoCancellationConfig.status == status.value)
-    
+
     return query.all()
 
 
@@ -1165,7 +1165,7 @@ async def create_or_update_auto_cancellation_config(
         AutoCancellationConfig.team_id == config_data.get('team_id'),
         AutoCancellationConfig.status == config_data['status']
     ).first()
-    
+
     if existing_config:
         for key, value in config_data.items():
             setattr(existing_config, key, value)
@@ -1174,7 +1174,7 @@ async def create_or_update_auto_cancellation_config(
     else:
         config = AutoCancellationConfig(**config_data)
         db.add(config)
-    
+
     db.commit()
     db.refresh(config)
     return config
@@ -1188,16 +1188,18 @@ async def detect_stale_orders(
     """Detect orders that have exceeded their configured time thresholds."""
     configs = await get_auto_cancellation_configs(db, tenant_id, team_id)
     active_configs = [c for c in configs if c.enabled]
-    
+
     if not active_configs:
         return []
-    
+
     stale_orders = []
     current_time = datetime.utcnow()
-    
+
     for config in active_configs:
-        threshold_time = current_time - timedelta(minutes=config.threshold_minutes)
-        
+        threshold_time = current_time - timedelta(
+            minutes=config.threshold_minutes
+        )
+
         query = db.query(Order).filter(
             and_(
                 Order.status == config.status,
@@ -1205,9 +1207,9 @@ async def detect_stale_orders(
                 Order.deleted_at.is_(None)
             )
         )
-        
+
         stale_orders.extend(query.all())
-    
+
     return stale_orders
 
 
@@ -1219,26 +1221,31 @@ async def cancel_stale_orders(
 ) -> dict:
     """Cancel orders that have exceeded their configured time thresholds."""
     stale_orders = await detect_stale_orders(db, tenant_id, team_id)
-    
+
     if not stale_orders:
         return {
             "cancelled_count": 0,
             "cancelled_orders": [],
             "message": "No stale orders found"
         }
-    
+
     cancelled_orders = []
-    
+
     for order in stale_orders:
         try:
             current_status = OrderStatus(order.status)
-            
-            if OrderStatus.CANCELLED not in VALID_TRANSITIONS.get(current_status, []):
-                logger.warning(f"Order {order.id} with status {current_status} cannot be auto-cancelled")
+
+            if OrderStatus.CANCELLED not in VALID_TRANSITIONS.get(
+                current_status, []
+            ):
+                logger.warning(
+                    f"Order {order.id} with status {current_status} "
+                    f"cannot be auto-cancelled"
+                )
                 continue
-            
+
             order.status = OrderStatus.CANCELLED.value
-            
+
             await log_order_audit_event(
                 db=db,
                 order_id=order.id,
@@ -1247,24 +1254,27 @@ async def cancel_stale_orders(
                 user_id=system_user_id,
                 metadata={
                     "cancellation_reason": "auto_cancellation_stale_order",
-                    "stale_duration_minutes": (datetime.utcnow() - order.updated_at).total_seconds() / 60,
+                    "stale_duration_minutes": (
+                        datetime.utcnow() - order.updated_at
+                    ).total_seconds() / 60,
                     "source": "system_auto_cancellation",
                     "timestamp": datetime.utcnow().isoformat()
                 },
                 action="auto_cancellation"
             )
-            
             cancelled_orders.append(order.id)
-            
+
         except Exception as e:
             logger.error(f"Failed to cancel stale order {order.id}: {str(e)}")
             continue
-    
+
     if cancelled_orders:
         db.commit()
-    
+
     return {
         "cancelled_count": len(cancelled_orders),
         "cancelled_orders": cancelled_orders,
-        "message": f"Successfully cancelled {len(cancelled_orders)} stale orders"
+        "message": (
+            f"Successfully cancelled {len(cancelled_orders)} stale orders"
+        )
     }
