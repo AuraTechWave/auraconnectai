@@ -2,10 +2,9 @@ import logging
 import re
 from datetime import datetime
 from typing import List, Optional
-
-from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session, joinedload
 
+from fastapi import HTTPException, UploadFile
 from backend.core.file_service import file_service
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
                                  FraudCheckStatus)
@@ -21,6 +20,7 @@ from ..schemas.order_schemas import (
 from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
+from backend.core.models.audit_models import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,38 @@ VALID_TRANSITIONS = {
 }
 
 
+async def log_order_audit_event(
+    db: Session,
+    order_id: int,
+    previous_status: Optional[OrderStatus],
+    new_status: OrderStatus,
+    user_id: int,
+    metadata: Optional[dict] = None,
+    action: str = "status_change"
+):
+    """Log an order audit event with enhanced error handling."""
+    try:
+        audit_event = AuditLog(
+            action=action,
+            module="orders",
+            user_id=user_id,
+            entity_id=order_id,
+            previous_value=previous_status.value if previous_status else None,
+            new_value=new_status.value,
+            metadata=metadata or {},
+            timestamp=datetime.utcnow()
+        )
+        db.add(audit_event)
+        db.flush()  # Ensure the audit event is written
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to log audit event for order "
+                       f"{order_id}: {str(e)}")
+        if "database" in str(e).lower() or "connection" in str(e).lower():
+            raise
+
+
 async def get_order_by_id(db: Session, order_id: int):
     order = db.query(Order).options(joinedload(Order.order_items)).filter(
         Order.id == order_id, Order.deleted_at.is_(None)
@@ -125,7 +157,7 @@ async def get_order_by_id(db: Session, order_id: int):
 
 
 async def update_order_service(
-    order_id: int, order_update: OrderUpdate, db: Session
+    order_id: int, order_update: OrderUpdate, db: Session, user_id: int
 ):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
@@ -140,6 +172,23 @@ async def update_order_service(
                 detail=f"Invalid status transition from {current_status} to "
                        f"{order_update.status}"
             )
+
+        await log_order_audit_event(
+            db=db,
+            order_id=order.id,
+            previous_status=current_status,
+            new_status=order_update.status,
+            user_id=user_id,
+            metadata={
+                "notes": getattr(order_update, 'notes', None),
+                "delay_reason": getattr(order_update, 'delay_reason', None),
+                "source": "api_update",
+                "previous_staff_id": order.staff_id,
+                "timestamp": datetime.utcnow().isoformat()
+            },
+            action="status_change"
+        )
+
         if (order_update.status == OrderStatus.IN_PROGRESS and
                 current_status == OrderStatus.PENDING):
             try:
@@ -604,6 +653,32 @@ async def get_archived_orders_service(
     query = query.options(joinedload(Order.order_items))
 
     return query.all()
+
+
+async def get_order_audit_events_service(
+    db: Session,
+    order_id: int,
+    limit: int = 100,
+    offset: int = 0
+) -> List[AuditLog]:
+    """Retrieve audit events for a specific order."""
+    return db.query(AuditLog).filter(
+        AuditLog.module == "orders",
+        AuditLog.action == "status_change",
+        AuditLog.entity_id == order_id
+    ).order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
+
+
+async def count_order_audit_events_service(
+    db: Session,
+    order_id: int
+) -> int:
+    """Count total audit events for a specific order."""
+    return db.query(AuditLog).filter(
+        AuditLog.module == "orders",
+        AuditLog.action == "status_change",
+        AuditLog.entity_id == order_id
+    ).count()
 
 
 async def generate_kitchen_print_ticket_service(

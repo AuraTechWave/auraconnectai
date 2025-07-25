@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
                                  FraudCheckStatus, FraudRiskLevel,
                                  CheckpointType, SpecialInstructionType)
@@ -15,6 +16,13 @@ class SpecialInstructionBase(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AuditAction(str, Enum):
+    STATUS_CHANGE = "status_change"
+    CREATION = "creation"
+    MODIFICATION = "modification"
+    DELETION = "deletion"
 
 
 class OrderItemUpdate(BaseModel):
@@ -241,6 +249,35 @@ class ArchivedOrdersFilter(BaseModel):
     table_no: Optional[int] = None
     limit: int = 100
     offset: int = 0
+
+
+class OrderAuditEvent(BaseModel):
+    id: int = Field(..., description="Audit log ID")
+    order_id: int
+    action: str = Field(..., description="Type of action performed")
+    previous_status: Optional[OrderStatus] = None
+    new_status: OrderStatus
+    user_id: int
+    timestamp: datetime
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+
+    class Config:
+        from_attributes = True
+
+
+class OrderAuditResponse(BaseModel):
+    events: List[OrderAuditEvent]
+    total_count: int
+    has_more: bool = Field(..., description="Whether there are more records")
+
+    @validator('has_more', always=True)
+    def calculate_has_more(cls, v, values):
+        events = values.get('events', [])
+        total_count = values.get('total_count', 0)
+        return len(events) < total_count
+
+    class Config:
+        from_attributes = True
 
 
 class KitchenPrintRequest(BaseModel):
