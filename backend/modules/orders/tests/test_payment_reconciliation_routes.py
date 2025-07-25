@@ -1,6 +1,4 @@
-import pytest
 from fastapi.testclient import TestClient
-from decimal import Decimal
 from backend.modules.orders.enums.payment_enums import (
     ReconciliationStatus, DiscrepancyType, ReconciliationAction
 )
@@ -80,8 +78,8 @@ class TestPaymentReconciliationRoutes:
         action = ReconciliationAction.MANUAL_REVIEW.value
         assert data["reconciliation_action"] == action
 
-    def test_get_payment_reconciliations_with_filters(self, client: TestClient,  # noqa: E501
-                                                      sample_order):
+    def test_get_payment_reconciliations_with_filters(
+            self, client: TestClient, sample_order):
         reconciliation_data = {
             "order_id": sample_order.id,
             "external_payment_reference": "PAY_ROUTE_FILTER",
@@ -125,8 +123,8 @@ class TestPaymentReconciliationRoutes:
         assert "reconciliations" in data
         assert data["total_processed"] == 1
 
-    def test_resolve_payment_discrepancy(self, client: TestClient,
-                                          sample_order):
+    def test_resolve_payment_discrepancy(
+            self, client: TestClient, sample_order):
         reconciliation_data = {
             "order_id": sample_order.id,
             "external_payment_reference": "PAY_ROUTE_RESOLVE",
@@ -140,8 +138,9 @@ class TestPaymentReconciliationRoutes:
                                       json=reconciliation_data)
         reconciliation_id = create_response.json()["id"]
 
+        action = ReconciliationAction.EXCEPTION_HANDLED.value
         resolution_data = {
-            "reconciliation_action": ReconciliationAction.EXCEPTION_HANDLED.value,  # noqa: E501
+            "reconciliation_action": action,
             "resolution_notes": "Customer discount applied",
             "resolved_by": 1
         }
@@ -165,8 +164,8 @@ class TestPaymentReconciliationRoutes:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    def test_create_payment_reconciliation_invalid_order(self,
-                                                          client: TestClient):
+    def test_create_payment_reconciliation_invalid_order(
+            self, client: TestClient):
         reconciliation_data = {
             "order_id": 999,
             "external_payment_reference": "PAY_INVALID",

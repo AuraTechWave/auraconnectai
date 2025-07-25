@@ -13,14 +13,14 @@ from ..schemas.payment_reconciliation_schemas import (
 
 
 async def create_reconciliation(
-    reconciliation_data: PaymentReconciliationCreate, 
+    reconciliation_data: PaymentReconciliationCreate,
     db: Session
 ) -> PaymentReconciliationOut:
     return await create_payment_reconciliation(db, reconciliation_data)
 
 
 async def get_reconciliation_by_id(
-    reconciliation_id: int, 
+    reconciliation_id: int,
     db: Session
 ) -> PaymentReconciliationOut:
     return await get_payment_reconciliation_by_id(db, reconciliation_id)
@@ -31,7 +31,8 @@ async def update_reconciliation(
     update_data: PaymentReconciliationUpdate,
     db: Session
 ) -> PaymentReconciliationOut:
-    return await update_payment_reconciliation(db, reconciliation_id, update_data)
+    return await update_payment_reconciliation(db, reconciliation_id,
+                                               update_data)
 
 
 async def list_reconciliations(
@@ -53,4 +54,6 @@ async def resolve_discrepancy(
     resolution_data: ResolutionRequest,
     db: Session
 ) -> PaymentReconciliationOut:
-    return await resolve_payment_discrepancy(db, reconciliation_id, resolution_data)
+    return await resolve_payment_discrepancy(
+        db, reconciliation_id, resolution_data
+    )

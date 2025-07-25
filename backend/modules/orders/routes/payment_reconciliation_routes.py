@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -14,7 +14,10 @@ from ..schemas.payment_reconciliation_schemas import (
 )
 from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType
 
-router = APIRouter(prefix="/payment-reconciliation", tags=["Payment Reconciliation"])
+router = APIRouter(
+    prefix="/payment-reconciliation",
+    tags=["Payment Reconciliation"]
+)
 
 
 @router.post("/", response_model=PaymentReconciliationOut)
@@ -73,7 +76,8 @@ async def perform_payment_reconciliation(
     return await reconcile_payments(request, db)
 
 
-@router.post("/{reconciliation_id}/resolve", response_model=PaymentReconciliationOut)
+@router.post("/{reconciliation_id}/resolve",
+             response_model=PaymentReconciliationOut)
 async def resolve_payment_discrepancy(
     reconciliation_id: int,
     resolution_data: ResolutionRequest,

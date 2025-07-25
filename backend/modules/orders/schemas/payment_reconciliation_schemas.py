@@ -2,7 +2,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType, ReconciliationAction
+from ..enums.payment_enums import (
+    ReconciliationStatus, DiscrepancyType, ReconciliationAction
+)
 
 
 class PaymentReconciliationBase(BaseModel):
