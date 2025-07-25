@@ -6,7 +6,8 @@ from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
     validate_order_rules, add_order_tags, remove_order_tag,
     update_order_category, create_new_tag, list_tags,
-    create_new_category, list_categories
+    create_new_category, list_categories, archive_order, restore_order,
+    list_archived_orders
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
@@ -186,3 +187,57 @@ async def create_category(
     Create a new category.
     """
     return await create_new_category(category_data, db)
+
+
+@router.post("/{order_id}/archive", response_model=dict)
+async def archive_order_endpoint(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Archive a completed or cancelled order.
+
+    Only orders with status 'completed' or 'cancelled' can be archived.
+    Archived orders are excluded from regular order listings by default.
+    """
+    return await archive_order(order_id, db)
+
+
+@router.post("/{order_id}/restore", response_model=dict)
+async def restore_order_endpoint(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Restore an archived order back to completed status.
+
+    Only orders with status 'archived' can be restored.
+    """
+    return await restore_order(order_id, db)
+
+
+@router.get("/archived", response_model=List[OrderOut])
+async def get_archived_orders_endpoint(
+    staff_id: Optional[int] = Query(
+        None, description="Filter by staff member ID"
+    ),
+    table_no: Optional[int] = Query(
+        None, description="Filter by table number"
+    ),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Number of orders to return"
+    ),
+    offset: int = Query(0, ge=0, description="Number of orders to skip"),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieve archived orders with optional filtering and pagination.
+
+    - **staff_id**: Filter by staff member ID
+    - **table_no**: Filter by table number
+    - **limit**: Maximum number of orders to return (1-1000)
+    - **offset**: Number of orders to skip for pagination
+    """
+    return await list_archived_orders(
+        db, staff_id, table_no, limit, offset
+    )

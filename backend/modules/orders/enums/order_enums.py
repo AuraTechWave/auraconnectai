@@ -9,6 +9,7 @@ class OrderStatus(str, Enum):
     SERVED = "served"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    ARCHIVED = "archived"
 
 
 class OrderItemStatus(str, Enum):

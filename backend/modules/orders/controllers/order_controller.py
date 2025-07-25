@@ -4,7 +4,8 @@ from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules, add_tags_to_order,
     remove_tag_from_order, set_order_category, create_tag, get_tags,
-    create_category, get_categories
+    create_category, get_categories, archive_order_service,
+    restore_order_service, get_archived_orders_service
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
@@ -100,3 +101,25 @@ async def list_categories(db: Session, limit: int = 100,
                           offset: int = 0) -> List[CategoryOut]:
     categories = await get_categories(db, limit, offset)
     return [CategoryOut.model_validate(category) for category in categories]
+
+
+async def archive_order(order_id: int, db: Session):
+    return await archive_order_service(db, order_id)
+
+
+async def restore_order(order_id: int, db: Session):
+    return await restore_order_service(db, order_id)
+
+
+async def list_archived_orders(
+    db: Session,
+    staff_id: Optional[int] = None,
+    table_no: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> List[OrderOut]:
+    orders = await get_archived_orders_service(
+        db, staff_id=staff_id, table_no=table_no,
+        limit=limit, offset=offset
+    )
+    return [OrderOut.model_validate(order) for order in orders]
