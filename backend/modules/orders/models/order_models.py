@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
 from ..enums.order_enums import OrderPriority
+from typing import Optional
+from datetime import datetime
 
 
 order_tags = Table(
@@ -28,12 +30,29 @@ class Order(Base, TimestampMixin):
     scheduled_fulfillment_time = Column(DateTime, nullable=True)
     delay_reason = Column(String, nullable=True)
     delay_requested_at = Column(DateTime, nullable=True)
-    priority = Column(Enum(OrderPriority), nullable=False, default=OrderPriority.NORMAL, index=True)
-    priority_updated_at = Column(DateTime, nullable=True)
+    priority = Column(
+        Enum(OrderPriority), 
+        nullable=False, 
+        default=OrderPriority.NORMAL,
+        index=True
+    )
+    priority_updated_at = Column(DateTime(timezone=True), nullable=True)
 
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")
+    
+    def update_priority(self, new_priority: OrderPriority, user_id: Optional[int] = None):
+        """Update order priority with audit trail."""
+        old_priority = self.priority
+        self.priority = new_priority
+        self.priority_updated_at = datetime.utcnow()
+        
+        return {
+            "old_priority": old_priority,
+            "new_priority": new_priority,
+            "updated_at": self.priority_updated_at
+        }
 
 
 class OrderItem(Base, TimestampMixin):

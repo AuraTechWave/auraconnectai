@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -100,7 +100,7 @@ class OrderOut(OrderBase):
     scheduled_fulfillment_time: Optional[datetime] = None
     delay_reason: Optional[str] = None
     delay_requested_at: Optional[datetime] = None
-    priority: str = "normal"
+    priority: OrderPriority = OrderPriority.NORMAL
     priority_updated_at: Optional[datetime] = None
     order_items: Optional[List[OrderItemOut]] = []
     tags: Optional[List[TagOut]] = []
@@ -146,15 +146,22 @@ class ArchivedOrdersFilter(BaseModel):
 
 
 class OrderPriorityUpdate(BaseModel):
-    priority: OrderPriority
-    reason: Optional[str] = None
+    priority: OrderPriority = Field(..., description="New priority level for the order")
+    reason: Optional[str] = Field(None, max_length=500, description="Reason for priority change")
+    
+    @validator('reason')
+    def validate_reason(cls, v):
+        if v and len(v.strip()) == 0:
+            return None
+        return v
 
 
 class OrderPriorityResponse(BaseModel):
-    success: bool = True
     message: str
-    order: OrderOut
     previous_priority: str
-    priority_updated_at: datetime
+    new_priority: str
+    updated_at: datetime
+    reason: Optional[str] = None
+    data: OrderOut
     
     model_config = {"from_attributes": True}

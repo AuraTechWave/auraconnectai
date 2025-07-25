@@ -108,6 +108,8 @@ async def get_orders_service(
     table_no: Optional[int] = None,
     tag_ids: Optional[List[int]] = None,
     category_id: Optional[int] = None,
+    priority: Optional[OrderPriority] = None,
+    min_priority: Optional[OrderPriority] = None,
     limit: int = 100,
     offset: int = 0,
     include_items: bool = False,
@@ -132,6 +134,18 @@ async def get_orders_service(
 
     if not include_archived:
         query = query.filter(Order.status != OrderStatus.ARCHIVED.value)
+    
+    if priority:
+        query = query.filter(Order.priority == priority)
+    
+    if min_priority:
+        priority_values = {
+            OrderPriority.LOW: [OrderPriority.LOW, OrderPriority.NORMAL, OrderPriority.HIGH, OrderPriority.URGENT],
+            OrderPriority.NORMAL: [OrderPriority.NORMAL, OrderPriority.HIGH, OrderPriority.URGENT],
+            OrderPriority.HIGH: [OrderPriority.HIGH, OrderPriority.URGENT],
+            OrderPriority.URGENT: [OrderPriority.URGENT]
+        }
+        query = query.filter(Order.priority.in_(priority_values[min_priority]))
 
     query = query.order_by(
         case(
@@ -157,34 +171,54 @@ async def get_orders_service(
 async def update_order_priority_service(
     order_id: int, 
     priority_data: OrderPriorityUpdate, 
-    db: Session
+    db: Session,
+    user_id: Optional[int] = None
 ):
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(
+        Order.id == order_id,
+        Order.deleted_at.is_(None)
+    ).first()
+    
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    previous_priority = order.priority
+    if order.status in [OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot change priority for {order.status} orders"
+        )
     
-    validate_priority_escalation(previous_priority, priority_data.priority)
+    old_priority = order.priority
+    validate_priority_escalation(old_priority, priority_data.priority)
     
     order.priority = priority_data.priority
     order.priority_updated_at = datetime.utcnow()
     
-    db.commit()
-    db.refresh(order)
-    
-    logger.info(
-        f"Order {order_id} priority changed from {previous_priority.value} "
-        f"to {priority_data.priority.value}. Reason: {priority_data.reason or 'Not specified'}"
-    )
-    
-    from ..schemas.order_schemas import OrderPriorityResponse
-    return OrderPriorityResponse(
-        message=f"Order priority updated to {priority_data.priority.value}",
-        order=OrderOut.model_validate(order),
-        previous_priority=previous_priority.value,
-        priority_updated_at=order.priority_updated_at
-    )
+    try:
+        db.commit()
+        db.refresh(order)
+        
+        logger.info(
+            f"Order {order_id} priority changed from {old_priority.value} "
+            f"to {priority_data.priority.value}. Reason: {priority_data.reason or 'Not specified'}"
+        )
+        
+        from ..schemas.order_schemas import OrderPriorityResponse
+        return OrderPriorityResponse(
+            message=f"Order priority updated from {old_priority.value} to {priority_data.priority.value}",
+            previous_priority=old_priority.value,
+            new_priority=priority_data.priority.value,
+            updated_at=order.priority_updated_at,
+            reason=priority_data.reason,
+            data=OrderOut.model_validate(order)
+        )
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update order priority: {str(e)}"
+        )
 
 
 async def validate_multi_item_rules(

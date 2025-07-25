@@ -16,7 +16,7 @@ from ..schemas.order_schemas import (
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
     OrderPriorityResponse
 )
-from ..enums.order_enums import OrderStatus
+from ..enums.order_enums import OrderStatus, OrderPriority
 
 
 async def update_order(order_id: int, order_data: OrderUpdate, db: Session):
@@ -34,14 +34,17 @@ async def list_orders(
     table_no: Optional[int] = None,
     tag_ids: Optional[List[int]] = None,
     category_id: Optional[int] = None,
+    priority: Optional[OrderPriority] = None,
+    min_priority: Optional[OrderPriority] = None,
     limit: int = 100,
     offset: int = 0,
     include_items: bool = False
 ) -> List[OrderOut]:
     orders = await get_orders_service(
         db, status=status, staff_id=staff_id, table_no=table_no,
-        tag_ids=tag_ids, category_id=category_id,
-        limit=limit, offset=offset, include_items=include_items
+        tag_ids=tag_ids, category_id=category_id, priority=priority,
+        min_priority=min_priority, limit=limit, offset=offset, 
+        include_items=include_items
     )
     return [OrderOut.model_validate(order) for order in orders]
 
