@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 79
-exclude = .git,__pycache__,.venv,venv,env,.pytest_cache,build,dist,*.egg-info
+exclude = .git,__pycache__,.venv,venv,env,.pytest_cache,build,dist,*.egg-info,alembic
 extend-ignore = W503
