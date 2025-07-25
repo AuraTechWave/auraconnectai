@@ -130,7 +130,6 @@ class RecommendationService:
                 detail="Failed to calculate dynamic price"
             )
 
-
     def _calculate_time_adjustment(self, time_of_day: str) -> float:
         time_adjustments = {
             "breakfast": -0.05,

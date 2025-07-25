@@ -82,7 +82,6 @@ class PricingService:
                 detail="Failed to calculate bulk pricing"
             )
 
-
     async def apply_dynamic_pricing_to_order(
         self,
         request: ApplyDynamicPricingRequest
@@ -183,7 +182,6 @@ class PricingService:
                 detail="Failed to apply dynamic pricing to order"
             )
 
-
     def _create_fallback_pricing(
         self, request: DynamicPricingRequest
     ) -> DynamicPricingResponse:
@@ -196,7 +194,6 @@ class PricingService:
             pricing_source="static_fallback",
             timestamp=datetime.now()
         )
-
 
     def _build_pricing_context(self) -> PricingContext:
         current_hour = datetime.now().hour
@@ -224,7 +221,6 @@ class PricingService:
             demand_level=demand_level,
             inventory_level=75.0
         )
-
 
     def _log_pricing_decision(
         self,
