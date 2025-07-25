@@ -31,6 +31,7 @@ class Order(Base, TimestampMixin):
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")
+    payment_reconciliations = relationship("PaymentReconciliation", back_populates="order")
 
 
 class OrderItem(Base, TimestampMixin):

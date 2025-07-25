@@ -1,0 +1,56 @@
+from sqlalchemy.orm import Session
+from typing import List
+from ..services.payment_reconciliation_service import (
+    create_payment_reconciliation, get_payment_reconciliation_by_id,
+    update_payment_reconciliation, get_payment_reconciliations,
+    perform_payment_reconciliation, resolve_payment_discrepancy
+)
+from ..schemas.payment_reconciliation_schemas import (
+    PaymentReconciliationCreate, PaymentReconciliationUpdate,
+    PaymentReconciliationOut, ReconciliationRequest, ReconciliationResponse,
+    ReconciliationFilter, ResolutionRequest
+)
+
+
+async def create_reconciliation(
+    reconciliation_data: PaymentReconciliationCreate, 
+    db: Session
+) -> PaymentReconciliationOut:
+    return await create_payment_reconciliation(db, reconciliation_data)
+
+
+async def get_reconciliation_by_id(
+    reconciliation_id: int, 
+    db: Session
+) -> PaymentReconciliationOut:
+    return await get_payment_reconciliation_by_id(db, reconciliation_id)
+
+
+async def update_reconciliation(
+    reconciliation_id: int,
+    update_data: PaymentReconciliationUpdate,
+    db: Session
+) -> PaymentReconciliationOut:
+    return await update_payment_reconciliation(db, reconciliation_id, update_data)
+
+
+async def list_reconciliations(
+    filters: ReconciliationFilter,
+    db: Session
+) -> List[PaymentReconciliationOut]:
+    return await get_payment_reconciliations(db, filters)
+
+
+async def reconcile_payments(
+    request: ReconciliationRequest,
+    db: Session
+) -> ReconciliationResponse:
+    return await perform_payment_reconciliation(db, request)
+
+
+async def resolve_discrepancy(
+    reconciliation_id: int,
+    resolution_data: ResolutionRequest,
+    db: Session
+) -> PaymentReconciliationOut:
+    return await resolve_payment_discrepancy(db, reconciliation_id, resolution_data)
