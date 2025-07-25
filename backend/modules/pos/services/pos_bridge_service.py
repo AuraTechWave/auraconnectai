@@ -167,7 +167,7 @@ class POSBridgeService:
         integration = self.db.query(POSIntegration).filter(
             POSIntegration.id == integration_id
         ).first()
-        
+
         if not integration:
             return {"success": False, "message": "Integration not found"}
 
@@ -178,21 +178,23 @@ class POSBridgeService:
 
         for attempt in range(self.max_retries):
             try:
-                vendor_orders = await adapter.get_vendor_orders(since_timestamp)
-                
+                vendor_orders = await adapter.get_vendor_orders(
+                    since_timestamp
+                )
+
                 results = []
                 for order_data in vendor_orders.get("orders", []):
                     result = await self._process_vendor_order(
                         order_data, integration, tenant_id, team_id
                     )
                     results.append(result)
-                
+
                 return {
                     "success": True,
                     "message": f"Processed {len(results)} orders",
                     "results": results
                 }
-                
+
             except Exception as e:
                 sync_log = POSSyncLog(
                     integration_id=integration_id,
@@ -301,30 +303,30 @@ class POSBridgeService:
         existing_order = self.db.query(Order).filter(
             Order.external_id == external_id
         ).first()
-        
+
         if existing_order:
             return {
                 "external_id": external_id,
                 "status": "skipped",
                 "message": "Order already exists"
             }
-        
+
         transform_result = await self._transform_pos_order_data(
             order_data, integration.vendor
         )
-        
+
         if not transform_result.success:
             return {
                 "external_id": external_id,
                 "status": "failed",
                 "message": transform_result.error_message
             }
-        
+
         try:
             order = await self._create_order_from_pos_data(
                 transform_result.order_data, external_id, tenant_id, team_id
             )
-            
+
             sync_log = POSSyncLog(
                 integration_id=integration.id,
                 type=POSSyncType.ORDER_PULL.value,
@@ -336,14 +338,14 @@ class POSBridgeService:
             )
             self.db.add(sync_log)
             self.db.commit()
-            
+
             return {
                 "external_id": external_id,
                 "order_id": order.id,
                 "status": "created",
                 "message": "Order created successfully"
             }
-            
+
         except Exception as e:
             return {
                 "external_id": external_id,
@@ -374,11 +376,15 @@ class POSBridgeService:
                 error_message=f"Transformation failed: {str(e)}"
             )
 
-    def _transform_toast_order(self, order_data: Dict[str, Any]) -> POSOrderTransformResult:
+    def _transform_toast_order(
+        self, order_data: Dict[str, Any]
+    ) -> POSOrderTransformResult:
         transformed = {
             "staff_id": 1,
             "table_no": order_data.get("metadata", {}).get("tableNumber"),
-            "status": self._map_pos_status_to_aura_status(order_data.get("status", "pending")),
+            "status": self._map_pos_status_to_aura_status(
+                order_data.get("status", "pending")
+            ),
             "order_items": [
                 {
                     "menu_item_id": item.get("menuItemId", 1),
@@ -389,33 +395,43 @@ class POSBridgeService:
                 for item in order_data.get("selections", [])
             ]
         }
-        
+
         return POSOrderTransformResult(success=True, order_data=transformed)
 
-    def _transform_square_order(self, order_data: Dict[str, Any]) -> POSOrderTransformResult:
+    def _transform_square_order(
+        self, order_data: Dict[str, Any]
+    ) -> POSOrderTransformResult:
         order = order_data.get("order", {})
         transformed = {
             "staff_id": 1,
             "table_no": order.get("metadata", {}).get("table_no"),
-            "status": self._map_pos_status_to_aura_status(order.get("state", "pending")),
+            "status": self._map_pos_status_to_aura_status(
+                order.get("state", "pending")
+            ),
             "order_items": [
                 {
                     "menu_item_id": 1,
                     "quantity": int(item.get("quantity", 1)),
-                    "price": float(item.get("base_price_money", {}).get("amount", 0)) / 100,
+                    "price": float(
+                        item.get("base_price_money", {}).get("amount", 0)
+                    ) / 100,
                     "notes": item.get("note", "")
                 }
                 for item in order.get("line_items", [])
             ]
         }
-        
+
         return POSOrderTransformResult(success=True, order_data=transformed)
 
-    def _transform_clover_order(self, order_data: Dict[str, Any]) -> POSOrderTransformResult:
+    def _transform_clover_order(
+        self, order_data: Dict[str, Any]
+    ) -> POSOrderTransformResult:
         transformed = {
             "staff_id": 1,
             "table_no": order_data.get("metadata", {}).get("table_number"),
-            "status": self._map_pos_status_to_aura_status(order_data.get("state", "pending")),
+            "status": self._map_pos_status_to_aura_status(
+                order_data.get("state", "pending")
+            ),
             "order_items": [
                 {
                     "menu_item_id": 1,
@@ -426,7 +442,7 @@ class POSBridgeService:
                 for item in order_data.get("lineItems", [])
             ]
         }
-        
+
         return POSOrderTransformResult(success=True, order_data=transformed)
 
     def _map_pos_status_to_aura_status(self, pos_status: str) -> str:
@@ -438,7 +454,9 @@ class POSBridgeService:
             "completed": OrderStatus.COMPLETED.value,
             "cancelled": OrderStatus.CANCELLED.value
         }
-        return status_mapping.get(pos_status.lower(), OrderStatus.PENDING.value)
+        return status_mapping.get(
+            pos_status.lower(), OrderStatus.PENDING.value
+        )
 
     async def _create_order_from_pos_data(
         self,
@@ -453,10 +471,10 @@ class POSBridgeService:
             status=order_data["status"],
             external_id=external_id
         )
-        
+
         self.db.add(order)
         self.db.flush()
-        
+
         for item_data in order_data["order_items"]:
             order_item = OrderItem(
                 order_id=order.id,
@@ -466,7 +484,7 @@ class POSBridgeService:
                 notes=item_data.get("notes")
             )
             self.db.add(order_item)
-        
+
         self.db.commit()
         self.db.refresh(order)
         return order

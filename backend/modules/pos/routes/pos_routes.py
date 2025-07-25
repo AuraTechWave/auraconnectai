@@ -159,30 +159,36 @@ async def pos_webhook_receiver(
         integration = db.query(POSIntegration).filter(
             POSIntegration.id == integration_id
         ).first()
-        
+
         if not integration:
-            raise HTTPException(status_code=404, detail="Integration not found")
-        
+            raise HTTPException(
+                status_code=404, detail="Integration not found"
+            )
+
         webhook_secret = integration.credentials.get("webhook_secret")
         if webhook_secret:
             signature = request.headers.get("X-Webhook-Signature")
             if not signature or not _verify_webhook_signature(
                 await request.body(), webhook_secret, signature
             ):
-                raise HTTPException(status_code=401, detail="Invalid webhook signature")
-        
+                raise HTTPException(
+                    status_code=401, detail="Invalid webhook signature"
+                )
+
         payload = await request.json()
-        
+
         service = POSBridgeService(db)
         result = await service._process_vendor_order(
             payload.get("order", payload), integration
         )
-        
+
         return {"success": True, "result": result}
-        
+
     except Exception as e:
         logger.error(f"Webhook processing failed: {str(e)}")
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
+        raise HTTPException(
+            status_code=500, detail="Webhook processing failed"
+        )
 
 
 @router.post("/sync/pull/{integration_id}")
@@ -211,31 +217,33 @@ async def get_pos_orders(
     integration = db.query(POSIntegration).filter(
         POSIntegration.id == integration_id
     ).first()
-    
+
     if not integration:
         raise HTTPException(status_code=404, detail="Integration not found")
-    
+
     adapter = AdapterFactory.create_adapter(
         POSVendor(integration.vendor),
         integration.credentials
     )
-    
+
     try:
         orders = await adapter.get_vendor_orders(since)
         return {"success": True, "orders": orders}
     except Exception as e:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Failed to fetch orders: {str(e)}"
         )
 
 
-def _verify_webhook_signature(payload: bytes, secret: str, signature: str) -> bool:
+def _verify_webhook_signature(
+    payload: bytes, secret: str, signature: str
+) -> bool:
     """Verify webhook signature for security"""
     expected_signature = hmac.new(
         secret.encode(),
         payload,
         hashlib.sha256
     ).hexdigest()
-    
+
     return hmac.compare_digest(f"sha256={expected_signature}", signature)

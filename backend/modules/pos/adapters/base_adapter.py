@@ -24,6 +24,8 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+    async def get_vendor_orders(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         """Pull orders from POS system, optionally filtered by timestamp"""
         pass

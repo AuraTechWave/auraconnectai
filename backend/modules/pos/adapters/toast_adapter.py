@@ -70,13 +70,15 @@ class ToastAdapter(BasePOSAdapter):
             }
         }
 
-    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+    async def get_vendor_orders(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             try:
                 params = {}
                 if since_timestamp:
                     params["modifiedAfter"] = since_timestamp.isoformat()
-                
+
                 response = await client.get(
                     f"{self.base_url}/orders/v2/orders",
                     headers=self.headers,

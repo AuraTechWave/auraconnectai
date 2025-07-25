@@ -70,13 +70,15 @@ class SquareAdapter(BasePOSAdapter):
             }
         }
 
-    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+    async def get_vendor_orders(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             try:
                 params = {}
                 if since_timestamp:
                     params["updated_at"] = f">{since_timestamp.isoformat()}"
-                
+
                 response = await client.get(
                     f"{self.base_url}/orders/search",
                     headers=self.headers,

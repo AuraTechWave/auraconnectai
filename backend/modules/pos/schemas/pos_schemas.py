@@ -52,7 +52,7 @@ class POSOrderRequest(BaseModel):
     vendor: POSVendor
     order_data: Dict[str, Any]
     timestamp: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -62,13 +62,13 @@ class POSOrderTransformResult(BaseModel):
     order_data: Optional[Dict[str, Any]] = None
     error_message: Optional[str] = None
     conflicts: Optional[List[str]] = None
-    
-    
+
+
 class POSWebhookAuth(BaseModel):
     integration_id: int
     webhook_secret: str
-    
-    
+
+
 class POSOrderSyncRequest(BaseModel):
     integration_id: int
     since_timestamp: Optional[datetime] = None

@@ -69,13 +69,16 @@ class CloverAdapter(BasePOSAdapter):
             )
         }
 
-    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+    async def get_vendor_orders(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             try:
                 params = {}
                 if since_timestamp:
-                    params["filter"] = f"modifiedTime>={int(since_timestamp.timestamp() * 1000)}"
-                
+                    timestamp_ms = int(since_timestamp.timestamp() * 1000)
+                    params["filter"] = f"modifiedTime>={timestamp_ms}"
+
                 response = await client.get(
                     f"{self.base_url}/merchants/{self.merchant_id}/orders",
                     headers=self.headers,
