@@ -254,9 +254,11 @@ class ArchivedOrdersFilter(BaseModel):
 
 
 class OrderPriorityUpdate(BaseModel):
-    priority: OrderPriority = Field(..., description="New priority level for the order")
-    reason: Optional[str] = Field(None, max_length=500, description="Reason for priority change")
-    
+    priority: OrderPriority = Field(
+        ..., description="New priority level for the order")
+    reason: Optional[str] = Field(
+        None, max_length=500, description="Reason for priority change")
+
     @validator('reason')
     def validate_reason(cls, v):
         if v and len(v.strip()) == 0:
@@ -271,7 +273,7 @@ class OrderPriorityResponse(BaseModel):
     updated_at: datetime
     reason: Optional[str] = None
     data: OrderOut
-    
+
     model_config = {"from_attributes": True}
 
 

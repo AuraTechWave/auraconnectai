@@ -10,7 +10,7 @@ from ..services.order_service import (
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
     archive_order_service, restore_order_service, get_archived_orders_service,
-    update_order_priority_service, get_order_audit_events_service, 
+    update_order_priority_service, get_order_audit_events_service,
     count_order_audit_events_service, generate_kitchen_print_ticket_service,
     update_customer_notes, add_attachment, get_attachments, delete_attachment
 )
@@ -18,7 +18,7 @@ from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
-    OrderPriorityResponse, OrderAuditResponse, OrderAuditEvent,
+    OrderAuditResponse, OrderAuditEvent,
     KitchenPrintRequest, KitchenPrintResponse,
     CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
 )
@@ -50,7 +50,7 @@ async def list_orders(
     orders = await get_orders_service(
         db, status=status, staff_id=staff_id, table_no=table_no,
         tag_ids=tag_ids, category_id=category_id, priority=priority,
-        min_priority=min_priority, limit=limit, offset=offset, 
+        min_priority=min_priority, limit=limit, offset=offset,
         include_items=include_items
     )
     return [OrderOut.model_validate(order) for order in orders]

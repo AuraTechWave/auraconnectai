@@ -21,8 +21,8 @@ from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
-    OrderPriorityResponse, OrderAuditResponse, FraudCheckRequest, 
-    FraudCheckResponse, CustomerNotesUpdate, OrderAttachmentOut, 
+    OrderPriorityResponse, OrderAuditResponse, FraudCheckRequest,
+    FraudCheckResponse, CustomerNotesUpdate, OrderAttachmentOut,
     AttachmentResponse, OrderItemUpdate
 )
 from ..models.order_models import Order
@@ -387,18 +387,19 @@ async def get_archived_orders_endpoint(
 @router.put("/{order_id}/priority", response_model=OrderPriorityResponse)
 async def update_priority(
     order_id: int = Path(..., gt=0, description="Order ID to update"),
-    priority_data: OrderPriorityUpdate = Body(..., description="Priority update data"),
+    priority_data: OrderPriorityUpdate = Body(
+        ..., description="Priority update data"),
     db: Session = Depends(get_db)
 ):
     """
     Update the priority of an order.
-    
+
     Priority levels (highest to lowest):
     - URGENT: Critical orders requiring immediate attention
     - HIGH: Important orders that should be prioritized
     - NORMAL: Standard priority (default)
     - LOW: Orders that can wait if needed
-    
+
     **Notes:**
     - Cannot change priority for completed or cancelled orders
     - Priority changes are logged with timestamps
@@ -409,14 +410,16 @@ async def update_priority(
 
 @router.get("/queue", response_model=List[OrderOut])
 async def get_kitchen_queue(
-    priority_filter: Optional[OrderPriority] = Query(None, description="Filter by minimum priority"),
+    priority_filter: Optional[OrderPriority] = Query(
+        None, description="Filter by minimum priority"),
     db: Session = Depends(get_db)
 ):
     """Get kitchen queue sorted by priority."""
     from ..enums.order_enums import OrderStatus
-    
-    kitchen_statuses = [OrderStatus.PENDING.value, OrderStatus.IN_PROGRESS.value]
-    
+
+    kitchen_statuses = [OrderStatus.PENDING.value,
+                        OrderStatus.IN_PROGRESS.value]
+
     orders = await get_orders_service(
         db=db,
         status=None,
@@ -424,33 +427,37 @@ async def get_kitchen_queue(
         include_items=True,
         limit=50
     )
-    
-    kitchen_orders = [order for order in orders if order.status in kitchen_statuses]
+
+    kitchen_orders = [order for order in orders
+                      if order.status in kitchen_statuses]
     return kitchen_orders
 
 
 @router.get("/analytics/priority-distribution")
 async def get_priority_distribution(
-    date_from: Optional[datetime] = Query(None, description="Start date for analysis"),
-    date_to: Optional[datetime] = Query(None, description="End date for analysis"),
+    date_from: Optional[datetime] = Query(
+        None, description="Start date for analysis"),
+    date_to: Optional[datetime] = Query(
+        None, description="End date for analysis"),
     db: Session = Depends(get_db)
 ):
     """Get distribution of orders by priority level."""
     from sqlalchemy import func
-    
+
     query = db.query(
         Order.priority,
         func.count(Order.id).label('count')
     ).group_by(Order.priority)
-    
+
     if date_from:
         query = query.filter(Order.created_at >= date_from)
     if date_to:
         query = query.filter(Order.created_at <= date_to)
-    
+
     results = query.all()
     return {
-        (row.priority.value if hasattr(row.priority, 'value') else str(row.priority)): row.count 
+        (row.priority.value if hasattr(row.priority, 'value')
+         else str(row.priority)): row.count
         for row in results
     }
 

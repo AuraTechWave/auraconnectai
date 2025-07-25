@@ -455,16 +455,19 @@ class TestArchiveService:
 class TestOrderPriority:
 
     @pytest.mark.asyncio
-    async def test_update_order_priority_success(self, db_session, sample_order):
+    async def test_update_order_priority_success(self, db_session,
+                                                 sample_order):
         """Test successful order priority update."""
-        priority_data = OrderPriorityUpdate(priority=OrderPriority.HIGH, reason="Rush order")
-        result = await update_order_priority_service(sample_order.id, priority_data, db_session)
-        
+        priority_data = OrderPriorityUpdate(priority=OrderPriority.HIGH,
+                                            reason="Rush order")
+        result = await update_order_priority_service(sample_order.id,
+                                                     priority_data, db_session)
+
         assert result.message == "Order priority updated from normal to high"
         assert result.data.priority == OrderPriority.HIGH
         assert result.previous_priority == "normal"
         assert result.new_priority == "high"
-        
+
         db_session.refresh(sample_order)
         assert sample_order.priority == OrderPriority.HIGH.value
         assert sample_order.priority_updated_at is not None
@@ -482,24 +485,32 @@ class TestOrderPriority:
     async def test_get_orders_priority_sorting(self, db_session):
         """Test that orders are sorted by priority correctly."""
         from backend.modules.orders.models.order_models import Order
-        
-        order_low = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.LOW.value)
-        order_normal = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.NORMAL.value)
-        order_high = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.HIGH.value)
-        order_urgent = Order(staff_id=1, status=OrderStatus.PENDING.value, priority=OrderPriority.URGENT.value)
-        
+
+        order_low = Order(staff_id=1, status=OrderStatus.PENDING.value,
+                          priority=OrderPriority.LOW.value)
+        order_normal = Order(staff_id=1, status=OrderStatus.PENDING.value,
+                             priority=OrderPriority.NORMAL.value)
+        order_high = Order(staff_id=1, status=OrderStatus.PENDING.value,
+                           priority=OrderPriority.HIGH.value)
+        order_urgent = Order(staff_id=1, status=OrderStatus.PENDING.value,
+                             priority=OrderPriority.URGENT.value)
+
         db_session.add_all([order_low, order_normal, order_high, order_urgent])
         db_session.commit()
-        
+
         orders = await get_orders_service(db_session, limit=10)
-        
+
         priorities = [order.priority for order in orders]
-        
-        urgent_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.URGENT.value), None)
-        high_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.HIGH.value), None)
-        normal_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.NORMAL.value), None)
-        low_index = next((i for i, p in enumerate(priorities) if p == OrderPriority.LOW.value), None)
-        
+
+        urgent_index = next((i for i, p in enumerate(priorities)
+                             if p == OrderPriority.URGENT.value), None)
+        high_index = next((i for i, p in enumerate(priorities)
+                           if p == OrderPriority.HIGH.value), None)
+        normal_index = next((i for i, p in enumerate(priorities)
+                             if p == OrderPriority.NORMAL.value), None)
+        low_index = next((i for i, p in enumerate(priorities)
+                          if p == OrderPriority.LOW.value), None)
+
         if urgent_index is not None and high_index is not None:
             assert urgent_index < high_index
         if high_index is not None and normal_index is not None:

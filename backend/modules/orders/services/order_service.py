@@ -14,8 +14,8 @@ from ..models.order_models import (
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
     DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
-    OrderPriorityUpdate, KitchenPrintRequest, KitchenPrintResponse, 
-    KitchenTicketFormat, CustomerNotesUpdate, OrderAttachmentOut, 
+    OrderPriorityUpdate, KitchenPrintRequest, KitchenPrintResponse,
+    KitchenTicketFormat, CustomerNotesUpdate, OrderAttachmentOut,
     SpecialInstructionBase
 )
 from ...pos.services.pos_bridge_service import POSBridgeService
@@ -276,14 +276,16 @@ async def get_orders_service(
 
     if not include_archived:
         query = query.filter(Order.status != OrderStatus.ARCHIVED.value)
-    
+
     if priority:
         query = query.filter(Order.priority == priority)
-    
+
     if min_priority:
         priority_values = {
-            OrderPriority.LOW: [OrderPriority.LOW, OrderPriority.NORMAL, OrderPriority.HIGH, OrderPriority.URGENT],
-            OrderPriority.NORMAL: [OrderPriority.NORMAL, OrderPriority.HIGH, OrderPriority.URGENT],
+            OrderPriority.LOW: [OrderPriority.LOW, OrderPriority.NORMAL,
+                                OrderPriority.HIGH, OrderPriority.URGENT],
+            OrderPriority.NORMAL: [OrderPriority.NORMAL, OrderPriority.HIGH,
+                                   OrderPriority.URGENT],
             OrderPriority.HIGH: [OrderPriority.HIGH, OrderPriority.URGENT],
             OrderPriority.URGENT: [OrderPriority.URGENT]
         }
@@ -311,8 +313,8 @@ async def get_orders_service(
 
 
 async def update_order_priority_service(
-    order_id: int, 
-    priority_data: OrderPriorityUpdate, 
+    order_id: int,
+    priority_data: OrderPriorityUpdate,
     db: Session,
     user_id: Optional[int] = None
 ):
@@ -320,41 +322,44 @@ async def update_order_priority_service(
         Order.id == order_id,
         Order.deleted_at.is_(None)
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
-    if order.status in [OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]:
+
+    if order.status in [OrderStatus.COMPLETED.value,
+                        OrderStatus.CANCELLED.value]:
         raise HTTPException(
             status_code=400,
             detail=f"Cannot change priority for {order.status} orders"
         )
-    
+
     old_priority = order.priority
     validate_priority_escalation(old_priority, priority_data.priority)
-    
+
     order.priority = priority_data.priority
     order.priority_updated_at = datetime.utcnow()
-    
+
     try:
         db.commit()
         db.refresh(order)
-        
+
         logger.info(
             f"Order {order_id} priority changed from {old_priority.value} "
-            f"to {priority_data.priority.value}. Reason: {priority_data.reason or 'Not specified'}"
+            f"to {priority_data.priority.value}. "
+            f"Reason: {priority_data.reason or 'Not specified'}"
         )
-        
+
         from ..schemas.order_schemas import OrderPriorityResponse
         return OrderPriorityResponse(
-            message=f"Order priority updated from {old_priority.value} to {priority_data.priority.value}",
+            message=(f"Order priority updated from {old_priority.value} "
+                     f"to {priority_data.priority.value}"),
             previous_priority=old_priority.value,
             new_priority=priority_data.priority.value,
             updated_at=order.priority_updated_at,
             reason=priority_data.reason,
             data=OrderOut.model_validate(order)
         )
-        
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -743,15 +748,15 @@ def validate_priority_escalation(
 ) -> bool:
     """
     Validate priority escalation based on business rules.
-    
+
     Args:
         current_priority: Current order priority
         new_priority: Requested new priority
         user_permissions: List of user permissions (for future use)
-    
+
     Returns:
         bool: True if escalation is allowed
-    
+
     Raises:
         HTTPException: If escalation is not allowed
     """
@@ -761,19 +766,20 @@ def validate_priority_escalation(
         OrderPriority.HIGH: 3,
         OrderPriority.URGENT: 4
     }
-    
+
     current_level = priority_levels[current_priority]
     new_level = priority_levels[new_priority]
-    
+
     if new_level <= current_level:
         return True
-    
+
     level_jump = new_level - current_level
     if level_jump > 2:
         logger.warning(
-            f"Large priority jump detected: {current_priority.value} to {new_priority.value}"
+            f"Large priority jump detected: {current_priority.value} "
+            f"to {new_priority.value}"
         )
-    
+
     return True
 
 

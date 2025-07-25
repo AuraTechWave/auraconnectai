@@ -33,8 +33,8 @@ class Order(Base, TimestampMixin):
     delay_reason = Column(String, nullable=True)
     delay_requested_at = Column(DateTime, nullable=True)
     priority = Column(
-        Enum(OrderPriority), 
-        nullable=False, 
+        Enum(OrderPriority),
+        nullable=False,
         default=OrderPriority.NORMAL,
         index=True
     )
@@ -51,13 +51,14 @@ class Order(Base, TimestampMixin):
     category = relationship("Category", back_populates="orders")
     print_tickets = relationship("PrintTicket", back_populates="order")
     attachments = relationship("OrderAttachment", back_populates="order")
-    
-    def update_priority(self, new_priority: OrderPriority, user_id: Optional[int] = None):
+
+    def update_priority(self, new_priority: OrderPriority,
+                        user_id: Optional[int] = None):
         """Update order priority with audit trail."""
         old_priority = self.priority
         self.priority = new_priority
         self.priority_updated_at = datetime.utcnow()
-        
+
         return {
             "old_priority": old_priority,
             "new_priority": new_priority,
