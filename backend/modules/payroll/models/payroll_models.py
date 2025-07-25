@@ -114,12 +114,28 @@ class EmployeePayment(Base, TimestampMixin):
     processed_at = Column(DateTime, nullable=True)
 
     # Relationships
-    payroll_policy = relationship("PayrollPolicy", back_populates="employee_payments")
-    tax_applications = relationship("EmployeePaymentTaxApplication", back_populates="employee_payment")
-    
+    payroll_policy = relationship(
+        "PayrollPolicy",
+        back_populates="employee_payments"
+    )
+    tax_applications = relationship(
+        "EmployeePaymentTaxApplication",
+        back_populates="employee_payment"
+    )
+
     __table_args__ = (
-        UniqueConstraint('staff_id', 'pay_period_start', 'pay_period_end', name='uq_employee_payment_period'),
-        Index('ix_employee_payments_staff_period', 'staff_id', 'pay_period_start', 'pay_period_end'),
+        UniqueConstraint(
+            'staff_id',
+            'pay_period_start',
+            'pay_period_end',
+            name='uq_employee_payment_period'
+        ),
+        Index(
+            'ix_employee_payments_staff_period',
+            'staff_id',
+            'pay_period_start',
+            'pay_period_end'
+        ),
         Index('ix_employee_payments_pay_date', 'pay_date'),
         Index('ix_employee_payments_status', 'payment_status'),
         Index('ix_employee_payments_tenant_staff', 'tenant_id', 'staff_id'),
