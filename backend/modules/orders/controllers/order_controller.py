@@ -4,6 +4,7 @@ from datetime import datetime
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules,
+    create_order_with_fraud_check,
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
@@ -66,6 +67,18 @@ async def validate_order_rules(
         rule_request.order_items,
         rule_request.rule_types,
         db
+    )
+
+
+async def create_order_with_validation(
+    order_data: dict,
+    db: Session,
+    skip_fraud_check: bool = False
+):
+    return await create_order_with_fraud_check(
+        db,
+        order_data,
+        perform_fraud_validation=not skip_fraud_check
     )
 
 

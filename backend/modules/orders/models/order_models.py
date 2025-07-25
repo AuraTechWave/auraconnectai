@@ -28,6 +28,11 @@ class Order(Base, TimestampMixin):
     delay_reason = Column(String, nullable=True)
     delay_requested_at = Column(DateTime, nullable=True)
 
+    fraud_risk_score = Column(Numeric(5, 2), nullable=True, default=0.0)
+    fraud_status = Column(String, nullable=False, default="pending")
+    fraud_last_check = Column(DateTime, nullable=True)
+    fraud_flags = Column(Text, nullable=True)
+
     order_items = relationship("OrderItem", back_populates="order")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
     category = relationship("Category", back_populates="orders")

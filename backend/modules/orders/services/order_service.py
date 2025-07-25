@@ -7,8 +7,10 @@ from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
     DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut
 )
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus)
 from .inventory_service import deduct_inventory
+from .fraud_service import perform_fraud_check
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -192,6 +194,33 @@ async def validate_multi_item_rules(
         message="All rules passed",
         modified_items=modified_items if modified_items else None
     )
+
+
+async def create_order_with_fraud_check(
+    db: Session,
+    order_data: dict,
+    perform_fraud_validation: bool = True
+):
+    order = Order(**order_data)
+    db.add(order)
+    db.flush()
+
+    if perform_fraud_validation:
+        fraud_result = await perform_fraud_check(
+            db, order.id, force_recheck=True)
+
+        if fraud_result.status == FraudCheckStatus.FAILED:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Order blocked due to fraud detection. "
+                       f"Risk level: {fraud_result.risk_level.value}"
+            )
+        elif fraud_result.status == FraudCheckStatus.MANUAL_REVIEW:
+            order.status = "pending_review"
+
+    db.commit()
+    return order
 
 
 async def schedule_delayed_fulfillment(

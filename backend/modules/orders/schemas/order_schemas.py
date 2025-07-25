@@ -2,7 +2,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus, FraudRiskLevel,
+                                 CheckpointType)
 
 
 class OrderItemUpdate(BaseModel):
@@ -117,6 +119,45 @@ class RuleValidationResult(BaseModel):
     is_valid: bool
     message: Optional[str] = None
     modified_items: Optional[List[OrderItemOut]] = None
+
+
+class FraudCheckRequest(BaseModel):
+    order_id: int
+    checkpoint_types: Optional[List[CheckpointType]] = None
+    force_recheck: bool = False
+
+
+class FraudCheckResponse(BaseModel):
+    order_id: int
+    risk_score: float
+    risk_level: FraudRiskLevel
+    status: FraudCheckStatus
+    flags: Optional[List[str]] = None
+    checked_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FraudAlertCreate(BaseModel):
+    order_id: int
+    alert_type: str
+    severity: FraudRiskLevel
+    description: str
+    metadata: Optional[dict] = None
+
+
+class FraudAlertOut(BaseModel):
+    id: int
+    order_id: int
+    alert_type: str
+    severity: FraudRiskLevel
+    description: str
+    resolved: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class OrderTagRequest(BaseModel):
