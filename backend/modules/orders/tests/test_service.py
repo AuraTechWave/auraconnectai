@@ -2,13 +2,16 @@ import pytest
 from fastapi import HTTPException
 from backend.modules.orders.services.order_service import (
     get_order_by_id, update_order_service, get_orders_service,
-    validate_multi_item_rules
+    validate_multi_item_rules, schedule_delayed_fulfillment,
+    get_scheduled_orders, process_due_delayed_orders,
+    archive_order_service, restore_order_service,
+    get_archived_orders_service
 )
 from backend.modules.orders.schemas.order_schemas import (
-    OrderUpdate, OrderItemUpdate
+    OrderUpdate, OrderItemUpdate, DelayFulfillmentRequest
 )
 from backend.modules.orders.enums.order_enums import (
-    OrderStatus, MultiItemRuleType
+    OrderStatus, MultiItemRuleType, DelayReason
 )
 from backend.modules.orders.models.order_models import Order
 from datetime import datetime
@@ -190,3 +193,260 @@ class TestMultiItemRules:
         ]
         result = await validate_multi_item_rules(items)
         assert result.is_valid is True
+
+
+class TestDelayedFulfillment:
+
+    @pytest.mark.asyncio
+    async def test_schedule_delayed_fulfillment_success(self, db_session,
+                                                        sample_order):
+        """Test successful order delay scheduling."""
+        future_time = datetime(2025, 12, 31, 15, 30, 0)
+        delay_data = DelayFulfillmentRequest(
+            scheduled_fulfillment_time=future_time,
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value,
+            additional_notes="Customer requested later delivery"
+        )
+
+        result = await schedule_delayed_fulfillment(sample_order.id,
+                                                    delay_data, db_session)
+
+        assert result["message"] == "Order scheduled for delayed fulfillment"
+        assert result["data"].status == OrderStatus.DELAYED.value
+        assert result["data"].scheduled_fulfillment_time == future_time
+        expected_reason = DelayReason.CUSTOMER_REQUEST.value
+        assert result["data"].delay_reason == expected_reason
+        assert result["data"].delay_requested_at is not None
+
+    @pytest.mark.asyncio
+    async def test_schedule_delayed_fulfillment_invalid_status(
+        self, db_session, sample_order
+    ):
+        """Test delay scheduling with invalid order status."""
+        sample_order.status = OrderStatus.COMPLETED.value
+        db_session.commit()
+
+        future_time = datetime(2025, 12, 31, 15, 30, 0)
+        delay_data = DelayFulfillmentRequest(
+            scheduled_fulfillment_time=future_time,
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await schedule_delayed_fulfillment(sample_order.id, delay_data,
+                                               db_session)
+        assert exc_info.value.status_code == 400
+        assert "Cannot delay order" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_schedule_delayed_fulfillment_past_time(self, db_session,
+                                                          sample_order):
+        """Test delay scheduling with past time."""
+        past_time = datetime(2020, 1, 1, 12, 0, 0)
+        delay_data = DelayFulfillmentRequest(
+            scheduled_fulfillment_time=past_time,
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await schedule_delayed_fulfillment(sample_order.id, delay_data,
+                                               db_session)
+        assert exc_info.value.status_code == 400
+        assert "must be in the future" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_schedule_delayed_fulfillment_order_not_found(self,
+                                                                db_session):
+        """Test delay scheduling with non-existent order."""
+        future_time = datetime(2025, 12, 31, 15, 30, 0)
+        delay_data = DelayFulfillmentRequest(
+            scheduled_fulfillment_time=future_time,
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await schedule_delayed_fulfillment(999, delay_data, db_session)
+        assert exc_info.value.status_code == 404
+        assert "Order not found" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_get_scheduled_orders_no_filters(self, db_session):
+        """Test getting scheduled orders without filters."""
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
+        db_session.add_all([order1, order2])
+        db_session.commit()
+
+        orders = await get_scheduled_orders(db_session)
+        assert len(orders) == 2
+        time_check = (orders[0].scheduled_fulfillment_time <=
+                      orders[1].scheduled_fulfillment_time)
+        assert time_check
+
+    @pytest.mark.asyncio
+    async def test_get_scheduled_orders_with_time_filters(self, db_session):
+        """Test getting scheduled orders with time range filters."""
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
+        order3 = Order(
+            staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0)
+        )
+        db_session.add_all([order1, order2, order3])
+        db_session.commit()
+
+        from_time = datetime(2025, 12, 31, 12, 0, 0)
+        to_time = datetime(2025, 12, 31, 16, 0, 0)
+
+        orders = await get_scheduled_orders(db_session, from_time, to_time)
+        assert len(orders) == 1
+        expected_time = datetime(2025, 12, 31, 14, 0, 0)
+        assert orders[0].scheduled_fulfillment_time == expected_time
+
+    @pytest.mark.asyncio
+    async def test_process_due_delayed_orders_success(self, db_session):
+        """Test processing orders that are due for fulfillment."""
+        past_time = datetime(2020, 1, 1, 12, 0, 0)
+        future_time = datetime(2025, 12, 31, 15, 0, 0)
+
+        order1 = Order(staff_id=1, status=OrderStatus.SCHEDULED.value,
+                       scheduled_fulfillment_time=past_time)
+        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
+                       scheduled_fulfillment_time=future_time)
+        order3 = Order(staff_id=3, status=OrderStatus.DELAYED.value,
+                       scheduled_fulfillment_time=past_time)
+        db_session.add_all([order1, order2, order3])
+        db_session.commit()
+
+        result = await process_due_delayed_orders(db_session)
+
+        assert "Processed 1 due orders" in result["message"]
+        assert len(result["processed_orders"]) == 1
+        expected_status = OrderStatus.AWAITING_FULFILLMENT.value
+        assert result["processed_orders"][0].status == expected_status
+
+        db_session.refresh(order1)
+        db_session.refresh(order2)
+        db_session.refresh(order3)
+        assert order1.status == OrderStatus.AWAITING_FULFILLMENT.value
+        assert order2.status == OrderStatus.SCHEDULED.value
+        assert order3.status == OrderStatus.DELAYED.value
+
+    @pytest.mark.asyncio
+    async def test_process_due_delayed_orders_no_due_orders(self, db_session):
+        """Test processing when no orders are due."""
+        future_time = datetime(2025, 12, 31, 15, 0, 0)
+
+        order = Order(staff_id=1, status=OrderStatus.SCHEDULED.value,
+                      scheduled_fulfillment_time=future_time)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await process_due_delayed_orders(db_session)
+
+        assert "Processed 0 due orders" in result["message"]
+        assert len(result["processed_orders"]) == 0
+
+
+class TestArchiveService:
+
+    @pytest.mark.asyncio
+    async def test_archive_completed_order_success(self, db_session):
+        """Test successful archiving of completed order."""
+        order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await archive_order_service(db_session, order.id)
+
+        assert result["message"] == "Order archived successfully"
+        assert result["data"].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_archive_cancelled_order_success(self, db_session):
+        """Test successful archiving of cancelled order."""
+        order = Order(staff_id=1, status=OrderStatus.CANCELLED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await archive_order_service(db_session, order.id)
+
+        assert result["message"] == "Order archived successfully"
+        assert result["data"].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_archive_pending_order_failure(self, db_session):
+        """Test that pending orders cannot be archived."""
+        order = Order(staff_id=1, status=OrderStatus.PENDING.value)
+        db_session.add(order)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await archive_order_service(db_session, order.id)
+
+        assert exc_info.value.status_code == 400
+        assert ("Only completed or cancelled orders can be archived"
+                in exc_info.value.detail)
+
+    @pytest.mark.asyncio
+    async def test_restore_archived_order_success(self, db_session):
+        """Test successful restoration of archived order."""
+        order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        result = await restore_order_service(db_session, order.id)
+
+        assert result["message"] == "Order restored successfully"
+        assert result["data"].status == OrderStatus.COMPLETED.value
+
+    @pytest.mark.asyncio
+    async def test_restore_non_archived_order_failure(self, db_session):
+        """Test that non-archived orders cannot be restored."""
+        order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add(order)
+        db_session.commit()
+
+        with pytest.raises(HTTPException) as exc_info:
+            await restore_order_service(db_session, order.id)
+
+        assert exc_info.value.status_code == 400
+        assert "Only archived orders can be restored" in exc_info.value.detail
+
+    @pytest.mark.asyncio
+    async def test_get_archived_orders_filtering(self, db_session):
+        """Test filtering of archived orders."""
+        archived_order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        completed_order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add_all([archived_order, completed_order])
+        db_session.commit()
+
+        archived_orders = await get_archived_orders_service(db_session)
+
+        assert len(archived_orders) == 1
+        assert archived_orders[0].status == OrderStatus.ARCHIVED.value
+
+    @pytest.mark.asyncio
+    async def test_get_orders_excludes_archived_by_default(self, db_session):
+        """Test that regular order queries exclude archived orders."""
+        archived_order = Order(staff_id=1, status=OrderStatus.ARCHIVED.value)
+        completed_order = Order(staff_id=1, status=OrderStatus.COMPLETED.value)
+        db_session.add_all([archived_order, completed_order])
+        db_session.commit()
+
+        orders = await get_orders_service(db_session)
+
+        assert len(orders) == 1
+        assert orders[0].status == OrderStatus.COMPLETED.value
