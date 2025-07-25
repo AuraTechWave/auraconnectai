@@ -1,16 +1,86 @@
 from sqlalchemy.orm import Session, joinedload
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from typing import List, Optional
 from datetime import datetime
-from ..models.order_models import Order, OrderItem, Tag, Category
+from ..models.order_models import (
+    Order, OrderItem, Tag, Category, OrderAttachment
+)
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
     DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
-    KitchenPrintRequest, KitchenPrintResponse, KitchenTicketFormat
+    KitchenPrintRequest, KitchenPrintResponse, KitchenTicketFormat,
+    CustomerNotesUpdate, OrderAttachmentOut, SpecialInstructionBase
 )
 from ...pos.services.pos_bridge_service import POSBridgeService
-from ..enums.order_enums import OrderStatus, MultiItemRuleType
+from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
+                                 FraudCheckStatus)
 from .inventory_service import deduct_inventory
+from .fraud_service import perform_fraud_check
+from backend.core.file_service import file_service
+import re
+
+
+def serialize_instructions_to_notes(
+        instructions: List[SpecialInstructionBase]) -> str:
+    """Convert structured instructions to formatted notes text"""
+    if not instructions:
+        return ""
+
+    instruction_texts = []
+    for instruction in instructions:
+        priority_prefix = (f"[P{instruction.priority}] "
+                           if instruction.priority else "")
+        station_prefix = (f"[{instruction.target_station}] "
+                          if instruction.target_station else "")
+        instruction_text = (
+            f"{priority_prefix}{station_prefix}"
+            f"{instruction.instruction_type.value.upper()}: "
+            f"{instruction.description}"
+        )
+        instruction_texts.append(instruction_text)
+
+    return " | ".join(instruction_texts)
+
+
+def parse_notes_to_instructions(notes: str) -> List[dict]:
+    """Parse formatted notes back to structured instructions"""
+    if not notes:
+        return []
+
+    instructions = []
+    parts = [part.strip() for part in notes.split(" | ")]
+
+    for part in parts:
+        if not re.search(r'[A-Z]+:', part):
+            continue
+
+        priority = None
+        target_station = None
+
+        priority_match = re.search(r'\[P(\d+)\]', part)
+        if priority_match:
+            priority = int(priority_match.group(1))
+            part = re.sub(r'\[P\d+\]\s*', '', part)
+
+        station_match = re.search(r'\[([A-Z_]+)\]', part)
+        if station_match:
+            target_station = station_match.group(1)
+            part = re.sub(r'\[[A-Z_]+\]\s*', '', part)
+
+        type_match = re.search(r'([A-Z_]+):\s*(.+)', part)
+        if type_match:
+            instruction_type = type_match.group(1).lower()
+            description = type_match.group(2).strip()
+
+            instructions.append({
+                "instruction_type": instruction_type,
+                "description": description,
+                "priority": priority,
+                "target_station": target_station
+            })
+
+    return instructions
+
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -76,15 +146,33 @@ async def update_order_service(
         order.status = order_update.status.value
 
     if order_update.order_items is not None:
+        existing_items = {item.menu_item_id: item
+                          for item in order.order_items}
+
         db.query(OrderItem).filter(OrderItem.order_id == order_id).delete()
 
         for item_data in order_update.order_items:
+            existing_item = existing_items.get(item_data.menu_item_id)
+            existing_notes = existing_item.notes if existing_item else ""
+            processed_notes = item_data.notes or existing_notes or ""
+
+            special_instructions_json = None
+            if item_data.special_instructions:
+                special_instructions_json = [
+                    instr.dict() for instr in item_data.special_instructions
+                ]
+                structured_notes = serialize_instructions_to_notes(
+                    item_data.special_instructions)
+                processed_notes = (f"{processed_notes} | {structured_notes}"
+                                   if processed_notes else structured_notes)
+
             new_item = OrderItem(
                 order_id=order_id,
                 menu_item_id=item_data.menu_item_id,
                 quantity=item_data.quantity,
                 price=item_data.price,
-                notes=item_data.notes
+                notes=processed_notes,
+                special_instructions=special_instructions_json
             )
             db.add(new_item)
 
@@ -194,6 +282,33 @@ async def validate_multi_item_rules(
         message="All rules passed",
         modified_items=modified_items if modified_items else None
     )
+
+
+async def create_order_with_fraud_check(
+    db: Session,
+    order_data: dict,
+    perform_fraud_validation: bool = True
+):
+    order = Order(**order_data)
+    db.add(order)
+    db.flush()
+
+    if perform_fraud_validation:
+        fraud_result = await perform_fraud_check(
+            db, order.id, force_recheck=True)
+
+        if fraud_result.status == FraudCheckStatus.FAILED:
+            db.rollback()
+            raise HTTPException(
+                status_code=400,
+                detail=f"Order blocked due to fraud detection. "
+                       f"Risk level: {fraud_result.risk_level.value}"
+            )
+        elif fraud_result.status == FraudCheckStatus.MANUAL_REVIEW:
+            order.status = "pending_review"
+
+    db.commit()
+    return order
 
 
 async def schedule_delayed_fulfillment(
@@ -588,3 +703,109 @@ def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
         content += f"SPECIAL: {ticket_data.special_instructions}\n"
 
     return content
+
+
+async def update_customer_notes(
+    order_id: int, notes_update: CustomerNotesUpdate, db: Session
+):
+    order = db.query(Order).options(
+        joinedload(Order.attachments),
+        joinedload(Order.tags),
+        joinedload(Order.category)
+    ).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    order.customer_notes = notes_update.customer_notes
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "message": "Customer notes updated successfully",
+        "data": OrderOut.model_validate(order)
+    }
+
+
+async def add_attachment(
+    order_id: int,
+    file: UploadFile,
+    db: Session,
+    description: Optional[str] = None,
+    is_public: bool = False
+):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    try:
+        file_data = await file_service.upload_file(file, folder="orders")
+
+        attachment = OrderAttachment(
+            order_id=order_id,
+            file_name=file_data["file_name"],
+            file_url=file_data["file_url"],
+            file_type=file_data["file_type"],
+            file_size=file_data["file_size"],
+            description=description,
+            is_public=is_public
+        )
+        db.add(attachment)
+        db.commit()
+        db.refresh(attachment)
+
+        return {
+            "message": "Attachment uploaded successfully",
+            "data": OrderAttachmentOut.model_validate(attachment)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add attachment: {str(e)}"
+        )
+
+
+async def get_attachments(order_id: int,
+                          db: Session) -> List[OrderAttachmentOut]:
+    order = db.query(Order).options(joinedload(Order.attachments)).filter(
+        Order.id == order_id
+    ).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    attachments = db.query(OrderAttachment).filter(
+        OrderAttachment.order_id == order_id,
+        OrderAttachment.deleted_at.is_(None)
+    ).all()
+
+    return [OrderAttachmentOut.model_validate(attachment)
+            for attachment in attachments]
+
+
+async def delete_attachment(attachment_id: int, db: Session):
+    attachment = db.query(OrderAttachment).filter(
+        OrderAttachment.id == attachment_id,
+        OrderAttachment.deleted_at.is_(None)
+    ).first()
+
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    try:
+        file_service.delete_file(attachment.file_url)
+
+        attachment.deleted_at = datetime.utcnow()
+        db.commit()
+
+        return {
+            "message": "Attachment deleted successfully",
+            "data": {"id": attachment_id}
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete attachment: {str(e)}"
+        )

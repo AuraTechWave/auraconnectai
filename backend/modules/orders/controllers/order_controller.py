@@ -1,20 +1,24 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+from fastapi import UploadFile
 from ..services.order_service import (
     update_order_service, get_order_by_id as get_order_service,
     get_orders_service, validate_multi_item_rules,
+    create_order_with_fraud_check,
     schedule_delayed_fulfillment, get_scheduled_orders,
     add_tags_to_order, remove_tag_from_order, set_order_category,
     create_tag, get_tags, create_category, get_categories,
     archive_order_service, restore_order_service, get_archived_orders_service,
-    generate_kitchen_print_ticket_service
+    generate_kitchen_print_ticket_service,
+    update_customer_notes, add_attachment, get_attachments, delete_attachment
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut,
-    KitchenPrintRequest, KitchenPrintResponse
+    KitchenPrintRequest, KitchenPrintResponse,
+    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
 )
 from ..enums.order_enums import OrderStatus
 
@@ -68,6 +72,61 @@ async def validate_order_rules(
         rule_request.order_items,
         rule_request.rule_types,
         db
+    )
+
+
+async def validate_special_instructions(
+    order_items: List[OrderItemUpdate],
+    db: Session
+) -> dict:
+    validation_results = []
+    for item in order_items:
+        if item.special_instructions:
+            if len(item.special_instructions) > 10:
+                validation_results.append({
+                    "item_id": item.menu_item_id,
+                    "error": (f"Too many instructions (max 10), "
+                              f"got {len(item.special_instructions)}")
+                })
+
+            for instruction in item.special_instructions:
+                if not instruction.description.strip():
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": "Instruction description cannot be empty"
+                    })
+
+                if (instruction.priority and
+                        (instruction.priority < 1 or
+                         instruction.priority > 5)):
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": (f"Priority must be between 1-5, "
+                                  f"got {instruction.priority}")
+                    })
+
+                if (instruction.target_station and
+                        len(instruction.target_station) > 50):
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": (f"Station name too long (max 50 chars), "
+                                  f"got {len(instruction.target_station)}")
+                    })
+    return {
+        "valid": len(validation_results) == 0,
+        "errors": validation_results
+    }
+
+
+async def create_order_with_validation(
+    order_data: dict,
+    db: Session,
+    skip_fraud_check: bool = False
+):
+    return await create_order_with_fraud_check(
+        db,
+        order_data,
+        perform_fraud_validation=not skip_fraud_check
     )
 
 
@@ -157,3 +216,29 @@ async def generate_kitchen_print_ticket(
     return await generate_kitchen_print_ticket_service(
         order_id, print_request, db
     )
+
+
+async def update_order_notes(
+    order_id: int, notes_update: CustomerNotesUpdate, db: Session
+):
+    return await update_customer_notes(order_id, notes_update, db)
+
+
+async def upload_order_attachment(
+    order_id: int,
+    file: UploadFile,
+    db: Session,
+    description: Optional[str] = None,
+    is_public: bool = False
+):
+    return await add_attachment(order_id, file, db, description, is_public)
+
+
+async def list_order_attachments(
+    order_id: int, db: Session
+) -> List[OrderAttachmentOut]:
+    return await get_attachments(order_id, db)
+
+
+async def remove_order_attachment(attachment_id: int, db: Session):
+    return await delete_attachment(attachment_id, db)
