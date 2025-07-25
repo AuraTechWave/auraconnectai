@@ -217,8 +217,9 @@ class TestDelayedFulfillment:
         assert result["data"].delay_requested_at is not None
 
     @pytest.mark.asyncio
-    async def test_schedule_delayed_fulfillment_invalid_status(self, db_session,
-                                                               sample_order):
+    async def test_schedule_delayed_fulfillment_invalid_status(
+        self, db_session, sample_order
+    ):
         """Test delay scheduling with invalid order status."""
         sample_order.status = OrderStatus.COMPLETED.value
         db_session.commit()
@@ -269,12 +270,14 @@ class TestDelayedFulfillment:
     @pytest.mark.asyncio
     async def test_get_scheduled_orders_no_filters(self, db_session):
         """Test getting scheduled orders without filters."""
-        order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            10, 0, 0))
-        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            14, 0, 0))
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
         db_session.add_all([order1, order2])
         db_session.commit()
 
@@ -287,16 +290,18 @@ class TestDelayedFulfillment:
     @pytest.mark.asyncio
     async def test_get_scheduled_orders_with_time_filters(self, db_session):
         """Test getting scheduled orders with time range filters."""
-        order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            10, 0, 0))
-        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            14, 0, 0))
-        order3 = Order(staff_id=3,
-                       status=OrderStatus.AWAITING_FULFILLMENT.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            18, 0, 0))
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
+        order3 = Order(
+            staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0)
+        )
         db_session.add_all([order1, order2, order3])
         db_session.commit()
 

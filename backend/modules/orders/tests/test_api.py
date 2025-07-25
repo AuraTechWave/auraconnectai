@@ -322,12 +322,14 @@ class TestDelayedFulfillmentAPI:
         """Test GET /orders/delayed returns delayed orders."""
         from backend.modules.orders.models.order_models import Order
 
-        order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            10, 0, 0))
-        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            14, 0, 0))
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
         order3 = Order(staff_id=3, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2, order3])
         db_session.commit()
@@ -345,16 +347,18 @@ class TestDelayedFulfillmentAPI:
         """Test GET /orders/delayed with time range filters."""
         from backend.modules.orders.models.order_models import Order
 
-        order1 = Order(staff_id=1, status=OrderStatus.DELAYED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            10, 0, 0))
-        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            14, 0, 0))
-        order3 = Order(staff_id=3,
-                       status=OrderStatus.AWAITING_FULFILLMENT.value,
-                       scheduled_fulfillment_time=datetime(2025, 12, 31,
-                                                            18, 0, 0))
+        order1 = Order(
+            staff_id=1, status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+        )
+        order2 = Order(
+            staff_id=2, status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+        )
+        order3 = Order(
+            staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0)
+        )
         db_session.add_all([order1, order2, order3])
         db_session.commit()
 

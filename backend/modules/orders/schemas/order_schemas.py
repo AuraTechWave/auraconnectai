@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from ..enums.order_enums import OrderStatus, MultiItemRuleType, DelayReason
+from ..enums.order_enums import OrderStatus, MultiItemRuleType
 
 
 class OrderItemUpdate(BaseModel):

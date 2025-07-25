@@ -101,7 +101,7 @@ async def delay_order(
 ):
     """
     Schedule an order for delayed fulfillment at a specified time.
-    
+
     - **order_id**: ID of the order to delay
     - **scheduled_fulfillment_time**: When the order should be fulfilled
     - **delay_reason**: Optional reason for the delay
@@ -122,7 +122,7 @@ async def get_delayed_orders_endpoint(
 ):
     """
     Retrieve orders scheduled for delayed fulfillment within a time range.
-    
+
     - **from_time**: Optional start time filter
     - **to_time**: Optional end time filter
     """
