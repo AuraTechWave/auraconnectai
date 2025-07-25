@@ -375,7 +375,6 @@ async def update_notes(
 ):
     """
     Update customer notes for an order.
-    
     - **order_id**: ID of the order to update
     - **customer_notes**: New customer notes text (can be null to clear notes)
     """
@@ -390,7 +389,6 @@ async def upload_attachment(
 ):
     """
     Upload a file attachment to an order.
-    
     - **order_id**: ID of the order to attach the file to
     - **file**: File to upload (supports common document and image formats)
     """
@@ -404,7 +402,6 @@ async def get_attachments(
 ):
     """
     Get all attachments for an order.
-    
     - **order_id**: ID of the order to get attachments for
     """
     return await list_order_attachments(order_id, db)
@@ -417,7 +414,6 @@ async def delete_attachment(
 ):
     """
     Delete a specific attachment.
-    
     - **attachment_id**: ID of the attachment to delete
     """
     return await remove_order_attachment(attachment_id, db)

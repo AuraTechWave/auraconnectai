@@ -521,11 +521,10 @@ async def update_customer_notes(
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
     order.customer_notes = notes_update.customer_notes
     db.commit()
     db.refresh(order)
-    
+
     return {
         "message": "Customer notes updated successfully",
         "data": OrderOut.model_validate(order)
@@ -538,10 +537,9 @@ async def add_attachment(
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
     try:
         file_data = await file_service.upload_file(file, folder="orders")
-        
+
         attachment = OrderAttachment(
             order_id=order_id,
             file_name=file_data["file_name"],
@@ -549,16 +547,15 @@ async def add_attachment(
             file_type=file_data["file_type"],
             file_size=file_data["file_size"]
         )
-        
         db.add(attachment)
         db.commit()
         db.refresh(attachment)
-        
+
         return {
             "message": "Attachment uploaded successfully",
             "data": OrderAttachmentOut.model_validate(attachment)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -569,34 +566,36 @@ async def add_attachment(
         )
 
 
-async def get_attachments(order_id: int, db: Session) -> List[OrderAttachmentOut]:
+async def get_attachments(order_id: int,
+                          db: Session) -> List[OrderAttachmentOut]:
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     attachments = db.query(OrderAttachment).filter(
         OrderAttachment.order_id == order_id
     ).all()
-    
-    return [OrderAttachmentOut.model_validate(attachment) for attachment in attachments]
+
+    return [OrderAttachmentOut.model_validate(attachment)
+            for attachment in attachments]
 
 
 async def delete_attachment(attachment_id: int, db: Session):
     attachment = db.query(OrderAttachment).filter(
         OrderAttachment.id == attachment_id
     ).first()
-    
+
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
-    
+
     try:
         file_service.delete_file(attachment.file_url)
-        
+
         db.delete(attachment)
         db.commit()
-        
+
         return {"message": "Attachment deleted successfully"}
-        
+
     except Exception as e:
         db.rollback()
         raise HTTPException(
