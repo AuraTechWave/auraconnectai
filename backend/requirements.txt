@@ -8,3 +8,5 @@ python-multipart
 boto3
 mkdocs
 mkdocs-material
+fastapi-limiter
+redis

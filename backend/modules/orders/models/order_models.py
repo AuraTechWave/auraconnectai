@@ -29,6 +29,7 @@ class Order(Base, TimestampMixin):
     scheduled_fulfillment_time = Column(DateTime, nullable=True)
     delay_reason = Column(String, nullable=True)
     delay_requested_at = Column(DateTime, nullable=True)
+    external_id = Column(String, nullable=True, index=True)
 
     fraud_risk_score = Column(Numeric(5, 2), nullable=True, default=0.0)
     fraud_status = Column(String, nullable=False, default="pending")
