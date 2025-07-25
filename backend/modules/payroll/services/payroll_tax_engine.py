@@ -115,7 +115,7 @@ class PayrollTaxEngine:
         
         # Handle expiry date (None means no expiry)
         query = query.filter(
-            (TaxRule.expiry_date.is_(None)) | 
+            (TaxRule.expiry_date.is_(None)) |
             (TaxRule.expiry_date > pay_date)
         )
         
@@ -263,9 +263,16 @@ class PayrollTaxEngine:
                 "rule_name": rule.rule_name,
                 "tax_type": rule.tax_type.value,
                 "rate_percent": float(rule.rate_percent),
-                "employee_portion": float(rule.employee_portion or rule.rate_percent),
-                "employer_portion": float(rule.employer_portion or Decimal('0.00')),
-                "max_taxable_amount": float(rule.max_taxable_amount) if rule.max_taxable_amount else None
+                "employee_portion": float(
+                    rule.employee_portion or rule.rate_percent
+                ),
+                "employer_portion": float(
+                    rule.employer_portion or Decimal('0.00')
+                ),
+                "max_taxable_amount": (
+                    float(rule.max_taxable_amount)
+                    if rule.max_taxable_amount else None
+                )
             }
             
             if rule.tax_type == TaxType.FEDERAL:

@@ -109,9 +109,9 @@ class PayrollTaxService:
         
         # Update total deductions (assumes other deductions remain the same)
         payment.total_deductions = (
-            tax_breakdown.federal_tax + tax_breakdown.state_tax + 
-            tax_breakdown.local_tax + tax_breakdown.social_security_tax + 
-            tax_breakdown.medicare_tax + payment.insurance_deduction + 
+            tax_breakdown.federal_tax + tax_breakdown.state_tax +
+            tax_breakdown.local_tax + tax_breakdown.social_security_tax +
+            tax_breakdown.medicare_tax + payment.insurance_deduction +
             payment.retirement_deduction + payment.other_deductions
         )
         
@@ -154,7 +154,9 @@ class PayrollTaxService:
             missing_jurisdictions.append("state")
         
         # Check for common payroll taxes
-        payroll_tax_types = [rule["tax_type"] for rule in jurisdiction_summary["payroll_taxes"]]
+        payroll_tax_types = [
+            rule["tax_type"] for rule in jurisdiction_summary["payroll_taxes"]
+        ]
         
         if "SOCIAL_SECURITY" not in payroll_tax_types:
             potential_issues.append("Missing Social Security tax rule")
@@ -210,11 +212,15 @@ class PayrollTaxService:
             
             effective_rates = {
                 "gross_pay": float(gross_pay),
-                "total_tax_rate": float(tax_calculation.total_taxes / gross_pay * 100),
+                "total_tax_rate": float(
+                    tax_calculation.total_taxes / gross_pay * 100
+                ),
                 "federal_rate": float(breakdown.federal_tax / gross_pay * 100),
                 "state_rate": float(breakdown.state_tax / gross_pay * 100),
                 "local_rate": float(breakdown.local_tax / gross_pay * 100),
-                "social_security_rate": float(breakdown.social_security_tax / gross_pay * 100),
+                "social_security_rate": float(
+                    breakdown.social_security_tax / gross_pay * 100
+                ),
                 "medicare_rate": float(breakdown.medicare_tax / gross_pay * 100),
                 "other_rate": float(breakdown.other_taxes / gross_pay * 100),
                 "net_pay_rate": float(tax_calculation.net_pay / gross_pay * 100),
