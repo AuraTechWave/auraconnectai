@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime
 from ..schemas.pos_schemas import SyncResponse
 
 
@@ -23,6 +24,6 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_vendor_orders(self) -> Dict[str, Any]:
-        """Pull orders from POS system"""
+    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
+        """Pull orders from POS system, optionally filtered by timestamp"""
         pass

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from ..enums.pos_enums import POSVendor
 
@@ -45,3 +45,31 @@ class SyncResponse(BaseModel):
     success: bool
     message: str
     sync_log_id: Optional[int] = None
+
+
+class POSOrderRequest(BaseModel):
+    external_id: str
+    vendor: POSVendor
+    order_data: Dict[str, Any]
+    timestamp: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class POSOrderTransformResult(BaseModel):
+    success: bool
+    order_data: Optional[Dict[str, Any]] = None
+    error_message: Optional[str] = None
+    conflicts: Optional[List[str]] = None
+    
+    
+class POSWebhookAuth(BaseModel):
+    integration_id: int
+    webhook_secret: str
+    
+    
+class POSOrderSyncRequest(BaseModel):
+    integration_id: int
+    since_timestamp: Optional[datetime] = None
+    limit: int = 100

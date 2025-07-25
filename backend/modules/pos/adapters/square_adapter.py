@@ -1,5 +1,6 @@
 import httpx
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime
 from .base_adapter import BasePOSAdapter
 from ..schemas.pos_schemas import SyncResponse
 
@@ -69,15 +70,20 @@ class SquareAdapter(BasePOSAdapter):
             }
         }
 
-    async def get_vendor_orders(self) -> Dict[str, Any]:
+    async def get_vendor_orders(self, since_timestamp: Optional[datetime] = None) -> Dict[str, Any]:
         async with httpx.AsyncClient() as client:
             try:
+                params = {}
+                if since_timestamp:
+                    params["updated_at"] = f">{since_timestamp.isoformat()}"
+                
                 response = await client.get(
                     f"{self.base_url}/orders/search",
                     headers=self.headers,
+                    params=params,
                     timeout=30.0
                 )
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPError:
-                return {}
+                return {"orders": []}
