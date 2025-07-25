@@ -35,7 +35,10 @@ async def list_webhook_configs(
     return await list_webhook_configurations(db, is_active)
 
 
-@router.get("/configurations/{config_id}", response_model=WebhookConfigurationOut)
+@router.get(
+    "/configurations/{config_id}",
+    response_model=WebhookConfigurationOut
+)
 async def get_webhook_config(
     config_id: int,
     db: Session = Depends(get_db)
@@ -43,7 +46,10 @@ async def get_webhook_config(
     return await get_webhook_configuration(config_id, db)
 
 
-@router.put("/configurations/{config_id}", response_model=WebhookConfigurationOut)
+@router.put(
+    "/configurations/{config_id}",
+    response_model=WebhookConfigurationOut
+)
 async def update_webhook_config(
     config_id: int,
     update_data: WebhookConfigurationUpdate,
@@ -60,7 +66,10 @@ async def delete_webhook_config(
     return await delete_webhook_configuration(config_id, db)
 
 
-@router.post("/configurations/{config_id}/test", response_model=WebhookTestResponse)
+@router.post(
+    "/configurations/{config_id}/test",
+    response_model=WebhookTestResponse
+)
 async def test_webhook_config(
     config_id: int,
     db: Session = Depends(get_db)
@@ -75,7 +84,9 @@ async def get_delivery_logs(
     limit: int = Query(100, le=1000),
     db: Session = Depends(get_db)
 ):
-    return await get_webhook_delivery_logs(db, webhook_config_id, order_id, limit)
+    return await get_webhook_delivery_logs(
+        db, webhook_config_id, order_id, limit
+    )
 
 
 @router.post("/incoming/{webhook_id}")
@@ -87,19 +98,20 @@ async def receive_incoming_webhook(
     try:
         body = await request.body()
         headers = dict(request.headers)
-        
+
         logger.info(f"Received incoming webhook {webhook_id}")
         logger.debug(f"Headers: {headers}")
         logger.debug(f"Body: {body.decode('utf-8')[:500]}")
-        
+
         return {
             "status": "received",
             "webhook_id": webhook_id,
             "timestamp": "2024-01-01T00:00:00Z"
         }
-        
     except Exception as e:
-        logger.error(f"Error processing incoming webhook {webhook_id}: {str(e)}")
+        logger.error(
+            f"Error processing incoming webhook {webhook_id}: {str(e)}"
+        )
         raise HTTPException(
             status_code=500,
             detail="Failed to process incoming webhook"

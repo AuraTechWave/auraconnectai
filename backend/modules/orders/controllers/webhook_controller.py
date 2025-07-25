@@ -25,10 +25,12 @@ async def get_webhook_configuration(
     webhook_config = db.query(WebhookConfiguration).filter(
         WebhookConfiguration.id == config_id
     ).first()
-    
+
     if not webhook_config:
-        raise HTTPException(status_code=404, detail="Webhook configuration not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Webhook configuration not found"
+        )
+
     return WebhookConfigurationOut.from_orm(webhook_config)
 
 
@@ -37,12 +39,13 @@ async def list_webhook_configurations(
     is_active: Optional[bool] = None
 ) -> List[WebhookConfigurationOut]:
     query = db.query(WebhookConfiguration)
-    
+
     if is_active is not None:
         query = query.filter(WebhookConfiguration.is_active == is_active)
-    
+
     webhook_configs = query.all()
-    return [WebhookConfigurationOut.from_orm(config) for config in webhook_configs]
+    return [WebhookConfigurationOut.from_orm(config)
+            for config in webhook_configs]
 
 
 async def update_webhook_configuration(
@@ -51,11 +54,15 @@ async def update_webhook_configuration(
     db: Session
 ) -> WebhookConfigurationOut:
     service = WebhookService(db)
-    webhook_config = await service.update_webhook_config(config_id, update_data)
-    
+    webhook_config = await service.update_webhook_config(
+        config_id, update_data
+    )
+
     if not webhook_config:
-        raise HTTPException(status_code=404, detail="Webhook configuration not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Webhook configuration not found"
+        )
+
     return WebhookConfigurationOut.from_orm(webhook_config)
 
 
@@ -66,13 +73,15 @@ async def delete_webhook_configuration(
     webhook_config = db.query(WebhookConfiguration).filter(
         WebhookConfiguration.id == config_id
     ).first()
-    
+
     if not webhook_config:
-        raise HTTPException(status_code=404, detail="Webhook configuration not found")
-    
+        raise HTTPException(
+            status_code=404, detail="Webhook configuration not found"
+        )
+
     db.delete(webhook_config)
     db.commit()
-    
+
     return {"message": "Webhook configuration deleted successfully"}
 
 
@@ -91,12 +100,16 @@ async def get_webhook_delivery_logs(
     limit: int = 100
 ) -> List[WebhookDeliveryLogOut]:
     query = db.query(WebhookDeliveryLog)
-    
+
     if webhook_config_id:
-        query = query.filter(WebhookDeliveryLog.webhook_config_id == webhook_config_id)
-    
+        query = query.filter(
+            WebhookDeliveryLog.webhook_config_id == webhook_config_id
+        )
+
     if order_id:
         query = query.filter(WebhookDeliveryLog.order_id == order_id)
-    
-    logs = query.order_by(WebhookDeliveryLog.created_at.desc()).limit(limit).all()
+
+    logs = query.order_by(
+        WebhookDeliveryLog.created_at.desc()
+    ).limit(limit).all()
     return [WebhookDeliveryLogOut.from_orm(log) for log in logs]

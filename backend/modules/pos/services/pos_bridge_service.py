@@ -422,7 +422,7 @@ class POSBridgeService:
 
             from ...orders.services.webhook_service import WebhookService
             from ...orders.enums.webhook_enums import WebhookEventType
-            
+
             webhook_service = WebhookService(self.db)
             await webhook_service.trigger_webhook(
                 order_id=order.id,

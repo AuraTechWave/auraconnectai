@@ -244,14 +244,14 @@ async def update_order_service(
 
     if status_changed:
         webhook_service = WebhookService(db)
-        
+
         if order.status == OrderStatus.COMPLETED.value:
             event_type = WebhookEventType.ORDER_COMPLETED
         elif order.status == OrderStatus.CANCELLED.value:
             event_type = WebhookEventType.ORDER_CANCELLED
         else:
             event_type = WebhookEventType.ORDER_STATUS_CHANGED
-            
+
         await webhook_service.trigger_webhook(
             order_id=order.id,
             event_type=event_type,
