@@ -10,3 +10,4 @@ mkdocs
 mkdocs-material
 fastapi-limiter
 redis
+httpx
