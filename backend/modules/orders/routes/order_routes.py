@@ -5,7 +5,8 @@ from datetime import datetime
 from backend.core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
-    validate_order_rules, delay_order_fulfillment, get_delayed_orders,
+    validate_order_rules, validate_special_instructions,
+    delay_order_fulfillment, get_delayed_orders,
     add_order_tags, remove_order_tag, update_order_category,
     create_new_tag, list_tags, create_new_category, list_categories,
     archive_order, restore_order, list_archived_orders,
@@ -20,7 +21,8 @@ from ..schemas.order_schemas import (
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut,
     FraudCheckRequest, FraudCheckResponse,
-    CustomerNotesUpdate, OrderAttachmentOut, AttachmentResponse
+    CustomerNotesUpdate, OrderAttachmentOut, AttachmentResponse,
+    OrderItemUpdate
 )
 from ..enums.order_enums import CheckpointType, FraudRiskLevel
 
@@ -112,6 +114,18 @@ async def validate_rules(
     and compatibility restrictions.
     """
     return await validate_order_rules(rule_request, db)
+
+
+@router.post("/validate-special-instructions")
+async def validate_special_instructions_endpoint(
+    order_items: List[OrderItemUpdate],
+    db: Session = Depends(get_db)
+):
+    """
+    Validate special instructions for order items including priority ranges
+    and instruction type validation.
+    """
+    return await validate_special_instructions(order_items, db)
 
 
 @router.post("/{order_id}/fraud-check", response_model=FraudCheckResponse)

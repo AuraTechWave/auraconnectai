@@ -8,13 +8,77 @@ from ..models.order_models import (
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
     DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
-    CustomerNotesUpdate, OrderAttachmentOut
+    CustomerNotesUpdate, OrderAttachmentOut, SpecialInstructionBase
 )
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType,
                                  FraudCheckStatus)
 from .inventory_service import deduct_inventory
 from .fraud_service import perform_fraud_check
 from backend.core.file_service import file_service
+import re
+
+
+def serialize_instructions_to_notes(
+        instructions: List[SpecialInstructionBase]) -> str:
+    """Convert structured instructions to formatted notes text"""
+    if not instructions:
+        return ""
+
+    instruction_texts = []
+    for instruction in instructions:
+        priority_prefix = (f"[P{instruction.priority}] "
+                           if instruction.priority else "")
+        station_prefix = (f"[{instruction.target_station}] "
+                          if instruction.target_station else "")
+        instruction_text = (
+            f"{priority_prefix}{station_prefix}"
+            f"{instruction.instruction_type.value.upper()}: "
+            f"{instruction.description}"
+        )
+        instruction_texts.append(instruction_text)
+
+    return " | ".join(instruction_texts)
+
+
+def parse_notes_to_instructions(notes: str) -> List[dict]:
+    """Parse formatted notes back to structured instructions"""
+    if not notes:
+        return []
+
+    instructions = []
+    parts = [part.strip() for part in notes.split(" | ")]
+
+    for part in parts:
+        if not re.search(r'[A-Z]+:', part):
+            continue
+
+        priority = None
+        target_station = None
+
+        priority_match = re.search(r'\[P(\d+)\]', part)
+        if priority_match:
+            priority = int(priority_match.group(1))
+            part = re.sub(r'\[P\d+\]\s*', '', part)
+
+        station_match = re.search(r'\[([A-Z_]+)\]', part)
+        if station_match:
+            target_station = station_match.group(1)
+            part = re.sub(r'\[[A-Z_]+\]\s*', '', part)
+
+        type_match = re.search(r'([A-Z_]+):\s*(.+)', part)
+        if type_match:
+            instruction_type = type_match.group(1).lower()
+            description = type_match.group(2).strip()
+
+            instructions.append({
+                "instruction_type": instruction_type,
+                "description": description,
+                "priority": priority,
+                "target_station": target_station
+            })
+
+    return instructions
+
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
@@ -80,15 +144,33 @@ async def update_order_service(
         order.status = order_update.status.value
 
     if order_update.order_items is not None:
+        existing_items = {item.menu_item_id: item
+                          for item in order.order_items}
+
         db.query(OrderItem).filter(OrderItem.order_id == order_id).delete()
 
         for item_data in order_update.order_items:
+            existing_item = existing_items.get(item_data.menu_item_id)
+            existing_notes = existing_item.notes if existing_item else ""
+            processed_notes = item_data.notes or existing_notes or ""
+
+            special_instructions_json = None
+            if item_data.special_instructions:
+                special_instructions_json = [
+                    instr.dict() for instr in item_data.special_instructions
+                ]
+                structured_notes = serialize_instructions_to_notes(
+                    item_data.special_instructions)
+                processed_notes = (f"{processed_notes} | {structured_notes}"
+                                   if processed_notes else structured_notes)
+
             new_item = OrderItem(
                 order_id=order_id,
                 menu_item_id=item_data.menu_item_id,
                 quantity=item_data.quantity,
                 price=item_data.price,
-                notes=item_data.notes
+                notes=processed_notes,
+                special_instructions=special_instructions_json
             )
             db.add(new_item)
 

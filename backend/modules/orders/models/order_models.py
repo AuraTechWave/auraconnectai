@@ -1,5 +1,6 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Numeric, Text, Table, Boolean)
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
@@ -54,6 +55,7 @@ class OrderItem(Base, TimestampMixin):
     adjustment_reason = Column(String, nullable=True)
     original_price = Column(Numeric(10, 2), nullable=True)
     notes = Column(Text, nullable=True)
+    special_instructions = Column(JSONB, nullable=True)
 
     order = relationship("Order", back_populates="order_items")
 

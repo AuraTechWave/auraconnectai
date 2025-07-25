@@ -35,6 +35,15 @@ class MultiItemRuleType(str, Enum):
     COMPATIBILITY = "compatibility"
 
 
+class SpecialInstructionType(str, Enum):
+    ALLERGEN = "allergen"
+    PREPARATION = "preparation"
+    TIMING = "timing"
+    TEMPERATURE = "temperature"
+    PRESENTATION = "presentation"
+    GENERAL = "general"
+
+
 class FraudCheckStatus(str, Enum):
     PENDING = "pending"
     PASSED = "passed"

@@ -16,7 +16,7 @@ from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, MultiItemRuleRequest, RuleValidationResult,
     DelayFulfillmentRequest, OrderTagRequest, OrderCategoryRequest,
     TagCreate, TagOut, CategoryCreate, CategoryOut,
-    CustomerNotesUpdate, OrderAttachmentOut
+    CustomerNotesUpdate, OrderAttachmentOut, OrderItemUpdate
 )
 from ..enums.order_enums import OrderStatus
 
@@ -71,6 +71,49 @@ async def validate_order_rules(
         rule_request.rule_types,
         db
     )
+
+
+async def validate_special_instructions(
+    order_items: List[OrderItemUpdate],
+    db: Session
+) -> dict:
+    validation_results = []
+    for item in order_items:
+        if item.special_instructions:
+            if len(item.special_instructions) > 10:
+                validation_results.append({
+                    "item_id": item.menu_item_id,
+                    "error": (f"Too many instructions (max 10), "
+                              f"got {len(item.special_instructions)}")
+                })
+
+            for instruction in item.special_instructions:
+                if not instruction.description.strip():
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": "Instruction description cannot be empty"
+                    })
+
+                if (instruction.priority and
+                        (instruction.priority < 1 or
+                         instruction.priority > 5)):
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": (f"Priority must be between 1-5, "
+                                  f"got {instruction.priority}")
+                    })
+
+                if (instruction.target_station and
+                        len(instruction.target_station) > 50):
+                    validation_results.append({
+                        "item_id": item.menu_item_id,
+                        "error": (f"Station name too long (max 50 chars), "
+                                  f"got {len(instruction.target_station)}")
+                    })
+    return {
+        "valid": len(validation_results) == 0,
+        "errors": validation_results
+    }
 
 
 async def create_order_with_validation(
