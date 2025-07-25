@@ -1,16 +1,16 @@
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import case
+from sqlalchemy import case, and_
 from fastapi import HTTPException, UploadFile
 from backend.core.file_service import file_service
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
                                  FraudCheckStatus)
 from ..enums.webhook_enums import WebhookEventType
 from ..models.order_models import (
-    Order, OrderItem, Tag, Category, OrderAttachment
+    Order, OrderItem, Tag, Category, OrderAttachment, AutoCancellationConfig
 )
 from ..schemas.order_schemas import (
     OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
@@ -23,7 +23,7 @@ from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
 from .webhook_service import WebhookService
-from backend.core.models.audit_models import AuditLog
+from backend.core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -1165,3 +1165,226 @@ async def delete_attachment(attachment_id: int, db: Session):
             status_code=500,
             detail=f"Failed to delete attachment: {str(e)}"
         )
+
+
+async def get_auto_cancellation_configs(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    status: Optional[OrderStatus] = None
+):
+    """Get auto-cancellation configurations with optional filtering."""
+    query = db.query(AutoCancellationConfig)
+
+    if tenant_id is not None:
+        query = query.filter(AutoCancellationConfig.tenant_id == tenant_id)
+    if team_id is not None:
+        query = query.filter(AutoCancellationConfig.team_id == team_id)
+    if status is not None:
+        query = query.filter(AutoCancellationConfig.status == status.value)
+
+    return query.all()
+
+
+async def create_or_update_auto_cancellation_config(
+    db: Session,
+    config_data: dict
+):
+    """Create or update auto-cancellation configuration."""
+    existing_config = db.query(AutoCancellationConfig).filter(
+        AutoCancellationConfig.tenant_id == config_data.get('tenant_id'),
+        AutoCancellationConfig.team_id == config_data.get('team_id'),
+        AutoCancellationConfig.status == config_data['status']
+    ).first()
+
+    if existing_config:
+        for key, value in config_data.items():
+            setattr(existing_config, key, value)
+        existing_config.updated_at = datetime.utcnow()
+        config = existing_config
+    else:
+        config = AutoCancellationConfig(**config_data)
+        db.add(config)
+
+    db.commit()
+    db.refresh(config)
+    return config
+
+
+async def detect_stale_orders(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None
+) -> List[Order]:
+    """Detect orders that have exceeded their configured time thresholds."""
+    configs = await get_auto_cancellation_configs(db, tenant_id, team_id)
+    active_configs = [c for c in configs if c.enabled]
+
+    if not active_configs:
+        return []
+
+    stale_orders = []
+    current_time = datetime.utcnow()
+
+    for config in active_configs:
+        threshold_time = current_time - timedelta(
+            minutes=config.threshold_minutes
+        )
+
+        query = db.query(Order).filter(
+            and_(
+                Order.status == config.status,
+                Order.updated_at <= threshold_time,
+                Order.deleted_at.is_(None)
+            )
+        )
+
+        stale_orders.extend(query.all())
+
+    return stale_orders
+
+
+async def cancel_stale_orders(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    team_id: Optional[int] = None,
+    system_user_id: int = 1
+) -> dict:
+    """Enhanced error handling and partial success reporting."""
+    stale_orders = await detect_stale_orders(db, tenant_id, team_id)
+
+    if not stale_orders:
+        return {
+            "cancelled_count": 0,
+            "cancelled_orders": [],
+            "message": "No stale orders found"
+        }
+
+    cancelled_orders = []
+    failed_orders = []
+
+    for order in stale_orders:
+        try:
+            current_status = OrderStatus(order.status)
+
+            if OrderStatus.CANCELLED not in VALID_TRANSITIONS.get(
+                current_status, []
+            ):
+                logger.warning(
+                    f"Order {order.id} with status {current_status} "
+                    f"cannot be auto-cancelled"
+                )
+                failed_orders.append({
+                    "order_id": order.id,
+                    "error": (
+                        f"Status {current_status} cannot transition to "
+                        f"CANCELLED"
+                    )
+                })
+                continue
+
+            order.status = OrderStatus.CANCELLED.value
+
+            await log_order_audit_event(
+                db=db,
+                order_id=order.id,
+                previous_status=current_status,
+                new_status=OrderStatus.CANCELLED,
+                user_id=system_user_id,
+                metadata={
+                    "cancellation_reason": "auto_cancellation_stale_order",
+                    "stale_duration_minutes": (
+                        datetime.utcnow() - order.updated_at
+                    ).total_seconds() / 60,
+                    "source": "system_auto_cancellation",
+                    "timestamp": datetime.utcnow().isoformat()
+                },
+                action="auto_cancellation"
+            )
+            cancelled_orders.append(order.id)
+
+            await notify_stale_order_cancellation(
+                order, "auto_cancellation_stale_order"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to cancel stale order {order.id}: {str(e)}")
+            failed_orders.append({"order_id": order.id, "error": str(e)})
+            continue
+
+    if cancelled_orders:
+        try:
+            db.commit()
+        except Exception as e:
+            logger.error(f"Failed to commit cancellations: {str(e)}")
+            db.rollback()
+            return {
+                "cancelled_count": 0,
+                "cancelled_orders": [],
+                "failed_orders": failed_orders,
+                "message": "Database commit failed"
+            }
+
+    return {
+        "cancelled_count": len(cancelled_orders),
+        "cancelled_orders": cancelled_orders,
+        "failed_orders": failed_orders,
+        "message": f"Successfully cancelled {len(cancelled_orders)} orders"
+    }
+
+
+async def create_default_auto_cancellation_configs(
+    db: Session,
+    tenant_id: Optional[int] = None,
+    updated_by: int = 1
+):
+    """Create sensible default configurations for a new tenant/team."""
+    default_configs = [
+        {
+            "status": "PENDING",
+            "threshold_minutes": 30,
+            "updated_by": updated_by
+        },
+        {
+            "status": "IN_PROGRESS",
+            "threshold_minutes": 90,
+            "updated_by": updated_by
+        },
+        {
+            "status": "IN_KITCHEN",
+            "threshold_minutes": 45,
+            "updated_by": updated_by
+        },
+    ]
+
+    created_configs = []
+    for config_data in default_configs:
+        if tenant_id:
+            config_data["tenant_id"] = tenant_id
+
+        config = await create_or_update_auto_cancellation_config(
+            db, config_data
+        )
+        created_configs.append(config)
+
+    return created_configs
+
+
+async def notify_stale_order_cancellation(order: Order, reason: str):
+    """Notify relevant stakeholders about auto-cancellation."""
+    notification_data = {
+        "order_id": order.id,
+        "table_no": order.table_no,
+        "cancellation_reason": reason,
+        "original_amount": sum(
+            item.price * item.quantity for item in order.order_items
+        ) if order.order_items else 0,
+        "stale_duration": (
+            datetime.utcnow() - order.updated_at
+        ).total_seconds() / 60
+    }
+
+    logger.info(
+        f"Auto-cancellation notification: Order {order.id} cancelled "
+        f"after {notification_data['stale_duration']:.1f} minutes"
+    )

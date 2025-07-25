@@ -23,10 +23,13 @@ from ..schemas.order_schemas import (
     TagCreate, TagOut, CategoryCreate, CategoryOut, OrderPriorityUpdate,
     OrderPriorityResponse, OrderAuditResponse, FraudCheckRequest,
     FraudCheckResponse, CustomerNotesUpdate, OrderAttachmentOut,
-    AttachmentResponse, OrderItemUpdate
+    AttachmentResponse, OrderItemUpdate, AutoCancellationConfigCreate,
+    AutoCancellationConfigOut, StaleCancellationResponse
 )
 from ..models.order_models import Order
-from ..enums.order_enums import OrderPriority, CheckpointType, FraudRiskLevel
+from ..enums.order_enums import (
+    OrderStatus, OrderPriority, CheckpointType, FraudRiskLevel
+)
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -539,3 +542,209 @@ async def delete_attachment(
     - **attachment_id**: ID of the attachment to delete
     """
     return await remove_order_attachment(attachment_id, db)
+
+
+@router.get(
+    "/auto-cancellation/configs",
+    response_model=List[AutoCancellationConfigOut]
+)
+async def get_auto_cancellation_configs(
+    tenant_id: Optional[int] = Query(
+        None, description="Filter by tenant ID"
+    ),
+    team_id: Optional[int] = Query(
+        None, description="Filter by team ID"
+    ),
+    status: Optional[OrderStatus] = Query(
+        None, description="Filter by order status"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Get auto-cancellation configurations with optional filtering.
+
+    - **tenant_id**: Filter by tenant ID
+    - **team_id**: Filter by team ID
+    - **status**: Filter by order status
+    """
+    from ..controllers.order_controller import (
+        get_auto_cancellation_configs_controller
+    )
+    configs = await get_auto_cancellation_configs_controller(
+        db, tenant_id, team_id, status
+    )
+    return [
+        AutoCancellationConfigOut.model_validate(config) for config in configs
+    ]
+
+
+@router.post(
+    "/auto-cancellation/configs", response_model=AutoCancellationConfigOut
+)
+async def create_auto_cancellation_config(
+    config_data: AutoCancellationConfigCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Create or update auto-cancellation configuration.
+
+    - **status**: Order status to configure (PENDING, IN_PROGRESS, IN_KITCHEN)
+    - **threshold_minutes**: Time threshold in minutes before cancellation
+    - **enabled**: Whether auto-cancellation is enabled for this config
+    - **tenant_id**: Optional tenant ID for multi-tenant setups
+    - **team_id**: Optional team ID for team-specific configurations
+    """
+    from ..controllers.order_controller import (
+        create_auto_cancellation_config_controller
+    )
+    config = await create_auto_cancellation_config_controller(
+        config_data.dict(), db
+    )
+    return AutoCancellationConfigOut.model_validate(config)
+
+
+@router.post(
+    "/auto-cancellation/trigger", response_model=StaleCancellationResponse
+)
+async def trigger_stale_order_cancellation(
+    tenant_id: Optional[int] = Query(
+        None, description="Filter by tenant ID"
+    ),
+    team_id: Optional[int] = Query(
+        None, description="Filter by team ID"
+    ),
+    system_user_id: int = Query(
+        1, description="System user ID for audit logging"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Manually trigger the stale order cancellation process.
+
+    This endpoint allows manual execution of the auto-cancellation logic,
+    useful for testing or immediate execution outside of scheduled runs.
+
+    - **tenant_id**: Optional tenant ID filter
+    - **team_id**: Optional team ID filter
+    - **system_user_id**: User ID to use for audit logging (defaults to 1)
+    """
+    from ..controllers.order_controller import (
+        trigger_stale_order_cancellation_controller
+    )
+    return await trigger_stale_order_cancellation_controller(
+        db, tenant_id, team_id, system_user_id
+    )
+
+
+@router.get("/auto-cancellation/stale-orders", response_model=List[OrderOut])
+async def detect_stale_orders(
+    tenant_id: Optional[int] = Query(
+        None, description="Filter by tenant ID"
+    ),
+    team_id: Optional[int] = Query(
+        None, description="Filter by team ID"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Detect stale orders without cancelling them.
+
+    This endpoint identifies orders that would be cancelled by the
+    auto-cancellation process without actually cancelling them.
+    Useful for monitoring and testing.
+
+    - **tenant_id**: Optional tenant ID filter
+    - **team_id**: Optional team ID filter
+    """
+    from ..controllers.order_controller import detect_stale_orders_controller
+    return await detect_stale_orders_controller(db, tenant_id, team_id)
+
+
+@router.post(
+    "/auto-cancellation/scheduled-run",
+    response_model=StaleCancellationResponse
+)
+async def scheduled_auto_cancellation(
+    tenant_id: Optional[int] = Query(
+        None, description="Filter by tenant ID"
+    ),
+    team_id: Optional[int] = Query(
+        None, description="Filter by team ID"
+    ),
+    system_user_id: int = Query(
+        1, description="System user ID for audit logging"
+    ),
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint for scheduled auto-cancellation execution.
+
+    This endpoint is designed to be called by external schedulers or cron jobs
+    to automatically cancel stale orders based on configured thresholds.
+
+    - **tenant_id**: Optional tenant ID filter
+    - **team_id**: Optional team ID filter
+    - **system_user_id**: User ID to use for audit logging (defaults to 1)
+    """
+    from ..services.auto_cancellation_scheduler import (
+        AutoCancellationScheduler
+    )
+    scheduler = AutoCancellationScheduler(db)
+    return await scheduler.run_auto_cancellation(
+        tenant_id, team_id, system_user_id
+    )
+
+
+@router.post("/auto-cancellation/create-defaults")
+async def create_default_auto_cancellation_configs(
+    tenant_id: Optional[int] = Query(None),
+    updated_by: int = Query(1),
+    db: Session = Depends(get_db)
+):
+    """Create default auto-cancellation configurations."""
+    from ..controllers.order_controller import (
+        create_default_configs_controller
+    )
+    configs = await create_default_configs_controller(
+        db, tenant_id, updated_by
+    )
+    return {
+        "message": f"Created {len(configs)} default configurations",
+        "configs": [
+            AutoCancellationConfigOut.model_validate(c) for c in configs
+        ]
+    }
+
+
+@router.get("/auto-cancellation/metrics")
+async def get_auto_cancellation_metrics(
+    from_date: Optional[datetime] = Query(None),
+    to_date: Optional[datetime] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Get auto-cancellation metrics and statistics."""
+    from sqlalchemy import func
+    from backend.core.compliance import AuditLog
+
+    query = db.query(
+        func.count(AuditLog.id).label('total_cancellations'),
+        func.date(AuditLog.timestamp).label('date')
+    ).filter(
+        AuditLog.action == 'auto_cancellation',
+        AuditLog.module == 'orders'
+    ).group_by(func.date(AuditLog.timestamp))
+
+    if from_date:
+        query = query.filter(AuditLog.timestamp >= from_date)
+    if to_date:
+        query = query.filter(AuditLog.timestamp <= to_date)
+
+    results = query.all()
+
+    return {
+        "total_auto_cancelled": sum(r.total_cancellations for r in results),
+        "daily_breakdown": [
+            {"date": r.date.isoformat(), "count": r.total_cancellations}
+            for r in results
+        ]
+    }
