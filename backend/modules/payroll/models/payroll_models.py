@@ -1,8 +1,13 @@
-from sqlalchemy import Column, Integer, String, Numeric, ForeignKey, DateTime, Boolean, Text, Enum, UniqueConstraint, Index
+from sqlalchemy import (
+    Column, Integer, String, Numeric, ForeignKey, DateTime,
+    Boolean, Text, Enum, UniqueConstraint, Index
+)
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
-from backend.modules.payroll.enums import PaymentStatus, PayFrequency, TaxType, PaymentMethod
+from backend.modules.payroll.enums import (
+    PaymentStatus, PayFrequency, TaxType, PaymentMethod
+)
 
 
 class TaxRule(Base, TimestampMixin):
@@ -24,7 +29,10 @@ class TaxRule(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    tax_applications = relationship("EmployeePaymentTaxApplication", back_populates="tax_rule")
+    tax_applications = relationship(
+        "EmployeePaymentTaxApplication",
+        back_populates="tax_rule"
+    )
 
 
 class PayrollPolicy(Base, TimestampMixin):
@@ -34,22 +42,35 @@ class PayrollPolicy(Base, TimestampMixin):
     policy_name = Column(String(100), nullable=False, index=True)
     location = Column(String(100), nullable=False, index=True)
     pay_frequency = Column(Enum(PayFrequency), nullable=False)
-    overtime_threshold_hours = Column(Numeric(6, 2), default=40.00, nullable=False)
+    overtime_threshold_hours = Column(
+        Numeric(6, 2), default=40.00, nullable=False
+    )
     overtime_multiplier = Column(Numeric(5, 4), default=1.5000, nullable=False)
     double_time_threshold_hours = Column(Numeric(6, 2), nullable=True)
-    double_time_multiplier = Column(Numeric(5, 4), default=2.0000, nullable=True)
-    pay_period_start_day = Column(Integer, nullable=False)  # 0=Monday, 6=Sunday
+    double_time_multiplier = Column(
+        Numeric(5, 4), default=2.0000, nullable=True
+    )
+    pay_period_start_day = Column(Integer, nullable=False)
     minimum_wage = Column(Numeric(8, 2), nullable=False)
-    meal_break_threshold_hours = Column(Numeric(6, 2), default=5.00, nullable=True)
-    rest_break_threshold_hours = Column(Numeric(6, 2), default=4.00, nullable=True)
-    holiday_pay_multiplier = Column(Numeric(5, 4), default=1.5000, nullable=True)
+    meal_break_threshold_hours = Column(
+        Numeric(6, 2), default=5.00, nullable=True
+    )
+    rest_break_threshold_hours = Column(
+        Numeric(6, 2), default=4.00, nullable=True
+    )
+    holiday_pay_multiplier = Column(
+        Numeric(5, 4), default=1.5000, nullable=True
+    )
     currency = Column(String(3), default='USD', nullable=False)
     tenant_id = Column(Integer, nullable=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    employee_payments = relationship("EmployeePayment", back_populates="payroll_policy")
+    employee_payments = relationship(
+        "EmployeePayment",
+        back_populates="payroll_policy"
+    )
     
     __table_args__ = (
         Index('ix_payroll_policies_location_active', 'location', 'is_active'),
@@ -61,8 +82,12 @@ class EmployeePayment(Base, TimestampMixin):
     __tablename__ = "employee_payments"
 
     id = Column(Integer, primary_key=True, index=True)
-    staff_id = Column(Integer, nullable=False, index=True)  # Reference to staff member
-    payroll_policy_id = Column(Integer, ForeignKey("payroll_policies.id"), nullable=False)
+    staff_id = Column(Integer, nullable=False, index=True)
+    payroll_policy_id = Column(
+        Integer,
+        ForeignKey("payroll_policies.id"),
+        nullable=False
+    )
     pay_period_start = Column(DateTime, nullable=False)
     pay_period_end = Column(DateTime, nullable=False)
     pay_date = Column(DateTime, nullable=False)

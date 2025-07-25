@@ -6,7 +6,9 @@ from sqlalchemy import pool
 from alembic import context
 
 from backend.core.database import Base
-from backend.modules.staff.models import staff_models, shift_models, attendance_models, payroll_models
+from backend.modules.staff.models import (
+    staff_models, shift_models, attendance_models, payroll_models
+)
 from backend.modules.orders.models import order_models
 from backend.modules.tax.models import tax_models
 from backend.modules.payroll.models import payroll_models as new_payroll_models
