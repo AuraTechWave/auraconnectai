@@ -71,7 +71,7 @@ class PayrollPolicy(Base, TimestampMixin):
         "EmployeePayment",
         back_populates="payroll_policy"
     )
-    
+
     __table_args__ = (
         Index('ix_payroll_policies_location_active', 'location', 'is_active'),
         Index('ix_payroll_policies_tenant_location', 'tenant_id', 'location'),
@@ -91,19 +91,19 @@ class EmployeePayment(Base, TimestampMixin):
     pay_period_start = Column(DateTime, nullable=False)
     pay_period_end = Column(DateTime, nullable=False)
     pay_date = Column(DateTime, nullable=False)
-    
+
     # Hours worked
     regular_hours = Column(Numeric(6, 2), default=0.00, nullable=False)
     overtime_hours = Column(Numeric(6, 2), default=0.00, nullable=False)
     double_time_hours = Column(Numeric(6, 2), default=0.00, nullable=False)
     holiday_hours = Column(Numeric(6, 2), default=0.00, nullable=False)
-    
+
     # Pay rates
     regular_rate = Column(Numeric(10, 4), nullable=False)
     overtime_rate = Column(Numeric(10, 4), nullable=True)
     double_time_rate = Column(Numeric(10, 4), nullable=True)
     holiday_rate = Column(Numeric(10, 4), nullable=True)
-    
+
     # Gross pay calculations
     regular_pay = Column(Numeric(12, 2), default=0.00, nullable=False)
     overtime_pay = Column(Numeric(12, 2), default=0.00, nullable=False)
@@ -112,7 +112,7 @@ class EmployeePayment(Base, TimestampMixin):
     bonus_pay = Column(Numeric(12, 2), default=0.00, nullable=False)
     commission_pay = Column(Numeric(12, 2), default=0.00, nullable=False)
     gross_pay = Column(Numeric(12, 2), nullable=False)
-    
+
     # Tax deductions
     federal_tax = Column(Numeric(12, 2), default=0.00, nullable=False)
     state_tax = Column(Numeric(12, 2), default=0.00, nullable=False)
