@@ -284,7 +284,7 @@ class PaginationParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number (1-based)")
     page_size: int = Field(50, ge=1, le=1000, description="Number of items per page")
     sort_by: Optional[str] = Field("processed_at", description="Field to sort by")
-    sort_order: str = Field("desc", regex="^(asc|desc)$", description="Sort order")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$", description="Sort order")
 
 
 # Authentication and authorization schemas
@@ -335,7 +335,7 @@ class PayrollNotificationPreferences(BaseModel):
 class PayrollExportRequest(BaseModel):
     """Request schema for payroll data export."""
     
-    format: str = Field("csv", regex="^(csv|xlsx|pdf)$", description="Export format")
+    format: str = Field("csv", pattern="^(csv|xlsx|pdf)$", description="Export format")
     pay_period_start: date = Field(..., description="Export period start")
     pay_period_end: date = Field(..., description="Export period end")
     staff_ids: Optional[List[int]] = Field(None, description="Specific staff IDs to export")
