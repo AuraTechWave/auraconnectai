@@ -19,10 +19,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from contextlib import contextmanager
 
-from ..modules.staff.services.enhanced_payroll_engine import EnhancedPayrollEngine
-from ..modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
-from ..modules.payroll.schemas.payroll_tax_schemas import PayrollTaxCalculationRequest
-from ..modules.staff.models.attendance_models import AttendanceLog
+from modules.staff.services.enhanced_payroll_engine import EnhancedPayrollEngine
+from modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
+from modules.payroll.schemas.payroll_tax_schemas import PayrollTaxCalculationRequest
+from modules.staff.models.attendance_models import AttendanceLog
 
 
 @pytest.mark.performance
@@ -254,8 +254,8 @@ class TestAPIPerformance:
     def test_payroll_run_api_response_time(self):
         """Test payroll run API response time."""
         from fastapi.testclient import TestClient
-        from ..main import app
-        from ..core.auth import create_access_token
+        from main import app
+        from core.auth import create_access_token
         
         client = TestClient(app)
         
@@ -296,8 +296,8 @@ class TestAPIPerformance:
     def test_concurrent_api_requests(self):
         """Test API performance under concurrent requests."""
         from fastapi.testclient import TestClient
-        from ..main import app
-        from ..core.auth import create_access_token
+        from main import app
+        from core.auth import create_access_token
         
         client = TestClient(app)
         

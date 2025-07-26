@@ -13,17 +13,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from ..main import app
-from ..core.database import Base, get_db
-from ..core.auth import create_access_token
-from ..modules.staff.models.staff_models import StaffMember, Role
-from ..modules.staff.models.attendance_models import AttendanceLog
-from ..modules.payroll.models.payroll_models import TaxRule, PayrollPolicy, EmployeePayment
-from ..modules.payroll.models.payroll_configuration import (
+from main import app
+from core.database import Base, get_db
+from core.auth import create_access_token
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.staff.models.attendance_models import AttendanceLog
+from modules.payroll.models.payroll_models import TaxRule, PayrollPolicy, EmployeePayment
+from modules.payroll.models.payroll_configuration import (
     PayrollConfiguration, StaffPayPolicy, TaxApproximationRule, PayrollConfigurationType
 )
-from ..modules.staff.enums.staff_enums import StaffStatus
-from ..modules.payroll.enums.payroll_enums import TaxType, PayFrequency, PaymentStatus
+from modules.staff.enums.staff_enums import StaffStatus
+from modules.payroll.enums.payroll_enums import TaxType, PayFrequency, PaymentStatus
 
 
 # Test database setup

@@ -16,15 +16,15 @@ from datetime import datetime, date, timedelta
 from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 
-from ..modules.staff.services.enhanced_payroll_engine import (
+from modules.staff.services.enhanced_payroll_engine import (
     EnhancedPayrollEngine, StaffPayPolicy, HoursBreakdown, 
     EarningsBreakdown, DeductionsBreakdown
 )
-from ..modules.staff.models.staff_models import StaffMember, Role
-from ..modules.staff.models.attendance_models import AttendanceLog
-from ..modules.staff.enums.staff_enums import StaffStatus
-from ..modules.payroll.services.payroll_configuration_service import PayrollConfigurationService
-from ..modules.payroll.models.payroll_configuration import StaffPayPolicy as DBStaffPayPolicy
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.staff.models.attendance_models import AttendanceLog
+from modules.staff.enums.staff_enums import StaffStatus
+from modules.payroll.services.payroll_configuration_service import PayrollConfigurationService
+from modules.payroll.models.payroll_configuration import StaffPayPolicy as DBStaffPayPolicy
 
 
 class TestEnhancedPayrollEngine:

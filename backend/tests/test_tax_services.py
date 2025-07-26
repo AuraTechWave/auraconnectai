@@ -15,15 +15,15 @@ from datetime import datetime, date, timedelta
 from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 
-from ..modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
-from ..modules.payroll.services.payroll_tax_service import PayrollTaxService
-from ..modules.payroll.schemas.payroll_tax_schemas import (
+from modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
+from modules.payroll.services.payroll_tax_service import PayrollTaxService
+from modules.payroll.schemas.payroll_tax_schemas import (
     PayrollTaxCalculationRequest, PayrollTaxCalculationResponse,
     PayrollTaxServiceRequest, PayrollTaxServiceResponse,
-    TaxRuleDetail, TaxBreakdown
+    TaxApplicationDetail, TaxBreakdown
 )
-from ..modules.payroll.models.payroll_models import TaxRule, EmployeePaymentTaxApplication
-from ..modules.payroll.enums.payroll_enums import TaxType
+from modules.payroll.models.payroll_models import TaxRule, EmployeePaymentTaxApplication
+from modules.payroll.enums.payroll_enums import TaxType
 
 
 class TestPayrollTaxEngine:
@@ -322,13 +322,13 @@ class TestPayrollTaxService:
             calculation_date=datetime.now(),
             location="California",
             tax_details=[
-                TaxRuleDetail(
+                TaxApplicationDetail(
                     tax_rule=Mock(tax_type=TaxType.FEDERAL, rate_percent=Decimal('0.22')),
                     calculated_amount=Decimal('330.00'),
                     effective_rate=Decimal('0.22'),
                     taxable_amount=Decimal('1500.00')
                 ),
-                TaxRuleDetail(
+                TaxApplicationDetail(
                     tax_rule=Mock(tax_type=TaxType.STATE, rate_percent=Decimal('0.08')),
                     calculated_amount=Decimal('120.00'),
                     effective_rate=Decimal('0.08'),
@@ -403,13 +403,13 @@ class TestPayrollTaxService:
     def test_create_tax_applications(self, tax_service, mock_db_session):
         """Test creation of tax application records."""
         tax_details = [
-            TaxRuleDetail(
+            TaxApplicationDetail(
                 tax_rule=Mock(id=1, tax_type=TaxType.FEDERAL),
                 calculated_amount=Decimal('220.00'),
                 effective_rate=Decimal('0.22'),
                 taxable_amount=Decimal('1000.00')
             ),
-            TaxRuleDetail(
+            TaxApplicationDetail(
                 tax_rule=Mock(id=2, tax_type=TaxType.STATE),
                 calculated_amount=Decimal('80.00'),
                 effective_rate=Decimal('0.08'),
@@ -433,19 +433,19 @@ class TestPayrollTaxService:
     def test_get_tax_breakdown_by_type(self, tax_service):
         """Test tax breakdown categorization by type."""
         tax_details = [
-            TaxRuleDetail(
+            TaxApplicationDetail(
                 tax_rule=Mock(tax_type=TaxType.FEDERAL),
                 calculated_amount=Decimal('220.00'),
                 effective_rate=Decimal('0.22'),
                 taxable_amount=Decimal('1000.00')
             ),
-            TaxRuleDetail(
+            TaxApplicationDetail(
                 tax_rule=Mock(tax_type=TaxType.SOCIAL_SECURITY),
                 calculated_amount=Decimal('62.00'),
                 effective_rate=Decimal('0.062'),
                 taxable_amount=Decimal('1000.00')
             ),
-            TaxRuleDetail(
+            TaxApplicationDetail(
                 tax_rule=Mock(tax_type=TaxType.MEDICARE),
                 calculated_amount=Decimal('14.50'),
                 effective_rate=Decimal('0.0145'),

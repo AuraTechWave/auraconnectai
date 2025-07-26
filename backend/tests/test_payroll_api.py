@@ -20,9 +20,9 @@ from unittest.mock import Mock, patch, MagicMock
 from fastapi.testclient import TestClient
 from fastapi import status
 
-from ..main import app
-from ..core.auth import create_access_token
-from ..modules.staff.schemas.enhanced_payroll_schemas import (
+from main import app
+from core.auth import create_access_token
+from modules.staff.schemas.enhanced_payroll_schemas import (
     PayrollRunRequest, PayrollRunResponse, PayrollBatchStatus,
     PayrollHistoryResponse, StaffPayrollDetail, PayrollRulesResponse
 )
