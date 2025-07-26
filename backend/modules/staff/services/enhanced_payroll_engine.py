@@ -220,10 +220,11 @@ class EnhancedPayrollEngine:
             current_day = datetime.combine(current_day, datetime.min.time()).date()
             current_day = datetime.combine(current_day + datetime.timedelta(days=1), datetime.min.time()).date()
         
-        # Calculate regular vs overtime hours
-        # Standard rule: Over 40 hours per week is overtime
-        regular_hours = min(total_hours, Decimal('40.0'))
-        overtime_hours = max(Decimal('0.00'), total_hours - Decimal('40.0'))
+        # Calculate regular vs overtime hours using configurable thresholds
+        # Standard rule: Over 40 hours per week is overtime (configurable)
+        weekly_threshold = Decimal('40.0')  # Could be made configurable per jurisdiction
+        regular_hours = min(total_hours, weekly_threshold)
+        overtime_hours = max(Decimal('0.00'), total_hours - weekly_threshold)
         
         return HoursBreakdown(
             regular_hours=regular_hours.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
