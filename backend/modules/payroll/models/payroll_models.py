@@ -82,7 +82,12 @@ class EmployeePayment(Base, TimestampMixin):
     __tablename__ = "employee_payments"
 
     id = Column(Integer, primary_key=True, index=True)
-    staff_id = Column(Integer, nullable=False, index=True)
+    staff_id = Column(
+        Integer,
+        ForeignKey("staff_members.id"),
+        nullable=False,
+        index=True
+    )
     payroll_policy_id = Column(
         Integer,
         ForeignKey("payroll_policies.id"),
@@ -143,6 +148,7 @@ class EmployeePayment(Base, TimestampMixin):
     processed_at = Column(DateTime, nullable=True)
 
     # Relationships
+    staff_member = relationship("StaffMember", back_populates="employee_payments")
     payroll_policy = relationship(
         "PayrollPolicy",
         back_populates="employee_payments"

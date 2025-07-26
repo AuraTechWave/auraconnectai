@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
+from ..enums.staff_enums import StaffStatus
 
 
 class StaffMember(Base):
@@ -10,11 +11,12 @@ class StaffMember(Base):
     email = Column(String, unique=True)
     phone = Column(String)
     role_id = Column(Integer, ForeignKey("roles.id"))
-    status = Column(String)
+    status = Column(Enum(StaffStatus), default=StaffStatus.ACTIVE, nullable=False)
     start_date = Column(DateTime)
     photo_url = Column(String)
 
     role = relationship("Role", back_populates="staff_members")
+    employee_payments = relationship("EmployeePayment", back_populates="staff_member")
 
 
 class Role(Base):
