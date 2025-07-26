@@ -1,0 +1,410 @@
+name: Comprehensive Testing Suite (AUR-279)
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+
+jobs:
+  test-setup:
+    name: Test Environment Setup
+    runs-on: ubuntu-latest
+    outputs:
+      python-version: ${{ steps.setup.outputs.python-version }}
+      cache-key: ${{ steps.setup.outputs.cache-key }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup test environment
+        id: setup
+        run: |
+          echo "python-version=${{ env.PYTHON_VERSION }}" >> $GITHUB_OUTPUT
+          echo "cache-key=test-deps-${{ hashFiles('**/requirements*.txt') }}" >> $GITHUB_OUTPUT
+
+  unit-tests:
+    name: Unit Tests (AUR-276, AUR-277)
+    runs-on: ubuntu-latest
+    needs: test-setup
+    strategy:
+      matrix:
+        test-group: [tax-services, payroll-engine]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ needs.test-setup.outputs.cache-key }}
+          restore-keys: |
+            test-deps-
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install pytest-cov pytest-xdist pytest-mock
+      
+      - name: Run tax services unit tests
+        if: matrix.test-group == 'tax-services'
+        run: |
+          cd backend
+          python -m pytest tests/test_tax_services.py \
+            -v \
+            --cov=modules.payroll.services \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junit-xml=test-results-tax.xml
+      
+      - name: Run payroll engine unit tests
+        if: matrix.test-group == 'payroll-engine'
+        run: |
+          cd backend
+          python -m pytest tests/test_payroll_engine.py \
+            -v \
+            --cov=modules.staff.services \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junit-xml=test-results-payroll.xml
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.test-group }}
+          path: |
+            backend/test-results-*.xml
+            backend/coverage.xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: backend/coverage.xml
+          flags: unittests,${{ matrix.test-group }}
+          name: ${{ matrix.test-group }}-coverage
+
+  api-tests:
+    name: API Tests (AUR-278)
+    runs-on: ubuntu-latest
+    needs: test-setup
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install pytest-cov pytest-asyncio httpx
+      
+      - name: Run API tests
+        run: |
+          cd backend
+          python -m pytest tests/test_payroll_api.py \
+            -v \
+            --cov=modules.staff.routes \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junit-xml=test-results-api.xml
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: api-test-results
+          path: |
+            backend/test-results-api.xml
+            backend/coverage.xml
+
+  integration-tests:
+    name: Integration Tests (E2E)
+    runs-on: ubuntu-latest
+    needs: test-setup
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_auraconnect
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install pytest-cov pytest-asyncio
+      
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_auraconnect
+        run: |
+          cd backend
+          # Run migrations
+          alembic upgrade head
+      
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_auraconnect
+          REDIS_URL: redis://localhost:6379/0
+          JWT_SECRET_KEY: test-secret-key-for-ci
+          ENVIRONMENT: testing
+        run: |
+          cd backend
+          python -m pytest tests/test_enhanced_payroll_e2e.py \
+            -v \
+            --cov=modules \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junit-xml=test-results-integration.xml
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            backend/test-results-integration.xml
+            backend/coverage.xml
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: test-setup
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install pytest-benchmark memory-profiler
+      
+      - name: Run performance tests
+        run: |
+          cd backend
+          python -m pytest tests/test_performance.py \
+            -v \
+            -m performance \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json \
+            --junit-xml=test-results-performance.xml
+      
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            backend/test-results-performance.xml
+            backend/benchmark-results.json
+
+  code-quality:
+    name: Code Quality & Coverage
+    runs-on: ubuntu-latest
+    needs: test-setup
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install flake8 black isort mypy
+      
+      - name: Run linting
+        run: |
+          cd backend
+          flake8 modules/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 modules/ --count --max-complexity=10 --max-line-length=100 --statistics
+      
+      - name: Check code formatting
+        run: |
+          cd backend
+          black --check --line-length=100 modules/
+      
+      - name: Check import sorting
+        run: |
+          cd backend
+          isort --check-only --profile black modules/
+      
+      - name: Run type checking
+        run: |
+          cd backend
+          mypy modules/ --ignore-missing-imports --no-strict-optional
+        continue-on-error: true  # Type checking is advisory for now
+      
+      - name: Run comprehensive test suite with coverage
+        run: |
+          cd backend
+          python -m pytest \
+            -v \
+            --cov=modules \
+            --cov-report=html \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=90 \
+            --junit-xml=test-results-comprehensive.xml
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: |
+            backend/htmlcov/
+            backend/coverage.xml
+            backend/test-results-comprehensive.xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: backend/coverage.xml
+          flags: comprehensive
+          name: comprehensive-coverage
+          fail_ci_if_error: true
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: test-setup
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ needs.test-setup.outputs.python-version }}
+      
+      - name: Install security tools
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install safety bandit semgrep
+      
+      - name: Run safety check for dependencies
+        run: |
+          cd backend
+          safety check --json --output safety-report.json
+        continue-on-error: true
+      
+      - name: Run bandit security check
+        run: |
+          cd backend
+          bandit -r modules/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            backend/safety-report.json
+            backend/bandit-report.json
+
+  test-summary:
+    name: Test Summary & Reporting
+    runs-on: ubuntu-latest
+    needs: [unit-tests, api-tests, integration-tests, performance-tests, code-quality]
+    if: always()
+    
+    steps:
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v3
+      
+      - name: Combine test results
+        run: |
+          echo "## 🧪 AUR-279 Phase 5 Testing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Categories Executed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Unit Tests (Tax Services & Payroll Engine)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ API Tests (Enhanced Payroll Endpoints)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Integration Tests (End-to-End Database)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Performance Tests (Load & Memory)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Code Quality & Coverage (90%+ Target)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Coverage Reports:" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 Detailed HTML coverage report available in artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- 📈 Codecov integration for trend analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "- Review coverage reports for any gaps" >> $GITHUB_STEP_SUMMARY
+          echo "- Address any performance regression findings" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor security scan results" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Check overall test status
+        run: |
+          if [ "${{ needs.unit-tests.result }}" = "success" ] && \
+             [ "${{ needs.api-tests.result }}" = "success" ] && \
+             [ "${{ needs.integration-tests.result }}" = "success" ] && \
+             [ "${{ needs.code-quality.result }}" = "success" ]; then
+            echo "🎉 All critical tests passed!"
+            exit 0
+          else
+            echo "❌ Some tests failed - check individual job results"
+            exit 1
+          fi
