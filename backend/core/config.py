@@ -7,7 +7,10 @@ and providing proper configuration validation.
 
 import os
 from typing import List, Optional
-from pydantic import BaseSettings, validator
+try:
+    from pydantic.v1 import BaseSettings, validator
+except ImportError:
+    from pydantic import BaseSettings, validator
 from functools import lru_cache
 
 
@@ -29,9 +32,14 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
     
-    # API Security
+    # API Security & Rate Limiting
     api_rate_limit_per_minute: int = 60
     cors_origins: List[str] = ["http://localhost:3000"]
+    
+    # Rate Limiting Configuration
+    rate_limit_enabled: bool = True
+    default_rate_limit: int = 100  # requests per minute
+    auth_rate_limit: int = 5  # login attempts per minute
     
     # Payroll Configuration
     default_overtime_threshold_hours: float = 40.0
