@@ -1,0 +1,3246 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../dev/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+    
+    
+      
+        <title>AuraConnect System Architecture - AuraConnect Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#auraconnect-system-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AuraConnect Documentation" class="md-header__button md-logo" aria-label="AuraConnect Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuraConnect Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AuraConnect System Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AuraConnect Documentation" class="md-nav__button md-logo" aria-label="AuraConnect Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AuraConnect Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    👋 Welcome to AuraConnect Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect System Architecture
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect System Architecture
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      System Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-architecture-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Architecture Principles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Architecture Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-modular-monolith" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Modular Monolith
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-domain-driven-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Domain-Driven Design
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-api-first-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. API-First Design
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-event-driven-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Event-Driven Architecture
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technology Stack
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technology Stack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend Core
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Infrastructure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Module Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-authentication-module-modulesauth" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Authentication Module (/modules/auth/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-order-management-module-modulesorders" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Order Management Module (/modules/orders/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-staff-payroll-module-modulesstaff" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Staff &amp; Payroll Module (/modules/staff/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-tax-services-module-modulestax" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Tax Services Module (/modules/tax/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-pos-integration-module-modulespos" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. POS Integration Module (/modules/pos/)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-schema-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Schema Design
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Schema Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Principles:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Relationships:
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-access-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Access Patterns
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Access Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-repository-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Repository Pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Query Optimization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authentication Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authorization-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authorization Matrix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Layers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integration Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#webhook-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Webhook System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pos-integration-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      POS Integration Strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optimization-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optimization Strategies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Optimization Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-database-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Database Performance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-caching-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Caching Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-background-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Background Processing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Metrics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#container-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Container Architecture
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment Strategies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-blue-green-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Blue-Green Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database Migrations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-monitoring-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Monitoring Stack
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Considerations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Horizontal Scaling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vertical Scaling
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Development Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Development Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Organization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      CI/CD Pipeline
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Dev
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Dev
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Development Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/CI_CD_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CI/CD Pipeline Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/ai_customization_suite/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – AI Customization Suite
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/analytics_reporting_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Analytics &amp; Reporting Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/customer_loyalty_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Customer &amp; Loyalty Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/global_architecture_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Global Architecture Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/menu_inventory_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Menu &amp; Inventory System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/offline_sync_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Offline Sync for Mobile
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/order_management_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Order Management (FOH + BOH)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/payroll_tax_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Tax Architecture - AUR-275 Phase 1 (Enhanced)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/pos_integration_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – POS Integration Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/regulatory_compliance_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Regulatory &amp; Compliance Add-on
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/staff_management_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Staff Management Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/taxing_payroll_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Taxing &amp; Payroll System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/white_labeling_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – White-Labeling Support Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Feature docs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Feature docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Feature Docs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Ai agents
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Ai agents
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AI Agent Core
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_agents/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Ai Agents Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Ai customization
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Ai customization
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AI Customization Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_customization/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Ai Customization Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Compliance
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Compliance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compliance Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/compliance/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compliance Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Offline sync
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Offline sync
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/offline_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Offline Sync Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/offline_sync/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Offline Sync Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Payroll
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            Payroll
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/tax_calculation_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Tax Calculation Flow Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Pos integration
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
+            <span class="md-nav__icon md-icon"></span>
+            Pos integration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/pos_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    POS Integration Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/pos_integration/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Pos Integration Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_8" id="__nav_4_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Reservation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_8">
+            <span class="md-nav__icon md-icon"></span>
+            Reservation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/reservation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservation Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/reservation/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservation Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_9" id="__nav_4_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Tax
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_9">
+            <span class="md-nav__icon md-icon"></span>
+            Tax
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/tax/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tax Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/tax/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tax Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_10" id="__nav_4_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    White label
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_10">
+            <span class="md-nav__icon md-icon"></span>
+            White label
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/white_label/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    White Labeling Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/white_label/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    White Label Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      System Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-architecture-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Architecture Principles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Architecture Principles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-modular-monolith" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Modular Monolith
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-domain-driven-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Domain-Driven Design
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-api-first-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. API-First Design
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-event-driven-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Event-Driven Architecture
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technology-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      Technology Stack
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technology Stack">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend Core
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-layer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Layer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Infrastructure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#module-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Module Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Module Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-authentication-module-modulesauth" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Authentication Module (/modules/auth/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-order-management-module-modulesorders" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Order Management Module (/modules/orders/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-staff-payroll-module-modulesstaff" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Staff &amp; Payroll Module (/modules/staff/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-tax-services-module-modulestax" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Tax Services Module (/modules/tax/)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-pos-integration-module-modulespos" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. POS Integration Module (/modules/pos/)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-schema-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Schema Design
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Database Schema Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Principles:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Relationships:
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-access-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Access Patterns
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Access Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-repository-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Repository Pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-query-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Query Optimization
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authentication-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authentication Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authorization-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authorization Matrix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-layers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Layers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Integration Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#webhook-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Webhook System
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pos-integration-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      POS Integration Strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optimization-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optimization Strategies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Optimization Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-database-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Database Performance
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-caching-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Caching Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-background-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Background Processing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Metrics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deployment-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#container-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Container Architecture
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deployment-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment Strategies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-blue-green-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Blue-Green Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-migrations" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database Migrations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-monitoring-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Monitoring Stack
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Considerations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizontal-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Horizontal Scaling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vertical-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vertical Scaling
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Development Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Development Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Organization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      CI/CD Pipeline
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="auraconnect-system-architecture">AuraConnect System Architecture</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#system-overview">System Overview</a></li>
+<li><a href="#core-architecture-principles">Core Architecture Principles</a></li>
+<li><a href="#technology-stack">Technology Stack</a></li>
+<li><a href="#module-architecture">Module Architecture</a></li>
+<li><a href="#data-architecture">Data Architecture</a></li>
+<li><a href="#security-architecture">Security Architecture</a></li>
+<li><a href="#integration-architecture">Integration Architecture</a></li>
+<li><a href="#performance-architecture">Performance Architecture</a></li>
+<li><a href="#deployment-architecture">Deployment Architecture</a></li>
+</ol>
+<h2 id="system-overview">System Overview</h2>
+<p>AuraConnect is a microservices-inspired monolithic application designed for high performance, scalability, and maintainability. The architecture follows Domain-Driven Design (DDD) principles with clear module boundaries.</p>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────────────────────────┐
+│                         Frontend Apps                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
+│  │   Web App   │  │ Mobile App  │  │  Kitchen Display  │  │
+│  └──────┬──────┘  └──────┬──────┘  └─────────┬─────────┘  │
+└─────────┼───────────────┼────────────────────┼─────────────┘
+          │               │                    │
+          └───────────────┴────────────────────┘
+                          │
+                    ┌─────▼─────┐
+                    │  API      │
+                    │  Gateway  │
+                    └─────┬─────┘
+                          │
+┌─────────────────────────┴─────────────────────────────────┐
+│                    FastAPI Backend                         │
+├───────────────┬────────────────┬──────────────────────────┤
+│  Auth Module  │  Order Module  │   Payroll Module         │
+├───────────────┼────────────────┼──────────────────────────┤
+│  POS Module   │  Tax Module    │   Staff Module           │
+└───────────────┴────────────────┴──────────────────────────┘
+                          │
+                    ┌─────▼─────┐
+                    │PostgreSQL │
+                    │  Database │
+                    └───────────┘
+</code></pre></div>
+
+<h2 id="core-architecture-principles">Core Architecture Principles</h2>
+<h3 id="1-modular-monolith">1. <strong>Modular Monolith</strong></h3>
+<ul>
+<li>Each module is self-contained with its own models, schemas, services, and routes</li>
+<li>Clear boundaries between modules with minimal cross-module dependencies</li>
+<li>Easy to extract into microservices if needed</li>
+</ul>
+<h3 id="2-domain-driven-design">2. <strong>Domain-Driven Design</strong></h3>
+<ul>
+<li>Business logic encapsulated in service layers</li>
+<li>Rich domain models with behavior</li>
+<li>Clear separation of concerns</li>
+</ul>
+<h3 id="3-api-first-design">3. <strong>API-First Design</strong></h3>
+<ul>
+<li>RESTful API with OpenAPI documentation</li>
+<li>Consistent response formats</li>
+<li>Version-controlled endpoints</li>
+</ul>
+<h3 id="4-event-driven-architecture">4. <strong>Event-Driven Architecture</strong></h3>
+<ul>
+<li>Webhook system for external integrations</li>
+<li>Background job processing for long-running tasks</li>
+<li>Event sourcing for audit trails</li>
+</ul>
+<h2 id="technology-stack">Technology Stack</h2>
+<h3 id="backend-core">Backend Core</h3>
+<ul>
+<li><strong>Framework</strong>: FastAPI 0.104+</li>
+<li><strong>Language</strong>: Python 3.11+</li>
+<li><strong>ORM</strong>: SQLAlchemy 2.0</li>
+<li><strong>Migrations</strong>: Alembic</li>
+<li><strong>Validation</strong>: Pydantic 2.0</li>
+</ul>
+<h3 id="data-layer">Data Layer</h3>
+<ul>
+<li><strong>Primary DB</strong>: PostgreSQL 14+</li>
+<li><strong>Cache</strong>: Redis 7+</li>
+<li><strong>Search</strong>: PostgreSQL Full-Text Search</li>
+</ul>
+<h3 id="infrastructure">Infrastructure</h3>
+<ul>
+<li><strong>Container</strong>: Docker &amp; Docker Compose</li>
+<li><strong>Process Manager</strong>: Uvicorn with Gunicorn</li>
+<li><strong>Task Queue</strong>: Custom job tracker with Redis</li>
+<li><strong>Monitoring</strong>: Prometheus + Grafana</li>
+</ul>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong>Authentication</strong>: JWT with refresh tokens</li>
+<li><strong>Authorization</strong>: Role-Based Access Control (RBAC)</li>
+<li><strong>Encryption</strong>: bcrypt for passwords, AES for sensitive data</li>
+</ul>
+<h2 id="module-architecture">Module Architecture</h2>
+<h3 id="1-authentication-module-modulesauth">1. <strong>Authentication Module</strong> (<code>/modules/auth/</code>)</h3>
+<div class="codehilite"><pre><span></span><code>auth/
+├── routes/          # API endpoints
+├── services/        # Business logic
+├── models/          # Database models
+└── schemas/         # Pydantic schemas
+</code></pre></div>
+
+<p><strong>Key Features:</strong>
+- JWT token generation and validation
+- Refresh token rotation
+- Role-based permissions
+- Multi-tenant support</p>
+<h3 id="2-order-management-module-modulesorders">2. <strong>Order Management Module</strong> (<code>/modules/orders/</code>)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">orders</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">controllers</span><span class="o">/</span><span class="w">     </span><span class="c1"># Request handling</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">services</span><span class="o">/</span><span class="w">        </span><span class="c1"># Business logic</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">models</span><span class="o">/</span><span class="w">          </span><span class="c1"># Order, OrderItem, etc.</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">schemas</span><span class="o">/</span><span class="w">         </span><span class="c1"># Request/Response models</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">enums</span><span class="o">/</span><span class="w">           </span><span class="c1"># Order statuses, types</span>
+</code></pre></div>
+
+<p><strong>Key Features:</strong>
+- Real-time order processing
+- Kitchen display integration
+- Dynamic pricing engine
+- Fraud detection
+- Payment reconciliation</p>
+<h3 id="3-staff-payroll-module-modulesstaff">3. <strong>Staff &amp; Payroll Module</strong> (<code>/modules/staff/</code>)</h3>
+<div class="codehilite"><pre><span></span><code>staff/
+├── services/
+│   ├── enhanced_payroll_engine.py    # Core payroll calculations
+│   ├── attendance_optimizer.py       # SQL-optimized attendance
+│   ├── config_manager.py            # Business rule configuration
+│   └── job_tracker.py               # Background job management
+├── utils/
+│   ├── hours_calculator.py          # Hours/overtime logic
+│   └── tax_calculator.py            # Tax calculations
+├── models/          # Staff, Attendance, Payroll
+└── schemas/         # API contracts
+</code></pre></div>
+
+<p><strong>Key Features:</strong>
+- Automated payroll processing
+- Configurable business rules
+- Multi-jurisdiction tax support
+- Attendance tracking
+- Benefit management</p>
+<h3 id="4-tax-services-module-modulestax">4. <strong>Tax Services Module</strong> (<code>/modules/tax/</code>)</h3>
+<div class="codehilite"><pre><span></span><code>tax/
+├── services/
+│   ├── tax_engine.py        # Core tax calculations
+│   └── tax_service.py       # Tax rule management
+├── models/          # TaxRule, TaxBracket
+└── schemas/         # Tax calculation contracts
+</code></pre></div>
+
+<p><strong>Key Features:</strong>
+- Federal, state, and local tax calculations
+- Social Security and Medicare handling
+- Tax form generation (W-2, 1099)
+- YTD tracking</p>
+<h3 id="5-pos-integration-module-modulespos">5. <strong>POS Integration Module</strong> (<code>/modules/pos/</code>)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">pos</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">adapters</span><span class="o">/</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">POS</span><span class="o">-</span><span class="nx">specific</span><span class="w"> </span><span class="nx">implementations</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">square_adapter</span><span class="p">.</span><span class="nx">py</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">clover_adapter</span><span class="p">.</span><span class="nx">py</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">toast_adapter</span><span class="p">.</span><span class="nx">py</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">services</span><span class="o">/</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">Sync</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">bridge</span><span class="w"> </span><span class="nx">services</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">interfaces</span><span class="o">/</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Common</span><span class="w"> </span><span class="nx">POS</span><span class="w"> </span><span class="kd">interface</span>
+</code></pre></div>
+
+<p><strong>Key Features:</strong>
+- Multi-POS support with adapter pattern
+- Real-time synchronization
+- Conflict resolution
+- Offline support</p>
+<h2 id="data-architecture">Data Architecture</h2>
+<h3 id="database-schema-design">Database Schema Design</h3>
+<h4 id="core-principles">Core Principles:</h4>
+<ol>
+<li><strong>Normalized Design</strong>: 3NF for transactional data</li>
+<li><strong>Audit Trails</strong>: Created/updated timestamps on all tables</li>
+<li><strong>Soft Deletes</strong>: Logical deletion with <code>deleted_at</code></li>
+<li><strong>Multi-tenancy</strong>: <code>tenant_id</code> for data isolation</li>
+</ol>
+<h4 id="key-relationships">Key Relationships:</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Staff and Payroll</span>
+<span class="n">staff_members</span><span class="w"> </span><span class="err">─┬─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">attendance_logs</span>
+<span class="w">               </span><span class="err">├─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">employee_payments</span>
+<span class="w">               </span><span class="err">└─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">staff_pay_policies</span>
+
+<span class="c1">-- Orders</span>
+<span class="n">orders</span><span class="w"> </span><span class="err">─┬─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">order_items</span>
+<span class="w">        </span><span class="err">├─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">order_payments</span>
+<span class="w">        </span><span class="err">└─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">order_status_history</span>
+
+<span class="c1">-- Tax Configuration</span>
+<span class="n">tax_rules</span><span class="w"> </span><span class="err">─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">tax_applications</span>
+<span class="n">payroll_policies</span><span class="w"> </span><span class="err">─</span><span class="o">&lt;</span><span class="w"> </span><span class="n">employee_payments</span>
+</code></pre></div>
+
+<h3 id="data-access-patterns">Data Access Patterns</h3>
+<h4 id="1-repository-pattern">1. <strong>Repository Pattern</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StaffRepository</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">staff_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StaffMember</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_staff</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StaffMember</span><span class="p">]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">staff_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">StaffStatus</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="2-query-optimization">2. <strong>Query Optimization</strong></h4>
+<ul>
+<li>Indexed columns for frequent queries</li>
+<li>Composite indexes for complex filters</li>
+<li>SQL aggregation for reporting</li>
+<li>Query result caching</li>
+</ul>
+<h2 id="security-architecture">Security Architecture</h2>
+<h3 id="authentication-flow">Authentication Flow</h3>
+<div class="codehilite"><pre><span></span><code>Client → API Gateway → JWT Validation → Route Handler → Service Layer
+                ↓
+        Refresh Token ← Token Expired
+</code></pre></div>
+
+<h3 id="authorization-matrix">Authorization Matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Orders</th>
+<th>Staff</th>
+<th>Payroll</th>
+<th>Reports</th>
+<th>Settings</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Admin</td>
+<td>CRUD</td>
+<td>CRUD</td>
+<td>CRUD</td>
+<td>Read</td>
+<td>CRUD</td>
+</tr>
+<tr>
+<td>Manager</td>
+<td>CRUD</td>
+<td>CRU</td>
+<td>Read</td>
+<td>Read</td>
+<td>Read</td>
+</tr>
+<tr>
+<td>Staff</td>
+<td>CR</td>
+<td>Read Own</td>
+<td>Read Own</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Kitchen</td>
+<td>Read</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="security-layers">Security Layers</h3>
+<ol>
+<li><strong>Network</strong>: SSL/TLS encryption</li>
+<li><strong>Application</strong>: Input validation, SQL injection prevention</li>
+<li><strong>Data</strong>: Encryption at rest, field-level encryption</li>
+<li><strong>Audit</strong>: Comprehensive logging of all actions</li>
+</ol>
+<h2 id="integration-architecture">Integration Architecture</h2>
+<h3 id="webhook-system">Webhook System</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Event-driven architecture for external systems</span>
+<span class="n">webhook_service</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="s2">&quot;order.created&quot;</span><span class="p">,</span> <span class="n">order_data</span><span class="p">)</span>
+<span class="n">webhook_service</span><span class="o">.</span><span class="n">trigger</span><span class="p">(</span><span class="s2">&quot;payroll.completed&quot;</span><span class="p">,</span> <span class="n">payroll_data</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="pos-integration-strategy">POS Integration Strategy</h3>
+<ol>
+<li><strong>Adapter Pattern</strong>: Unified interface for different POS systems</li>
+<li><strong>Queue-Based Sync</strong>: Reliable message delivery</li>
+<li><strong>Conflict Resolution</strong>: Last-write-wins with audit trail</li>
+<li><strong>Retry Logic</strong>: Exponential backoff for failed syncs</li>
+</ol>
+<h2 id="performance-architecture">Performance Architecture</h2>
+<h3 id="optimization-strategies">Optimization Strategies</h3>
+<h4 id="1-database-performance">1. <strong>Database Performance</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Before: N+1 query problem</span>
+<span class="k">for</span> <span class="n">staff</span> <span class="ow">in</span> <span class="n">staff_list</span><span class="p">:</span>
+    <span class="n">hours</span> <span class="o">=</span> <span class="n">calculate_hours</span><span class="p">(</span><span class="n">staff</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># Query per staff</span>
+
+<span class="c1"># After: Single aggregated query</span>
+<span class="n">hours_data</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+    <span class="n">StaffMember</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="n">func</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">attendance_hours</span><span class="p">)</span>
+<span class="p">)</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="n">StaffMember</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</code></pre></div>
+
+<h4 id="2-caching-strategy">2. <strong>Caching Strategy</strong></h4>
+<ul>
+<li><strong>Redis</strong>: Session data, frequently accessed configs</li>
+<li><strong>Application Cache</strong>: Computed tax rates, pay policies</li>
+<li><strong>Query Cache</strong>: Expensive aggregation results</li>
+</ul>
+<h4 id="3-background-processing">3. <strong>Background Processing</strong></h4>
+<ul>
+<li>Long-running tasks (payroll runs) processed asynchronously</li>
+<li>Job tracking with progress updates</li>
+<li>Automatic retry on failure</li>
+</ul>
+<h3 id="performance-metrics">Performance Metrics</h3>
+<ul>
+<li>API Response Time: &lt; 200ms (p95)</li>
+<li>Database Query Time: &lt; 50ms (p95)</li>
+<li>Background Job Processing: &lt; 5 minutes for 1000 employees</li>
+</ul>
+<h2 id="deployment-architecture">Deployment Architecture</h2>
+<h3 id="container-architecture">Container Architecture</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">backend</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect/backend:latest</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=${DATABASE_URL}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_URL=${REDIS_URL}</span>
+<span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">limits</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;2&#39;</span>
+<span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4G</span>
+
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:14-alpine</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
+
+<span class="w">  </span><span class="nt">redis</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis:7-alpine</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis-server --appendonly yes</span>
+</code></pre></div>
+
+<h3 id="deployment-strategies">Deployment Strategies</h3>
+<h4 id="1-blue-green-deployment">1. <strong>Blue-Green Deployment</strong></h4>
+<ul>
+<li>Zero-downtime deployments</li>
+<li>Easy rollback capability</li>
+<li>A/B testing support</li>
+</ul>
+<h4 id="2-database-migrations">2. <strong>Database Migrations</strong></h4>
+<ul>
+<li>Forward-compatible migrations</li>
+<li>Rollback scripts for each migration</li>
+<li>Automated migration testing</li>
+</ul>
+<h4 id="3-monitoring-stack">3. <strong>Monitoring Stack</strong></h4>
+<ul>
+<li><strong>Metrics</strong>: Prometheus + Grafana</li>
+<li><strong>Logs</strong>: ELK Stack (Elasticsearch, Logstash, Kibana)</li>
+<li><strong>Alerts</strong>: PagerDuty integration</li>
+<li><strong>APM</strong>: Application Performance Monitoring</li>
+</ul>
+<h3 id="scaling-considerations">Scaling Considerations</h3>
+<h4 id="horizontal-scaling">Horizontal Scaling</h4>
+<ul>
+<li>Stateless application design</li>
+<li>Database connection pooling</li>
+<li>Redis for shared state</li>
+</ul>
+<h4 id="vertical-scaling">Vertical Scaling</h4>
+<ul>
+<li>Resource monitoring</li>
+<li>Auto-scaling policies</li>
+<li>Performance profiling</li>
+</ul>
+<h2 id="development-workflow">Development Workflow</h2>
+<h3 id="code-organization">Code Organization</h3>
+<div class="codehilite"><pre><span></span><code>backend/
+├── core/            # Shared utilities
+├── modules/         # Business modules
+├── tests/           # Test suites
+├── migrations/      # Database migrations
+└── scripts/         # Utility scripts
+</code></pre></div>
+
+<h3 id="testing-strategy">Testing Strategy</h3>
+<ol>
+<li><strong>Unit Tests</strong>: Business logic validation</li>
+<li><strong>Integration Tests</strong>: API endpoint testing</li>
+<li><strong>Performance Tests</strong>: Load testing</li>
+<li><strong>E2E Tests</strong>: Full workflow validation</li>
+</ol>
+<h3 id="cicd-pipeline">CI/CD Pipeline</h3>
+<ol>
+<li><strong>Code Push</strong> → GitHub</li>
+<li><strong>CI Tests</strong> → GitHub Actions</li>
+<li><strong>Build</strong> → Docker Image</li>
+<li><strong>Deploy</strong> → Staging</li>
+<li><strong>E2E Tests</strong> → Automated</li>
+<li><strong>Deploy</strong> → Production</li>
+</ol>
+<hr />
+<h2 id="summary">Summary</h2>
+<p>AuraConnect's architecture is designed for:
+- <strong>Scalability</strong>: Handle growth from single restaurant to enterprise chains
+- <strong>Maintainability</strong>: Clear module boundaries and documentation
+- <strong>Performance</strong>: Optimized queries and caching strategies
+- <strong>Security</strong>: Multi-layered security approach
+- <strong>Flexibility</strong>: Easy to extend and integrate new features</p>
+<p>The modular monolith approach provides the benefits of microservices (clear boundaries, independent deployment) while maintaining the simplicity of a single codebase.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      
+    
+  </body>
+</html>
