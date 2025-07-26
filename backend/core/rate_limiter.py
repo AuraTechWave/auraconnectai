@@ -7,12 +7,18 @@ resource usage across different client types.
 
 import time
 import asyncio
+import logging
+import os
 from typing import Dict, Optional, Callable, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
+
+# Configure loggers for rate limiting
+logger = logging.getLogger("core.rate_limiter")
+security_logger = logging.getLogger("security.rate_limit")
 import redis.asyncio as redis
 import json
 import os
@@ -165,11 +171,13 @@ class RedisRateLimiter:
 
 
 class RateLimiter:
-    """Main rate limiter with configurable backend."""
+    """Main rate limiter with configurable backend and fallback support."""
     
     def __init__(self, redis_url: Optional[str] = None):
         self.rules: Dict[str, RateLimitRule] = {}
         self._rule_cache: Dict[str, RateLimitRule] = {}  # Cache for computed rules
+        self.redis_url = redis_url
+        self._fallback_backend = MemoryRateLimiter()  # Fallback for Redis failures
         
         if redis_url:
             self.backend = RedisRateLimiter(redis_url)
@@ -177,8 +185,21 @@ class RateLimiter:
             self.backend = MemoryRateLimiter()
     
     def add_rule(self, pattern: str, requests: int, window: int, burst: Optional[int] = None):
-        """Add a rate limiting rule."""
+        """Add a rate limiting rule and invalidate cache."""
         self.rules[pattern] = RateLimitRule(requests, window, burst)
+        # Clear cache when rules change to ensure consistency
+        self._rule_cache.clear()
+    
+    def remove_rule(self, pattern: str):
+        """Remove a rate limiting rule and invalidate cache."""
+        if pattern in self.rules:
+            del self.rules[pattern]
+            # Clear cache when rules change
+            self._rule_cache.clear()
+    
+    def clear_cache(self):
+        """Manually clear the rule cache."""
+        self._rule_cache.clear()
     
     def get_client_key(self, request: Request) -> str:
         """Generate client key for rate limiting."""
@@ -247,7 +268,7 @@ class RateLimiter:
         return self.rules.get('default')
     
     async def check_rate_limit(self, request: Request) -> Optional[JSONResponse]:
-        """Check rate limit for the request."""
+        """Check rate limit for the request with Redis fallback support."""
         rule = self.get_rule_for_endpoint(request)
         if not rule:
             return None
@@ -255,9 +276,42 @@ class RateLimiter:
         client_key = self.get_client_key(request)
         endpoint_key = f"{client_key}:{request.url.path}"
         
-        allowed, retry_after = await self.backend.is_allowed(endpoint_key, rule)
+        try:
+            allowed, retry_after = await self.backend.is_allowed(endpoint_key, rule)
+        except Exception as e:
+            # Redis connection error - fallback to memory backend
+            if self.redis_url:
+                logger.warning(
+                    f"Redis rate limiter failed, falling back to memory: {e}",
+                    extra={"client_key": client_key, "path": request.url.path}
+                )
+                allowed, retry_after = await self._fallback_backend.is_allowed(endpoint_key, rule)
+            else:
+                # Re-raise if not a Redis backend
+                raise
         
         if not allowed:
+            # Security audit logging for rate limit violations
+            user_id = getattr(request.state, 'user_id', None)
+            ip_address = self._extract_ip_address(request)
+            
+            security_logger.warning(
+                "Rate limit exceeded",
+                extra={
+                    "event": "rate_limit_exceeded",
+                    "client_key": client_key,
+                    "user_id": user_id,
+                    "ip_address": ip_address,
+                    "path": request.url.path,
+                    "method": request.method,
+                    "user_agent": request.headers.get("User-Agent", "unknown"),
+                    "limit": rule.requests,
+                    "window": rule.window,
+                    "retry_after": retry_after,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            )
+            
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
@@ -269,6 +323,20 @@ class RateLimiter:
             )
         
         return None
+    
+    def _extract_ip_address(self, request: Request) -> str:
+        """Extract real IP address from request headers."""
+        # Check forwarded headers first
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            return forwarded_for.split(",")[0].strip()
+        
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return real_ip
+        
+        # Fall back to direct client IP
+        return request.client.host if request.client else "unknown"
 
 
 # Global rate limiter instance
@@ -285,16 +353,24 @@ def get_rate_limiter() -> RateLimiter:
     return rate_limiter
 
 
+async def shutdown_rate_limiter():
+    """Shutdown rate limiter and cleanup Redis connections."""
+    global rate_limiter
+    if rate_limiter and hasattr(rate_limiter.backend, 'disconnect'):
+        await rate_limiter.backend.disconnect()
+        rate_limiter = None
+
+
 def _configure_default_rules(limiter: RateLimiter):
-    """Configure default rate limiting rules using environment variables."""
-    from core.auth import DEFAULT_RATE_LIMIT, AUTH_RATE_LIMIT
+    """Configure default rate limiting rules using centralized configuration."""
+    from core.config import settings
     
-    # General API limits (from environment)
-    limiter.add_rule('default', requests=DEFAULT_RATE_LIMIT, window=60)
+    # General API limits (from centralized config)
+    limiter.add_rule('default', requests=settings.default_rate_limit, window=60)
     
-    # Authentication endpoints (from environment, more restrictive)
-    limiter.add_rule('POST /auth/login', requests=AUTH_RATE_LIMIT, window=60)
-    limiter.add_rule('POST /auth/register', requests=max(AUTH_RATE_LIMIT - 2, 1), window=300)  # Even more restrictive for registration
+    # Authentication endpoints (from centralized config, more restrictive)
+    limiter.add_rule('POST /auth/login', requests=settings.auth_rate_limit, window=60)
+    limiter.add_rule('POST /auth/register', requests=max(settings.auth_rate_limit - 2, 1), window=300)  # Even more restrictive for registration
     
     # Payroll endpoints (moderate limits)
     limiter.add_rule('/api/v1/payrolls', requests=50, window=60)  # 50 req/min for payroll
@@ -315,10 +391,10 @@ def _configure_default_rules(limiter: RateLimiter):
 
 async def rate_limit_middleware(request: Request, call_next: Callable) -> Any:
     """Rate limiting middleware for FastAPI."""
-    from core.auth import RATE_LIMIT_ENABLED
+    from core.config import settings
     
     # Bypass rate limiting if disabled
-    if not RATE_LIMIT_ENABLED:
+    if not settings.rate_limit_enabled:
         return await call_next(request)
     
     limiter = get_rate_limiter()

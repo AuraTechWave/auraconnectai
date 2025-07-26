@@ -383,9 +383,84 @@ async def test_rate_limit_disabled():
     async def mock_call_next(request):
         return mock_response
     
-    # Mock RATE_LIMIT_ENABLED as False
-    with patch('core.auth.RATE_LIMIT_ENABLED', False):
+    # Mock rate_limit_enabled as False
+    with patch('core.config.settings.rate_limit_enabled', False):
         response = await rate_limit_middleware(mock_request, mock_call_next)
         
         # Should bypass rate limiting and return response directly
         assert response == mock_response
+
+
+@pytest.mark.asyncio
+async def test_cache_invalidation():
+    """Test that rule cache is invalidated when rules change."""
+    limiter = RateLimiter()
+    
+    # Add a rule and cache it
+    limiter.add_rule("/test", 10, 60)
+    mock_request = Mock(spec=Request)
+    mock_request.url.path = "/test"
+    mock_request.method = "GET"
+    
+    # Get rule (should cache it)
+    rule1 = limiter.get_rule_for_endpoint(mock_request)
+    assert rule1.requests == 10
+    assert len(limiter._rule_cache) == 1
+    
+    # Change rule
+    limiter.add_rule("/test", 20, 60)
+    
+    # Cache should be cleared
+    assert len(limiter._rule_cache) == 0
+    
+    # New rule should be retrieved
+    rule2 = limiter.get_rule_for_endpoint(mock_request)
+    assert rule2.requests == 20
+
+
+@pytest.mark.asyncio 
+async def test_redis_fallback():
+    """Test fallback to memory backend when Redis fails."""
+    # Create rate limiter with Redis URL (but Redis won't be available)
+    limiter = RateLimiter("redis://invalid:6379")
+    limiter.add_rule("default", 100, 60)  # Add default rule
+    
+    mock_request = Mock(spec=Request)
+    mock_request.url.path = "/test"
+    mock_request.method = "GET"
+    mock_request.client.host = "127.0.0.1"
+    mock_request.headers = {}
+    mock_request.state = Mock()
+    mock_request.state.user_id = None
+    
+    # Mock Redis backend to raise an exception
+    with patch.object(limiter.backend, 'is_allowed', side_effect=Exception("Redis connection failed")):
+        with patch('core.rate_limiter.logger') as mock_logger:
+            response = await limiter.check_rate_limit(mock_request)
+            
+            # Should not return a rate limit response (fallback worked)
+            assert response is None
+            
+            # Should log the fallback
+            mock_logger.warning.assert_called_once()
+
+
+def test_rule_management():
+    """Test adding and removing rules with cache invalidation."""
+    limiter = RateLimiter()
+    
+    # Add rule
+    limiter.add_rule("/api/test", 50, 120)
+    assert "/api/test" in limiter.rules
+    assert limiter.rules["/api/test"].requests == 50
+    
+    # Remove rule
+    limiter.remove_rule("/api/test")
+    assert "/api/test" not in limiter.rules
+    
+    # Remove non-existent rule (should not crash)
+    limiter.remove_rule("/non/existent")
+    
+    # Clear cache manually
+    limiter.clear_cache()
+    assert len(limiter._rule_cache) == 0
