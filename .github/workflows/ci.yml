@@ -88,6 +88,6 @@ jobs:
           cd frontend
           npm ci
           # Run tests if they exist
-          npm test -- --passWithNoTests --coverage || echo "Frontend tests completed with warnings"
+          npm test -- --passWithNoTests --watchAll=false
           # Build to ensure it works
           npm run build
