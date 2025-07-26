@@ -59,8 +59,14 @@ class MemoryRateLimiter:
             while client_requests and client_requests[0] < window_start:
                 client_requests.popleft()
             
-            # Check if under limit
-            if len(client_requests) < rule.requests:
+            # Determine effective limit (with burst tolerance if configured)
+            effective_limit = rule.requests
+            if rule.burst is not None:
+                # Allow burst up to the specified amount
+                effective_limit = min(rule.requests + rule.burst, rule.requests * 2)
+            
+            # Check if under effective limit
+            if len(client_requests) < effective_limit:
                 client_requests.append(now)
                 return True, 0
             
@@ -76,49 +82,86 @@ class RedisRateLimiter:
     def __init__(self, redis_url: str):
         self.redis_url = redis_url
         self.redis_client: Optional[redis.Redis] = None
+        self._lua_script_sha: Optional[str] = None
+        
+        # Lua script for atomic rate limiting operations
+        self._lua_script = """
+        local key = KEYS[1]
+        local window = tonumber(ARGV[1])
+        local limit = tonumber(ARGV[2])
+        local now = tonumber(ARGV[3])
+        local window_start = now - window
+        
+        -- Remove expired entries
+        redis.call('ZREMRANGEBYSCORE', key, 0, window_start)
+        
+        -- Count current requests
+        local current = redis.call('ZCARD', key)
+        
+        -- Check if under limit
+        if current < limit then
+            -- Add current request
+            redis.call('ZADD', key, now, now)
+            -- Set expiry
+            redis.call('EXPIRE', key, window)
+            return {1, 0}  -- allowed, retry_after
+        else
+            -- Get oldest request for retry calculation
+            local oldest = redis.call('ZRANGE', key, 0, 0, 'WITHSCORES')
+            if #oldest > 0 then
+                local retry_after = math.ceil(oldest[2] + window - now)
+                return {0, retry_after}  -- not allowed, retry_after
+            else
+                return {0, window}  -- not allowed, retry_after = window
+            end
+        end
+        """
     
     async def connect(self):
-        """Connect to Redis."""
+        """Connect to Redis and load Lua script."""
         if not self.redis_client:
             self.redis_client = redis.from_url(self.redis_url)
+            # Load Lua script for atomic operations
+            self._lua_script_sha = await self.redis_client.script_load(self._lua_script)
+    
+    async def disconnect(self):
+        """Disconnect from Redis and close connection pool."""
+        if self.redis_client:
+            await self.redis_client.aclose()
+            self.redis_client = None
     
     async def is_allowed(self, key: str, rule: RateLimitRule) -> tuple[bool, int]:
-        """Check if request is allowed using Redis sliding window."""
+        """Check if request is allowed using Redis sliding window with Lua script for atomicity."""
         if not self.redis_client:
             await self.connect()
         
         now = time.time()
-        window_start = now - rule.window
         
-        # Use Redis pipeline for atomic operations
-        pipe = self.redis_client.pipeline()
+        # Determine effective limit (with burst tolerance if configured)
+        effective_limit = rule.requests
+        if rule.burst is not None:
+            # Allow burst up to the specified amount
+            effective_limit = min(rule.requests + rule.burst, rule.requests * 2)
         
-        # Remove expired entries
-        pipe.zremrangebyscore(key, 0, window_start)
-        
-        # Count current requests
-        pipe.zcard(key)
-        
-        # Add current request with score as timestamp
-        pipe.zadd(key, {str(now): now})
-        
-        # Set expiry for the key
-        pipe.expire(key, rule.window)
-        
-        results = await pipe.execute()
-        current_requests = results[1]
-        
-        if current_requests < rule.requests:
-            return True, 0
-        
-        # Get oldest request to calculate retry time
-        oldest = await self.redis_client.zrange(key, 0, 0, withscores=True)
-        if oldest:
-            oldest_timestamp = oldest[0][1]
-            retry_after = int(oldest_timestamp + rule.window - now) + 1
-            return False, retry_after
-        
-        return False, rule.window
+        try:
+            # Use Lua script for atomic operation
+            result = await self.redis_client.evalsha(
+                self._lua_script_sha,
+                1,  # Number of keys
+                key,  # Key
+                rule.window,  # Window size
+                effective_limit,  # Request limit
+                now  # Current timestamp
+            )
+            
+            allowed = bool(result[0])
+            retry_after = int(result[1]) if result[1] > 0 else 0
+            return allowed, retry_after
+            
+        except redis.exceptions.NoScriptError:
+            # Script not loaded, reload and retry
+            self._lua_script_sha = await self.redis_client.script_load(self._lua_script)
+            return await self.is_allowed(key, rule)
 
 
 class RateLimiter:
@@ -126,6 +169,7 @@ class RateLimiter:
     
     def __init__(self, redis_url: Optional[str] = None):
         self.rules: Dict[str, RateLimitRule] = {}
+        self._rule_cache: Dict[str, RateLimitRule] = {}  # Cache for computed rules
         
         if redis_url:
             self.backend = RedisRateLimiter(redis_url)
@@ -162,25 +206,44 @@ class RateLimiter:
         return request.client.host if request.client else "unknown"
     
     def get_rule_for_endpoint(self, request: Request) -> Optional[RateLimitRule]:
-        """Get rate limiting rule for the current endpoint."""
+        """Get rate limiting rule for the current endpoint with caching."""
         path = request.url.path
         method = request.method
+        cache_key = f"{method} {path}"
         
-        # Check for exact matches first
-        for pattern, rule in self.rules.items():
-            if pattern == f"{method} {path}":
-                return rule
-            elif pattern == path:
-                return rule
+        # Check cache first
+        if cache_key in self._rule_cache:
+            return self._rule_cache[cache_key]
         
-        # Check for pattern matches
-        for pattern, rule in self.rules.items():
-            if pattern.startswith('/') and path.startswith(pattern):
-                return rule
-            elif pattern == method:
-                return rule
+        # Find rule and cache it
+        rule = self._compute_rule_for_endpoint(method, path)
+        self._rule_cache[cache_key] = rule
+        return rule
+    
+    def _compute_rule_for_endpoint(self, method: str, path: str) -> Optional[RateLimitRule]:
+        """Compute rate limiting rule for endpoint (internal method)."""
+        # Priority 1: Exact method + path match
+        exact_key = f"{method} {path}"
+        if exact_key in self.rules:
+            return self.rules[exact_key]
         
-        # Default rule
+        # Priority 2: Exact path match
+        if path in self.rules:
+            return self.rules[path]
+        
+        # Priority 3: Path prefix matches (longest first)
+        path_patterns = [(pattern, rule) for pattern, rule in self.rules.items() 
+                        if pattern.startswith('/') and path.startswith(pattern)]
+        if path_patterns:
+            # Sort by pattern length (longest first for most specific match)
+            path_patterns.sort(key=lambda x: len(x[0]), reverse=True)
+            return path_patterns[0][1]
+        
+        # Priority 4: Method-only matches
+        if method in self.rules:
+            return self.rules[method]
+        
+        # Priority 5: Default rule
         return self.rules.get('default')
     
     async def check_rate_limit(self, request: Request) -> Optional[JSONResponse]:
@@ -223,13 +286,15 @@ def get_rate_limiter() -> RateLimiter:
 
 
 def _configure_default_rules(limiter: RateLimiter):
-    """Configure default rate limiting rules."""
-    # General API limits
-    limiter.add_rule('default', requests=100, window=60)  # 100 req/min default
+    """Configure default rate limiting rules using environment variables."""
+    from core.auth import DEFAULT_RATE_LIMIT, AUTH_RATE_LIMIT
     
-    # Authentication endpoints (more restrictive)
-    limiter.add_rule('POST /auth/login', requests=5, window=60)  # 5 login attempts per minute
-    limiter.add_rule('POST /auth/register', requests=3, window=300)  # 3 registrations per 5 minutes
+    # General API limits (from environment)
+    limiter.add_rule('default', requests=DEFAULT_RATE_LIMIT, window=60)
+    
+    # Authentication endpoints (from environment, more restrictive)
+    limiter.add_rule('POST /auth/login', requests=AUTH_RATE_LIMIT, window=60)
+    limiter.add_rule('POST /auth/register', requests=max(AUTH_RATE_LIMIT - 2, 1), window=300)  # Even more restrictive for registration
     
     # Payroll endpoints (moderate limits)
     limiter.add_rule('/api/v1/payrolls', requests=50, window=60)  # 50 req/min for payroll
@@ -250,6 +315,12 @@ def _configure_default_rules(limiter: RateLimiter):
 
 async def rate_limit_middleware(request: Request, call_next: Callable) -> Any:
     """Rate limiting middleware for FastAPI."""
+    from core.auth import RATE_LIMIT_ENABLED
+    
+    # Bypass rate limiting if disabled
+    if not RATE_LIMIT_ENABLED:
+        return await call_next(request)
+    
     limiter = get_rate_limiter()
     
     # Check rate limit

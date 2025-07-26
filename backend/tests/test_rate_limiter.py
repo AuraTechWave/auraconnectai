@@ -109,6 +109,21 @@ class TestMemoryRateLimiter:
         allowed, _ = await limiter.is_allowed("test_client", rule)
         assert allowed is True
 
+    @pytest.mark.asyncio
+    async def test_burst_handling(self, limiter):
+        """Test burst tolerance functionality."""
+        # Rule with burst tolerance
+        rule = RateLimitRule(requests=5, window=60, burst=3)
+        
+        # Should allow normal limit + burst (5 + 3 = 8 requests)
+        for i in range(8):
+            allowed, _ = await limiter.is_allowed("test_client", rule)
+            assert allowed is True
+        
+        # 9th request should be blocked
+        allowed, _ = await limiter.is_allowed("test_client", rule)
+        assert allowed is False
+
 
 class TestRateLimiter:
     """Test main rate limiter class."""
@@ -353,3 +368,24 @@ async def test_rate_limit_headers():
         assert "X-RateLimit-Window" in response.headers
         assert response.headers["X-RateLimit-Limit"] == "100"
         assert response.headers["X-RateLimit-Window"] == "60"
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_disabled():
+    """Test that rate limiting can be disabled via environment variable."""
+    
+    mock_request = Mock(spec=Request)
+    mock_request.url.path = "/test"
+    mock_request.method = "GET"
+    
+    mock_response = Mock()
+    
+    async def mock_call_next(request):
+        return mock_response
+    
+    # Mock RATE_LIMIT_ENABLED as False
+    with patch('core.auth.RATE_LIMIT_ENABLED', False):
+        response = await rate_limit_middleware(mock_request, mock_call_next)
+        
+        # Should bypass rate limiting and return response directly
+        assert response == mock_response
