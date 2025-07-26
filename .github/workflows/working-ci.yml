@@ -1,4 +1,4 @@
-name: AuraConnect CI
+name: Working CI
 
 on:
   push:
@@ -71,7 +71,7 @@ jobs:
           fi
 
   frontend:
-    name: Frontend Tests
+    name: Frontend Tests  
     runs-on: ubuntu-latest
     
     steps:
@@ -83,11 +83,23 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies and test
+      - name: Check package-lock.json exists
+        run: |
+          cd frontend
+          ls -la package-lock.json
+          echo "✅ package-lock.json exists"
+
+      - name: Install dependencies
         run: |
           cd frontend
           npm ci
-          # Run tests if they exist
+
+      - name: Run tests
+        run: |
+          cd frontend
           npm test -- --passWithNoTests --watchAll=false
-          # Build to ensure it works
+
+      - name: Build
+        run: |
+          cd frontend
           npm run build
