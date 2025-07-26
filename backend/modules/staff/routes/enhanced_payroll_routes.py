@@ -35,8 +35,8 @@ from .payroll_background_tasks import process_payroll_batch_persistent
 router = APIRouter(prefix="/payrolls", tags=["Enhanced Payroll"])
 
 
-# In-memory storage for batch job tracking (in production, use Redis or database)
-BATCH_JOBS = {}
+# Persistent job tracking using PayrollConfigurationService
+# Addresses code review: "In-memory job status tracking will be lost on server restart"
 
 
 @router.post("/run", response_model=PayrollRunResponse, status_code=status.HTTP_202_ACCEPTED)
