@@ -29,13 +29,14 @@ from ..schemas.enhanced_payroll_schemas import (
 )
 from ...payroll.services.payroll_tax_engine import PayrollTaxEngine
 from ...payroll.models.payroll_models import TaxRule
+from .payroll_background_tasks import process_payroll_batch_persistent
 
 
 router = APIRouter(prefix="/payrolls", tags=["Enhanced Payroll"])
 
 
-# In-memory storage for batch job tracking (in production, use Redis or database)
-BATCH_JOBS = {}
+# Persistent job tracking using PayrollConfigurationService
+# Addresses code review: "In-memory job status tracking will be lost on server restart"
 
 
 @router.post("/run", response_model=PayrollRunResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -74,7 +75,7 @@ async def run_payroll(
     """
     try:
         payroll_service = EnhancedPayrollService(db)
-        job_id = str(uuid.uuid4())
+        config_service = PayrollConfigurationService(db)
         
         # Determine staff IDs to process
         if request.staff_ids is None:
@@ -83,21 +84,36 @@ async def run_payroll(
         else:
             staff_ids_to_process = request.staff_ids
         
-        # Initialize job tracking
-        BATCH_JOBS[job_id] = {
-            "status": "processing",
-            "total_staff": len(staff_ids_to_process),
-            "completed_staff": 0,
-            "failed_staff": 0,
-            "processing_errors": [],
-            "started_at": datetime.utcnow()
+        # Create persistent job tracking instead of in-memory storage
+        # Addresses code review: "API Reliability: In-memory job status tracking"
+        job_params = {
+            "staff_ids": staff_ids_to_process,
+            "pay_period_start": request.pay_period_start,
+            "pay_period_end": request.pay_period_end
         }
         
-        # Start background processing
+        job_tracking = config_service.create_job_tracking(
+            job_type="batch_payroll",
+            job_params=job_params,
+            created_by=current_user.email if hasattr(current_user, 'email') else None,
+            tenant_id=request.tenant_id
+        )
+        
+        job_id = job_tracking.job_id
+        
+        # Update job with total items and start status
+        job_tracking.total_items = len(staff_ids_to_process)
+        config_service.update_job_progress(
+            job_id=job_id,
+            status="processing"
+        )
+        
+        # Start background processing with persistent tracking
         background_tasks.add_task(
-            process_payroll_batch,
+            process_payroll_batch_persistent,
             job_id,
             payroll_service,
+            config_service,
             staff_ids_to_process,
             request.pay_period_start,
             request.pay_period_end,
@@ -130,10 +146,11 @@ async def run_payroll(
 @router.get("/run/{job_id}/status", response_model=PayrollBatchStatus)
 async def get_payroll_run_status(
     job_id: str,
+    db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_access)
 ):
     """
-    Get the status of a payroll batch processing job.
+    Get the status of a payroll batch processing job from persistent storage.
     
     ## Authentication Required
     - Requires `payroll_manager`, `payroll_clerk`, or `admin` role
@@ -144,23 +161,26 @@ async def get_payroll_run_status(
     ## Response
     Returns current status, progress, and any errors for the batch job.
     """
-    if job_id not in BATCH_JOBS:
+    config_service = PayrollConfigurationService(db)
+    job_status = config_service.get_job_status(job_id)
+    
+    if not job_status:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Payroll job not found"
         )
     
-    job_data = BATCH_JOBS[job_id]
-    progress = int((job_data["completed_staff"] / job_data["total_staff"]) * 100) if job_data["total_staff"] > 0 else 0
-    
     return PayrollBatchStatus(
         job_id=job_id,
-        status=job_data["status"],
-        progress=progress,
-        total_staff=job_data["total_staff"],
-        completed_staff=job_data["completed_staff"],
-        failed_staff=job_data["failed_staff"],
-        error_summary=[error["error"] for error in job_data["processing_errors"][:5]]  # Limit to 5 errors
+        status=job_status["status"],
+        progress=job_status["progress_percentage"],
+        total_staff=job_status["total_items"],
+        completed_staff=job_status["completed_items"],
+        failed_staff=job_status["failed_items"],
+        error_summary=[
+            error.get("error", "Unknown error") 
+            for error in (job_status.get("error_details", {}).get("processing_errors", [])[:5])
+        ]
     )
 
 

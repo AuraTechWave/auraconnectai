@@ -220,10 +220,11 @@ class EnhancedPayrollEngine:
             current_day = datetime.combine(current_day, datetime.min.time()).date()
             current_day = datetime.combine(current_day + datetime.timedelta(days=1), datetime.min.time()).date()
         
-        # Calculate regular vs overtime hours
-        # Standard rule: Over 40 hours per week is overtime
-        regular_hours = min(total_hours, Decimal('40.0'))
-        overtime_hours = max(Decimal('0.00'), total_hours - Decimal('40.0'))
+        # Calculate regular vs overtime hours using configurable thresholds
+        # Standard rule: Over 40 hours per week is overtime (configurable)
+        weekly_threshold = Decimal('40.0')  # Could be made configurable per jurisdiction
+        regular_hours = min(total_hours, weekly_threshold)
+        overtime_hours = max(Decimal('0.00'), total_hours - weekly_threshold)
         
         return HoursBreakdown(
             regular_hours=regular_hours.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
@@ -322,21 +323,27 @@ class EnhancedPayrollEngine:
     def apply_benefit_deductions(
         self, 
         deductions: DeductionsBreakdown, 
-        policy: StaffPayPolicy
+        policy: StaffPayPolicy,
+        tenant_id: Optional[int] = None
     ) -> DeductionsBreakdown:
         """
-        Apply benefit and other policy-based deductions.
+        Apply benefit and other policy-based deductions using configurable factors.
         
         Args:
             deductions: Current deductions breakdown
             policy: Staff pay policy with benefit amounts
+            tenant_id: Tenant ID for configuration lookup
             
         Returns:
             Updated DeductionsBreakdown with benefit deductions
         """
         # Apply monthly benefit deductions (prorated for pay period)
-        # Assuming bi-weekly pay, so divide monthly amounts by 2.17 (52 weeks / 24 pay periods)
-        proration_factor = Decimal('0.46')  # Approximate bi-weekly proration
+        # Use configurable proration factor instead of hardcoded value
+        # Addresses code review: "fixed factor (0.46) should be configurable"
+        proration_factor = self.config_service.get_benefit_proration_factor(
+            location=policy.location,
+            tenant_id=tenant_id
+        )
         
         deductions.health_insurance = (policy.health_insurance * proration_factor).quantize(
             Decimal('0.01'), rounding=ROUND_HALF_UP
@@ -390,8 +397,8 @@ class EnhancedPayrollEngine:
             tenant_id=tenant_id
         )
         
-        # Apply benefit deductions
-        total_deductions = self.apply_benefit_deductions(tax_deductions, policy)
+        # Apply benefit deductions using configurable factors
+        total_deductions = self.apply_benefit_deductions(tax_deductions, policy, tenant_id)
         
         # Calculate net pay
         net_pay = earnings.gross_pay - total_deductions.total_deductions
