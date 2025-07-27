@@ -8,11 +8,15 @@ payroll and other sensitive endpoints.
 import os
 from datetime import datetime, timedelta
 from typing import Optional, List
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+import secrets
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Security Configuration - Environment Variables
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "development-secret-key-change-in-production")
@@ -36,6 +40,8 @@ class TokenData(BaseModel):
     username: Optional[str] = None
     roles: List[str] = []
     tenant_ids: List[int] = []
+    session_id: Optional[str] = None
+    token_id: Optional[str] = None
 
 
 class User(BaseModel):
@@ -108,30 +114,81 @@ def authenticate_user(username: str, password: str) -> Optional[User]:
     return User(**user_data)
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def generate_token_id() -> str:
+    """Generate a unique token ID for tracking."""
+    return secrets.token_urlsafe(32)
+
+
+def create_access_token(
+    data: dict, 
+    expires_delta: Optional[timedelta] = None,
+    session_id: Optional[str] = None
+) -> str:
     """Create a JWT access token using secure configuration."""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "type": "access"})
+    
+    # Add token tracking information
+    token_id = generate_token_id()
+    to_encode.update({
+        "exp": expire,
+        "type": "access",
+        "jti": token_id,  # JWT ID for token tracking
+        "iat": datetime.utcnow().timestamp(),  # Issued at
+    })
+    
+    if session_id:
+        to_encode["session_id"] = session_id
+    
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def create_refresh_token(data: dict) -> str:
+def create_refresh_token(data: dict, session_id: Optional[str] = None) -> str:
     """Create a JWT refresh token with longer expiration."""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    
+    # Add token tracking information
+    token_id = generate_token_id()
+    to_encode.update({
+        "exp": expire,
+        "type": "refresh",
+        "jti": token_id,  # JWT ID for token tracking
+        "iat": datetime.utcnow().timestamp(),  # Issued at
+    })
+    
+    if session_id:
+        to_encode["session_id"] = session_id
+    
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
-    """Verify and decode a JWT token."""
+def verify_token(token: str, token_type: str = "access", check_blacklist: bool = True) -> Optional[TokenData]:
+    """
+    Verify and decode a JWT token with optional blacklist checking.
+    
+    Args:
+        token: JWT token to verify
+        token_type: Expected token type ("access" or "refresh")
+        check_blacklist: Whether to check if token is blacklisted
+        
+    Returns:
+        TokenData if valid, None otherwise
+    """
     try:
+        # Import here to avoid circular imports
+        from .session_manager import session_manager
+        
+        # Check blacklist if enabled
+        if check_blacklist and session_manager.is_token_blacklisted(token):
+            logger.warning("Attempted use of blacklisted token")
+            return None
+        
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
         # Check token type
@@ -142,22 +199,47 @@ def verify_token(token: str, token_type: str = "access") -> Optional[TokenData]:
         username: str = payload.get("username")
         roles: List[str] = payload.get("roles", [])
         tenant_ids: List[int] = payload.get("tenant_ids", [])
+        session_id: str = payload.get("session_id")
+        token_id: str = payload.get("jti")
         
         if user_id is None:
             return None
+        
+        # For refresh tokens, verify session exists and is valid
+        if token_type == "refresh" and session_id:
+            session = session_manager.get_session(session_id)
+            if not session or not session.is_active:
+                logger.warning(f"Invalid session {session_id} for refresh token")
+                return None
+            
+            # Verify the refresh token matches
+            if session.refresh_token != token:
+                logger.warning(f"Refresh token mismatch for session {session_id}")
+                return None
             
         return TokenData(
             user_id=user_id,
             username=username,
             roles=roles,
-            tenant_ids=tenant_ids
+            tenant_ids=tenant_ids,
+            session_id=session_id,
+            token_id=token_id
         )
-    except JWTError:
+    except JWTError as e:
+        logger.warning(f"JWT verification failed: {e}")
         return None
 
 
-def refresh_access_token(refresh_token: str) -> Optional[str]:
-    """Generate new access token from valid refresh token."""
+def refresh_access_token(refresh_token: str) -> Optional[dict]:
+    """
+    Generate new access token from valid refresh token.
+    
+    Args:
+        refresh_token: Valid refresh token
+        
+    Returns:
+        Dictionary with new access token and metadata, or None if invalid
+    """
     token_data = verify_token(refresh_token, token_type="refresh")
     if not token_data:
         return None
@@ -169,7 +251,123 @@ def refresh_access_token(refresh_token: str) -> Optional[str]:
         "roles": token_data.roles,
         "tenant_ids": token_data.tenant_ids
     }
-    return create_access_token(new_token_data)
+    
+    access_token = create_access_token(new_token_data, session_id=token_data.session_id)
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "session_id": token_data.session_id
+    }
+
+
+def create_user_session(
+    user: User,
+    request: Optional[Request] = None
+) -> dict:
+    """
+    Create a new authenticated session for a user.
+    
+    Args:
+        user: Authenticated user
+        request: FastAPI request object for metadata
+        
+    Returns:
+        Dictionary with access token, refresh token, and session info
+    """
+    from .session_manager import session_manager
+    
+    # Extract client information
+    user_agent = None
+    ip_address = None
+    if request:
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+    
+    # Create tokens
+    token_data = {
+        "sub": user.id,
+        "username": user.username,
+        "roles": user.roles,
+        "tenant_ids": user.tenant_ids
+    }
+    
+    # Create refresh token first (needed for session)
+    refresh_token_expires = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token = create_refresh_token(token_data)
+    
+    # Create session
+    session_id = session_manager.create_session(
+        user_id=user.id,
+        username=user.username,
+        refresh_token=refresh_token,
+        expires_at=refresh_token_expires,
+        user_agent=user_agent,
+        ip_address=ip_address
+    )
+    
+    # Create access token with session ID
+    access_token = create_access_token(token_data, session_id=session_id)
+    
+    logger.info(f"Created session {session_id} for user {user.username}")
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "access_expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "refresh_expires_in": REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        "session_id": session_id,
+        "user_info": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "roles": user.roles,
+            "tenant_ids": user.tenant_ids
+        }
+    }
+
+
+def logout_user(token: str, logout_all_sessions: bool = False) -> bool:
+    """
+    Logout user by revoking tokens and sessions.
+    
+    Args:
+        token: Access or refresh token
+        logout_all_sessions: Whether to logout from all sessions
+        
+    Returns:
+        True if logout successful, False otherwise
+    """
+    from .session_manager import session_manager
+    
+    try:
+        # Try to get token data (could be access or refresh token)
+        token_data = verify_token(token, "access", check_blacklist=False)
+        if not token_data:
+            token_data = verify_token(token, "refresh", check_blacklist=False)
+        
+        if not token_data:
+            return False
+        
+        # Blacklist the current token
+        session_manager.blacklist_token(token)
+        
+        if logout_all_sessions:
+            # Revoke all user sessions
+            session_manager.revoke_all_user_sessions(token_data.user_id)
+            logger.info(f"Logged out all sessions for user {token_data.username}")
+        elif token_data.session_id:
+            # Revoke specific session
+            session_manager.revoke_session(token_data.session_id)
+            logger.info(f"Logged out session {token_data.session_id} for user {token_data.username}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Logout failed: {e}")
+        return False
 
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> User:
