@@ -13,6 +13,9 @@ from backend.modules.auth.routes.auth_routes import (
 from backend.modules.auth.routes.rbac_routes import (
     router as rbac_router
 )
+from backend.modules.auth.routes.password_routes import (
+    router as password_router
+)
 from backend.modules.orders.routes.order_routes import router as order_router
 from backend.modules.orders.routes.inventory_routes import (
     router as inventory_router
@@ -92,6 +95,7 @@ app.add_middleware(
 # Include all routers with proper order (auth first)
 app.include_router(auth_router)
 app.include_router(rbac_router)
+app.include_router(password_router)
 app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API
 app.include_router(staff_router)
 app.include_router(payroll_router)  # Legacy payroll routes

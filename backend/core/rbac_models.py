@@ -121,6 +121,25 @@ class RBACUser(Base):
                 if tenant_id is None or role.is_applicable_to_tenant(tenant_id):
                     return True
         return False
+    
+    # Password security relationships
+    password_reset_tokens = relationship(
+        "PasswordResetToken",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    password_history = relationship(
+        "PasswordHistory",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    
+    security_audit_logs = relationship(
+        "SecurityAuditLog",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 
 class RBACRole(Base):

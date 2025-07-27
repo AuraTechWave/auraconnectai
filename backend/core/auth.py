@@ -29,7 +29,10 @@ RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
 DEFAULT_RATE_LIMIT = int(os.getenv("DEFAULT_RATE_LIMIT", "100"))  # requests per minute
 AUTH_RATE_LIMIT = int(os.getenv("AUTH_RATE_LIMIT", "5"))  # login attempts per minute
 
-# Password hashing
+# Import enhanced password security
+from .password_security import password_security
+
+# Password hashing (legacy support)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
@@ -87,13 +90,23 @@ MOCK_USERS = {
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a password against its hash."""
+    """Verify a password against its hash using enhanced security."""
+    # Try enhanced password security first
+    if password_security.verify_password(plain_password, hashed_password):
+        return True
+    
+    # Fallback to legacy method for existing passwords
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password."""
-    return pwd_context.hash(password)
+    """Hash a password using enhanced security."""
+    return password_security.hash_password(password)
+
+
+def needs_password_rehash(hashed_password: str) -> bool:
+    """Check if password hash needs to be rehashed with stronger algorithm."""
+    return password_security.needs_rehash(hashed_password)
 
 
 def get_user(username: str) -> Optional[User]:
