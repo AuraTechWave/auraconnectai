@@ -8,6 +8,7 @@ import { renderHook } from '@testing-library/react';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import { RBACProvider, useRBAC, usePermission, useRole } from '../useRBAC';
+import { PermissionGuard, RoleGuard, CombinedGuard } from '../../components/rbac/RBACGuard';
 
 // Mock API responses
 const mockUserData = {
@@ -357,6 +358,136 @@ describe('Error Handling', () => {
     // Should clear auth state on 401
     expect(result.current.user).toBe(null);
     expect(localStorage.getItem('access_token')).toBe(null);
+  });
+});
+
+describe('CombinedGuard Integration Tests', () => {
+  it('renders content when both permission and role requirements are met (AND)', async () => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    
+    const TestComponent = () => {
+      const { user } = useRBAC();
+      
+      return (
+        <CombinedGuard
+          permission="staff:read"
+          role="manager"
+          operator="AND"
+          fallback={<div>Access Denied</div>}
+        >
+          <div>Protected Content</div>
+        </CombinedGuard>
+      );
+    };
+    
+    render(<TestWrapper><TestComponent /></TestWrapper>);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
+    
+    expect(screen.queryByText('Access Denied')).not.toBeInTheDocument();
+  });
+  
+  it('renders fallback when permission is missing (AND operator)', async () => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    
+    const TestComponent = () => {
+      return (
+        <CombinedGuard
+          permission="admin:write"  // User doesn't have this
+          role="manager"
+          operator="AND"
+          fallback={<div>Access Denied</div>}
+        >
+          <div>Protected Content</div>
+        </CombinedGuard>
+      );
+    };
+    
+    render(<TestWrapper><TestComponent /></TestWrapper>);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Access Denied')).toBeInTheDocument();
+    });
+    
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+  });
+  
+  it('renders content when either requirement is met (OR operator)', async () => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    
+    const TestComponent = () => {
+      return (
+        <CombinedGuard
+          permission="admin:write"  // User doesn't have this
+          role="manager"           // But has this
+          operator="OR"
+          fallback={<div>Access Denied</div>}
+        >
+          <div>Protected Content</div>
+        </CombinedGuard>
+      );
+    };
+    
+    render(<TestWrapper><TestComponent /></TestWrapper>);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
+    
+    expect(screen.queryByText('Access Denied')).not.toBeInTheDocument();
+  });
+  
+  it('handles multiple permissions and roles correctly', async () => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    
+    const TestComponent = () => {
+      return (
+        <CombinedGuard
+          permissions={['staff:read', 'order:read']}
+          roles={['manager', 'staff_viewer']}
+          requireAllPermissions={true}
+          requireAllRoles={false}  // Has at least one role
+          operator="AND"
+          fallback={<div>Access Denied</div>}
+        >
+          <div>Protected Content</div>
+        </CombinedGuard>
+      );
+    };
+    
+    render(<TestWrapper><TestComponent /></TestWrapper>);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
+  });
+  
+  it('handles nested guards correctly', async () => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    
+    const TestComponent = () => {
+      return (
+        <PermissionGuard permission="staff:read">
+          <RoleGuard role="manager">
+            <CombinedGuard
+              permission="order:read"
+              role="staff_viewer"
+              operator="OR"
+            >
+              <div>Deeply Protected Content</div>
+            </CombinedGuard>
+          </RoleGuard>
+        </PermissionGuard>
+      );
+    };
+    
+    render(<TestWrapper><TestComponent /></TestWrapper>);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Deeply Protected Content')).toBeInTheDocument();
+    });
   });
 });
 

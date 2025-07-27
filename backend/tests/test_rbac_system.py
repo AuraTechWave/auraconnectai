@@ -274,6 +274,157 @@ class TestRBACPermissionManagement:
         assert user_permission.reason == "Testing direct permission grant"
 
 
+class TestDenyPermissionPrecedence:
+    """Test deny permission precedence functionality."""
+    
+    def test_deny_overrides_grant(self, rbac_service, test_user):
+        """Test that deny permissions always override grant permissions."""
+        # Grant permission first
+        rbac_service.grant_direct_permission(
+            user_id=test_user.id,
+            permission_key="test:deny_precedence",
+            tenant_id=1,
+            reason="Initial grant"
+        )
+        
+        # Verify permission is granted
+        has_permission = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key="test:deny_precedence",
+            tenant_id=1
+        )
+        assert has_permission is True
+        
+        # Now deny the same permission
+        deny_permission = UserPermission(
+            user_id=test_user.id,
+            permission_key="test:deny_precedence",
+            tenant_id=1,
+            is_grant=False,  # This is a DENY
+            is_active=True,
+            granted_at=datetime.utcnow(),
+            reason="Explicit deny"
+        )
+        rbac_service.db.add(deny_permission)
+        rbac_service.db.commit()
+        
+        # Verify permission is now denied
+        has_permission = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key="test:deny_precedence",
+            tenant_id=1
+        )
+        assert has_permission is False
+    
+    def test_deny_overrides_role_permissions(self, rbac_service, test_user, test_role, test_permission):
+        """Test that deny permissions override role-based permissions."""
+        # Assign permission to role
+        rbac_service.assign_permission_to_role(test_role.id, test_permission.id)
+        
+        # Assign role to user
+        rbac_service.assign_role_to_user(test_user.id, test_role.id)
+        
+        # Verify user has permission through role
+        has_permission = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key=test_permission.key
+        )
+        assert has_permission is True
+        
+        # Add explicit deny
+        deny_permission = UserPermission(
+            user_id=test_user.id,
+            permission_key=test_permission.key,
+            is_grant=False,  # DENY
+            is_active=True,
+            granted_at=datetime.utcnow(),
+            reason="Override role permission"
+        )
+        rbac_service.db.add(deny_permission)
+        rbac_service.db.commit()
+        
+        # Verify permission is now denied
+        has_permission = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key=test_permission.key
+        )
+        assert has_permission is False
+    
+    def test_tenant_specific_deny(self, rbac_service, test_user):
+        """Test tenant-specific deny permissions."""
+        permission_key = "tenant:specific_deny"
+        
+        # Grant global permission
+        rbac_service.grant_direct_permission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=None,  # Global grant
+            reason="Global permission"
+        )
+        
+        # Deny for specific tenant
+        deny_permission = UserPermission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=2,  # Specific tenant deny
+            is_grant=False,
+            is_active=True,
+            granted_at=datetime.utcnow(),
+            reason="Deny for tenant 2"
+        )
+        rbac_service.db.add(deny_permission)
+        rbac_service.db.commit()
+        
+        # Should have permission for tenant 1
+        has_permission_t1 = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=1
+        )
+        assert has_permission_t1 is True
+        
+        # Should NOT have permission for tenant 2
+        has_permission_t2 = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=2
+        )
+        assert has_permission_t2 is False
+    
+    def test_expired_deny_does_not_apply(self, rbac_service, test_user):
+        """Test that expired deny permissions are ignored."""
+        permission_key = "test:expired_deny"
+        
+        # Grant permission
+        rbac_service.grant_direct_permission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=1
+        )
+        
+        # Add expired deny
+        deny_permission = UserPermission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=1,
+            is_grant=False,
+            is_active=True,
+            granted_at=datetime.utcnow() - timedelta(days=2),
+            expires_at=datetime.utcnow() - timedelta(days=1),  # Expired yesterday
+            reason="Expired deny"
+        )
+        rbac_service.db.add(deny_permission)
+        rbac_service.db.commit()
+        
+        # Should still have permission (deny is expired)
+        has_permission = rbac_service.check_user_permission(
+            user_id=test_user.id,
+            permission_key=permission_key,
+            tenant_id=1
+        )
+        assert has_permission is True
+
+
 class TestRBACPermissionChecking:
     """Test permission checking functionality."""
     

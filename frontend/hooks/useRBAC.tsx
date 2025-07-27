@@ -8,6 +8,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../utils/apiClient';
 
+// Event emitter for tenant changes
+class TenantEventEmitter extends EventTarget {
+  emitTenantChange(oldTenantId: number | null, newTenantId: number) {
+    this.dispatchEvent(new CustomEvent('tenantChanged', {
+      detail: { oldTenantId, newTenantId }
+    }));
+  }
+  
+  onTenantChange(callback: (event: CustomEvent) => void) {
+    this.addEventListener('tenantChanged', callback as EventListener);
+    return () => this.removeEventListener('tenantChanged', callback as EventListener);
+  }
+}
+
+const tenantEventEmitter = new TenantEventEmitter();
+
 // Types for RBAC system
 export interface RBACUser {
   id: number;
@@ -46,6 +62,7 @@ export interface RBACContextType {
   
   // Tenant management
   switchTenant: (tenantId: number) => Promise<void>;
+  onTenantChange: (callback: (event: CustomEvent) => void) => (() => void);
   
   // Utility methods
   checkPermission: (permission: string, tenantId?: number, resourceId?: string) => Promise<boolean>;
@@ -58,11 +75,65 @@ interface RBACProviderProps {
   children: React.ReactNode;
 }
 
+// Cache keys for localStorage
+const CACHE_KEYS = {
+  USER_DATA: 'rbac_user_data',
+  PERMISSIONS: 'rbac_permissions_cache',
+  CACHE_TIMESTAMP: 'rbac_cache_timestamp',
+  CACHE_TTL_MS: 15 * 60 * 1000 // 15 minutes in milliseconds
+};
+
 export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
   const [user, setUser] = useState<RBACUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTenantId, setActiveTenantId] = useState<number | null>(null);
+
+  // Check if cache is still valid
+  const isCacheValid = (): boolean => {
+    const timestamp = localStorage.getItem(CACHE_KEYS.CACHE_TIMESTAMP);
+    if (!timestamp) return false;
+    
+    const cacheTime = parseInt(timestamp, 10);
+    const now = Date.now();
+    return (now - cacheTime) < CACHE_KEYS.CACHE_TTL_MS;
+  };
+
+  // Load from cache
+  const loadFromCache = (): RBACUser | null => {
+    if (!isCacheValid()) {
+      clearCache();
+      return null;
+    }
+
+    const cachedData = localStorage.getItem(CACHE_KEYS.USER_DATA);
+    if (cachedData) {
+      try {
+        return JSON.parse(cachedData) as RBACUser;
+      } catch (err) {
+        console.error('Failed to parse cached user data:', err);
+        clearCache();
+      }
+    }
+    return null;
+  };
+
+  // Save to cache
+  const saveToCache = (userData: RBACUser) => {
+    try {
+      localStorage.setItem(CACHE_KEYS.USER_DATA, JSON.stringify(userData));
+      localStorage.setItem(CACHE_KEYS.CACHE_TIMESTAMP, Date.now().toString());
+    } catch (err) {
+      console.error('Failed to save to cache:', err);
+    }
+  };
+
+  // Clear cache
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEYS.USER_DATA);
+    localStorage.removeItem(CACHE_KEYS.PERMISSIONS);
+    localStorage.removeItem(CACHE_KEYS.CACHE_TIMESTAMP);
+  };
 
   // Initialize RBAC context on component mount
   useEffect(() => {
@@ -75,12 +146,23 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
       const token = localStorage.getItem('access_token');
       
       if (token) {
-        await refreshUser();
+        // Try to load from cache first
+        const cachedUser = loadFromCache();
+        if (cachedUser) {
+          setUser(cachedUser);
+          setActiveTenantId(cachedUser.default_tenant_id || null);
+          setError(null);
+          console.log('Loaded user data from cache');
+        } else {
+          // Cache miss or expired, fetch from server
+          await refreshUser();
+        }
       }
     } catch (err) {
       console.error('Failed to initialize auth:', err);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+      clearCache();
     } finally {
       setLoading(false);
     }
@@ -140,6 +222,7 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
     // Clear local storage and state
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    clearCache(); // Clear RBAC cache
     setUser(null);
     setActiveTenantId(null);
     setError(null);
@@ -152,6 +235,7 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
       
       const userData = response.data;
       setUser(userData);
+      saveToCache(userData); // Save to cache
       
       // Update active tenant if not set
       if (!activeTenantId && userData.default_tenant_id) {
@@ -231,7 +315,12 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
         throw new Error('Access denied for this tenant');
       }
       
+      const oldTenantId = activeTenantId;
       setActiveTenantId(tenantId);
+      
+      // Emit tenant change event
+      tenantEventEmitter.emitTenantChange(oldTenantId, tenantId);
+      
       await refreshUser(tenantId);
     } catch (err: any) {
       setError(err.message || 'Failed to switch tenant');
@@ -263,6 +352,11 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
     return hasAnyRole(['admin', 'super_admin']);
   }, [hasAnyRole]);
 
+  // Expose tenant change event subscription
+  const onTenantChange = useCallback((callback: (event: CustomEvent) => void) => {
+    return tenantEventEmitter.onTenantChange(callback);
+  }, []);
+
   const contextValue: RBACContextType = {
     user,
     loading,
@@ -278,6 +372,7 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
     hasAnyPermission,
     hasAllPermissions,
     switchTenant,
+    onTenantChange,
     checkPermission,
     isAdmin
   };

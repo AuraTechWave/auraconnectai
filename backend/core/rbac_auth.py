@@ -15,6 +15,7 @@ from .auth import verify_token, TokenData
 from .database import get_db
 from .rbac_service import RBACService, get_rbac_service
 from .rbac_models import RBACUser
+from .config import settings
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)
@@ -99,10 +100,24 @@ class RBACDependency:
         # Extract tenant context if needed
         tenant_id = None
         if self.tenant_aware:
-            tenant_id = getattr(request.state, 'tenant_id', None) or user.default_tenant_id
+            # Try to get tenant from request state first
+            tenant_id = getattr(request.state, 'tenant_id', None)
+            
+            # Fallback to user's default tenant if not specified
+            if tenant_id is None:
+                tenant_id = user.default_tenant_id
+                if tenant_id:
+                    logger.warning(
+                        f"No tenant_id in request state for user {user.username}, "
+                        f"falling back to default tenant {tenant_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"No tenant_id in request state and no default tenant for user {user.username}"
+                    )
         
-        # Admin override check
-        if self.allow_admin_override and user.has_role('admin', tenant_id):
+        # Admin override check (controlled by environment configuration)
+        if self.allow_admin_override and settings.rbac_admin_override_enabled and user.has_role('admin', tenant_id):
             logger.debug(f"Admin override for user {user.username}")
             return user
         

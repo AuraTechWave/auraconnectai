@@ -18,6 +18,7 @@ from .rbac_models import (
 )
 from .database import get_db
 from .auth import get_password_hash, verify_password
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -500,7 +501,7 @@ class RBACService:
             active_tenant_id=active_tenant_id,
             active_role_ids=active_role_ids,
             cached_permissions=cached_permissions,
-            cache_expires_at=datetime.utcnow() + timedelta(minutes=15),  # Cache for 15 minutes
+            cache_expires_at=datetime.utcnow() + timedelta(minutes=settings.rbac_session_cache_ttl_minutes),
             created_at=datetime.utcnow(),
             last_accessed=datetime.utcnow(),
             expires_at=expires_at,
@@ -539,7 +540,7 @@ class RBACService:
             cached_permissions[str(session.active_tenant_id)] = permissions
         
         session.cached_permissions = cached_permissions
-        session.cache_expires_at = datetime.utcnow() + timedelta(minutes=15)
+        session.cache_expires_at = datetime.utcnow() + timedelta(minutes=settings.rbac_session_cache_ttl_minutes)
         session.last_accessed = datetime.utcnow()
         
         self.db.commit()
