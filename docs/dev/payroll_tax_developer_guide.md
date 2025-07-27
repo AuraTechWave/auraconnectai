@@ -553,3 +553,20 @@ For additional help:
 - Internal Wiki: https://wiki.auraconnect.ai/payroll
 - Slack: #payroll-dev
 - Email: payroll-team@auraconnect.ai
+
+## Related Documentation
+
+### Architecture
+- [Payroll Integration Architecture](architecture/payroll_integration.md) - System integration overview
+- [Payroll Module Architecture](../feature_docs/payroll/architecture.md) - Core module architecture
+- [Tax Calculation Flow](../feature_docs/payroll/tax_calculation_flow.md) - Tax processing workflow
+
+### Deployment & Operations
+- [Production Readiness Checklist](../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Pre-deployment requirements
+- [Production Deployment Guide](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md) - Deployment procedures
+- [API Phase 4 Documentation](../../backend/API_PHASE4_DOCUMENTATION.md) - API specifications
+
+### Frontend Integration
+- [PayrollIntegration Component](../../frontend/components/staff/PayrollIntegration.tsx) - Main UI component
+- [usePayrollAPI Hook](../../frontend/hooks/usePayrollAPI.ts) - API integration hook
+- [Payroll Types](../../frontend/types/payroll.ts) - TypeScript type definitions

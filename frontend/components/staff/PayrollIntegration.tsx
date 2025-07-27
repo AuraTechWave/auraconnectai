@@ -5,9 +5,17 @@
  * including payroll history, running payroll, and viewing detailed breakdowns.
  */
 
-import React, { useState, useEffect } from 'react';
-import { usePayrollAPI } from '../../hooks/usePayrollAPI';
-import { Staff, PayrollHistory, PayrollRunRequest } from '../../types/payroll';
+import React, { useState, useEffect, useCallback } from 'react';
+import { usePayrollAPI, usePayrollWebSocket } from '../../hooks/usePayrollAPI';
+import { usePayrollToast } from '../ui/Toast';
+import { PayrollHistoryTableSkeleton, PayrollDetailSkeleton } from '../ui/SkeletonLoader';
+import { 
+  PayrollHistory, 
+  PayrollRunRequest, 
+  PayrollDetail,
+  PayrollWebSocketEvent,
+  PayrollEventType 
+} from '../../types/payroll';
 
 interface PayrollIntegrationProps {
   staffId: number;
@@ -23,22 +31,70 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
     error 
   } = usePayrollAPI();
   
+  const { 
+    runPayrollSuccess, 
+    runPayrollError, 
+    loadError, 
+    payrollInfo 
+  } = usePayrollToast();
+  
   const [payrollHistory, setPayrollHistory] = useState<PayrollHistory[]>([]);
   const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null);
   const [showRunDialog, setShowRunDialog] = useState(false);
+  const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set());
+
+  const loadPayrollHistory = useCallback(async () => {
+    try {
+      const response = await getPayrollHistory(staffId, tenantId);
+      setPayrollHistory(response.payroll_history);
+    } catch (err) {
+      loadError('payroll history');
+    }
+  }, [getPayrollHistory, staffId, tenantId, loadError]);
+
+  // WebSocket integration for real-time updates
+  const handleWebSocketUpdate = useCallback((event: PayrollWebSocketEvent) => {
+    switch (event.type) {
+      case PayrollEventType.JOB_STARTED:
+        setProcessingJobs(prev => new Set([...prev, event.payload.job_id]));
+        payrollInfo(`Payroll processing started: ${event.payload.job_id}`);
+        break;
+        
+      case PayrollEventType.JOB_COMPLETED:
+        setProcessingJobs(prev => {
+          const updated = new Set(prev);
+          updated.delete(event.payload.job_id);
+          return updated;
+        });
+        payrollInfo('Payroll processing completed successfully');
+        loadPayrollHistory(); // Refresh history
+        break;
+        
+      case PayrollEventType.JOB_FAILED:
+        setProcessingJobs(prev => {
+          const updated = new Set(prev);
+          updated.delete(event.payload.job_id);
+          return updated;
+        });
+        runPayrollError(`Processing failed: ${event.payload.error}`);
+        break;
+        
+      case PayrollEventType.STAFF_PROCESSED:
+        if (event.payload.staff_id === staffId) {
+          payrollInfo(`Payroll processed for staff member`);
+        }
+        break;
+        
+      default:
+        console.log('Unhandled payroll event:', event);
+    }
+  }, [staffId, payrollInfo, runPayrollError, loadPayrollHistory]);
+
+  const { connected, connectionStatus } = usePayrollWebSocket(handleWebSocketUpdate, staffId);
 
   useEffect(() => {
     loadPayrollHistory();
-  }, [staffId]);
-
-  const loadPayrollHistory = async () => {
-    try {
-      const history = await getPayrollHistory(staffId, tenantId);
-      setPayrollHistory(history);
-    } catch (err) {
-      console.error('Failed to load payroll history:', err);
-    }
-  };
+  }, [loadPayrollHistory]);
 
   const handleRunPayroll = async (request: PayrollRunRequest) => {
     try {
@@ -48,12 +104,16 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
         tenant_id: tenantId
       });
       
-      // Show success notification
+      runPayrollSuccess(result.total_staff);
       setShowRunDialog(false);
-      // Reload history to show new payroll
-      await loadPayrollHistory();
+      
+      // Show processing info with job ID
+      payrollInfo(`Processing job: ${result.job_id}`);
+      
+      // Reload history after a delay to show new payroll
+      setTimeout(() => loadPayrollHistory(), 2000);
     } catch (err) {
-      console.error('Failed to run payroll:', err);
+      runPayrollError(err instanceof Error ? err.message : 'Unknown error occurred');
     }
   };
 
@@ -61,22 +121,36 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
     <div className="payroll-integration">
       <div className="payroll-header">
         <h3>Payroll Information</h3>
-        <button 
-          className="btn-primary"
-          onClick={() => setShowRunDialog(true)}
-        >
-          Run Payroll
-        </button>
+        <div className="header-actions">
+          {/* Real-time connection indicator */}
+          <div className={`connection-status connection-status--${connectionStatus}`}>
+            <span className="status-indicator" />
+            {connectionStatus === 'connected' && 'Live'}
+            {connectionStatus === 'connecting' && 'Connecting...'}
+            {connectionStatus === 'error' && 'Reconnecting...'}
+            {connectionStatus === 'disconnected' && 'Offline'}
+          </div>
+          
+          {/* Processing indicator */}
+          {processingJobs.size > 0 && (
+            <div className="processing-indicator">
+              <span className="spinner" />
+              Processing {processingJobs.size} job{processingJobs.size > 1 ? 's' : ''}
+            </div>
+          )}
+          
+          <button 
+            className="btn-primary"
+            onClick={() => setShowRunDialog(true)}
+            disabled={loading}
+          >
+            Run Payroll
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error.message}
-        </div>
-      )}
-
       {loading ? (
-        <div className="loading">Loading payroll data...</div>
+        <PayrollHistoryTableSkeleton />
       ) : (
         <>
           <PayrollHistoryTable 

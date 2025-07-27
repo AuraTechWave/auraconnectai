@@ -3,20 +3,22 @@
  * Provides methods for payroll operations with proper error handling and loading states
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { apiClient } from '../utils/apiClient';
 import { 
   PayrollHistory, 
+  PayrollHistoryResponse,
   PayrollRunRequest, 
   PayrollRunResponse,
   PayrollDetail,
-  PayrollRules 
+  PayrollRules,
+  PayrollWebSocketEvent 
 } from '../types/payroll';
 
 interface UsePayrollAPIReturn {
   loading: boolean;
   error: Error | null;
-  getPayrollHistory: (staffId: number, tenantId?: number) => Promise<PayrollHistory[]>;
+  getPayrollHistory: (staffId: number, tenantId?: number) => Promise<PayrollHistoryResponse>;
   runPayroll: (request: PayrollRunRequest) => Promise<PayrollRunResponse>;
   getPayrollDetail: (payrollId: number) => Promise<PayrollDetail>;
   getPayrollRules: () => Promise<PayrollRules>;
@@ -47,7 +49,7 @@ export const usePayrollAPI = (): UsePayrollAPIReturn => {
   }, []);
 
   const getPayrollHistory = useCallback(
-    async (staffId: number, tenantId?: number): Promise<PayrollHistory[]> => {
+    async (staffId: number, tenantId?: number): Promise<PayrollHistoryResponse> => {
       return handleRequest(async () => {
         const params = new URLSearchParams();
         if (tenantId) params.append('tenant_id', tenantId.toString());
@@ -55,7 +57,7 @@ export const usePayrollAPI = (): UsePayrollAPIReturn => {
         const response = await apiClient.get(
           `/api/v1/payrolls/${staffId}?${params.toString()}`
         );
-        return response.data.payroll_history;
+        return response.data;
       });
     },
     [handleRequest]
@@ -123,33 +125,105 @@ export const usePayrollAPI = (): UsePayrollAPIReturn => {
   };
 };
 
-// WebSocket integration for real-time payroll updates
-export const usePayrollWebSocket = (onUpdate: (event: any) => void) => {
+// Enhanced WebSocket integration for real-time payroll updates
+export const usePayrollWebSocket = (
+  onUpdate: (event: PayrollWebSocketEvent) => void,
+  staffId?: number
+) => {
   const [connected, setConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
   
   useEffect(() => {
-    const ws = new WebSocket(process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws');
+    let ws: WebSocket | null = null;
+    let reconnectTimer: NodeJS.Timeout | null = null;
+    let heartbeatTimer: NodeJS.Timeout | null = null;
     
-    ws.onopen = () => {
-      setConnected(true);
-      ws.send(JSON.stringify({ type: 'subscribe', channel: 'payroll' }));
+    const connect = () => {
+      setConnectionStatus('connecting');
+      ws = new WebSocket(process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws');
+      
+      ws.onopen = () => {
+        setConnected(true);
+        setConnectionStatus('connected');
+        
+        // Subscribe to payroll events
+        const subscribeMessage = {
+          type: 'subscribe',
+          channel: 'payroll',
+          ...(staffId && { filters: { staff_id: staffId } })
+        };
+        ws?.send(JSON.stringify(subscribeMessage));
+        
+        // Start heartbeat
+        heartbeatTimer = setInterval(() => {
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 30000);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // Handle different message types
+          if (data.type === 'pong') {
+            // Heartbeat response
+            return;
+          }
+          
+          if (data.channel === 'payroll' && data.payload) {
+            onUpdate({
+              type: data.payload.type,
+              payload: data.payload.data,
+              timestamp: data.timestamp || new Date().toISOString()
+            });
+          }
+        } catch (error) {
+          console.warn('Failed to parse WebSocket message:', error);
+        }
+      };
+      
+      ws.onclose = (event) => {
+        setConnected(false);
+        
+        if (event.wasClean) {
+          setConnectionStatus('disconnected');
+        } else {
+          setConnectionStatus('error');
+          // Attempt to reconnect after 5 seconds
+          reconnectTimer = setTimeout(connect, 5000);
+        }
+        
+        // Clear heartbeat
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+        }
+      };
+      
+      ws.onerror = () => {
+        setConnectionStatus('error');
+      };
     };
     
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.channel === 'payroll') {
-        onUpdate(data);
-      }
-    };
-    
-    ws.onclose = () => {
-      setConnected(false);
-    };
+    connect();
     
     return () => {
-      ws.close();
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+      }
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+      }
+      if (ws) {
+        ws.close(1000, 'Component unmounting');
+      }
     };
-  }, [onUpdate]);
+  }, [onUpdate, staffId]);
   
-  return { connected };
+  return { 
+    connected, 
+    connectionStatus,
+    isReconnecting: connectionStatus === 'error'
+  };
 };

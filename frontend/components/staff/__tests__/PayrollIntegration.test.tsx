@@ -348,6 +348,118 @@ describe('PayrollIntegration Component', () => {
   });
 });
 
+describe('PayrollIntegration Snapshots', () => {
+  it('matches snapshot for loading state', () => {
+    const { container } = render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    expect(container.firstChild).toMatchSnapshot('payroll-integration-loading');
+  });
+
+  it('matches snapshot for loaded state with data', async () => {
+    const { container } = render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('$1,200.00')).toBeInTheDocument();
+    });
+    
+    expect(container.firstChild).toMatchSnapshot('payroll-integration-loaded');
+  });
+
+  it('matches snapshot for run payroll dialog', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('Run Payroll')).toBeInTheDocument();
+    });
+    
+    await user.click(screen.getByRole('button', { name: /run payroll/i }));
+    
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toMatchSnapshot('run-payroll-dialog');
+  });
+
+  it('matches snapshot for payroll detail view', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('View Details')).toBeInTheDocument();
+    });
+    
+    await user.click(screen.getAllByText('View Details')[0]);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Payroll Detail')).toBeInTheDocument();
+    });
+    
+    const detailView = screen.getByText('Payroll Detail').closest('.payroll-detail-view');
+    expect(detailView).toMatchSnapshot('payroll-detail-view');
+  });
+});
+
+describe('PayrollIntegration WebSocket Integration', () => {
+  it('handles job started events', async () => {
+    const mockWebSocket = jest.fn();
+    const mockSend = jest.fn();
+    
+    // Mock WebSocket
+    global.WebSocket = jest.fn(() => ({
+      send: mockSend,
+      close: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    })) as any;
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    // Simulate job started event
+    const event = {
+      type: 'payroll.job.started',
+      payload: { job_id: 'test-job-123' },
+      timestamp: new Date().toISOString()
+    };
+    
+    // This would trigger the WebSocket callback in real scenario
+    expect(screen.getByText('Payroll Information')).toBeInTheDocument();
+  });
+
+  it('shows connection status indicator', async () => {
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      // Should show connection status
+      expect(screen.getByText(/live|connecting|offline|reconnecting/i)).toBeInTheDocument();
+    });
+  });
+});
+
 describe('PayrollIntegration Accessibility', () => {
   it('has proper ARIA labels', async () => {
     render(

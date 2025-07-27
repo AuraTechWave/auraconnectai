@@ -233,3 +233,15 @@ class PayrollService:
 3. **Third-Party Integrations**: QuickBooks, ADP, Paychex
 4. **Advanced Analytics**: Predictive modeling for labor costs
 5. **Blockchain Integration**: Immutable payroll records
+
+## Related Documentation
+
+### Development & Integration
+- [Payroll Tax Developer Guide](../../dev/payroll_tax_developer_guide.md) - Complete developer documentation
+- [Payroll Integration Architecture](../../dev/architecture/payroll_integration.md) - System integration details
+- [Production Readiness Checklist](../../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Deployment requirements
+
+### Implementation Details
+- [Tax Calculation Flow](tax_calculation_flow.md) - Tax processing workflow
+- [API Phase 4 Documentation](../../../backend/API_PHASE4_DOCUMENTATION.md) - REST API specifications
+- [PayrollIntegration Component](../../../frontend/components/staff/PayrollIntegration.tsx) - UI implementation

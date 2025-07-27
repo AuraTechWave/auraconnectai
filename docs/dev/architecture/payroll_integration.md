@@ -286,7 +286,21 @@ PAYROLL_CACHE_TTL: "3600"
 
 ## References
 
-- [Enhanced Payroll Service Documentation](../../../backend/modules/staff/services/enhanced_payroll_service.py)
-- [Tax Engine Architecture](./payroll_tax_architecture.md)
-- [API Phase 4 Documentation](../../../backend/API_PHASE4_DOCUMENTATION.md)
+### Documentation
+- [Payroll Tax Developer Guide](../payroll_tax_developer_guide.md) - Complete developer documentation
+- [Payroll Module Architecture](../../feature_docs/payroll/architecture.md) - Core architecture overview
+- [Tax Engine Architecture](./payroll_tax_architecture.md) - Tax calculation system
+- [Production Readiness Checklist](../../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Go-live requirements
+- [API Phase 4 Documentation](../../../backend/API_PHASE4_DOCUMENTATION.md) - API implementation details
+
+### Code References
+- [Enhanced Payroll Service](../../../backend/modules/staff/services/enhanced_payroll_service.py) - Main service implementation
+- [Payroll Tax Engine](../../../backend/modules/payroll/services/payroll_tax_engine.py) - Tax calculation engine
+- [Enhanced Payroll Routes](../../../backend/modules/staff/routes/enhanced_payroll_routes.py) - API endpoints
+- [PayrollIntegration Component](../../../frontend/components/staff/PayrollIntegration.tsx) - React UI component
+- [usePayrollAPI Hook](../../../frontend/hooks/usePayrollAPI.ts) - Frontend API integration
+
+### Related Architecture Documents
+- [Global Architecture Overview](./global_architecture_overview.md)
+- [Analytics & Reporting Architecture](./analytics_reporting_architecture.md)
 - [Production Deployment Guide](../../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
