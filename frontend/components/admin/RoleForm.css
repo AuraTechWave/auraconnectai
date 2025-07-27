@@ -1,0 +1,193 @@
+.modal-content.large {
+  width: 95%;
+  max-width: 1000px;
+  max-height: 95vh;
+}
+
+.role-form {
+  padding: 1.5rem;
+  max-height: calc(95vh - 120px);
+  overflow-y: auto;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e1e5eb;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-section h4 {
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.form-section h5 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1rem;
+  text-transform: capitalize;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #7f8c8d;
+  font-size: 0.875rem;
+}
+
+.permission-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.resource-filter {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  min-width: 150px;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.permission-group {
+  border: 1px solid #e1e5eb;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+}
+
+.permission-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #fff;
+  border-bottom: 1px solid #e1e5eb;
+  border-radius: 6px 6px 0 0;
+}
+
+.group-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3498db;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+.btn-link:hover {
+  color: #2980b9;
+}
+
+.permission-list {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.permission-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.permission-checkbox:hover {
+  background-color: #f0f7ff;
+}
+
+.permission-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  transform: scale(1.1);
+}
+
+.permission-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.permission-name {
+  font-weight: 500;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.permission-key {
+  font-size: 0.875rem;
+  color: #7f8c8d;
+  font-family: monospace;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e1e5eb;
+  margin-top: 2rem;
+}
+
+/* Scrollbar styling for webkit browsers */
+.permission-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.permission-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.permission-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.permission-list::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
