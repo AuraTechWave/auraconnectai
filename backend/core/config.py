@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     default_tenant_id: int = 1
     enable_multi_tenant: bool = True
     
+    # RBAC Configuration
+    rbac_admin_override_enabled: bool = True  # Enable admin bypass in dev, disable in prod
+    rbac_deny_precedence: bool = True  # Deny permissions always take precedence
+    rbac_session_cache_ttl_minutes: int = 15  # Session cache TTL
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
