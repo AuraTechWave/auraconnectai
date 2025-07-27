@@ -7,6 +7,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../utils/apiClient';
+import { User, Role, Permission } from './useRbacApi';
 
 // Event emitter for tenant changes
 class TenantEventEmitter extends EventTarget {
@@ -67,6 +68,20 @@ export interface RBACContextType {
   // Utility methods
   checkPermission: (permission: string, tenantId?: number, resourceId?: string) => Promise<boolean>;
   isAdmin: () => boolean;
+  
+  // Shared RBAC data
+  users: User[];
+  roles: Role[];
+  permissions: Permission[];
+  usersLoading: boolean;
+  rolesLoading: boolean;
+  permissionsLoading: boolean;
+  
+  // Shared data management
+  fetchUsers: () => Promise<void>;
+  fetchRoles: () => Promise<void>;
+  fetchPermissions: () => Promise<void>;
+  invalidateCache: (type?: 'users' | 'roles' | 'permissions' | 'all') => void;
 }
 
 const RBACContext = createContext<RBACContextType | null>(null);
@@ -88,6 +103,14 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTenantId, setActiveTenantId] = useState<number | null>(null);
+  
+  // Shared RBAC data state
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [permissionsLoading, setPermissionsLoading] = useState(false);
 
   // Check if cache is still valid
   const isCacheValid = (): boolean => {
@@ -357,6 +380,70 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
     return tenantEventEmitter.onTenantChange(callback);
   }, []);
 
+  // Shared data management functions
+  const fetchUsers = useCallback(async () => {
+    if (usersLoading) return;
+    
+    try {
+      setUsersLoading(true);
+      const response = await apiClient.get('/rbac/users?limit=1000');
+      setUsers(response.data.items || response.data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [usersLoading]);
+
+  const fetchRoles = useCallback(async () => {
+    if (rolesLoading) return;
+    
+    try {
+      setRolesLoading(true);
+      const response = await apiClient.get('/rbac/roles?limit=1000');
+      setRoles(response.data);
+    } catch (err) {
+      console.error('Failed to fetch roles:', err);
+    } finally {
+      setRolesLoading(false);
+    }
+  }, [rolesLoading]);
+
+  const fetchPermissions = useCallback(async () => {
+    if (permissionsLoading) return;
+    
+    try {
+      setPermissionsLoading(true);
+      const response = await apiClient.get('/rbac/permissions?limit=1000');
+      setPermissions(response.data);
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  }, [permissionsLoading]);
+
+  const invalidateCache = useCallback((type?: 'users' | 'roles' | 'permissions' | 'all') => {
+    switch (type) {
+      case 'users':
+        setUsers([]);
+        break;
+      case 'roles':
+        setRoles([]);
+        break;
+      case 'permissions':
+        setPermissions([]);
+        break;
+      case 'all':
+      default:
+        setUsers([]);
+        setRoles([]);
+        setPermissions([]);
+        clearCache();
+        break;
+    }
+  }, []);
+
   const contextValue: RBACContextType = {
     user,
     loading,
@@ -374,7 +461,17 @@ export const RBACProvider: React.FC<RBACProviderProps> = ({ children }) => {
     switchTenant,
     onTenantChange,
     checkPermission,
-    isAdmin
+    isAdmin,
+    users,
+    roles,
+    permissions,
+    usersLoading,
+    rolesLoading,
+    permissionsLoading,
+    fetchUsers,
+    fetchRoles,
+    fetchPermissions,
+    invalidateCache
   };
 
   return (

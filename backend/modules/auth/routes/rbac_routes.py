@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from backend.core.database import get_db
 from backend.core.auth import get_current_user, require_admin
 from backend.core.rbac_service import RBACService, get_rbac_service
-from backend.core.rbac_models import RBACUser, RBACRole, RBACPermission
+from backend.core.rbac_models import RBACUser, RBACRole, RBACPermission, RBACSession
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/rbac", tags=["RBAC Management"])
@@ -108,6 +108,16 @@ class DirectPermissionRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class BulkUserOperationRequest(BaseModel):
+    user_ids: List[int]
+    
+    
+class BulkRoleAssignmentRequest(BaseModel):
+    user_ids: List[int]
+    role_id: int
+    tenant_id: Optional[int] = None
+
+
 class UserPermissionsResponse(BaseModel):
     user_id: int
     username: str
@@ -128,6 +138,28 @@ class PermissionCheckResponse(BaseModel):
     permission_key: str
     has_permission: bool
     granted_by: Optional[str] = None  # "role:role_name" or "direct"
+
+
+class AuditLogEntry(BaseModel):
+    id: int
+    action: str
+    entity_type: str
+    entity_id: Optional[int]
+    details: Optional[str]
+    performed_by_user_id: int
+    performed_by_username: str
+    tenant_id: Optional[int]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class AuditLogResponse(BaseModel):
+    entries: List[AuditLogEntry]
+    total_count: int
+    page: int
+    page_size: int
 
 
 # User Management Endpoints
@@ -154,16 +186,64 @@ async def create_user(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/users", response_model=List[UserResponse])
+class PaginatedUserResponse(BaseModel):
+    items: List[UserResponse]
+    total_count: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+@router.get("/users", response_model=PaginatedUserResponse)
 async def list_users(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    search: Optional[str] = Query(None),
+    is_active: Optional[bool] = Query(None),
     rbac_service: RBACService = Depends(get_rbac_service),
     current_user: RBACUser = Depends(require_admin)
 ):
-    """List all users."""
-    users = rbac_service.db.query(RBACUser).offset(skip).limit(limit).all()
-    return [UserResponse.from_orm(user) for user in users]
+    """List users with pagination, search, and filtering."""
+    
+    # Verify current user has user:read permission
+    if not rbac_service.check_user_permission(current_user.id, 'user:read'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions: user:read required"
+        )
+    
+    query = rbac_service.db.query(RBACUser)
+    
+    # Apply search filter
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (RBACUser.username.ilike(search_term)) |
+            (RBACUser.email.ilike(search_term)) |
+            (RBACUser.first_name.ilike(search_term)) |
+            (RBACUser.last_name.ilike(search_term))
+        )
+    
+    # Apply active status filter
+    if is_active is not None:
+        query = query.filter(RBACUser.is_active == is_active)
+    
+    # Count total results
+    total_count = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * page_size
+    users = query.offset(offset).limit(page_size).all()
+    
+    total_pages = (total_count + page_size - 1) // page_size
+    
+    return PaginatedUserResponse(
+        items=[UserResponse.from_orm(user) for user in users],
+        total_count=total_count,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
@@ -483,4 +563,283 @@ async def get_system_info(
         "roles": role_count,
         "permissions": permission_count,
         "system_version": "1.0.0"
+    }
+
+
+# Audit Log Endpoints
+
+@router.get("/audit-logs", response_model=AuditLogResponse)
+async def get_audit_logs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    action: Optional[str] = Query(None),
+    entity_type: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    user_id: Optional[int] = Query(None),
+    rbac_service: RBACService = Depends(get_rbac_service),
+    current_user: RBACUser = Depends(require_admin)
+):
+    """Get audit logs with filtering."""
+    
+    query = rbac_service.db.query(RBACSession).join(
+        RBACUser, RBACSession.user_id == RBACUser.id
+    )
+    
+    # Apply filters
+    if action:
+        query = query.filter(RBACSession.action == action)
+    if entity_type:
+        query = query.filter(RBACSession.entity_type == entity_type)
+    if start_date:
+        query = query.filter(RBACSession.created_at >= start_date)
+    if end_date:
+        query = query.filter(RBACSession.created_at <= end_date)
+    if user_id:
+        query = query.filter(RBACSession.user_id == user_id)
+    
+    # Count total
+    total_count = query.count()
+    
+    # Apply pagination
+    offset = (page - 1) * page_size
+    sessions = query.order_by(RBACSession.created_at.desc()).offset(offset).limit(page_size).all()
+    
+    # Transform to audit log entries
+    entries = []
+    for session in sessions:
+        entries.append(AuditLogEntry(
+            id=session.id,
+            action=session.action or "session_created",
+            entity_type=session.entity_type or "session",
+            entity_id=session.id,
+            details=session.details,
+            performed_by_user_id=session.user_id,
+            performed_by_username=session.user.username,
+            tenant_id=session.tenant_id,
+            created_at=session.created_at
+        ))
+    
+    return AuditLogResponse(
+        entries=entries,
+        total_count=total_count,
+        page=page,
+        page_size=page_size
+    )
+
+
+# Bulk Operations Endpoints
+
+@router.post("/users/bulk-delete")
+async def bulk_delete_users(
+    request: BulkUserOperationRequest,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    current_user: RBACUser = Depends(require_admin)
+):
+    """Bulk delete users. Requires admin privileges and user:delete permission."""
+    
+    # Verify current user has user:delete permission
+    if not rbac_service.check_user_permission(current_user.id, 'user:delete'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions: user:delete required"
+        )
+    
+    # Prevent self-deletion
+    if current_user.id in request.user_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete your own account"
+        )
+    
+    deleted_count = 0
+    errors = []
+    
+    for user_id in request.user_ids:
+        try:
+            user = rbac_service.get_user_by_id(user_id)
+            if not user:
+                errors.append(f"User {user_id} not found")
+                continue
+                
+            # Prevent deletion of system users
+            if user.username in ['admin', 'system']:
+                errors.append(f"Cannot delete system user: {user.username}")
+                continue
+                
+            # TODO: Implement soft delete or proper user deletion
+            # For now, just deactivate the user
+            user.is_active = False
+            rbac_service.db.commit()
+            deleted_count += 1
+            
+        except Exception as e:
+            errors.append(f"Failed to delete user {user_id}: {str(e)}")
+    
+    return {
+        "message": f"Bulk operation completed: {deleted_count} users deleted",
+        "deleted_count": deleted_count,
+        "errors": errors
+    }
+
+
+@router.post("/users/bulk-activate")
+async def bulk_activate_users(
+    request: BulkUserOperationRequest,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    current_user: RBACUser = Depends(require_admin)
+):
+    """Bulk activate users. Requires admin privileges and user:write permission."""
+    
+    # Verify current user has user:write permission
+    if not rbac_service.check_user_permission(current_user.id, 'user:write'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions: user:write required"
+        )
+    
+    activated_count = 0
+    errors = []
+    
+    for user_id in request.user_ids:
+        try:
+            user = rbac_service.get_user_by_id(user_id)
+            if not user:
+                errors.append(f"User {user_id} not found")
+                continue
+                
+            if user.is_active:
+                continue  # Already active
+                
+            user.is_active = True
+            rbac_service.db.commit()
+            activated_count += 1
+            
+        except Exception as e:
+            errors.append(f"Failed to activate user {user_id}: {str(e)}")
+    
+    return {
+        "message": f"Bulk operation completed: {activated_count} users activated",
+        "activated_count": activated_count,
+        "errors": errors
+    }
+
+
+@router.post("/users/bulk-deactivate")
+async def bulk_deactivate_users(
+    request: BulkUserOperationRequest,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    current_user: RBACUser = Depends(require_admin)
+):
+    """Bulk deactivate users. Requires admin privileges and user:write permission."""
+    
+    # Verify current user has user:write permission
+    if not rbac_service.check_user_permission(current_user.id, 'user:write'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions: user:write required"
+        )
+    
+    # Prevent self-deactivation
+    if current_user.id in request.user_ids:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot deactivate your own account"
+        )
+    
+    deactivated_count = 0
+    errors = []
+    
+    for user_id in request.user_ids:
+        try:
+            user = rbac_service.get_user_by_id(user_id)
+            if not user:
+                errors.append(f"User {user_id} not found")
+                continue
+                
+            # Prevent deactivation of system users
+            if user.username in ['admin', 'system']:
+                errors.append(f"Cannot deactivate system user: {user.username}")
+                continue
+                
+            if not user.is_active:
+                continue  # Already inactive
+                
+            user.is_active = False
+            rbac_service.db.commit()
+            deactivated_count += 1
+            
+        except Exception as e:
+            errors.append(f"Failed to deactivate user {user_id}: {str(e)}")
+    
+    return {
+        "message": f"Bulk operation completed: {deactivated_count} users deactivated",
+        "deactivated_count": deactivated_count,
+        "errors": errors
+    }
+
+
+@router.post("/users/bulk-assign-role")
+async def bulk_assign_role_to_users(
+    request: BulkRoleAssignmentRequest,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    current_user: RBACUser = Depends(require_admin)
+):
+    """Bulk assign role to users. Requires admin privileges and user:manage_roles permission."""
+    
+    # Verify current user has user:manage_roles permission
+    if not rbac_service.check_user_permission(current_user.id, 'user:manage_roles'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Insufficient permissions: user:manage_roles required"
+        )
+    
+    # Verify role exists
+    role = rbac_service.get_role_by_id(request.role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Prevent assignment of admin role to non-admin users (unless current user is super admin)
+    if role.name in ['admin', 'super_admin']:
+        if not rbac_service.check_user_permission(current_user.id, 'role:assign_admin'):
+            raise HTTPException(
+                status_code=403,
+                detail="Insufficient permissions to assign admin roles"
+            )
+    
+    assigned_count = 0
+    errors = []
+    
+    for user_id in request.user_ids:
+        try:
+            user = rbac_service.get_user_by_id(user_id)
+            if not user:
+                errors.append(f"User {user_id} not found")
+                continue
+            
+            # Check if user already has this role
+            existing_roles = rbac_service.get_user_roles(user_id, request.tenant_id)
+            if any(r.id == request.role_id for r in existing_roles):
+                continue  # Already has role
+                
+            success = rbac_service.assign_role_to_user(
+                user_id=user_id,
+                role_id=request.role_id,
+                tenant_id=request.tenant_id,
+                granted_by_user_id=current_user.id
+            )
+            
+            if success:
+                assigned_count += 1
+            else:
+                errors.append(f"Failed to assign role to user {user_id}")
+                
+        except Exception as e:
+            errors.append(f"Failed to assign role to user {user_id}: {str(e)}")
+    
+    return {
+        "message": f"Bulk operation completed: {assigned_count} role assignments",
+        "assigned_count": assigned_count,
+        "role_name": role.name,
+        "errors": errors
     }

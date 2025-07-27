@@ -6,15 +6,14 @@ import './AuditLog.css';
 
 interface AuditLogEntry {
   id: number;
-  timestamp: string;
-  user_id: number;
-  username: string;
   action: string;
-  resource_type: string;
-  resource_id?: string;
-  details: any;
-  ip_address?: string;
-  user_agent?: string;
+  entity_type: string;
+  entity_id?: number;
+  details?: string;
+  performed_by_user_id: number;
+  performed_by_username: string;
+  tenant_id?: number;
+  created_at: string;
 }
 
 type FilterType = 'all' | 'user_management' | 'role_management' | 'permission_changes';
@@ -46,61 +45,22 @@ const AuditLog: React.FC = () => {
       setLoading(true);
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        limit: '50',
-        search: searchTerm,
-        type: filterType,
+        page_size: '50',
+        ...(searchTerm && { search: searchTerm }),
+        ...(filterType !== 'all' && { entity_type: filterType }),
         ...(dateRange.start && { start_date: dateRange.start }),
         ...(dateRange.end && { end_date: dateRange.end })
       });
 
-      // Mock data for now - replace with actual API call
-      // const response = await apiClient.get(`/rbac/audit-logs?${params}`);
+      const response = await apiClient.get(`/rbac/audit-logs?${params}`);
       
-      // Simulated audit log data
-      const mockLogs: AuditLogEntry[] = [
-        {
-          id: 1,
-          timestamp: new Date().toISOString(),
-          user_id: 1,
-          username: 'admin',
-          action: 'create_user',
-          resource_type: 'user',
-          resource_id: '123',
-          details: { username: 'newuser', email: 'newuser@example.com' },
-          ip_address: '192.168.1.100',
-          user_agent: 'Mozilla/5.0...'
-        },
-        {
-          id: 2,
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          user_id: 1,
-          username: 'admin',
-          action: 'assign_role',
-          resource_type: 'user_role',
-          resource_id: '123',
-          details: { role: 'staff_manager', user: 'newuser' },
-          ip_address: '192.168.1.100',
-          user_agent: 'Mozilla/5.0...'
-        },
-        {
-          id: 3,
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          user_id: 2,
-          username: 'manager',
-          action: 'update_role',
-          resource_type: 'role',
-          resource_id: '5',
-          details: { role: 'staff_manager', changes: { display_name: 'Staff Manager Updated' } },
-          ip_address: '192.168.1.101',
-          user_agent: 'Mozilla/5.0...'
-        }
-      ];
-
-      setLogs(mockLogs);
-      setTotalPages(1);
+      setLogs(response.data.entries);
+      setTotalPages(Math.ceil(response.data.total_count / response.data.page_size));
       setError(null);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch audit logs');
+      setLogs([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -143,8 +103,13 @@ const AuditLog: React.FC = () => {
     return 'info';
   };
 
-  const formatDetails = (details: any) => {
-    return JSON.stringify(details, null, 2);
+  const formatDetails = (details?: string) => {
+    if (!details) return 'No details available';
+    try {
+      return JSON.stringify(JSON.parse(details), null, 2);
+    } catch {
+      return details;
+    }
   };
 
   if (!canViewAudit) {
@@ -221,7 +186,7 @@ const AuditLog: React.FC = () => {
                   <th>Action</th>
                   <th>Resource</th>
                   <th>Details</th>
-                  <th>IP Address</th>
+                  <th>Tenant</th>
                 </tr>
               </thead>
               <tbody>
@@ -235,11 +200,11 @@ const AuditLog: React.FC = () => {
                   logs.map(log => (
                     <tr key={log.id}>
                       <td className="timestamp-cell">
-                        {formatTimestamp(log.timestamp)}
+                        {formatTimestamp(log.created_at)}
                       </td>
                       <td className="user-cell">
-                        <strong>{log.username}</strong>
-                        <small>ID: {log.user_id}</small>
+                        <strong>{log.performed_by_username}</strong>
+                        <small>ID: {log.performed_by_user_id}</small>
                       </td>
                       <td className="action-cell">
                         <span className={`action-badge ${getActionColor(log.action)}`}>
@@ -249,9 +214,9 @@ const AuditLog: React.FC = () => {
                       </td>
                       <td className="resource-cell">
                         <div>
-                          <strong>{log.resource_type}</strong>
-                          {log.resource_id && (
-                            <small>ID: {log.resource_id}</small>
+                          <strong>{log.entity_type}</strong>
+                          {log.entity_id && (
+                            <small>ID: {log.entity_id}</small>
                           )}
                         </div>
                       </td>
@@ -262,7 +227,7 @@ const AuditLog: React.FC = () => {
                         </details>
                       </td>
                       <td className="ip-cell">
-                        {log.ip_address || '-'}
+                        {log.tenant_id ? `Tenant ${log.tenant_id}` : 'Global'}
                       </td>
                     </tr>
                   ))
