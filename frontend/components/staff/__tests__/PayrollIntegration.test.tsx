@@ -58,9 +58,26 @@ const mockPayrollDetail = {
   net_pay: 850.00
 };
 
-// Setup MSW server
+// Authentication helper
+const checkAuth = (req: any) => {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  // In real tests, you'd verify the JWT token
+  return true;
+};
+
+// Setup MSW server with authentication
 const server = setupServer(
   rest.get('/api/v1/payrolls/:staffId', (req, res, ctx) => {
+    if (!checkAuth(req)) {
+      return res(
+        ctx.status(401),
+        ctx.json({ detail: 'Authentication required' })
+      );
+    }
+    
     return res(
       ctx.json({
         staff_id: req.params.staffId,
@@ -72,10 +89,24 @@ const server = setupServer(
   }),
   
   rest.get('/api/v1/payrolls/:payrollId/detail', (req, res, ctx) => {
+    if (!checkAuth(req)) {
+      return res(
+        ctx.status(401),
+        ctx.json({ detail: 'Authentication required' })
+      );
+    }
+    
     return res(ctx.json(mockPayrollDetail));
   }),
   
   rest.post('/api/v1/payrolls/run', async (req, res, ctx) => {
+    if (!checkAuth(req)) {
+      return res(
+        ctx.status(401),
+        ctx.json({ detail: 'Authentication required' })
+      );
+    }
+    
     const body = await req.json();
     return res(
       ctx.status(202),
@@ -90,6 +121,36 @@ const server = setupServer(
         created_at: new Date().toISOString()
       })
     );
+  }),
+  
+  // Mock auth endpoints
+  rest.post('/auth/login', async (req, res, ctx) => {
+    const formData = await req.formData();
+    const username = formData.get('username');
+    const password = formData.get('password');
+    
+    if (username === 'admin' && password === 'secret') {
+      return res(
+        ctx.json({
+          access_token: 'mock-access-token',
+          refresh_token: 'mock-refresh-token',
+          token_type: 'bearer',
+          access_expires_in: 1800,
+          refresh_expires_in: 604800,
+          user_info: {
+            id: 1,
+            username: 'admin',
+            email: 'admin@test.com',
+            roles: ['admin', 'payroll_manager']
+          }
+        })
+      );
+    }
+    
+    return res(
+      ctx.status(401),
+      ctx.json({ detail: 'Invalid credentials' })
+    );
   })
 );
 
@@ -97,6 +158,21 @@ const server = setupServer(
 beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
+
+// Mock authentication context
+const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Set mock token in localStorage for auth interceptor
+  React.useEffect(() => {
+    localStorage.setItem('access_token', 'mock-access-token');
+    localStorage.setItem('refresh_token', 'mock-refresh-token');
+    return () => {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+    };
+  }, []);
+  
+  return <>{children}</>;
+};
 
 // Test wrapper with providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -108,7 +184,9 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <MockAuthProvider>
+        {children}
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 };
@@ -456,6 +534,136 @@ describe('PayrollIntegration WebSocket Integration', () => {
     await waitFor(() => {
       // Should show connection status
       expect(screen.getByText(/live|connecting|offline|reconnecting/i)).toBeInTheDocument();
+    });
+  });
+});
+
+describe('PayrollIntegration Edge Cases', () => {
+  it('handles empty payroll history gracefully', async () => {
+    // Override server to return empty history
+    server.use(
+      rest.get('/api/v1/payrolls/:staffId', (req, res, ctx) => {
+        return res(
+          ctx.json({
+            staff_id: req.params.staffId,
+            staff_name: 'John Doe',
+            payroll_history: [],
+            total_records: 0
+          })
+        );
+      })
+    );
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('Payroll Information')).toBeInTheDocument();
+    });
+    
+    // Should show empty state message
+    expect(screen.getByText(/no payroll history/i)).toBeInTheDocument();
+  });
+
+  it('handles payroll detail fetch failure', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('View Details')).toBeInTheDocument();
+    });
+    
+    // Override detail endpoint to fail
+    server.use(
+      rest.get('/api/v1/payrolls/:payrollId/detail', (req, res, ctx) => {
+        return res(
+          ctx.status(500),
+          ctx.json({ error: 'Failed to load payroll details' })
+        );
+      })
+    );
+    
+    // Click view details
+    await user.click(screen.getAllByText('View Details')[0]);
+    
+    // Should show error message
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles date validation in run payroll dialog', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('Run Payroll')).toBeInTheDocument();
+    });
+    
+    // Open dialog
+    await user.click(screen.getByRole('button', { name: /run payroll/i }));
+    
+    const startDate = screen.getByLabelText(/pay period start/i);
+    const endDate = screen.getByLabelText(/pay period end/i);
+    
+    // Set invalid dates (end before start)
+    await user.clear(startDate);
+    await user.type(startDate, '2024-02-15');
+    await user.clear(endDate);
+    await user.type(endDate, '2024-02-01');
+    
+    // Try to submit
+    const submitButton = within(screen.getByRole('dialog')).getByRole('button', { 
+      name: /run payroll/i 
+    });
+    await user.click(submitButton);
+    
+    // Should show validation error
+    expect(screen.getByText(/end date must be after start date/i)).toBeInTheDocument();
+    
+    // Dialog should remain open
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('maintains focus after dialog close', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <TestWrapper>
+        <PayrollIntegration staffId={1} />
+      </TestWrapper>
+    );
+    
+    await waitFor(() => {
+      expect(screen.getByText('Run Payroll')).toBeInTheDocument();
+    });
+    
+    const runButton = screen.getByRole('button', { name: /run payroll/i });
+    
+    // Open dialog
+    await user.click(runButton);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    
+    // Close dialog
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    await user.click(cancelButton);
+    
+    // Focus should return to the run payroll button
+    await waitFor(() => {
+      expect(runButton).toHaveFocus();
     });
   });
 });

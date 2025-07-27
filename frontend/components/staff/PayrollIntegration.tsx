@@ -42,6 +42,7 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
   const [selectedPayroll, setSelectedPayroll] = useState<number | null>(null);
   const [showRunDialog, setShowRunDialog] = useState(false);
   const [processingJobs, setProcessingJobs] = useState<Set<string>>(new Set());
+  const runPayrollButtonRef = React.useRef<HTMLButtonElement>(null);
 
   const loadPayrollHistory = useCallback(async () => {
     try {
@@ -68,6 +69,11 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
         });
         payrollInfo('Payroll processing completed successfully');
         loadPayrollHistory(); // Refresh history
+        break;
+        
+      case PayrollEventType.JOB_PROGRESS:
+        // Update progress without full reload
+        payrollInfo(`Processing progress: ${event.payload.completed_staff}/${event.payload.total_staff} staff members`);
         break;
         
       case PayrollEventType.JOB_FAILED:
@@ -140,6 +146,7 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
           )}
           
           <button 
+            ref={runPayrollButtonRef}
             className="btn-primary"
             onClick={() => setShowRunDialog(true)}
             disabled={loading}
@@ -151,6 +158,11 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
 
       {loading ? (
         <PayrollHistoryTableSkeleton />
+      ) : payrollHistory.length === 0 ? (
+        <div className="empty-state">
+          <p>No payroll history available for this staff member.</p>
+          <p>Click "Run Payroll" to process the first payroll.</p>
+        </div>
       ) : (
         <>
           <PayrollHistoryTable 
@@ -171,7 +183,11 @@ export const PayrollIntegration: React.FC<PayrollIntegrationProps> = ({ staffId,
         <RunPayrollDialog
           staffId={staffId}
           onConfirm={handleRunPayroll}
-          onCancel={() => setShowRunDialog(false)}
+          onCancel={() => {
+            setShowRunDialog(false);
+            // Return focus to the run payroll button
+            setTimeout(() => runPayrollButtonRef.current?.focus(), 100);
+          }}
         />
       )}
     </div>
@@ -227,11 +243,72 @@ interface RunPayrollDialogProps {
 }
 
 const RunPayrollDialog: React.FC<RunPayrollDialogProps> = ({ staffId, onConfirm, onCancel }) => {
-  const [payPeriodStart, setPayPeriodStart] = useState('');
-  const [payPeriodEnd, setPayPeriodEnd] = useState('');
+  // Default to current bi-weekly period
+  const getDefaultPeriod = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    
+    // Get the most recent Monday
+    const periodStart = new Date(today);
+    periodStart.setDate(today.getDate() + daysToMonday);
+    
+    // If today is Monday and we haven't started the day, use previous period
+    if (dayOfWeek === 1 && today.getHours() < 12) {
+      periodStart.setDate(periodStart.getDate() - 14);
+    }
+    
+    // Calculate end date (2 weeks minus 1 day)
+    const periodEnd = new Date(periodStart);
+    periodEnd.setDate(periodStart.getDate() + 13);
+    
+    return {
+      start: periodStart.toISOString().split('T')[0],
+      end: periodEnd.toISOString().split('T')[0]
+    };
+  };
+
+  const defaultPeriod = getDefaultPeriod();
+  const [payPeriodStart, setPayPeriodStart] = useState(defaultPeriod.start);
+  const [payPeriodEnd, setPayPeriodEnd] = useState(defaultPeriod.end);
+  const [dateError, setDateError] = useState('');
+
+  const validateDates = () => {
+    const start = new Date(payPeriodStart);
+    const end = new Date(payPeriodEnd);
+    
+    if (end <= start) {
+      setDateError('End date must be after start date');
+      return false;
+    }
+    
+    const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 31) {
+      setDateError('Pay period cannot exceed 31 days');
+      return false;
+    }
+    
+    setDateError('');
+    return true;
+  };
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPayPeriodStart(e.target.value);
+    setDateError(''); // Clear error on change
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPayPeriodEnd(e.target.value);
+    setDateError(''); // Clear error on change
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateDates()) {
+      return;
+    }
+    
     onConfirm({
       staff_ids: [staffId],
       pay_period_start: payPeriodStart,
@@ -250,7 +327,7 @@ const RunPayrollDialog: React.FC<RunPayrollDialogProps> = ({ staffId, onConfirm,
             <input
               type="date"
               value={payPeriodStart}
-              onChange={(e) => setPayPeriodStart(e.target.value)}
+              onChange={handleStartDateChange}
               required
             />
           </div>
@@ -259,10 +336,15 @@ const RunPayrollDialog: React.FC<RunPayrollDialogProps> = ({ staffId, onConfirm,
             <input
               type="date"
               value={payPeriodEnd}
-              onChange={(e) => setPayPeriodEnd(e.target.value)}
+              onChange={handleEndDateChange}
               required
             />
           </div>
+          {dateError && (
+            <div className="form-error" role="alert">
+              {dateError}
+            </div>
+          )}
           <div className="form-actions">
             <button type="submit" className="btn-primary">
               Run Payroll

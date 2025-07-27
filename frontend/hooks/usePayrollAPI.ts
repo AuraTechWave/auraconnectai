@@ -26,6 +26,10 @@ interface UsePayrollAPIReturn {
   exportPayroll: (request: any) => Promise<any>;
 }
 
+// Simple in-memory cache for payroll details
+const payrollDetailCache = new Map<number, { data: PayrollDetail; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const usePayrollAPI = (): UsePayrollAPIReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -75,9 +79,38 @@ export const usePayrollAPI = (): UsePayrollAPIReturn => {
 
   const getPayrollDetail = useCallback(
     async (payrollId: number): Promise<PayrollDetail> => {
+      // Check cache first
+      const cached = payrollDetailCache.get(payrollId);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        console.log(`Returning cached payroll detail for ${payrollId}`);
+        return cached.data;
+      }
+      
       return handleRequest(async () => {
         const response = await apiClient.get(`/api/v1/payrolls/${payrollId}/detail`);
-        return response.data;
+        const data = response.data;
+        
+        // Cache the result
+        payrollDetailCache.set(payrollId, {
+          data,
+          timestamp: Date.now()
+        });
+        
+        // Clean up old cache entries
+        if (payrollDetailCache.size > 50) {
+          const entriesToDelete: number[] = [];
+          const now = Date.now();
+          
+          payrollDetailCache.forEach((value, key) => {
+            if (now - value.timestamp > CACHE_TTL) {
+              entriesToDelete.push(key);
+            }
+          });
+          
+          entriesToDelete.forEach(key => payrollDetailCache.delete(key));
+        }
+        
+        return data;
       });
     },
     [handleRequest]
@@ -140,7 +173,14 @@ export const usePayrollWebSocket = (
     
     const connect = () => {
       setConnectionStatus('connecting');
-      ws = new WebSocket(process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws');
+      // Use secure WebSocket URL from environment or build dynamically
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = process.env.REACT_APP_WS_URL || 
+                     process.env.REACT_APP_API_URL?.replace(/^https?:/, wsProtocol) || 
+                     `${wsProtocol}//${window.location.host}`;
+      const wsUrl = `${wsHost}/ws`;
+      
+      ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         setConnected(true);
