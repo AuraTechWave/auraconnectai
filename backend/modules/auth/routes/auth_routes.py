@@ -16,6 +16,9 @@ from ....core.auth import (
     refresh_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, User
 )
 from ....core.session_manager import session_manager
+from ....core.rbac_service import RBACService, get_rbac_service
+from ....core.rbac_auth import get_current_user_required_rbac
+from ....core.rbac_models import RBACUser
 
 
 class Token(BaseModel):
@@ -306,3 +309,210 @@ async def revoke_session(
     return {
         "message": f"Session {session_id} revoked successfully"
     }
+
+
+# RBAC Enhanced Endpoints
+
+class RBACUserInfo(BaseModel):
+    """Enhanced user information with RBAC data."""
+    id: int
+    username: str
+    email: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    is_active: bool
+    is_email_verified: bool
+    created_at: str
+    last_login: Optional[str]
+    accessible_tenant_ids: list
+    default_tenant_id: Optional[int]
+    roles: list
+    permissions: list
+
+
+@router.get("/me/rbac", response_model=RBACUserInfo)
+async def read_users_me_rbac(
+    current_user: RBACUser = Depends(get_current_user_required_rbac),
+    rbac_service: RBACService = Depends(get_rbac_service),
+    tenant_id: Optional[int] = None
+):
+    """
+    Get current authenticated user information with RBAC details.
+    
+    ## Authentication Required
+    - Requires valid JWT token in Authorization header
+    
+    ## Query Parameters
+    - **tenant_id**: Optional tenant ID to scope permissions and roles
+    
+    ## Response
+    Returns enhanced user information including RBAC roles and permissions.
+    
+    ## Example
+    ```bash
+    curl -X GET "http://localhost:8000/auth/me/rbac?tenant_id=1" \
+         -H "Authorization: Bearer YOUR_JWT_TOKEN"
+    ```
+    """
+    # Get user's roles and permissions for the specified tenant
+    user_roles = rbac_service.get_user_roles(current_user.id, tenant_id)
+    user_permissions = rbac_service.get_user_permissions(current_user.id, tenant_id)
+    
+    return RBACUserInfo(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        is_active=current_user.is_active,
+        is_email_verified=current_user.is_email_verified,
+        created_at=current_user.created_at.isoformat() if current_user.created_at else None,
+        last_login=current_user.last_login.isoformat() if current_user.last_login else None,
+        accessible_tenant_ids=current_user.accessible_tenant_ids or [],
+        default_tenant_id=current_user.default_tenant_id,
+        roles=[role.name for role in user_roles],
+        permissions=user_permissions
+    )
+
+
+@router.post("/login/rbac", response_model=Token)
+async def login_with_rbac_session(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    request: Request = None,
+    rbac_service: RBACService = Depends(get_rbac_service),
+    tenant_id: Optional[int] = None
+):
+    """
+    Enhanced login with RBAC session management.
+    
+    ## Request Body (Form Data)
+    - **username**: Username for authentication
+    - **password**: Password for authentication
+    
+    ## Query Parameters
+    - **tenant_id**: Optional tenant ID to set as active tenant for the session
+    
+    ## Response
+    Returns JWT tokens with enhanced RBAC session context.
+    
+    ## Features
+    - Creates RBAC-aware session with permission caching
+    - Sets active tenant context
+    - Caches user permissions for performance
+    - Enhanced security logging
+    
+    ## Example
+    ```bash
+    curl -X POST "http://localhost:8000/auth/login/rbac?tenant_id=1" \
+         -H "Content-Type: application/x-www-form-urlencoded" \
+         -d "username=admin&password=secret"
+    ```
+    """
+    # First authenticate with the standard system
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        # Try RBAC authentication
+        rbac_user = rbac_service.authenticate_user(form_data.username, form_data.password)
+        if not rbac_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        user = rbac_user
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is disabled",
+        )
+    
+    # Create standard session
+    session_data = create_user_session(user, request)
+    
+    # Create enhanced RBAC session
+    from datetime import datetime, timedelta
+    rbac_session = rbac_service.create_rbac_session(
+        session_id=session_data["session_id"],
+        user_id=user.id,
+        expires_at=datetime.utcnow() + timedelta(days=7),  # Match refresh token expiry
+        active_tenant_id=tenant_id or user.default_tenant_id,
+        user_agent=request.headers.get("user-agent") if request else None,
+        ip_address=request.client.host if request and request.client else None
+    )
+    
+    # Enhance user info with RBAC data
+    enhanced_user_info = session_data["user_info"].copy()
+    enhanced_user_info.update({
+        "rbac_session_id": rbac_session.id,
+        "active_tenant_id": rbac_session.active_tenant_id,
+        "cached_permissions": rbac_session.cached_permissions
+    })
+    
+    return Token(
+        access_token=session_data["access_token"],
+        refresh_token=session_data["refresh_token"],
+        token_type=session_data["token_type"],
+        access_expires_in=session_data["access_expires_in"],
+        refresh_expires_in=session_data["refresh_expires_in"],
+        session_id=session_data["session_id"],
+        user_info=enhanced_user_info
+    )
+
+
+class PermissionCheckRequest(BaseModel):
+    """Permission check request model."""
+    permission_key: str
+    tenant_id: Optional[int] = None
+    resource_id: Optional[str] = None
+
+
+class PermissionCheckResponse(BaseModel):
+    """Permission check response model."""
+    permission_key: str
+    has_permission: bool
+    tenant_id: Optional[int]
+    checked_at: str
+
+
+@router.post("/check-permission", response_model=PermissionCheckResponse)
+async def check_my_permission(
+    permission_check: PermissionCheckRequest,
+    current_user: RBACUser = Depends(get_current_user_required_rbac),
+    rbac_service: RBACService = Depends(get_rbac_service)
+):
+    """
+    Check if current user has a specific permission.
+    
+    ## Authentication Required
+    - Requires valid JWT token in Authorization header
+    
+    ## Request Body
+    - **permission_key**: Permission to check (e.g., "payroll:read")
+    - **tenant_id**: Optional tenant context
+    - **resource_id**: Optional specific resource ID
+    
+    ## Response
+    Returns whether the user has the requested permission.
+    
+    ## Example
+    ```bash
+    curl -X POST "http://localhost:8000/auth/check-permission" \
+         -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+         -H "Content-Type: application/json" \
+         -d '{"permission_key": "payroll:read", "tenant_id": 1}'
+    ```
+    """
+    has_permission = rbac_service.check_user_permission(
+        user_id=current_user.id,
+        permission_key=permission_check.permission_key,
+        tenant_id=permission_check.tenant_id,
+        resource_id=permission_check.resource_id
+    )
+    
+    return PermissionCheckResponse(
+        permission_key=permission_check.permission_key,
+        has_permission=has_permission,
+        tenant_id=permission_check.tenant_id,
+        checked_at=datetime.utcnow().isoformat()
+    )
