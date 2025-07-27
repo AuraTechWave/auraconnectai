@@ -30,6 +30,7 @@ interface UsePayrollAPIReturn {
 const payrollDetailCache = new Map<number, { data: PayrollDetail; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+
 export const usePayrollAPI = (): UsePayrollAPIReturn => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);

@@ -174,6 +174,7 @@ const MockAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children })
   return <>{children}</>;
 };
 
+
 // Test wrapper with providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = new QueryClient({
@@ -667,6 +668,7 @@ describe('PayrollIntegration Edge Cases', () => {
     });
   });
 });
+
 
 describe('PayrollIntegration Accessibility', () => {
   it('has proper ARIA labels', async () => {
