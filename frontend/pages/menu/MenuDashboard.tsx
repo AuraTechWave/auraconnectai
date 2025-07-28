@@ -3,7 +3,8 @@ import { useRBAC } from '../../hooks/useRBAC';
 import MenuCategoryManagement from '../../components/menu/MenuCategoryManagement';
 import MenuItemManagement from '../../components/menu/MenuItemManagement';
 import ModifierManagement from '../../components/menu/ModifierManagement';
-import { apiClient } from '../../utils/apiClient';
+import MenuVersioning from '../../components/menu/MenuVersioning';
+import apiClient from '../../utils/authInterceptor';
 import './MenuDashboard.css';
 
 interface MenuStats {
@@ -16,7 +17,7 @@ interface MenuStats {
 
 const MenuDashboard: React.FC = () => {
   const { hasPermission } = useRBAC();
-  const [activeTab, setActiveTab] = useState<'categories' | 'items' | 'modifiers' | 'overview'>('overview');
+  const [activeTab, setActiveTab] = useState<'categories' | 'items' | 'modifiers' | 'versioning' | 'overview'>('overview');
   const [stats, setStats] = useState<MenuStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,8 @@ const MenuDashboard: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: '📊' },
     { id: 'categories', label: 'Categories', icon: '📂' },
     { id: 'items', label: 'Menu Items', icon: '🍽️' },
-    { id: 'modifiers', label: 'Modifiers', icon: '⚙️' }
+    { id: 'modifiers', label: 'Modifiers', icon: '⚙️' },
+    { id: 'versioning', label: 'Versioning', icon: '📋' }
   ];
 
   return (
@@ -192,6 +194,17 @@ const MenuDashboard: React.FC = () => {
 
                 <button 
                   className="action-card"
+                  onClick={() => setActiveTab('versioning')}
+                >
+                  <div className="action-icon">📋</div>
+                  <div className="action-content">
+                    <h4>Menu Versioning</h4>
+                    <p>View versions and audit trail</p>
+                  </div>
+                </button>
+
+                <button 
+                  className="action-card"
                   onClick={fetchStats}
                   disabled={loading}
                 >
@@ -246,6 +259,7 @@ const MenuDashboard: React.FC = () => {
         {activeTab === 'categories' && <MenuCategoryManagement />}
         {activeTab === 'items' && <MenuItemManagement />}
         {activeTab === 'modifiers' && <ModifierManagement />}
+        {activeTab === 'versioning' && <MenuVersioning />}
       </div>
 
       {!canCreate && !canUpdate && !canDelete && (

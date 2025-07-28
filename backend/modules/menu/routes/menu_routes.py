@@ -441,3 +441,88 @@ async def get_public_menu_item(
             detail="Menu item not found or not available"
         )
     return item
+
+
+# Bulk operations with versioning integration
+@router.post("/items/bulk-update")
+async def bulk_update_menu_items(
+    item_ids: List[int],
+    updates: dict,
+    menu_service: MenuService = Depends(get_menu_service),
+    current_user: RBACUser = Depends(require_permission("menu:update"))
+):
+    """Bulk update multiple menu items and create version if significant changes"""
+    
+    result = menu_service.bulk_update_items(item_ids, updates, current_user.id)
+    
+    return {
+        "message": f"Updated {result['updated']} items",
+        "details": result,
+        "version_info": {
+            "version_created": result.get("version_created", False),
+            "version_id": result.get("version_id")
+        } if result.get("version_created") else None
+    }
+
+
+@router.post("/items/bulk-activate")
+async def bulk_activate_menu_items(
+    item_ids: List[int],
+    active: bool = True,
+    menu_service: MenuService = Depends(get_menu_service),
+    current_user: RBACUser = Depends(require_permission("menu:update"))
+):
+    """Bulk activate or deactivate multiple menu items"""
+    
+    result = menu_service.bulk_activate_items(item_ids, active, current_user.id)
+    
+    action = "activated" if active else "deactivated"
+    return {
+        "message": f"{action.capitalize()} {result['updated']} items",
+        "details": result,
+        "version_info": {
+            "version_created": result.get("version_created", False),
+            "version_id": result.get("version_id")
+        } if result.get("version_created") else None
+    }
+
+
+@router.post("/items/bulk-price-update")
+async def bulk_update_prices(
+    price_updates: List[dict],  # [{"item_id": 1, "price": 10.99}, ...]
+    menu_service: MenuService = Depends(get_menu_service),
+    current_user: RBACUser = Depends(require_permission("menu:update"))
+):
+    """Bulk update item prices - always creates a version due to criticality"""
+    
+    result = menu_service.bulk_update_prices(price_updates, current_user.id)
+    
+    return {
+        "message": f"Updated prices for {result['updated']} items",
+        "details": result,
+        "version_info": {
+            "version_created": True,  # Always true for price changes
+            "version_id": result.get("version_id"),
+            "note": "Price changes always trigger version creation for audit purposes"
+        }
+    }
+
+
+@router.delete("/items/bulk-delete")
+async def bulk_delete_menu_items(
+    item_ids: List[int],
+    menu_service: MenuService = Depends(get_menu_service),
+    current_user: RBACUser = Depends(require_permission("menu:delete"))
+):
+    """Bulk soft-delete multiple menu items"""
+    
+    result = menu_service.bulk_delete_items(item_ids, current_user.id)
+    
+    return {
+        "message": f"Deleted {result['deleted']} items",
+        "details": result,
+        "version_info": {
+            "version_created": result.get("version_created", False),
+            "version_id": result.get("version_id")
+        } if result.get("version_created") else None
+    }

@@ -43,12 +43,16 @@ from backend.modules.menu.routes.menu_routes import (
 from backend.modules.menu.routes.inventory_routes import (
     router as menu_inventory_router
 )
+from backend.modules.menu.routes.versioning_routes import (
+    router as menu_versioning_router
+)
 from backend.modules.inventory.routes.inventory_routes import (
     router as inventory_management_router
 )
 from backend.modules.inventory.routes.vendor_routes import (
     router as vendor_management_router
 )
+from backend.core.menu_versioning_triggers import init_versioning_triggers
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -65,6 +69,7 @@ app = FastAPI(
     * **Order Management** - Complete order lifecycle management
     * **POS Integration** - Connect with major POS systems (Square, Toast, Clover)
     * **Menu Management** - Complete CRUD for menu items, categories, and modifiers
+    * **Menu Versioning** - Complete version control and audit trail for menu changes
     * **Inventory Management** - Real-time inventory tracking with low-stock alerts
     * **Vendor Management** - Comprehensive vendor and purchase order management
     * **Analytics & Reporting** - Comprehensive business intelligence
@@ -124,8 +129,12 @@ app.include_router(pos_router)
 app.include_router(webhook_router)
 app.include_router(menu_router)
 app.include_router(menu_inventory_router)
+app.include_router(menu_versioning_router)
 app.include_router(inventory_management_router)
 app.include_router(vendor_management_router)
+
+# Initialize menu versioning triggers
+init_versioning_triggers()
 
 
 @app.get("/")
