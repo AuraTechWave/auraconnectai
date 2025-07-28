@@ -6,6 +6,8 @@ from sqlalchemy import and_, or_, desc, asc, func, text
 from fastapi import HTTPException, status
 from datetime import datetime
 
+from .menu_versioning_triggers import create_manual_version_on_bulk_change
+
 from .menu_models import (
     MenuCategory, MenuItem, ModifierGroup, Modifier, 
     MenuItemModifier, MenuItemInventory, Inventory
@@ -621,4 +623,160 @@ class MenuService:
             "available_items": available_items,
             "unavailable_items": total_items - available_items,
             "total_modifiers": total_modifiers
+        }
+
+    # Bulk operations with versioning integration
+    def bulk_update_items(self, item_ids: List[int], updates: Dict[str, Any], user_id: int = None) -> Dict[str, Any]:
+        """Bulk update multiple menu items and create version if needed"""
+        
+        items = self.db.query(MenuItem).filter(
+            MenuItem.id.in_(item_ids),
+            MenuItem.deleted_at.is_(None)
+        ).all()
+        
+        if not items:
+            return {"updated": 0, "errors": ["No items found"]}
+        
+        updated_count = 0
+        errors = []
+        
+        for item in items:
+            try:
+                # Track price changes for versioning
+                if 'price' in updates and updates['price'] != item.price:
+                    item._price_changed = True
+                
+                # Track availability changes for versioning
+                if 'is_available' in updates and updates['is_available'] != item.is_available:
+                    item._availability_changed = True
+                
+                # Apply updates
+                for field, value in updates.items():
+                    if hasattr(item, field):
+                        setattr(item, field, value)
+                
+                updated_count += 1
+                
+            except Exception as e:
+                errors.append(f"Item {item.id}: {str(e)}")
+        
+        if updated_count > 0:
+            self.db.commit()
+            
+            # Create version for significant bulk changes
+            version_id = create_manual_version_on_bulk_change(
+                self.db, 
+                "bulk_update_items", 
+                updated_count, 
+                user_id or 1
+            )
+            
+            return {
+                "updated": updated_count,
+                "errors": errors,
+                "version_created": version_id is not None,
+                "version_id": version_id
+            }
+        
+        return {"updated": 0, "errors": errors}
+    
+    def bulk_activate_items(self, item_ids: List[int], active: bool, user_id: int = None) -> Dict[str, Any]:
+        """Bulk activate/deactivate menu items"""
+        
+        result = self.bulk_update_items(item_ids, {"is_active": active}, user_id)
+        
+        # Create version for bulk activation changes
+        if result["updated"] > 0:
+            version_id = create_manual_version_on_bulk_change(
+                self.db,
+                f"bulk_{'activate' if active else 'deactivate'}_items",
+                result["updated"],
+                user_id or 1
+            )
+            
+            result["version_created"] = version_id is not None
+            result["version_id"] = version_id
+        
+        return result
+    
+    def bulk_update_prices(self, price_updates: List[Dict[str, Any]], user_id: int = None) -> Dict[str, Any]:
+        """Bulk update item prices - this always creates a version due to criticality"""
+        
+        updated_count = 0
+        errors = []
+        
+        for update in price_updates:
+            try:
+                item_id = update.get('item_id')
+                new_price = update.get('price')
+                
+                if not item_id or new_price is None:
+                    errors.append("Missing item_id or price in update")
+                    continue
+                
+                item = self.get_menu_item_by_id(item_id)
+                if not item:
+                    errors.append(f"Item {item_id} not found")
+                    continue
+                
+                # Track for versioning
+                item._price_changed = True
+                item.price = new_price
+                updated_count += 1
+                
+            except Exception as e:
+                errors.append(f"Error updating item {update.get('item_id', 'unknown')}: {str(e)}")
+        
+        if updated_count > 0:
+            self.db.commit()
+            
+            # Always create version for price changes
+            version_id = create_manual_version_on_bulk_change(
+                self.db,
+                "bulk_price_update",
+                updated_count,
+                user_id or 1
+            )
+            
+            return {
+                "updated": updated_count,
+                "errors": errors,
+                "version_created": True,  # Always true for price changes
+                "version_id": version_id
+            }
+        
+        return {"updated": 0, "errors": errors}
+    
+    def bulk_delete_items(self, item_ids: List[int], user_id: int = None) -> Dict[str, Any]:
+        """Bulk soft-delete menu items"""
+        
+        items = self.db.query(MenuItem).filter(
+            MenuItem.id.in_(item_ids),
+            MenuItem.deleted_at.is_(None)
+        ).all()
+        
+        if not items:
+            return {"deleted": 0, "errors": ["No items found"]}
+        
+        deleted_count = len(items)
+        
+        # Soft delete all items
+        for item in items:
+            item.deleted_at = datetime.utcnow()
+        
+        self.db.commit()
+        
+        # Create version for bulk deletions
+        version_id = create_manual_version_on_bulk_change(
+            self.db,
+            "bulk_delete_items",
+            deleted_count,
+            user_id or 1
+        )
+        
+        return {
+            "deleted": deleted_count,
+            "errors": [],
+            "version_created": version_id is not None,
+            "version_id": version_id
         }
