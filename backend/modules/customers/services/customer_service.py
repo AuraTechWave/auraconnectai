@@ -18,6 +18,7 @@ from ..schemas.customer_schemas import (
     CustomerPreferenceCreate, CustomerAnalytics
 )
 from backend.core.auth import get_password_hash, verify_password
+from .security_service import CustomerSecurityService
 
 
 logger = logging.getLogger(__name__)
@@ -52,12 +53,24 @@ class CustomerService:
                 **customer_data.model_dump(exclude={'password', 'referral_code'})
             )
             
-            # Hash password if provided
+            # Validate and hash password if provided
             if customer_data.password:
-                customer.password_hash = get_password_hash(customer_data.password)
+                # Validate password strength
+                password_validation = CustomerSecurityService.validate_password_strength(customer_data.password)
+                if not password_validation['is_valid']:
+                    raise ValueError(f"Password validation failed: {', '.join(password_validation['errors'])}")
+                
+                customer.password_hash = CustomerSecurityService.hash_password(customer_data.password)
+                
+                # Log security event
+                CustomerSecurityService.log_security_event(
+                    customer_id=None,
+                    event_type="password_creation",
+                    details=f"Password created for new customer {customer_data.email}"
+                )
             
             # Generate referral code
-            customer.referral_code = self._generate_referral_code()
+            customer.referral_code = CustomerSecurityService.generate_referral_code()
             
             # Handle referral
             if customer_data.referral_code:
@@ -163,8 +176,10 @@ class CustomerService:
         # Base query with eager loading to avoid N+1 queries
         query = self.db.query(Customer).options(
             joinedload(Customer.addresses),
-            joinedload(Customer.rewards),
-            joinedload(Customer.preferences)
+            joinedload(Customer.rewards).joinedload(CustomerReward.template),
+            joinedload(Customer.preferences),
+            joinedload(Customer.payment_methods),
+            joinedload(Customer.notifications).load_only('id', 'type', 'status', 'created_at')
         ).filter(Customer.deleted_at.is_(None))
         
         # Text search with database-level filtering
