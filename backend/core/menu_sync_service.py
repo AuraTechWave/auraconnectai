@@ -557,41 +557,481 @@ class MenuSyncService:
             current_operation=f"Processing {sync_job.sync_direction.value} sync"
         )
     
-    # Placeholder methods for entity-specific operations
-    # These would be implemented based on specific POS adapter capabilities
+    # Entity-specific operations implementation
     
     async def _get_aura_entity_data(self, entity_type: str, entity_id: int) -> Optional[Dict]:
         """Get entity data from AuraConnect system"""
-        # Implementation would fetch from appropriate model based on entity_type
-        pass
+        try:
+            if entity_type == "category":
+                entity = self.db.query(MenuCategory).filter(
+                    MenuCategory.id == entity_id,
+                    MenuCategory.deleted_at.is_(None)
+                ).first()
+                if entity:
+                    return {
+                        "id": entity.id,
+                        "name": entity.name,
+                        "description": entity.description,
+                        "display_order": entity.display_order,
+                        "is_active": entity.is_active,
+                        "parent_category_id": entity.parent_category_id,
+                        "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
+                    }
+            
+            elif entity_type == "item":
+                entity = self.db.query(MenuItem).filter(
+                    MenuItem.id == entity_id,
+                    MenuItem.deleted_at.is_(None)
+                ).first()
+                if entity:
+                    return {
+                        "id": entity.id,
+                        "name": entity.name,
+                        "description": entity.description,
+                        "price": float(entity.price),
+                        "category_id": entity.category_id,
+                        "sku": entity.sku,
+                        "is_active": entity.is_active,
+                        "is_available": entity.is_available,
+                        "calories": entity.calories,
+                        "dietary_tags": entity.dietary_tags,
+                        "allergens": entity.allergens,
+                        "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
+                    }
+            
+            elif entity_type == "modifier_group":
+                entity = self.db.query(ModifierGroup).filter(
+                    ModifierGroup.id == entity_id,
+                    ModifierGroup.deleted_at.is_(None)
+                ).first()
+                if entity:
+                    return {
+                        "id": entity.id,
+                        "name": entity.name,
+                        "description": entity.description,
+                        "selection_type": entity.selection_type,
+                        "min_selections": entity.min_selections,
+                        "max_selections": entity.max_selections,
+                        "is_required": entity.is_required,
+                        "is_active": entity.is_active,
+                        "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
+                    }
+            
+            elif entity_type == "modifier":
+                entity = self.db.query(Modifier).filter(
+                    Modifier.id == entity_id,
+                    Modifier.deleted_at.is_(None)
+                ).first()
+                if entity:
+                    return {
+                        "id": entity.id,
+                        "name": entity.name,
+                        "description": entity.description,
+                        "price_adjustment": float(entity.price_adjustment),
+                        "price_type": entity.price_type,
+                        "is_active": entity.is_active,
+                        "is_available": entity.is_available,
+                        "updated_at": entity.updated_at.isoformat() if entity.updated_at else None
+                    }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error fetching AuraConnect {entity_type} {entity_id}: {str(e)}")
+            return None
     
     async def _get_pos_entity_data(self, pos_adapter, entity_type: str, pos_entity_id: str) -> Optional[Dict]:
         """Get entity data from POS system"""
-        # Implementation would use pos_adapter to fetch data
-        pass
+        try:
+            if entity_type == "category":
+                categories = await pos_adapter.get_menu_categories()
+                for category in categories:
+                    if category.get("id") == pos_entity_id:
+                        return category
+            
+            elif entity_type == "item":
+                items = await pos_adapter.get_menu_items()
+                for item in items:
+                    if item.get("id") == pos_entity_id:
+                        return item
+            
+            elif entity_type == "modifier_group":
+                modifier_groups = await pos_adapter.get_modifier_groups()
+                for group in modifier_groups:
+                    if group.get("id") == pos_entity_id:
+                        return group
+            
+            elif entity_type == "modifier":
+                # For modifiers, we need to find the parent group first
+                # This is a simplified implementation
+                logger.warning(f"Getting individual modifier {pos_entity_id} not fully implemented")
+                return None
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error fetching POS {entity_type} {pos_entity_id}: {str(e)}")
+            return None
     
     async def _push_entity_type(self, sync_job: MenuSyncJob, pos_adapter, entity_type: str, ctx):
         """Push all entities of a specific type to POS"""
-        pass
+        try:
+            # Get all mappings for this entity type
+            mappings = self.db.query(POSMenuMapping).filter(
+                and_(
+                    POSMenuMapping.pos_integration_id == sync_job.pos_integration_id,
+                    POSMenuMapping.entity_type == entity_type,
+                    POSMenuMapping.sync_enabled == True,
+                    POSMenuMapping.is_active == True,
+                    POSMenuMapping.sync_direction.in_([SyncDirection.PUSH, SyncDirection.BIDIRECTIONAL])
+                )
+            ).all()
+            
+            for mapping in mappings:
+                try:
+                    # Get current AuraConnect data
+                    aura_data = await self._get_aura_entity_data(entity_type, mapping.aura_entity_id)
+                    if aura_data:
+                        await self._push_entity_to_pos(sync_job, pos_adapter, mapping, aura_data, ctx)
+                        sync_job.successful_entities += 1
+                    else:
+                        logger.warning(f"AuraConnect {entity_type} {mapping.aura_entity_id} not found")
+                        sync_job.failed_entities += 1
+                
+                except Exception as e:
+                    logger.error(f"Error pushing {entity_type} {mapping.aura_entity_id}: {str(e)}")
+                    sync_job.failed_entities += 1
+                    await self._log_sync_error(sync_job, mapping, str(e), ctx)
+                
+                sync_job.processed_entities += 1
+            
+        except Exception as e:
+            logger.error(f"Error pushing {entity_type} entities: {str(e)}")
+            raise
     
     async def _pull_categories(self, sync_job: MenuSyncJob, pos_adapter, ctx):
         """Pull categories from POS system"""
-        pass
+        try:
+            pos_categories = await pos_adapter.get_menu_categories()
+            
+            for pos_category in pos_categories:
+                try:
+                    await self._process_pos_entity(
+                        sync_job, "category", pos_category, pos_adapter, ctx
+                    )
+                    sync_job.processed_entities += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing POS category {pos_category.get('id', 'unknown')}: {str(e)}")
+                    sync_job.failed_entities += 1
+            
+        except Exception as e:
+            logger.error(f"Error pulling categories: {str(e)}")
+            raise
     
     async def _pull_items(self, sync_job: MenuSyncJob, pos_adapter, ctx):
         """Pull menu items from POS system"""
-        pass
+        try:
+            pos_items = await pos_adapter.get_menu_items()
+            
+            for pos_item in pos_items:
+                try:
+                    await self._process_pos_entity(
+                        sync_job, "item", pos_item, pos_adapter, ctx
+                    )
+                    sync_job.processed_entities += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing POS item {pos_item.get('id', 'unknown')}: {str(e)}")
+                    sync_job.failed_entities += 1
+            
+        except Exception as e:
+            logger.error(f"Error pulling items: {str(e)}")
+            raise
     
     async def _pull_modifiers(self, sync_job: MenuSyncJob, pos_adapter, ctx):
         """Pull modifiers from POS system"""
-        pass
+        try:
+            pos_modifier_groups = await pos_adapter.get_modifier_groups()
+            
+            for pos_group in pos_modifier_groups:
+                try:
+                    await self._process_pos_entity(
+                        sync_job, "modifier_group", pos_group, pos_adapter, ctx
+                    )
+                    sync_job.processed_entities += 1
+                    
+                    # Also pull individual modifiers in the group
+                    pos_modifiers = await pos_adapter.get_modifiers(pos_group.get("id"))
+                    for pos_modifier in pos_modifiers:
+                        try:
+                            await self._process_pos_entity(
+                                sync_job, "modifier", pos_modifier, pos_adapter, ctx
+                            )
+                            sync_job.processed_entities += 1
+                        except Exception as e:
+                            logger.error(f"Error processing POS modifier: {str(e)}")
+                            sync_job.failed_entities += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing POS modifier group {pos_group.get('id', 'unknown')}: {str(e)}")
+                    sync_job.failed_entities += 1
+            
+        except Exception as e:
+            logger.error(f"Error pulling modifiers: {str(e)}")
+            raise
+    
+    async def _process_pos_entity(self, sync_job: MenuSyncJob, entity_type: str, 
+                                pos_entity_data: Dict, pos_adapter, ctx):
+        """Process a single entity from POS system"""
+        pos_entity_id = pos_entity_data.get("id")
+        if not pos_entity_id:
+            logger.warning(f"POS {entity_type} missing ID, skipping")
+            return
+        
+        # Check if mapping exists
+        mapping = self.db.query(POSMenuMapping).filter(
+            and_(
+                POSMenuMapping.pos_integration_id == sync_job.pos_integration_id,
+                POSMenuMapping.entity_type == entity_type,
+                POSMenuMapping.pos_entity_id == pos_entity_id
+            )
+        ).first()
+        
+        if mapping:
+            # Update existing mapping
+            await self._pull_entity_to_aura(sync_job, mapping, pos_entity_data, ctx)
+        else:
+            # Create new entity and mapping
+            await self._create_aura_entity_from_pos(sync_job, entity_type, pos_entity_data, ctx)
     
     async def _push_entity_to_pos(self, sync_job: MenuSyncJob, pos_adapter, 
                                 mapping: POSMenuMapping, entity_data: Dict, ctx):
         """Push a single entity to POS system"""
-        pass
+        try:
+            entity_type = mapping.entity_type
+            pos_entity_id = mapping.pos_entity_id
+            
+            if entity_type == "category":
+                if pos_entity_id and pos_entity_id != "new":
+                    # Update existing category
+                    result = await pos_adapter.update_menu_category(pos_entity_id, entity_data)
+                else:
+                    # Create new category
+                    result = await pos_adapter.create_menu_category(entity_data)
+                    if result and "id" in result:
+                        mapping.pos_entity_id = result["id"]
+            
+            elif entity_type == "item":
+                if pos_entity_id and pos_entity_id != "new":
+                    result = await pos_adapter.update_menu_item(pos_entity_id, entity_data)
+                else:
+                    result = await pos_adapter.create_menu_item(entity_data)
+                    if result and "id" in result:
+                        mapping.pos_entity_id = result["id"]
+            
+            elif entity_type == "modifier_group":
+                if pos_entity_id and pos_entity_id != "new":
+                    result = await pos_adapter.update_modifier_group(pos_entity_id, entity_data)
+                else:
+                    result = await pos_adapter.create_modifier_group(entity_data)
+                    if result and "id" in result:
+                        mapping.pos_entity_id = result["id"]
+            
+            elif entity_type == "modifier":
+                # Modifiers require parent group handling
+                logger.warning(f"Modifier push to POS not fully implemented")
+                return
+            
+            # Update mapping metadata
+            mapping.last_sync_at = datetime.utcnow()
+            mapping.last_sync_direction = SyncDirection.PUSH
+            mapping.sync_hash = self._calculate_entity_hash(entity_data)
+            
+            await self._log_sync_operation(
+                sync_job, mapping, "push", SyncDirection.PUSH, 
+                SyncStatus.SUCCESS, ctx,
+                aura_data_after=entity_data
+            )
+            
+        except Exception as e:
+            logger.error(f"Error pushing {mapping.entity_type} to POS: {str(e)}")
+            await self._log_sync_operation(
+                sync_job, mapping, "push", SyncDirection.PUSH,
+                SyncStatus.ERROR, ctx, error_message=str(e)
+            )
+            raise
     
     async def _pull_entity_to_aura(self, sync_job: MenuSyncJob, mapping: POSMenuMapping, 
                                  entity_data: Dict, ctx):
         """Pull a single entity to AuraConnect system"""
-        pass
+        try:
+            entity_type = mapping.entity_type
+            aura_entity_id = mapping.aura_entity_id
+            
+            # Get current AuraConnect entity
+            if entity_type == "category":
+                entity = self.db.query(MenuCategory).get(aura_entity_id)
+                if entity:
+                    self._update_aura_category(entity, entity_data)
+            
+            elif entity_type == "item":
+                entity = self.db.query(MenuItem).get(aura_entity_id)
+                if entity:
+                    self._update_aura_item(entity, entity_data)
+            
+            elif entity_type == "modifier_group":
+                entity = self.db.query(ModifierGroup).get(aura_entity_id)
+                if entity:
+                    self._update_aura_modifier_group(entity, entity_data)
+            
+            elif entity_type == "modifier":
+                entity = self.db.query(Modifier).get(aura_entity_id)
+                if entity:
+                    self._update_aura_modifier(entity, entity_data)
+            
+            # Update mapping metadata
+            mapping.last_sync_at = datetime.utcnow()
+            mapping.last_sync_direction = SyncDirection.PULL
+            mapping.sync_hash = self._calculate_entity_hash(entity_data)
+            mapping.pos_entity_data = entity_data
+            
+            await self._log_sync_operation(
+                sync_job, mapping, "pull", SyncDirection.PULL,
+                SyncStatus.SUCCESS, ctx,
+                pos_data_after=entity_data
+            )
+            
+        except Exception as e:
+            logger.error(f"Error pulling {mapping.entity_type} to AuraConnect: {str(e)}")
+            await self._log_sync_operation(
+                sync_job, mapping, "pull", SyncDirection.PULL,
+                SyncStatus.ERROR, ctx, error_message=str(e)
+            )
+            raise
+    
+    async def _create_aura_entity_from_pos(self, sync_job: MenuSyncJob, entity_type: str, 
+                                         pos_entity_data: Dict, ctx):
+        """Create new AuraConnect entity from POS data"""
+        try:
+            new_entity = None
+            
+            if entity_type == "category":
+                new_entity = MenuCategory(
+                    name=pos_entity_data.get("name", ""),
+                    description=pos_entity_data.get("description", ""),
+                    display_order=pos_entity_data.get("display_order", 0),
+                    is_active=pos_entity_data.get("is_active", True)
+                )
+                self.db.add(new_entity)
+                self.db.flush()  # Get the ID
+            
+            elif entity_type == "item":
+                new_entity = MenuItem(
+                    name=pos_entity_data.get("name", ""),
+                    description=pos_entity_data.get("description", ""),
+                    price=pos_entity_data.get("price", 0.0),
+                    category_id=self._resolve_category_id(pos_entity_data.get("category_id")),
+                    sku=pos_entity_data.get("sku", ""),
+                    is_active=pos_entity_data.get("is_active", True),
+                    is_available=pos_entity_data.get("is_available", True)
+                )
+                self.db.add(new_entity)
+                self.db.flush()
+            
+            # Create mapping
+            if new_entity:
+                mapping = POSMenuMapping(
+                    pos_integration_id=sync_job.pos_integration_id,
+                    pos_vendor=sync_job.pos_integration.vendor,
+                    entity_type=entity_type,
+                    aura_entity_id=new_entity.id,
+                    pos_entity_id=pos_entity_data.get("id"),
+                    pos_entity_data=pos_entity_data,
+                    last_sync_at=datetime.utcnow(),
+                    last_sync_direction=SyncDirection.PULL,
+                    sync_hash=self._calculate_entity_hash(pos_entity_data)
+                )
+                self.db.add(mapping)
+                
+                await self._log_sync_operation(
+                    sync_job, mapping, "create", SyncDirection.PULL,
+                    SyncStatus.SUCCESS, ctx,
+                    pos_data_after=pos_entity_data
+                )
+            
+        except Exception as e:
+            logger.error(f"Error creating AuraConnect {entity_type} from POS data: {str(e)}")
+            await self._log_sync_error(sync_job, None, str(e), ctx)
+            raise
+    
+    def _update_aura_category(self, category: MenuCategory, pos_data: Dict):
+        """Update AuraConnect category with POS data"""
+        if "name" in pos_data:
+            category.name = pos_data["name"]
+        if "description" in pos_data:
+            category.description = pos_data["description"]
+        if "is_active" in pos_data:
+            category.is_active = pos_data["is_active"]
+        if "display_order" in pos_data:
+            category.display_order = pos_data["display_order"]
+    
+    def _update_aura_item(self, item: MenuItem, pos_data: Dict):
+        """Update AuraConnect item with POS data"""
+        if "name" in pos_data:
+            item.name = pos_data["name"]
+        if "description" in pos_data:
+            item.description = pos_data["description"]
+        if "price" in pos_data:
+            item.price = pos_data["price"]
+        if "is_active" in pos_data:
+            item.is_active = pos_data["is_active"]
+        if "is_available" in pos_data:
+            item.is_available = pos_data["is_available"]
+        if "sku" in pos_data:
+            item.sku = pos_data["sku"]
+    
+    def _update_aura_modifier_group(self, modifier_group: ModifierGroup, pos_data: Dict):
+        """Update AuraConnect modifier group with POS data"""
+        if "name" in pos_data:
+            modifier_group.name = pos_data["name"]
+        if "description" in pos_data:
+            modifier_group.description = pos_data["description"]
+        if "selection_type" in pos_data:
+            modifier_group.selection_type = pos_data["selection_type"]
+        if "is_required" in pos_data:
+            modifier_group.is_required = pos_data["is_required"]
+        if "min_selections" in pos_data:
+            modifier_group.min_selections = pos_data["min_selections"]
+        if "max_selections" in pos_data:
+            modifier_group.max_selections = pos_data["max_selections"]
+    
+    def _update_aura_modifier(self, modifier: Modifier, pos_data: Dict):
+        """Update AuraConnect modifier with POS data"""
+        if "name" in pos_data:
+            modifier.name = pos_data["name"]
+        if "description" in pos_data:
+            modifier.description = pos_data["description"]
+        if "price_adjustment" in pos_data:
+            modifier.price_adjustment = pos_data["price_adjustment"]
+        if "price_type" in pos_data:
+            modifier.price_type = pos_data["price_type"]
+        if "is_active" in pos_data:
+            modifier.is_active = pos_data["is_active"]
+        if "is_available" in pos_data:
+            modifier.is_available = pos_data["is_available"]
+    
+    def _resolve_category_id(self, pos_category_id: Optional[str]) -> Optional[int]:
+        """Resolve POS category ID to AuraConnect category ID"""
+        if not pos_category_id:
+            return None
+        
+        # Look up the mapping
+        mapping = self.db.query(POSMenuMapping).filter(
+            and_(
+                POSMenuMapping.entity_type == "category",
+                POSMenuMapping.pos_entity_id == pos_category_id
+            )
+        ).first()
+        
+        return mapping.aura_entity_id if mapping else None
