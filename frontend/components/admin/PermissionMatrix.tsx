@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '../../utils/apiClient';
+import React, { useState, useEffect, useMemo } from 'react';
+import apiClient from '../../utils/authInterceptor';
 import { useRBAC } from '../../hooks/useRBAC';
-import Toast from '../ui/Toast';
+import { useNotifications, NotificationContainer } from '../ui/Notification';
+import { useApiQuery, invalidateQueries } from '../../hooks/useApiQuery';
+import VirtualizedTable from '../ui/VirtualizedTable';
+import '../ui/SharedStyles.css';
 import './PermissionMatrix.css';
 
 interface Role {

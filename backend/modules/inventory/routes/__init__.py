@@ -1,0 +1,1 @@
+# backend/modules/inventory/routes/__init__.py

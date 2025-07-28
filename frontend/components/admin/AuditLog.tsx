@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '../../utils/apiClient';
+import apiClient from '../../utils/authInterceptor';
 import { useRBAC } from '../../hooks/useRBAC';
 import SearchFilter from './SearchFilter';
 import './AuditLog.css';

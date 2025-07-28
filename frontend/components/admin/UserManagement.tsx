@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '../../utils/apiClient';
+import apiClient from '../../utils/authInterceptor';
 import { useRBAC } from '../../hooks/useRBAC';
+import { useNotifications, NotificationContainer } from '../ui/Notification';
 import UserForm from './UserForm';
 import UserTable from './UserTable';
 import SearchFilter from './SearchFilter';
-import Toast from '../ui/Toast';
+import '../ui/SharedStyles.css';
 import './UserManagement.css';
 
 interface User {
@@ -36,10 +37,9 @@ interface UserFormData {
 
 const UserManagement: React.FC = () => {
   const { hasPermission } = useRBAC();
+  const { notifications, removeNotification, success, error } = useNotifications();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,9 +68,8 @@ const UserManagement: React.FC = () => {
       const response = await apiClient.get(`/rbac/users?${params}`);
       setUsers(response.data.items);
       setTotalPages(response.data.total_pages);
-      setError(null);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch users');
+      error(err.response?.data?.detail || 'Failed to fetch users', 'Loading Error');
     } finally {
       setLoading(false);
     }
@@ -79,23 +78,23 @@ const UserManagement: React.FC = () => {
   const handleCreateUser = async (data: UserFormData) => {
     try {
       await apiClient.post('/rbac/users', data);
-      setSuccess('User created successfully');
+      success('User created successfully');
       setShowForm(false);
       fetchUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create user');
+      error(err.response?.data?.detail || 'Failed to create user', 'Creation Error');
     }
   };
 
   const handleUpdateUser = async (userId: number, data: UserFormData) => {
     try {
       await apiClient.put(`/rbac/users/${userId}`, data);
-      setSuccess('User updated successfully');
+      success('User updated successfully');
       setEditingUser(null);
       setShowForm(false);
       fetchUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update user');
+      error(err.response?.data?.detail || 'Failed to update user', 'Update Error');
     }
   };
 
@@ -106,20 +105,20 @@ const UserManagement: React.FC = () => {
 
     try {
       await apiClient.delete(`/rbac/users/${userId}`);
-      setSuccess('User deleted successfully');
+      success('User deleted successfully');
       fetchUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete user');
+      error(err.response?.data?.detail || 'Failed to delete user', 'Deletion Error');
     }
   };
 
   const handleToggleUserStatus = async (userId: number, isActive: boolean) => {
     try {
       await apiClient.patch(`/rbac/users/${userId}/status`, { is_active: isActive });
-      setSuccess(`User ${isActive ? 'activated' : 'deactivated'} successfully`);
+      success(`User ${isActive ? 'activated' : 'deactivated'} successfully`);
       fetchUsers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update user status');
+      error(err.response?.data?.detail || 'Failed to update user status', 'Status Update Error');
     }
   };
 
@@ -130,9 +129,9 @@ const UserManagement: React.FC = () => {
 
     try {
       await apiClient.post(`/rbac/users/${userId}/reset-password`);
-      setSuccess('Password reset email sent');
+      success('Password reset email sent');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to reset password');
+      error(err.response?.data?.detail || 'Failed to reset password', 'Password Reset Error');
     }
   };
 
@@ -176,9 +175,30 @@ const UserManagement: React.FC = () => {
       />
 
       {loading ? (
-        <div className="loading">Loading users...</div>
-      ) : error ? (
-        <div className="error-message">{error}</div>
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p className="loading-text">Loading users...</p>
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">👥</div>
+          <h3 className="empty-state-title">No users found</h3>
+          <p className="empty-state-description">
+            {searchTerm || filterStatus !== 'all' 
+              ? 'No users match your current search criteria. Try adjusting your filters.'
+              : 'Get started by creating your first user account.'
+            }
+          </p>
+          {canWrite && !searchTerm && filterStatus === 'all' && (
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowForm(true)}
+            >
+              <span>👤</span>
+              Create First User
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <UserTable
@@ -190,21 +210,25 @@ const UserManagement: React.FC = () => {
             canManageRoles={canManageRoles}
           />
 
-          <div className="pagination">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => prev - 1)}
-            >
-              Previous
-            </button>
-            <span>Page {currentPage} of {totalPages}</span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => prev + 1)}
-            >
-              Next
-            </button>
-          </div>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="pagination-button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                Previous
+              </button>
+              <span className="pagination-info">Page {currentPage} of {totalPages}</span>
+              <button
+                className="pagination-button"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -220,21 +244,10 @@ const UserManagement: React.FC = () => {
         />
       )}
 
-      {success && (
-        <Toast
-          message={success}
-          type="success"
-          onClose={() => setSuccess(null)}
-        />
-      )}
-
-      {error && (
-        <Toast
-          message={error}
-          type="error"
-          onClose={() => setError(null)}
-        />
-      )}
+      <NotificationContainer 
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
     </div>
   );
 };

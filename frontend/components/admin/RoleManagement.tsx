@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { apiClient } from '../../utils/apiClient';
+import apiClient from '../../utils/authInterceptor';
 import { useRBAC } from '../../hooks/useRBAC';
+import { useNotifications, NotificationContainer } from '../ui/Notification';
 import RoleForm from './RoleForm';
 import RoleTable from './RoleTable';
-import Toast from '../ui/Toast';
+import '../ui/SharedStyles.css';
 import './RoleManagement.css';
 
 interface Role {
@@ -36,11 +37,10 @@ interface RoleFormData {
 
 const RoleManagement: React.FC = () => {
   const { hasPermission } = useRBAC();
+  const { notifications, removeNotification, success, error } = useNotifications();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [expandedRoles, setExpandedRoles] = useState<Set<number>>(new Set());

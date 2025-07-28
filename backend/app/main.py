@@ -43,6 +43,12 @@ from backend.modules.menu.routes.menu_routes import (
 from backend.modules.menu.routes.inventory_routes import (
     router as menu_inventory_router
 )
+from backend.modules.inventory.routes.inventory_routes import (
+    router as inventory_management_router
+)
+from backend.modules.inventory.routes.vendor_routes import (
+    router as vendor_management_router
+)
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -59,7 +65,8 @@ app = FastAPI(
     * **Order Management** - Complete order lifecycle management
     * **POS Integration** - Connect with major POS systems (Square, Toast, Clover)
     * **Menu Management** - Complete CRUD for menu items, categories, and modifiers
-    * **Inventory Management** - Real-time inventory tracking and updates
+    * **Inventory Management** - Real-time inventory tracking with low-stock alerts
+    * **Vendor Management** - Comprehensive vendor and purchase order management
     * **Analytics & Reporting** - Comprehensive business intelligence
     
     ## Authentication
@@ -117,6 +124,8 @@ app.include_router(pos_router)
 app.include_router(webhook_router)
 app.include_router(menu_router)
 app.include_router(menu_inventory_router)
+app.include_router(inventory_management_router)
+app.include_router(vendor_management_router)
 
 
 @app.get("/")
