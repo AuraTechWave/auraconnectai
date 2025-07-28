@@ -261,6 +261,58 @@ def upgrade():
     op.create_index('ix_customer_preferences_customer_id', 'customer_preferences', ['customer_id'])
     op.create_index('ix_customer_preferences_category', 'customer_preferences', ['category', 'preference_key'])
     
+    # Create loyalty_tier_configs table
+    op.create_table(
+        'loyalty_tier_configs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('tier_name', sa.String(length=50), nullable=False),
+        sa.Column('tier_order', sa.Integer(), nullable=False),
+        sa.Column('min_lifetime_points', sa.Integer(), nullable=False),
+        sa.Column('min_total_spent', sa.Float(), nullable=True),
+        sa.Column('min_orders', sa.Integer(), nullable=True),
+        sa.Column('min_months_active', sa.Integer(), nullable=True),
+        sa.Column('benefits', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('is_auto_upgrade', sa.Boolean(), nullable=True),
+        sa.Column('display_name', sa.String(length=100), nullable=False),
+        sa.Column('description', sa.String(length=500), nullable=True),
+        sa.Column('icon_url', sa.String(length=500), nullable=True),
+        sa.Column('color_code', sa.String(length=7), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+    )
+    
+    # Create indexes for loyalty_tier_configs
+    op.create_index('ix_loyalty_tier_configs_tier_name', 'loyalty_tier_configs', ['tier_name'], unique=True)
+    op.create_index('ix_loyalty_tier_configs_tier_order', 'loyalty_tier_configs', ['tier_order'])
+    
+    # Create loyalty_points_configs table
+    op.create_table(
+        'loyalty_points_configs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('rule_name', sa.String(length=100), nullable=False),
+        sa.Column('action_type', sa.String(length=50), nullable=False),
+        sa.Column('points_per_dollar', sa.Float(), nullable=True),
+        sa.Column('fixed_points', sa.Integer(), nullable=True),
+        sa.Column('conditions', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('max_points_per_day', sa.Integer(), nullable=True),
+        sa.Column('max_points_per_transaction', sa.Integer(), nullable=True),
+        sa.Column('tier_multipliers', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=True),
+        sa.Column('start_date', sa.DateTime(), nullable=True),
+        sa.Column('end_date', sa.DateTime(), nullable=True),
+        sa.Column('display_name', sa.String(length=100), nullable=False),
+        sa.Column('description', sa.String(length=500), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('updated_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id'),
+    )
+    
+    # Create indexes for loyalty_points_configs
+    op.create_index('ix_loyalty_points_configs_rule_name', 'loyalty_points_configs', ['rule_name'], unique=True)
+    op.create_index('ix_loyalty_points_configs_action_type', 'loyalty_points_configs', ['action_type'])
+    
     # Update default address foreign key constraint
     op.create_foreign_key(
         'fk_customers_default_address_id',
@@ -322,6 +374,8 @@ def downgrade():
     op.drop_constraint('fk_customers_default_address_id', 'customers', type_='foreignkey')
     
     # Drop all customer tables in reverse order
+    op.drop_table('loyalty_points_configs')
+    op.drop_table('loyalty_tier_configs')
     op.drop_table('customer_preferences')
     op.drop_table('customer_rewards')
     op.drop_table('customer_segment_members')

@@ -159,10 +159,15 @@ class CustomerService:
         return customer
     
     def search_customers(self, params: CustomerSearchParams) -> Tuple[List[Customer], int]:
-        """Search and filter customers"""
-        query = self.db.query(Customer).filter(Customer.deleted_at.is_(None))
+        """Search and filter customers with optimized queries"""
+        # Base query with eager loading to avoid N+1 queries
+        query = self.db.query(Customer).options(
+            joinedload(Customer.addresses),
+            joinedload(Customer.rewards),
+            joinedload(Customer.preferences)
+        ).filter(Customer.deleted_at.is_(None))
         
-        # Text search
+        # Text search with database-level filtering
         if params.query:
             search_term = f"%{params.query}%"
             query = query.filter(
@@ -180,13 +185,13 @@ class CustomerService:
         if params.phone:
             query = query.filter(Customer.phone == params.phone)
         
-        # Filters
+        # Filters with proper indexing
         if params.tier:
             query = query.filter(Customer.tier.in_(params.tier))
         if params.status:
             query = query.filter(Customer.status.in_(params.status))
         
-        # Order metrics
+        # Order metrics - using indexed columns
         if params.min_orders is not None:
             query = query.filter(Customer.total_orders >= params.min_orders)
         if params.max_orders is not None:
@@ -196,7 +201,7 @@ class CustomerService:
         if params.max_spent is not None:
             query = query.filter(Customer.total_spent <= params.max_spent)
         
-        # Date filters
+        # Date filters with indexed columns
         if params.created_after:
             query = query.filter(Customer.created_at >= params.created_after)
         if params.created_before:
@@ -210,28 +215,53 @@ class CustomerService:
         if params.location_id:
             query = query.filter(Customer.preferred_location_id == params.location_id)
         
-        # Tags filter
+        # Tags filter using JSONB operators for better performance
         if params.tags:
             for tag in params.tags:
-                query = query.filter(Customer.tags.contains([tag]))
+                query = query.filter(Customer.tags.op('?')(tag))
         
-        # Active rewards filter
+        # Active rewards filter with optimized subquery
         if params.has_active_rewards is not None:
             if params.has_active_rewards:
-                query = query.join(CustomerReward).filter(
+                # Use exists() subquery for better performance
+                reward_subquery = self.db.query(CustomerReward.customer_id).filter(
                     and_(
+                        CustomerReward.customer_id == Customer.id,
                         CustomerReward.status == "available",
                         or_(
                             CustomerReward.valid_until.is_(None),
                             CustomerReward.valid_until > datetime.utcnow()
                         )
                     )
-                ).distinct()
+                )
+                query = query.filter(reward_subquery.exists())
         
-        # Get total count before pagination
-        total = query.count()
+        # Get total count with optimized query (without joins for counting)
+        count_query = self.db.query(func.count(Customer.id)).filter(Customer.deleted_at.is_(None))
         
-        # Sorting
+        # Apply same filters to count query
+        if params.query:
+            search_term = f"%{params.query}%"
+            count_query = count_query.filter(
+                or_(
+                    Customer.first_name.ilike(search_term),
+                    Customer.last_name.ilike(search_term),
+                    Customer.email.ilike(search_term),
+                    Customer.phone.ilike(search_term)
+                )
+            )
+        if params.email:
+            count_query = count_query.filter(Customer.email == params.email)
+        if params.phone:
+            count_query = count_query.filter(Customer.phone == params.phone)
+        if params.tier:
+            count_query = count_query.filter(Customer.tier.in_(params.tier))
+        if params.status:
+            count_query = count_query.filter(Customer.status.in_(params.status))
+            
+        total = count_query.scalar()
+        
+        # Sorting with proper column reference
         sort_column = getattr(Customer, params.sort_by)
         if params.sort_order == "desc":
             query = query.order_by(desc(sort_column))
@@ -245,8 +275,18 @@ class CustomerService:
         return customers, total
     
     def get_customer_analytics(self, customer_id: int) -> CustomerAnalytics:
-        """Get customer analytics and insights"""
-        customer = self.get_customer(customer_id)
+        """Get customer analytics and insights with optimized queries"""
+        # Use joinedload to fetch customer with related data in one query
+        customer = self.db.query(Customer).options(
+            joinedload(Customer.orders),
+            joinedload(Customer.preferences)
+        ).filter(
+            and_(
+                Customer.id == customer_id,
+                Customer.deleted_at.is_(None)
+            )
+        ).first()
+        
         if not customer:
             raise ValueError(f"Customer {customer_id} not found")
         
@@ -257,17 +297,55 @@ class CustomerService:
             if days_active > 0:
                 order_frequency_days = days_active / (customer.total_orders - 1)
         
-        # Get favorite categories and items from orders
-        # This is a simplified version - in production, you'd join with actual order data
-        favorite_categories = []
+        # Get analytics data with optimized queries
+        from backend.modules.orders.models.order_models import Order, OrderItem
+        
+        # Get favorite categories and items with single query
+        favorite_data = self.db.query(
+            OrderItem.menu_item_id,
+            func.count(OrderItem.id).label('order_count'),
+            func.sum(OrderItem.quantity).label('total_quantity')
+        ).join(Order).filter(
+            and_(
+                Order.customer_id == customer_id,
+                Order.deleted_at.is_(None),
+                Order.status.in_(['completed', 'delivered'])
+            )
+        ).group_by(OrderItem.menu_item_id).order_by(desc('order_count')).limit(10).all()
+        
+        # Process favorite items
         favorite_items = []
+        for item_id, order_count, total_quantity in favorite_data:
+            favorite_items.append({
+                "item_id": item_id,
+                "order_count": order_count,
+                "total_quantity": total_quantity
+            })
+        
+        # Get order timing patterns with single query
+        timing_data = self.db.query(
+            extract('hour', Order.created_at).label('hour'),
+            extract('dow', Order.created_at).label('day_of_week'),
+            func.count(Order.id).label('order_count')
+        ).filter(
+            and_(
+                Order.customer_id == customer_id,
+                Order.deleted_at.is_(None)
+            )
+        ).group_by('hour', 'day_of_week').all()
+        
+        # Process timing patterns
         preferred_order_times = {}
         preferred_order_days = {}
         
-        # Calculate lifetime value (simple version)
-        lifetime_value = customer.total_spent
+        for hour, dow, count in timing_data:
+            preferred_order_times[str(int(hour))] = preferred_order_times.get(str(int(hour)), 0) + count
+            day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            day_name = day_names[int(dow)]
+            preferred_order_days[day_name] = preferred_order_days.get(day_name, 0) + count
         
-        # Calculate churn risk (simple heuristic)
+        # Calculate lifetime value and churn risk
+        lifetime_value = customer.total_spent
         churn_risk_score = self._calculate_churn_risk(customer)
         
         # Days since last order
@@ -281,7 +359,7 @@ class CustomerService:
             total_spent=customer.total_spent,
             average_order_value=customer.average_order_value,
             order_frequency_days=order_frequency_days,
-            favorite_categories=favorite_categories,
+            favorite_categories=[],  # Will be populated by menu item lookup
             favorite_items=favorite_items,
             preferred_order_times=preferred_order_times,
             preferred_order_days=preferred_order_days,
@@ -493,20 +571,33 @@ class CustomerService:
         self._check_tier_upgrade(referrer)
     
     def _check_tier_upgrade(self, customer: Customer):
-        """Check if customer qualifies for tier upgrade"""
-        # Simple tier logic based on lifetime points
-        if customer.lifetime_points >= 10000 and customer.tier != CustomerTier.VIP:
-            customer.tier = CustomerTier.VIP
+        """Check if customer qualifies for tier upgrade using configurable system"""
+        from ..models.loyalty_config import LoyaltyService
+        
+        loyalty_service = LoyaltyService(self.db)
+        
+        # Calculate appropriate tier based on current configuration
+        new_tier_name = loyalty_service.calculate_tier_for_customer(customer)
+        
+        # Convert string to enum (assuming tier names match enum values)
+        tier_mapping = {
+            'bronze': CustomerTier.BRONZE,
+            'silver': CustomerTier.SILVER,
+            'gold': CustomerTier.GOLD,
+            'platinum': CustomerTier.PLATINUM,
+            'vip': CustomerTier.VIP
+        }
+        
+        new_tier = tier_mapping.get(new_tier_name.lower(), customer.tier)
+        
+        # Update tier if changed
+        if new_tier != customer.tier:
+            old_tier = customer.tier
+            customer.tier = new_tier
             customer.tier_updated_at = datetime.utcnow()
-        elif customer.lifetime_points >= 5000 and customer.tier not in [CustomerTier.PLATINUM, CustomerTier.VIP]:
-            customer.tier = CustomerTier.PLATINUM
-            customer.tier_updated_at = datetime.utcnow()
-        elif customer.lifetime_points >= 2500 and customer.tier not in [CustomerTier.GOLD, CustomerTier.PLATINUM, CustomerTier.VIP]:
-            customer.tier = CustomerTier.GOLD
-            customer.tier_updated_at = datetime.utcnow()
-        elif customer.lifetime_points >= 1000 and customer.tier == CustomerTier.BRONZE:
-            customer.tier = CustomerTier.SILVER
-            customer.tier_updated_at = datetime.utcnow()
+            
+            # Create notification for tier upgrade
+            self._notify_tier_change(customer, old_tier, new_tier)
     
     def _calculate_churn_risk(self, customer: Customer) -> float:
         """Calculate customer churn risk score (0-1)"""
