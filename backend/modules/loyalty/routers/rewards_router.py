@@ -8,6 +8,11 @@ import logging
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
 from backend.core.rbac_models import RBACUser
+from backend.core.rate_limiting import rate_limit
+from backend.core.enhanced_rbac import (
+    require_permission, ResourceType, ActionType, CommonPerms,
+    require_any_permission, owner_or_permission
+)
 from ..models.rewards_models import RewardTemplate as RewardTemplateModel, CustomerReward as CustomerRewardModel
 from ..schemas.rewards_schemas import (
     RewardTemplate, RewardTemplateCreate, RewardTemplateUpdate,
@@ -25,9 +30,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/loyalty/rewards", tags=["loyalty-rewards"])
 
 
-# Helper function to check permissions
+# Legacy permission check function (deprecated - use decorators instead)
 def check_rewards_permission(user: RBACUser, action: str, tenant_id: Optional[int] = None):
-    """Check if user has rewards-related permissions"""
+    """Check if user has rewards-related permissions (DEPRECATED)"""
     if tenant_id is None:
         tenant_id = user.default_tenant_id
     
@@ -41,13 +46,14 @@ def check_rewards_permission(user: RBACUser, action: str, tenant_id: Optional[in
 
 # Reward Template Management
 @router.post("/templates", response_model=RewardTemplate)
+@rate_limit(limit=10, window=60, per="user")  # 10 template creations per minute per user
+@require_permission(ResourceType.REWARD, ActionType.WRITE)
 async def create_reward_template(
     template_data: RewardTemplateCreate,
     db: Session = Depends(get_db),
     current_user: RBACUser = Depends(get_current_user)
 ):
     """Create a new reward template"""
-    check_rewards_permission(current_user, "write")
     
     try:
         rewards_engine = RewardsEngine(db)
@@ -59,6 +65,8 @@ async def create_reward_template(
 
 
 @router.get("/templates", response_model=List[RewardTemplate])
+@rate_limit(limit=100, window=60, per="user")  # 100 template reads per minute
+@require_permission(ResourceType.REWARD, ActionType.READ)
 async def list_reward_templates(
     active_only: bool = Query(True),
     reward_type: Optional[str] = Query(None),
@@ -69,7 +77,6 @@ async def list_reward_templates(
     current_user: RBACUser = Depends(get_current_user)
 ):
     """List reward templates"""
-    check_rewards_permission(current_user, "read")
     
     query = db.query(RewardTemplateModel)
     
