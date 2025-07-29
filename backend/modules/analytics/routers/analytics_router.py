@@ -19,12 +19,17 @@ from ..services.async_processing import (
 )
 
 from ..services.sales_report_service import SalesReportService
+from ..services.realtime_metrics_service import realtime_metrics_service
+from ..services.dashboard_widgets_service import dashboard_widgets_service
 from ..schemas.analytics_schemas import (
     SalesFilterRequest, SalesSummaryResponse, SalesDetailResponse,
     StaffPerformanceResponse, ProductPerformanceResponse, PaginatedSalesResponse,
     SalesReportRequest, ReportExecutionResponse, DashboardMetricsResponse,
     ReportTemplateRequest, ReportTemplateResponse, SalesComparisonRequest,
     SalesComparisonResponse
+)
+from ..schemas.realtime_schemas import (
+    RealtimeDashboardResponse, WidgetConfiguration, DashboardLayout
 )
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Reporting"])
@@ -38,10 +43,12 @@ async def get_dashboard_metrics(
     current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
-    Get real-time dashboard metrics for sales analytics.
+    Get dashboard metrics for sales analytics (legacy endpoint).
     
     Returns current day metrics with comparisons to previous periods,
     top performers, trends, and active alerts.
+    
+    Note: For real-time updates, use /analytics/realtime/dashboard endpoints
     """
     try:
         service = SalesReportService(db)
@@ -52,6 +59,68 @@ async def get_dashboard_metrics(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve dashboard metrics"
+        )
+
+
+@router.get("/dashboard/realtime", response_model=RealtimeDashboardResponse)
+async def get_realtime_dashboard_metrics(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """
+    Get real-time dashboard metrics with enhanced features.
+    
+    Returns comprehensive real-time metrics including:
+    - Current revenue, orders, customers
+    - Growth indicators with live updates
+    - Top performers with rankings
+    - Hourly trends for visualization
+    - Active alerts and critical metrics
+    """
+    try:
+        snapshot = await realtime_metrics_service.get_current_dashboard_snapshot()
+        
+        return RealtimeDashboardResponse(
+            timestamp=snapshot.timestamp,
+            revenue_today=float(snapshot.revenue_today),
+            orders_today=snapshot.orders_today,
+            customers_today=snapshot.customers_today,
+            average_order_value=float(snapshot.average_order_value),
+            revenue_growth=snapshot.revenue_growth,
+            order_growth=snapshot.order_growth,
+            customer_growth=snapshot.customer_growth,
+            top_staff=[
+                {
+                    "id": staff["id"],
+                    "name": staff["name"],
+                    "revenue": staff["revenue"],
+                    "orders": staff["orders"],
+                    "rank": idx + 1
+                }
+                for idx, staff in enumerate(snapshot.top_staff)
+            ],
+            top_products=snapshot.top_products,
+            hourly_trends=[
+                {
+                    "hour": trend["hour"],
+                    "revenue": trend["revenue"],
+                    "orders": trend["orders"],
+                    "customers": trend["customers"]
+                }
+                for trend in snapshot.hourly_trends
+            ],
+            active_alerts=snapshot.active_alerts,
+            critical_metrics=snapshot.critical_metrics,
+            last_updated=snapshot.timestamp,
+            update_frequency=30,
+            data_freshness="real-time"
+        )
+    
+    except Exception as e:
+        logger.error(f"Error getting real-time dashboard metrics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve real-time dashboard metrics"
         )
 
 
@@ -883,4 +952,116 @@ async def get_permissions_summary(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve permissions summary"
+        )
+
+
+# Dashboard widgets endpoints
+@router.post("/widgets/data")
+async def get_widget_data(
+    widget_config: WidgetConfiguration,
+    force_refresh: bool = Query(False, description="Force refresh widget data"),
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """
+    Get data for a specific dashboard widget
+    """
+    try:
+        widget_response = await dashboard_widgets_service.get_widget_data(
+            widget_config, force_refresh
+        )
+        
+        return {
+            "success": True,
+            "data": widget_response.dict(),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting widget data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve widget data"
+        )
+
+
+@router.post("/dashboard/layout/data")
+async def get_dashboard_layout_data(
+    layout: DashboardLayout,
+    force_refresh: bool = Query(False, description="Force refresh all widget data"),
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """
+    Get data for all widgets in a dashboard layout
+    """
+    try:
+        layout_data = await dashboard_widgets_service.get_dashboard_layout_data(
+            layout, force_refresh
+        )
+        
+        return {
+            "success": True,
+            "layout_id": layout.layout_id,
+            "widgets": {
+                widget_id: widget_response.dict() 
+                for widget_id, widget_response in layout_data.items()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard layout data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve dashboard layout data"
+        )
+
+
+@router.get("/dashboard/layout/default")
+async def get_default_dashboard_layout(
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """
+    Get default dashboard layout for the current user
+    """
+    try:
+        layout = await dashboard_widgets_service.create_default_dashboard_layout(
+            current_user["id"]
+        )
+        
+        return {
+            "success": True,
+            "layout": layout.dict(),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating default dashboard layout: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create default dashboard layout"
+        )
+
+
+@router.delete("/widgets/cache")
+async def invalidate_widget_cache(
+    widget_id: Optional[str] = Query(None, description="Specific widget ID to invalidate"),
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
+):
+    """
+    Invalidate widget cache (admin only)
+    """
+    try:
+        dashboard_widgets_service.invalidate_widget_cache(widget_id)
+        
+        return {
+            "success": True,
+            "message": f"Widget cache invalidated for: {widget_id or 'all widgets'}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error invalidating widget cache: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to invalidate widget cache"
         )

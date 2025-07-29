@@ -7,3 +7,6 @@ alembic
 pydantic
 mkdocs
 mkdocs-material
+redis
+websockets
+asyncio-mqtt
