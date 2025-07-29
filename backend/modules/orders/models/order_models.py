@@ -48,6 +48,22 @@ class Order(Base, TimestampMixin):
     fraud_last_check = Column(DateTime, nullable=True)
     fraud_flags = Column(Text, nullable=True)
 
+    # Discount and pricing fields
+    subtotal = Column(Numeric(10, 2), nullable=True)
+    discount_amount = Column(Numeric(10, 2), nullable=True, default=0.0)
+    tax_amount = Column(Numeric(10, 2), nullable=True, default=0.0)
+    total_amount = Column(Numeric(10, 2), nullable=True)
+    final_amount = Column(Numeric(10, 2), nullable=True)
+    
+    # Promotion tracking fields
+    promotions_applied = Column(JSONB, nullable=True)
+    coupons_used = Column(JSONB, nullable=True)
+    discount_breakdown = Column(JSONB, nullable=True)
+    
+    # Referral tracking
+    referral_code_used = Column(String(50), nullable=True, index=True)
+    is_referral_qualifying = Column(Boolean, nullable=True, default=False)
+
     order_items = relationship("OrderItem", back_populates="order")
     customer = relationship("Customer", back_populates="orders")
     tags = relationship("Tag", secondary=order_tags, back_populates="orders")
