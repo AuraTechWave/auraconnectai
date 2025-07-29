@@ -1,7 +1,9 @@
 # AUR-296: AI Insights Implementation Summary
 
 ## Overview
-Successfully implemented comprehensive AI-powered analytics insights system for the restaurant management platform, providing intelligent business recommendations based on historical data analysis.
+Successfully implemented comprehensive analytics insights system for the restaurant management platform, providing intelligent business recommendations based on statistical analysis of historical data.
+
+**Important Note**: This implementation uses statistical methods (means, standard deviations, z-scores) rather than machine learning models. The "AI" terminology refers to the intelligent application of statistical analysis to generate actionable insights. Future phases may incorporate actual ML models for enhanced predictions.
 
 ## 🚀 Key Features Implemented
 
@@ -29,12 +31,25 @@ Successfully implemented comprehensive AI-powered analytics insights system for 
 - **Anomaly Detection**: `/ai-insights/anomalies` - Business alerts
 - **Seasonality Analysis**: `/ai-insights/seasonality` - Long-term planning
 
-### 4. Advanced Analytics Algorithms
+### 4. Statistical Analysis Methods (Not ML)
 - **Statistical Analysis**: Mean, standard deviation, z-score calculations
-- **Time Series Analysis**: Hourly, daily, weekly pattern detection
-- **Trend Analysis**: Velocity calculations and momentum tracking
-- **Confidence Scoring**: High/Medium/Low confidence levels
-- **Predictive Modeling**: Simple demand forecasting
+- **Time Series Analysis**: Hourly, daily, weekly pattern detection using aggregations
+- **Trend Analysis**: Velocity calculations based on period-over-period changes
+- **Confidence Scoring**: Based on data volume (High: >100 records, Medium: 20-100, Low: <20)
+- **Demand Forecasting**: Simple linear projections based on trend direction
+
+**Statistical Methods Used**:
+- **Peak Detection**: Identifies hours with order counts > mean + 1 std dev
+- **Anomaly Detection**: Z-score > 2 (beyond 2 standard deviations)
+- **Trend Classification**: 
+  - Rising: >20% increase period-over-period
+  - Falling: >20% decrease period-over-period
+  - Stable: Changes within ±20%
+- **Customer Segmentation**: Rule-based on order frequency
+  - One-time: 1 order
+  - Occasional: 2-5 orders
+  - Regular: 6-10 orders
+  - VIP: >10 orders
 
 ## 📊 Supported Insight Types
 

@@ -20,6 +20,7 @@ from ..models.analytics_models import SalesAnalyticsSnapshot
 from backend.modules.orders.models.order_models import Order, OrderItem
 from backend.modules.staff.models.staff_models import StaffMember
 from backend.core.cache import cache_service
+from backend.modules.analytics.utils.performance_monitor import PerformanceMonitor, check_performance_threshold
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,12 @@ class AIInsightsService:
     ) -> AIInsightSummary:
         """Generate comprehensive AI insights based on request"""
         
-        # Check cache first
-        cache_key = f"ai_insights:{hash(str(request.dict()))}"
+        # Build structured cache key
+        insight_types_str = "_".join(sorted([t.value for t in request.insight_types]))
+        date_from_str = request.date_from.isoformat() if request.date_from else "none"
+        date_to_str = request.date_to.isoformat() if request.date_to else "none"
+        cache_key = f"ai:insights:{insight_types_str}:{date_from_str}:{date_to_str}:{request.min_confidence.value}"
+        
         if not request.force_refresh:
             cached = await cache_service.get(cache_key)
             if cached:
@@ -84,12 +89,15 @@ class AIInsightsService:
         
         return summary
     
+    @PerformanceMonitor.monitor_query("peak_time_analysis")
     async def _analyze_peak_times(
         self,
         start_date: date,
         end_date: date
     ) -> PeakTimeInsight:
         """Analyze peak business hours and patterns"""
+        import time
+        start_time = time.time()
         
         # Query hourly order data
         hourly_data = self.db.query(

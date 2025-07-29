@@ -1,8 +1,8 @@
 # backend/modules/analytics/routers/ai_insights_router.py
 
 import logging
-from typing import Optional, List
-from datetime import datetime, date
+from typing import Optional, List, Dict
+from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 from backend.core.database import get_db
@@ -297,6 +297,123 @@ async def get_seasonality_insights(
     )
     
     return await generate_ai_insights(request, current_user, db)
+
+
+@router.post("/generate-async", response_model=Dict[str, str])
+async def generate_ai_insights_async(
+    request: InsightRequest,
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate AI insights asynchronously for heavy requests.
+    
+    Returns a task ID that can be used to check the status and retrieve results.
+    This is recommended for:
+    - Date ranges > 90 days
+    - Multiple insight types with large datasets
+    - When include_recommendations is True with comprehensive analysis
+    """
+    import uuid
+    from ..services.ai_insights_background import AIInsightsBackgroundService
+    import asyncio
+    
+    # Generate unique task ID
+    task_id = str(uuid.uuid4())
+    
+    # Check if this is a heavy request
+    date_range_days = (request.date_to or date.today()) - (request.date_from or date.today() - timedelta(days=30))
+    is_heavy = (
+        date_range_days.days > 90 or
+        len(request.insight_types) > 3 or
+        (InsightType.SEASONALITY in request.insight_types and date_range_days.days > 180)
+    )
+    
+    if is_heavy:
+        # Run in background
+        asyncio.create_task(
+            AIInsightsBackgroundService.generate_custom_insights_async(
+                request,
+                current_user.get('id', 0),
+                task_id
+            )
+        )
+        
+        return {
+            "task_id": task_id,
+            "status": "accepted",
+            "message": "Insights generation started. Use the task ID to check status.",
+            "estimated_time": "30-60 seconds"
+        }
+    else:
+        # For light requests, redirect to sync endpoint
+        return {
+            "task_id": "sync",
+            "status": "redirect",
+            "message": "Request is light enough for synchronous processing. Use /generate endpoint instead."
+        }
+
+
+@router.get("/task/{task_id}/status")
+async def get_task_status(
+    task_id: str,
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """Check the status of an async insights generation task."""
+    from backend.core.cache import cache_service
+    
+    status_key = f"task:status:{task_id}"
+    status_data = await cache_service.get(status_key)
+    
+    if not status_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found or expired"
+        )
+    
+    return status_data
+
+
+@router.get("/task/{task_id}/result", response_model=InsightResponse)
+async def get_task_result(
+    task_id: str,
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+):
+    """Retrieve the results of a completed async insights generation task."""
+    from backend.core.cache import cache_service
+    
+    # Check task status first
+    status_data = await cache_service.get(f"task:status:{task_id}")
+    
+    if not status_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found or expired"
+        )
+    
+    if status_data.get("status") != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task is not completed. Current status: {status_data.get('status')}"
+        )
+    
+    # Get result
+    result_key = status_data.get("result_key")
+    result_data = await cache_service.get(result_key)
+    
+    if not result_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task results not found or expired"
+        )
+    
+    return InsightResponse(
+        success=True,
+        insights=AIInsightSummary(**result_data),
+        processing_time=0.0,  # Not applicable for async
+        cache_hit=False,
+        warnings=[]
+    )
 
 
 # Export router
