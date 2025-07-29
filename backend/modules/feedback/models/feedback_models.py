@@ -8,7 +8,8 @@ from datetime import datetime
 import uuid
 import enum
 
-from backend.core.database import Base, TimestampMixin
+from backend.core.database import Base
+from backend.core.mixins import TimestampMixin
 
 
 # Enums for various feedback and review types
@@ -126,7 +127,7 @@ class Review(Base, TimestampMixin):
     sentiment_analysis_data = Column(JSON, nullable=True)
     
     # Additional data
-    metadata = Column(JSON, nullable=True)  # Flexible metadata storage
+    review_metadata = Column(JSON, nullable=True)  # Flexible metadata storage
     tags = Column(JSON, nullable=True)  # Review tags/categories
     
     # Media attachments
@@ -223,7 +224,7 @@ class BusinessResponse(Base, TimestampMixin):
     
     # Response metadata
     is_published = Column(Boolean, default=True)
-    metadata = Column(JSON, nullable=True)
+    response_metadata = Column(JSON, nullable=True)
     
     # Relationships
     review = relationship("Review", back_populates="business_responses")
@@ -276,7 +277,7 @@ class Feedback(Base, TimestampMixin):
     escalated_to = Column(Integer, nullable=True)
     
     # Additional data
-    metadata = Column(JSON, nullable=True)
+    response_metadata = Column(JSON, nullable=True)
     tags = Column(JSON, nullable=True)
     
     # Relationships
@@ -312,7 +313,7 @@ class FeedbackResponse(Base, TimestampMixin):
     is_resolution = Column(Boolean, default=False)  # Marks feedback as resolved
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    response_metadata = Column(JSON, nullable=True)
     
     # Relationships
     feedback = relationship("Feedback", back_populates="responses")
@@ -348,7 +349,7 @@ class ReviewTemplate(Base, TimestampMixin):
     reminder_days = Column(Integer, default=7)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    response_metadata = Column(JSON, nullable=True)
 
 
 class ReviewAggregate(Base, TimestampMixin):
@@ -451,7 +452,7 @@ class ReviewInvitation(Base, TimestampMixin):
     expires_at = Column(DateTime, nullable=True)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    response_metadata = Column(JSON, nullable=True)
     
     # Relationships
     customer = relationship("Customer")

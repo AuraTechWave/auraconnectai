@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
 import uuid
 import logging
+import asyncio
 
 from backend.modules.feedback.models.feedback_models import (
     Review, ReviewMedia, ReviewVote, BusinessResponse, ReviewAggregate,
@@ -240,43 +241,100 @@ class ReviewService:
     ) -> PaginatedResponse:
         """List reviews with filtering and pagination"""
         
-        query = self.db.query(Review)
-        
-        # Apply filters
-        if filters:
-            if filters.review_type:
-                query = query.filter(Review.review_type == filters.review_type)
-            if filters.status:
-                query = query.filter(Review.status == filters.status)
-            if filters.rating_min:
-                query = query.filter(Review.rating >= filters.rating_min)
-            if filters.rating_max:
-                query = query.filter(Review.rating <= filters.rating_max)
-            if filters.verified_only:
-                query = query.filter(Review.is_verified_purchase == True)
-            if filters.with_media:
-                query = query.filter(Review.media_count > 0)
-            if filters.sentiment:
-                query = query.filter(Review.sentiment_score == filters.sentiment)
-            if filters.date_from:
-                query = query.filter(Review.created_at >= filters.date_from)
-            if filters.date_to:
-                query = query.filter(Review.created_at <= filters.date_to)
-            if filters.customer_id:
-                query = query.filter(Review.customer_id == filters.customer_id)
-            if filters.product_id:
-                query = query.filter(Review.product_id == filters.product_id)
-            if filters.order_id:
-                query = query.filter(Review.order_id == filters.order_id)
-            if filters.tags:
-                # Filter by tags (JSON contains any of the specified tags)
-                tag_conditions = [
-                    func.json_extract(Review.tags, f'$[{i}]').in_(filters.tags)
-                    for i in range(10)  # Check first 10 tag positions
-                ]
-                query = query.filter(or_(*tag_conditions))
+        # Build the base query with filters
+        query = self._build_reviews_query(filters)
         
         # Apply sorting
+        query = self._apply_reviews_sorting(query, sort_by, sort_order)
+        
+        # Get total count before pagination
+        total = query.count()
+        
+        # Apply pagination and fetch results
+        reviews = self._apply_pagination(query, page, per_page)
+        
+        # Format results
+        items = [self._format_review_summary(review) for review in reviews]
+        
+        # Build paginated response
+        return self._build_paginated_response(items, total, page, per_page)
+    
+    def _build_reviews_query(self, filters: Optional[ReviewFilters]):
+        """Build base query with filters applied"""
+        query = self.db.query(Review)
+        
+        if not filters:
+            return query
+        
+        # Apply basic filters
+        query = self._apply_basic_filters(query, filters)
+        
+        # Apply date filters
+        query = self._apply_date_filters(query, filters)
+        
+        # Apply entity filters
+        query = self._apply_entity_filters(query, filters)
+        
+        # Apply complex filters
+        query = self._apply_complex_filters(query, filters)
+        
+        return query
+    
+    def _apply_basic_filters(self, query, filters: ReviewFilters):
+        """Apply basic review filters"""
+        if filters.review_type:
+            query = query.filter(Review.review_type == filters.review_type)
+        if filters.status:
+            query = query.filter(Review.status == filters.status)
+        if filters.verified_only:
+            query = query.filter(Review.is_verified_purchase == True)
+        if filters.with_media:
+            query = query.filter(Review.media_count > 0)
+        if filters.sentiment:
+            query = query.filter(Review.sentiment_score == filters.sentiment)
+        
+        return query
+    
+    def _apply_date_filters(self, query, filters: ReviewFilters):
+        """Apply date range filters"""
+        if filters.date_from:
+            query = query.filter(Review.created_at >= filters.date_from)
+        if filters.date_to:
+            query = query.filter(Review.created_at <= filters.date_to)
+        
+        return query
+    
+    def _apply_entity_filters(self, query, filters: ReviewFilters):
+        """Apply entity-specific filters"""
+        if filters.customer_id:
+            query = query.filter(Review.customer_id == filters.customer_id)
+        if filters.product_id:
+            query = query.filter(Review.product_id == filters.product_id)
+        if filters.order_id:
+            query = query.filter(Review.order_id == filters.order_id)
+        
+        return query
+    
+    def _apply_complex_filters(self, query, filters: ReviewFilters):
+        """Apply complex filters like rating ranges and tags"""
+        # Rating range filters
+        if filters.rating_min:
+            query = query.filter(Review.rating >= filters.rating_min)
+        if filters.rating_max:
+            query = query.filter(Review.rating <= filters.rating_max)
+        
+        # Tag filters
+        if filters.tags:
+            tag_conditions = [
+                func.json_extract(Review.tags, f'$[{i}]').in_(filters.tags)
+                for i in range(10)  # Check first 10 tag positions
+            ]
+            query = query.filter(or_(*tag_conditions))
+        
+        return query
+    
+    def _apply_reviews_sorting(self, query, sort_by: str, sort_order: str):
+        """Apply sorting to the query"""
         if hasattr(Review, sort_by):
             sort_column = getattr(Review, sort_by)
             if sort_order.lower() == "desc":
@@ -284,22 +342,23 @@ class ReviewService:
             else:
                 query = query.order_by(asc(sort_column))
         
-        # Get total count
-        total = query.count()
-        
-        # Apply pagination
+        return query
+    
+    def _apply_pagination(self, query, page: int, per_page: int):
+        """Apply pagination to query and return results"""
         offset = (page - 1) * per_page
-        reviews = query.offset(offset).limit(per_page).all()
-        
-        # Format response
-        items = [self._format_review_summary(review) for review in reviews]
+        return query.offset(offset).limit(per_page).all()
+    
+    def _build_paginated_response(self, items, total: int, page: int, per_page: int) -> PaginatedResponse:
+        """Build paginated response object"""
+        total_pages = (total + per_page - 1) // per_page
         
         return PaginatedResponse(
             items=items,
             total=total,
             page=page,
             per_page=per_page,
-            total_pages=(total + per_page - 1) // per_page,
+            total_pages=total_pages,
             has_next=page * per_page < total,
             has_prev=page > 1
         )
@@ -558,18 +617,55 @@ class ReviewService:
     
     def _schedule_sentiment_analysis(self, review_id: int) -> None:
         """Schedule sentiment analysis for a review"""
+        from backend.modules.feedback.services.background_tasks import background_processor
         
-        # This would integrate with a sentiment analysis service
-        # For now, just log the action
-        logger.info(f"Scheduled sentiment analysis for review {review_id}")
+        # Schedule background processing for the review
+        try:
+            asyncio.create_task(
+                background_processor.enqueue_sentiment_analysis(review_id=review_id)
+            )
+            logger.info(f"Scheduled sentiment analysis for review {review_id}")
+        except Exception as e:
+            logger.error(f"Failed to schedule sentiment analysis for review {review_id}: {e}")
+            # Fallback to synchronous processing if needed
+            self._fallback_sentiment_analysis(review_id)
     
+    def _fallback_sentiment_analysis(self, review_id: int) -> None:
+        """Fallback synchronous sentiment analysis"""
+        try:
+            from backend.modules.feedback.services.sentiment_service import sentiment_service
+            
+            review = self.db.query(Review).filter(Review.id == review_id).first()
+            if review:
+                result = sentiment_service.analyze_review_sentiment(review)
+                review.sentiment_score = result.score
+                review.sentiment_confidence = result.confidence
+                review.sentiment_analysis_data = result.raw_data
+                self.db.commit()
+                logger.info(f"Completed fallback sentiment analysis for review {review_id}")
+        except Exception as e:
+            logger.error(f"Fallback sentiment analysis failed for review {review_id}: {e}")
+
     def _update_review_aggregates(self, review: Review) -> None:
         """Update review aggregates for the reviewed entity"""
+        from backend.modules.feedback.services.background_tasks import background_processor
         
-        if review.product_id:
-            self._calculate_review_aggregates("product", review.product_id)
-        elif review.service_id:
-            self._calculate_review_aggregates("service", review.service_id)
+        try:
+            if review.product_id:
+                asyncio.create_task(
+                    background_processor.enqueue_review_aggregation("product", review.product_id)
+                )
+            elif review.service_id:
+                asyncio.create_task(
+                    background_processor.enqueue_review_aggregation("service", review.service_id)
+                )
+        except Exception as e:
+            logger.error(f"Failed to schedule aggregate update: {e}")
+            # Fallback to synchronous processing
+            if review.product_id:
+                self._calculate_review_aggregates("product", review.product_id)
+            elif review.service_id:
+                self._calculate_review_aggregates("service", review.service_id)
     
     def _calculate_review_aggregates(
         self,
@@ -578,74 +674,104 @@ class ReviewService:
     ) -> ReviewAggregate:
         """Calculate and store review aggregates"""
         
-        # Build base query for approved reviews
-        base_query = self.db.query(Review).filter(Review.status == ReviewStatus.APPROVED)
-        
-        if entity_type == "product":
-            base_query = base_query.filter(Review.product_id == entity_id)
-        elif entity_type == "service":
-            base_query = base_query.filter(Review.service_id == entity_id)
-        else:
-            raise ValueError(f"Unsupported entity type: {entity_type}")
+        # Build base query for the entity
+        base_query = self._build_entity_reviews_query(entity_type, entity_id)
         
         # Calculate metrics
         total_reviews = base_query.count()
         
+        # Generate aggregate data
         if total_reviews == 0:
-            # Create empty aggregate
-            aggregate_data = {
-                "entity_type": entity_type,
-                "entity_id": entity_id,
-                "total_reviews": 0,
-                "average_rating": 0.0,
-                "rating_1_count": 0,
-                "rating_2_count": 0,
-                "rating_3_count": 0,
-                "rating_4_count": 0,
-                "rating_5_count": 0,
-                "verified_reviews_count": 0,
-                "featured_reviews_count": 0,
-                "with_media_count": 0,
-                "positive_sentiment_percentage": 0.0
-            }
+            aggregate_data = self._create_empty_aggregate_data(entity_type, entity_id)
         else:
-            # Calculate actual metrics
-            avg_rating = base_query.with_entities(func.avg(Review.rating)).scalar() or 0.0
-            
-            rating_counts = {
-                1: base_query.filter(Review.rating >= 1.0, Review.rating < 2.0).count(),
-                2: base_query.filter(Review.rating >= 2.0, Review.rating < 3.0).count(),
-                3: base_query.filter(Review.rating >= 3.0, Review.rating < 4.0).count(),
-                4: base_query.filter(Review.rating >= 4.0, Review.rating < 5.0).count(),
-                5: base_query.filter(Review.rating == 5.0).count()
-            }
-            
-            verified_count = base_query.filter(Review.is_verified_purchase == True).count()
-            featured_count = base_query.filter(Review.is_featured == True).count()
-            with_media_count = base_query.filter(Review.media_count > 0).count()
-            
-            # Calculate sentiment distribution
-            positive_sentiments = base_query.filter(
-                Review.sentiment_score.in_([SentimentScore.POSITIVE, SentimentScore.VERY_POSITIVE])
-            ).count()
-            positive_percentage = (positive_sentiments / total_reviews) * 100 if total_reviews > 0 else 0.0
-            
-            aggregate_data = {
-                "entity_type": entity_type,
-                "entity_id": entity_id,
-                "total_reviews": total_reviews,
-                "average_rating": round(avg_rating, 2),
-                "rating_distribution": rating_counts,
-                "rating_1_count": rating_counts[1],
-                "rating_2_count": rating_counts[2],
-                "rating_3_count": rating_counts[3],
-                "rating_4_count": rating_counts[4],
-                "rating_5_count": rating_counts[5],
-                "verified_reviews_count": verified_count,
-                "featured_reviews_count": featured_count,
-                "with_media_count": with_media_count,
-                "positive_sentiment_percentage": round(positive_percentage, 2)
-            }
+            aggregate_data = self._calculate_aggregate_metrics(base_query, entity_type, entity_id, total_reviews)
+        
+        # Save to database
+        return self._save_or_update_aggregate(aggregate_data)
+    
+    def _build_entity_reviews_query(self, entity_type: str, entity_id: int):
+        """Build query for approved reviews of a specific entity"""
+        base_query = self.db.query(Review).filter(Review.status == ReviewStatus.APPROVED)
+        
+        if entity_type == "product":
+            return base_query.filter(Review.product_id == entity_id)
+        elif entity_type == "service":
+            return base_query.filter(Review.service_id == entity_id)
+        else:
+            raise ValueError(f"Unsupported entity type: {entity_type}")
+    
+    def _create_empty_aggregate_data(self, entity_type: str, entity_id: int) -> Dict[str, Any]:
+        """Create empty aggregate data structure"""
+        return {
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "total_reviews": 0,
+            "average_rating": 0.0,
+            "rating_1_count": 0,
+            "rating_2_count": 0,
+            "rating_3_count": 0,
+            "rating_4_count": 0,
+            "rating_5_count": 0,
+            "verified_reviews_count": 0,
+            "featured_reviews_count": 0,
+            "with_media_count": 0,
+            "positive_sentiment_percentage": 0.0
+        }
+    
+    def _calculate_aggregate_metrics(self, base_query, entity_type: str, entity_id: int, total_reviews: int) -> Dict[str, Any]:
+        """Calculate actual aggregate metrics from reviews"""
+        # Calculate rating metrics
+        avg_rating = base_query.with_entities(func.avg(Review.rating)).scalar() or 0.0
+        rating_counts = self._calculate_rating_distribution(base_query)
+        
+        # Calculate feature counts
+        verified_count = base_query.filter(Review.is_verified_purchase == True).count()
+        featured_count = base_query.filter(Review.is_featured == True).count()
+        with_media_count = base_query.filter(Review.media_count > 0).count()
+        
+        # Calculate sentiment metrics
+        positive_percentage = self._calculate_positive_sentiment_percentage(base_query, total_reviews)
+        
+        return {
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "total_reviews": total_reviews,
+            "average_rating": round(avg_rating, 2),
+            "rating_distribution": rating_counts,
+            "rating_1_count": rating_counts[1],
+            "rating_2_count": rating_counts[2],
+            "rating_3_count": rating_counts[3],
+            "rating_4_count": rating_counts[4],
+            "rating_5_count": rating_counts[5],
+            "verified_reviews_count": verified_count,
+            "featured_reviews_count": featured_count,
+            "with_media_count": with_media_count,
+            "positive_sentiment_percentage": round(positive_percentage, 2)
+        }
+    
+    def _calculate_rating_distribution(self, base_query) -> Dict[int, int]:
+        """Calculate rating distribution counts"""
+        return {
+            1: base_query.filter(Review.rating >= 1.0, Review.rating < 2.0).count(),
+            2: base_query.filter(Review.rating >= 2.0, Review.rating < 3.0).count(),
+            3: base_query.filter(Review.rating >= 3.0, Review.rating < 4.0).count(),
+            4: base_query.filter(Review.rating >= 4.0, Review.rating < 5.0).count(),
+            5: base_query.filter(Review.rating == 5.0).count()
+        }
+    
+    def _calculate_positive_sentiment_percentage(self, base_query, total_reviews: int) -> float:
+        """Calculate percentage of positive sentiment reviews"""
+        positive_sentiments = base_query.filter(
+            Review.sentiment_score.in_([SentimentScore.POSITIVE, SentimentScore.VERY_POSITIVE])
+        ).count()
+        
+        return (positive_sentiments / total_reviews) * 100 if total_reviews > 0 else 0.0
+    
+    def _save_or_update_aggregate(self, aggregate_data: Dict[str, Any]) -> ReviewAggregate:
+        """Save or update aggregate record in database"""
+        
+        entity_type = aggregate_data["entity_type"]
+        entity_id = aggregate_data["entity_id"]
         
         # Get or create aggregate record
         aggregate = self.db.query(ReviewAggregate).filter(
@@ -658,7 +784,8 @@ class ReviewService:
         if aggregate:
             # Update existing aggregate
             for key, value in aggregate_data.items():
-                setattr(aggregate, key, value)
+                if hasattr(aggregate, key):
+                    setattr(aggregate, key, value)
         else:
             # Create new aggregate
             aggregate = ReviewAggregate(**aggregate_data)

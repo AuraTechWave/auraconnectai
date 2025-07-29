@@ -2,12 +2,18 @@
 
 import asyncio
 import logging
+import smtplib
+import os
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from dataclasses import dataclass
 from enum import Enum
 import json
+import httpx
+from jinja2 import Template
 
 from backend.modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewInvitation, ReviewStatus, FeedbackStatus,
@@ -60,6 +66,156 @@ class NotificationRequest:
     metadata: Optional[Dict[str, Any]] = None
 
 
+class EmailBackend:
+    """Email notification backend using SMTP"""
+    
+    def __init__(self):
+        self.smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+        self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        self.smtp_username = os.getenv('SMTP_USERNAME', '')
+        self.smtp_password = os.getenv('SMTP_PASSWORD', '')
+        self.from_email = os.getenv('FROM_EMAIL', 'noreply@auraconnect.ai')
+        self.from_name = os.getenv('FROM_NAME', 'AuraConnect')
+    
+    async def send_email(self, to_email: str, subject: str, html_content: str, 
+                        text_content: Optional[str] = None) -> Dict[str, Any]:
+        """Send email using SMTP"""
+        try:
+            message = MIMEMultipart('alternative')
+            message['Subject'] = subject
+            message['From'] = f"{self.from_name} <{self.from_email}>"
+            message['To'] = to_email
+            
+            # Add text part
+            if text_content:
+                text_part = MIMEText(text_content, 'plain')
+                message.attach(text_part)
+            
+            # Add HTML part
+            html_part = MIMEText(html_content, 'html')
+            message.attach(html_part)
+            
+            # Send email
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                server.starttls()
+                if self.smtp_username and self.smtp_password:
+                    server.login(self.smtp_username, self.smtp_password)
+                server.send_message(message)
+            
+            return {
+                "success": True,
+                "message_id": f"email_{datetime.utcnow().timestamp()}",
+                "provider": "smtp"
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to send email to {to_email}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "provider": "smtp"
+            }
+
+
+class SMSBackend:
+    """SMS notification backend using Twilio"""
+    
+    def __init__(self):
+        self.account_sid = os.getenv('TWILIO_ACCOUNT_SID', '')
+        self.auth_token = os.getenv('TWILIO_AUTH_TOKEN', '')
+        self.from_phone = os.getenv('TWILIO_FROM_PHONE', '')
+        self.api_url = "https://api.twilio.com/2010-04-01/Accounts/{}/Messages.json"
+    
+    async def send_sms(self, to_phone: str, message: str) -> Dict[str, Any]:
+        """Send SMS using Twilio API"""
+        if not all([self.account_sid, self.auth_token, self.from_phone]):
+            logger.warning("Twilio credentials not configured, skipping SMS")
+            return {"success": False, "error": "SMS not configured"}
+        
+        try:
+            url = self.api_url.format(self.account_sid)
+            auth = (self.account_sid, self.auth_token)
+            data = {
+                'From': self.from_phone,
+                'To': to_phone,
+                'Body': message
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, auth=auth, data=data)
+                response.raise_for_status()
+                
+                result = response.json()
+                return {
+                    "success": True,
+                    "message_id": result.get('sid'),
+                    "provider": "twilio"
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to send SMS to {to_phone}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "provider": "twilio"
+            }
+
+
+class PushNotificationBackend:
+    """Push notification backend using Firebase Cloud Messaging"""
+    
+    def __init__(self):
+        self.server_key = os.getenv('FCM_SERVER_KEY', '')
+        self.api_url = "https://fcm.googleapis.com/fcm/send"
+    
+    async def send_push(self, device_token: str, title: str, body: str, 
+                       data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Send push notification using FCM"""
+        if not self.server_key:
+            logger.warning("FCM server key not configured, skipping push notification")
+            return {"success": False, "error": "Push notifications not configured"}
+        
+        try:
+            headers = {
+                'Authorization': f'key={self.server_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            payload = {
+                'to': device_token,
+                'notification': {
+                    'title': title,
+                    'body': body
+                }
+            }
+            
+            if data:
+                payload['data'] = data
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.api_url, 
+                    headers=headers, 
+                    json=payload
+                )
+                response.raise_for_status()
+                
+                result = response.json()
+                return {
+                    "success": True,
+                    "message_id": result.get('multicast_id'),
+                    "provider": "fcm"
+                }
+                
+        except Exception as e:
+            logger.error(f"Failed to send push notification to {device_token}: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "provider": "fcm"
+            }
+
+
 class NotificationService:
     """Service for sending notifications related to reviews and feedback"""
     
@@ -68,6 +224,11 @@ class NotificationService:
         self.templates = self._load_notification_templates()
         self.notification_handlers = self._setup_notification_handlers()
         self.rate_limits = self._load_rate_limits()
+        
+        # Initialize backend services
+        self.email_backend = EmailBackend()
+        self.sms_backend = SMSBackend()
+        self.push_backend = PushNotificationBackend()
     
     async def send_review_notification(
         self,
@@ -617,19 +778,38 @@ class NotificationService:
     ) -> Dict[str, str]:
         """Render notification template with variables"""
         
-        # Simple template rendering (in production, use a proper template engine)
-        rendered_subject = template.subject
-        rendered_content = template.content
-        
-        for key, value in variables.items():
-            placeholder = f"{{{key}}}"
-            rendered_subject = rendered_subject.replace(placeholder, str(value))
-            rendered_content = rendered_content.replace(placeholder, str(value))
-        
-        return {
-            "subject": rendered_subject,
-            "content": rendered_content
-        }
+        try:
+            from backend.modules.feedback.templates.email_templates import render_email_template
+            
+            # Use proper email templates for email notifications
+            if template.template_id.startswith('review_') or template.template_id.startswith('feedback_'):
+                try:
+                    rendered = render_email_template(template.template_id, variables)
+                    return rendered
+                except ValueError:
+                    # Fall back to simple rendering if template not found
+                    pass
+            
+            # Simple template rendering fallback
+            rendered_subject = template.subject
+            rendered_content = template.content
+            
+            for key, value in variables.items():
+                placeholder = f"{{{key}}}"
+                rendered_subject = rendered_subject.replace(placeholder, str(value))
+                rendered_content = rendered_content.replace(placeholder, str(value))
+            
+            return {
+                "subject": rendered_subject,
+                "content": rendered_content
+            }
+            
+        except Exception as e:
+            logger.error(f"Error rendering template: {e}")
+            return {
+                "subject": "Notification",
+                "content": "A notification was generated for you."
+            }
     
     def _check_rate_limit(self, request: NotificationRequest) -> bool:
         """Check if notification is within rate limits"""
@@ -793,16 +973,22 @@ class NotificationService:
         """Send email notification"""
         
         try:
-            # Mock email sending - in production, integrate with email service
-            logger.info(f"Sending email to {request.recipient_email}: {rendered_content['subject']}")
+            if not request.recipient_email:
+                return {"success": False, "error": "No recipient email provided"}
             
-            # Simulate email sending delay
-            await asyncio.sleep(0.1)
+            # Send email using the email backend
+            result = await self.email_backend.send_email(
+                to_email=request.recipient_email,
+                subject=rendered_content['subject'],
+                html_content=rendered_content['content'],
+                text_content=rendered_content.get('text_content')
+            )
             
-            return {"success": True, "message_id": f"email_{datetime.utcnow().timestamp()}"}
+            logger.info(f"Email sent to {request.recipient_email}: {result}")
+            return result
             
         except Exception as e:
-            logger.error(f"Error sending email: {e}")
+            logger.error(f"Error sending email notification: {e}")
             return {"success": False, "error": str(e)}
     
     async def _send_sms_notification(
@@ -813,15 +999,20 @@ class NotificationService:
         """Send SMS notification"""
         
         try:
-            # Mock SMS sending - in production, integrate with SMS service
-            logger.info(f"Sending SMS to {request.recipient_phone}: {rendered_content['content'][:50]}...")
+            if not request.recipient_phone:
+                return {"success": False, "error": "No recipient phone provided"}
             
-            await asyncio.sleep(0.1)
+            # Send SMS using the SMS backend
+            result = await self.sms_backend.send_sms(
+                to_phone=request.recipient_phone,
+                message=rendered_content['content']
+            )
             
-            return {"success": True, "message_id": f"sms_{datetime.utcnow().timestamp()}"}
+            logger.info(f"SMS sent to {request.recipient_phone}: {result}")
+            return result
             
         except Exception as e:
-            logger.error(f"Error sending SMS: {e}")
+            logger.error(f"Error sending SMS notification: {e}")
             return {"success": False, "error": str(e)}
     
     async def _send_push_notification(
@@ -832,12 +1023,22 @@ class NotificationService:
         """Send push notification"""
         
         try:
-            # Mock push notification - in production, integrate with push service
-            logger.info(f"Sending push notification to user {request.recipient_id}")
+            # Get device token for the user (this would come from user preferences/device registration)
+            device_token = self._get_user_device_token(request.recipient_id)
             
-            await asyncio.sleep(0.05)
+            if not device_token:
+                return {"success": False, "error": "No device token found for user"}
             
-            return {"success": True, "message_id": f"push_{datetime.utcnow().timestamp()}"}
+            # Send push notification using the push backend
+            result = await self.push_backend.send_push(
+                device_token=device_token,
+                title=rendered_content['subject'],
+                body=rendered_content['content'],
+                data=request.metadata
+            )
+            
+            logger.info(f"Push notification sent to user {request.recipient_id}: {result}")
+            return result
             
         except Exception as e:
             logger.error(f"Error sending push notification: {e}")
@@ -889,6 +1090,17 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Error sending webhook: {e}")
             return {"success": False, "error": str(e)}
+    
+    def _get_user_device_token(self, user_id: Optional[int]) -> Optional[str]:
+        """Get device token for push notifications (mock implementation)"""
+        if not user_id:
+            return None
+        
+        # In a real implementation, this would query the user's device registration table
+        # For now, return a mock device token for testing
+        # return self.db.query(UserDevice).filter(...).first().device_token
+        
+        return f"mock_device_token_{user_id}"
 
 
 # Global notification service instance
