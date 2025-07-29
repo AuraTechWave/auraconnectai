@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Union
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import logging
 
 from backend.core.database import get_db
@@ -161,7 +161,7 @@ async def generate_detailed_sales_report(
     sort_by: str = Query("total_revenue", description="Field to sort by"),
     sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
 ):
     """
     Generate detailed sales report with filtering and pagination.
@@ -194,7 +194,7 @@ async def generate_staff_performance_report(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(50, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_STAFF_REPORTS))
 ):
     """
     Generate staff performance analytics report.
@@ -225,7 +225,7 @@ async def generate_product_performance_report(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(50, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PRODUCT_REPORTS))
 ):
     """
     Generate product performance analytics report.
@@ -257,7 +257,7 @@ async def get_quick_stats(
     staff_id: Optional[int] = Query(None, description="Filter by staff member"),
     category_id: Optional[int] = Query(None, description="Filter by category"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
 ):
     """
     Get quick statistics for the specified period and filters.
@@ -310,7 +310,7 @@ async def get_top_performers(
     limit: int = Query(10, ge=1, le=50, description="Number of top performers"),
     entity_type: str = Query("staff", regex="^(staff|product|category)$", description="Entity type"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
 ):
     """
     Get top performers for the specified metric and period.
@@ -378,7 +378,7 @@ async def get_trends(
     period_days: int = Query(30, ge=7, le=365, description="Period in days"),
     granularity: str = Query("daily", regex="^(hourly|daily|weekly)$", description="Data granularity"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
 ):
     """
     Get trend data for the specified metric and period.
@@ -462,7 +462,7 @@ async def health_check():
 async def export_to_csv(
     request: SalesReportRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS))
 ):
     """
     Export sales report to CSV format.
@@ -492,7 +492,7 @@ async def export_to_csv(
 async def export_to_pdf(
     request: SalesReportRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS))
 ):
     """
     Export sales report to PDF format.
@@ -522,7 +522,7 @@ async def export_to_pdf(
 async def export_to_excel(
     request: SalesReportRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS))
 ):
     """
     Export sales report to Excel format.
