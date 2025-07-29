@@ -10,3 +10,4 @@ mkdocs-material
 redis
 websockets
 asyncio-mqtt
+numpy

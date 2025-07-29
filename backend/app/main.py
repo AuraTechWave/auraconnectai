@@ -52,6 +52,15 @@ from backend.modules.inventory.routes.inventory_routes import (
 from backend.modules.inventory.routes.vendor_routes import (
     router as vendor_management_router
 )
+from backend.modules.analytics.routers.analytics_router import (
+    router as analytics_router
+)
+from backend.modules.analytics.routers.realtime_router import (
+    router as realtime_analytics_router  
+)
+from backend.modules.analytics.routers.ai_insights_router import (
+    router as ai_insights_router
+)
 from backend.core.menu_versioning_triggers import init_versioning_triggers
 
 # FastAPI app with enhanced OpenAPI documentation
@@ -132,6 +141,9 @@ app.include_router(menu_inventory_router)
 app.include_router(menu_versioning_router)
 app.include_router(inventory_management_router)
 app.include_router(vendor_management_router)
+app.include_router(analytics_router)
+app.include_router(realtime_analytics_router)
+app.include_router(ai_insights_router)
 
 # Initialize menu versioning triggers
 init_versioning_triggers()
