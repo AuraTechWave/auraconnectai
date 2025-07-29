@@ -288,3 +288,90 @@ def mock_staff_user(sample_staff_member):
         "email": sample_staff_member.email,
         "role": "staff"
     }
+
+
+@pytest.fixture
+def performance_test_data(db_session: Session):
+    """Create large dataset specifically for performance testing"""
+    from datetime import date, datetime, timedelta
+    from decimal import Decimal
+    from ..models.analytics_models import SalesAnalyticsSnapshot, AggregationPeriod
+    
+    snapshots = []
+    
+    # Generate 2,000 snapshots for performance tests
+    start_date = date.today() - timedelta(days=365)
+    for i in range(2000):
+        snapshot_date = start_date + timedelta(days=i % 365)
+        
+        snapshot = SalesAnalyticsSnapshot(
+            snapshot_date=snapshot_date,
+            period_type=AggregationPeriod.DAILY,
+            total_orders=20 + (i % 50),
+            total_revenue=Decimal(str(400 + (i * 3))),
+            total_items_sold=40 + (i % 80),
+            average_order_value=Decimal(str(15 + (i % 25))),
+            total_discounts=Decimal(str(20 + (i % 10))),
+            total_tax=Decimal(str(30 + (i % 8))),
+            net_revenue=Decimal(str(380 + (i * 2.8))),
+            unique_customers=15 + (i % 30),
+            staff_id=(i % 15) + 1 if i % 5 == 0 else None,
+            product_id=(i % 75) + 1 if i % 7 == 0 else None,
+            calculated_at=datetime.now()
+        )
+        snapshots.append(snapshot)
+        
+        # Batch insert every 200 records for performance
+        if len(snapshots) >= 200:
+            db_session.bulk_save_objects(snapshots)
+            db_session.commit()
+            snapshots = []
+    
+    # Insert remaining snapshots
+    if snapshots:
+        db_session.bulk_save_objects(snapshots)
+        db_session.commit()
+    
+    return True  # Return success indicator
+
+
+@pytest.fixture
+def mock_user_with_permissions():
+    """Create mock user with various permission levels for testing"""
+    return {
+        "id": 1,
+        "role": "manager",
+        "analytics_role": "analytics_manager",
+        "is_admin": False,
+        "analytics_permissions": [
+            "analytics:view_dashboard",
+            "analytics:view_sales_reports",
+            "analytics:export_reports"
+        ]
+    }
+
+
+@pytest.fixture
+def mock_admin_user():
+    """Create mock admin user with all permissions"""
+    return {
+        "id": 1,
+        "role": "admin",
+        "analytics_role": "analytics_admin",
+        "is_admin": True,
+        "analytics_permissions": []  # Admin gets all permissions automatically
+    }
+
+
+@pytest.fixture
+def mock_limited_user():
+    """Create mock user with limited permissions for negative testing"""
+    return {
+        "id": 2,
+        "role": "staff",
+        "analytics_role": "analytics_viewer",
+        "is_admin": False,
+        "analytics_permissions": [
+            "analytics:view_dashboard"
+        ]
+    }

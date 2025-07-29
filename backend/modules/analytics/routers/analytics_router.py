@@ -11,6 +11,13 @@ from backend.core.database import get_db
 from backend.core.auth import get_current_staff_user
 from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
+from ..services.permissions_service import (
+    AnalyticsPermission, PermissionsService, require_analytics_permission
+)
+from ..services.async_processing import (
+    async_processor, TaskStatus, submit_large_report_task
+)
+
 from ..services.sales_report_service import SalesReportService
 from ..schemas.analytics_schemas import (
     SalesFilterRequest, SalesSummaryResponse, SalesDetailResponse,
@@ -28,7 +35,7 @@ logger = logging.getLogger(__name__)
 async def get_dashboard_metrics(
     current_date: Optional[date] = Query(None, description="Date for dashboard metrics"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Get real-time dashboard metrics for sales analytics.
@@ -52,7 +59,7 @@ async def get_dashboard_metrics(
 async def generate_sales_summary(
     filters: SalesFilterRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
 ):
     """
     Generate a comprehensive sales summary report.
@@ -311,40 +318,42 @@ async def get_trends(
     Supports different granularities and metrics.
     """
     try:
-        # This would implement trend calculation logic
-        # For now, return a placeholder structure
+        # Use optimized trend service for better performance
+        from ..services.trend_service import TrendService
         
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=period_days)
         
-        # Generate mock trend data (would be replaced with actual calculation)
-        trend_data = []
+        trend_service = TrendService(db)
         
-        current_date = start_date
-        while current_date <= end_date:
-            # Get data for this period
-            filters = SalesFilterRequest(
-                date_from=current_date,
-                date_to=current_date
+        # Get trend data using optimized snapshots
+        if metric == "revenue":
+            trend_points = trend_service.get_revenue_trend(
+                start_date, end_date, granularity
             )
-            
-            service = SalesReportService(db)
-            day_summary = service.generate_sales_summary(filters)
-            
-            value = 0
-            if metric == "revenue":
-                value = float(day_summary.total_revenue)
-            elif metric == "orders":
-                value = day_summary.total_orders
-            elif metric == "customers":
-                value = day_summary.unique_customers
-            
-            trend_data.append({
-                "date": current_date.isoformat(),
-                "value": value
-            })
-            
-            current_date += timedelta(days=1)
+        elif metric == "orders":
+            trend_points = trend_service.get_order_trend(
+                start_date, end_date, granularity
+            )
+        elif metric == "customers":
+            trend_points = trend_service.get_customer_trend(
+                start_date, end_date, granularity
+            )
+        else:
+            trend_points = []
+        
+        # Format for API response
+        trend_data = [
+            {
+                "date": point.date.isoformat(),
+                "value": point.value,
+                "change_percentage": point.change_percentage
+            }
+            for point in trend_points
+        ]
+        
+        # Get trend statistics
+        trend_stats = trend_service.get_trend_statistics(trend_points)
         
         return {
             "metric": metric,
@@ -354,7 +363,8 @@ async def get_trends(
                 "days": period_days
             },
             "granularity": granularity,
-            "data": trend_data
+            "data": trend_data,
+            "statistics": trend_stats
         }
     
     except Exception as e:
@@ -378,7 +388,7 @@ async def health_check():
     }
 
 
-# Export endpoints (would be implemented with actual export logic)
+# Export endpoints with full implementation
 @router.post("/export/csv")
 async def export_to_csv(
     request: SalesReportRequest,
@@ -387,12 +397,26 @@ async def export_to_csv(
 ):
     """
     Export sales report to CSV format.
+    
+    Supports all report types: sales_summary, sales_detailed, 
+    staff_performance, and product_performance.
     """
-    # This would implement CSV export logic
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="CSV export functionality is not yet implemented"
-    )
+    try:
+        from ..services.export_service import ExportService
+        export_service = ExportService(db)
+        
+        return await export_service.export_sales_report(
+            request=request,
+            format_type="csv",
+            executed_by=current_user["id"]
+        )
+    
+    except Exception as e:
+        logger.error(f"Error exporting CSV: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export CSV report"
+        )
 
 
 @router.post("/export/pdf")
@@ -403,12 +427,26 @@ async def export_to_pdf(
 ):
     """
     Export sales report to PDF format.
+    
+    Creates a professional PDF report with tables, charts, and formatting.
+    Requires ReportLab library: pip install reportlab
     """
-    # This would implement PDF export logic
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="PDF export functionality is not yet implemented"
-    )
+    try:
+        from ..services.export_service import ExportService
+        export_service = ExportService(db)
+        
+        return await export_service.export_sales_report(
+            request=request,
+            format_type="pdf",
+            executed_by=current_user["id"]
+        )
+    
+    except Exception as e:
+        logger.error(f"Error exporting PDF: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export PDF report"
+        )
 
 
 @router.post("/export/excel")
@@ -419,9 +457,430 @@ async def export_to_excel(
 ):
     """
     Export sales report to Excel format.
+    
+    Creates a formatted Excel workbook with styling, formulas, and charts.
+    Requires OpenPyXL library: pip install openpyxl
     """
-    # This would implement Excel export logic
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Excel export functionality is not yet implemented"
-    )
+    try:
+        from ..services.export_service import ExportService
+        export_service = ExportService(db)
+        
+        return await export_service.export_sales_report(
+            request=request,
+            format_type="xlsx",
+            executed_by=current_user["id"]
+        )
+    
+    except Exception as e:
+        logger.error(f"Error exporting Excel: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to export Excel report"
+        )
+
+
+# Alerting endpoints
+@router.post("/alerts/rules")
+async def create_alert_rule(
+    name: str,
+    description: str,
+    metric_name: str,
+    condition_type: str,
+    threshold_value: float,
+    evaluation_period: str,
+    notification_channels: List[str],
+    notification_recipients: List[str],
+    comparison_period: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Create a new alert rule for sales analytics.
+    
+    Monitor metrics and trigger notifications when conditions are met.
+    """
+    try:
+        from ..services.alerting_service import AlertingService
+        
+        alerting_service = AlertingService(db)
+        
+        rule = alerting_service.create_alert_rule(
+            name=name,
+            description=description,
+            metric_name=metric_name,
+            condition_type=condition_type,
+            threshold_value=Decimal(str(threshold_value)),
+            evaluation_period=evaluation_period,
+            notification_channels=notification_channels,
+            notification_recipients=notification_recipients,
+            created_by=current_user["id"],
+            comparison_period=comparison_period
+        )
+        
+        return {
+            "success": True,
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "message": "Alert rule created successfully"
+        }
+    
+    except Exception as e:
+        logger.error(f"Error creating alert rule: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create alert rule"
+        )
+
+
+@router.get("/alerts/rules")
+async def get_alert_rules(
+    include_inactive: bool = Query(False, description="Include inactive rules"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Get all alert rules for the current user.
+    """
+    try:
+        from ..services.alerting_service import AlertingService
+        
+        alerting_service = AlertingService(db)
+        rules = alerting_service.get_alert_rules(
+            include_inactive=include_inactive,
+            created_by=current_user["id"]
+        )
+        
+        return [
+            {
+                "id": rule.id,
+                "name": rule.name,
+                "description": rule.description,
+                "metric_name": rule.metric_name,
+                "condition_type": rule.condition_type,
+                "threshold_value": float(rule.threshold_value),
+                "evaluation_period": rule.evaluation_period,
+                "is_active": rule.is_active,
+                "trigger_count": rule.trigger_count,
+                "last_triggered_at": rule.last_triggered_at,
+                "created_at": rule.created_at
+            }
+            for rule in rules
+        ]
+    
+    except Exception as e:
+        logger.error(f"Error getting alert rules: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve alert rules"
+        )
+
+
+@router.post("/alerts/evaluate")
+async def evaluate_alerts(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Manually trigger evaluation of all active alert rules.
+    """
+    try:
+        from ..services.alerting_service import AlertingService
+        
+        alerting_service = AlertingService(db)
+        results = await alerting_service.evaluate_all_alerts()
+        
+        return results
+    
+    except Exception as e:
+        logger.error(f"Error evaluating alerts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to evaluate alerts"
+        )
+
+
+@router.post("/alerts/rules/{rule_id}/test")
+async def test_alert_rule(
+    rule_id: int,
+    test_value: Optional[float] = Query(None, description="Test value to evaluate"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Test an alert rule without triggering notifications.
+    """
+    try:
+        from ..services.alerting_service import AlertingService
+        from ..models.analytics_models import AlertRule
+        
+        # Get the rule
+        rule = db.query(AlertRule).filter(AlertRule.id == rule_id).first()
+        if not rule:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Alert rule not found"
+            )
+        
+        alerting_service = AlertingService(db)
+        result = await alerting_service.test_alert_rule(rule, test_value)
+        
+        return result
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error testing alert rule: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to test alert rule"
+        )
+
+
+@router.get("/alerts/history")
+async def get_alert_history(
+    rule_id: Optional[int] = Query(None, description="Filter by rule ID"),
+    days_back: int = Query(30, ge=1, le=365, description="Days of history"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Get alert trigger history.
+    """
+    try:
+        from ..services.alerting_service import AlertingService
+        
+        alerting_service = AlertingService(db)
+        history = await alerting_service.get_alert_history(rule_id, days_back)
+        
+        return {
+            "history": history,
+            "total_alerts": len(history),
+            "period_days": days_back
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting alert history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve alert history"
+        )
+
+
+# Async processing endpoints
+@router.post("/async/large-report")
+async def submit_large_report(
+    filters: SalesFilterRequest,
+    limit: int = Query(50000, ge=1000, le=100000, description="Maximum records to include"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_SALES_REPORTS))
+):
+    """
+    Submit a large report generation task for async processing.
+    
+    Use this endpoint for reports that may take a long time to generate.
+    Returns a task ID that can be used to check progress.
+    """
+    try:
+        # Apply data access filters based on permissions
+        access_filters = PermissionsService.get_data_access_filters(current_user)
+        
+        # Merge with user filters
+        filter_dict = filters.dict()
+        if "staff_ids" in access_filters:
+            filter_dict["staff_ids"] = access_filters["staff_ids"]
+        
+        task_id = await submit_large_report_task(
+            filters=filter_dict,
+            user_id=current_user["id"],
+            limit=limit
+        )
+        
+        return {
+            "success": True,
+            "task_id": task_id,
+            "message": "Large report task submitted successfully",
+            "estimated_time": "2-10 minutes depending on data size"
+        }
+    
+    except Exception as e:
+        logger.error(f"Error submitting large report task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit large report task"
+        )
+
+
+@router.get("/async/tasks/{task_id}")
+async def get_task_status(
+    task_id: str,
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Get the status of an async task.
+    """
+    try:
+        task = async_processor.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        # Check if user can access this task
+        if task.created_by != current_user["id"] and not PermissionsService.has_permission(
+            current_user, AnalyticsPermission.ADMIN_ANALYTICS
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this task"
+            )
+        
+        return {
+            "task_id": task.id,
+            "task_type": task.task_type,
+            "status": task.status.value,
+            "progress": task.progress,
+            "created_at": task.created_at,
+            "started_at": task.started_at,
+            "completed_at": task.completed_at,
+            "result": task.result,
+            "error": task.error
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting task status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve task status"
+        )
+
+
+@router.get("/async/tasks")
+async def get_user_tasks(
+    status_filter: Optional[TaskStatus] = Query(None, description="Filter by task status"),
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Get all async tasks for the current user.
+    """
+    try:
+        tasks = async_processor.get_user_tasks(
+            user_id=current_user["id"],
+            status_filter=status_filter
+        )
+        
+        return {
+            "tasks": [
+                {
+                    "task_id": task.id,
+                    "task_type": task.task_type,
+                    "status": task.status.value,
+                    "progress": task.progress,
+                    "created_at": task.created_at,
+                    "completed_at": task.completed_at,
+                    "error": task.error
+                }
+                for task in tasks
+            ],
+            "total_tasks": len(tasks)
+        }
+    
+    except Exception as e:
+        logger.error(f"Error getting user tasks: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve user tasks"
+        )
+
+
+@router.delete("/async/tasks/{task_id}")
+async def cancel_task(
+    task_id: str,
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Cancel a pending or running async task.
+    """
+    try:
+        task = async_processor.get_task_status(task_id)
+        
+        if not task:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        # Check if user can cancel this task
+        if task.created_by != current_user["id"] and not PermissionsService.has_permission(
+            current_user, AnalyticsPermission.ADMIN_ANALYTICS
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to cancel this task"
+            )
+        
+        success = async_processor.cancel_task(task_id)
+        
+        if success:
+            return {
+                "success": True,
+                "message": "Task cancelled successfully"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Task cannot be cancelled (already completed or failed)"
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error cancelling task: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to cancel task"
+        )
+
+
+@router.get("/async/queue-status")
+async def get_queue_status(
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
+):
+    """
+    Get overall async queue status (admin only).
+    """
+    try:
+        status = async_processor.get_queue_status()
+        return status
+    
+    except Exception as e:
+        logger.error(f"Error getting queue status: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve queue status"
+        )
+
+
+# Permissions endpoints
+@router.get("/permissions/summary")
+async def get_permissions_summary(
+    current_user: dict = Depends(get_current_staff_user)
+):
+    """
+    Get summary of current user's analytics permissions.
+    """
+    try:
+        from ..services.permissions_service import get_permission_summary
+        
+        summary = get_permission_summary(current_user)
+        return summary
+    
+    except Exception as e:
+        logger.error(f"Error getting permissions summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve permissions summary"
+        )
