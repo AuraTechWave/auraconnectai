@@ -23,6 +23,10 @@ from backend.modules.tax.models.tax_models import TaxRule as ExistingTaxRule
 from backend.modules.payroll.models.payroll_models import (
     TaxRule, PayrollPolicy, EmployeePayment, EmployeePaymentTaxApplication
 )
+from backend.modules.feedback.models.feedback_models import (
+    Review, Feedback, ReviewAggregate, ReviewTemplate, ReviewInvitation,
+    ReviewMedia, ReviewVote, BusinessResponse, FeedbackResponse, FeedbackCategory
+)
 
 target_metadata = Base.metadata
 
