@@ -78,6 +78,17 @@ class Settings(BaseSettings):
     rbac_deny_precedence: bool = True  # Deny permissions always take precedence
     rbac_session_cache_ttl_minutes: int = 15  # Session cache TTL
     
+    # Order Sync Configuration
+    CLOUD_SYNC_ENDPOINT: str = "https://api.auraconnect.ai/sync"
+    CLOUD_API_KEY: str = ""
+    POS_TERMINAL_ID: str = "POS-001"
+    
+    # Sync Settings
+    SYNC_ENABLED: bool = True
+    SYNC_INTERVAL_MINUTES: int = 10
+    SYNC_BATCH_SIZE: int = 50
+    SYNC_MAX_RETRIES: int = 3
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
