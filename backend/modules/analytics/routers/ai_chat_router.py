@@ -239,6 +239,43 @@ async def chat_websocket_endpoint(
         manager.disconnect(client_id)
 
 
+@router.post("/batch", response_model=List[ChatResponse])
+async def send_batch_messages(
+    requests: List[ChatRequest],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Process multiple chat messages in batch.
+    
+    Useful for:
+    - Processing multiple queries at once
+    - Analyzing different aspects of data simultaneously
+    - Improving performance for bulk operations
+    
+    Note: Messages are grouped by session to maintain context.
+    """
+    try:
+        # Validate batch size
+        if len(requests) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 10 messages per batch"
+            )
+        
+        responses = await chat_service.process_batch_messages(
+            requests,
+            user_id=current_user.id,
+            db=db
+        )
+        return responses
+    except Exception as e:
+        logger.error(f"Batch processing error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process batch messages"
+        )
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat_rest_endpoint(
     request: ChatRequest,

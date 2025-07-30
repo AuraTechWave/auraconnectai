@@ -151,9 +151,9 @@ class AIResultFormatter:
         """Check if label appears to be a date"""
         try:
             # Try common date formats
-            for fmt in ['%Y-%m-%d', '%Y/%m/%d', '%d-%m-%Y', '%m/%d/%Y']:
+            for date_format in ['%Y-%m-%d', '%Y/%m/%d', '%d-%m-%Y', '%m/%d/%Y']:
                 try:
-                    datetime.strptime(label, fmt)
+                    datetime.strptime(label, date_format)
                     return True
                 except ValueError:
                     continue
@@ -163,7 +163,8 @@ class AIResultFormatter:
                 return True
             
             return False
-        except:
+        except Exception as e:
+            logger.debug(f"Date label check failed for '{label}': {e}")
             return False
     
     def _is_distribution_data(self, data: List[DataPoint]) -> bool:
@@ -171,7 +172,8 @@ class AIResultFormatter:
         try:
             total = sum(float(point.value) for point in data if isinstance(point.value, (int, float)))
             return 95 <= total <= 105  # Allow some tolerance
-        except:
+        except Exception as e:
+            logger.debug(f"Distribution data check failed: {e}")
             return False
     
     def create_summary_text(self, query_result: QueryResult, query: AnalyticsQuery) -> str:
@@ -227,26 +229,26 @@ class AIResultFormatter:
             # Calculate statistics
             total = sum(values)
             average = total / len(values)
-            max_val = max(values)
-            min_val = min(values)
+            maximum_value = max(values)
+            minimum_value = min(values)
             
             # Find corresponding labels
-            max_point = next(p for p in chart_data.data if float(p.value) == max_val)
-            min_point = next(p for p in chart_data.data if float(p.value) == min_val)
+            max_point = next(p for p in chart_data.data if float(p.value) == maximum_value)
+            min_point = next(p for p in chart_data.data if float(p.value) == minimum_value)
             
             # Create summary based on chart type
             if chart_data.type == ChartType.PIE:
                 summaries.append(f"Total across all segments: {self.format_value(total, 'currency')}")
-                summaries.append(f"Largest segment: {max_point.label} ({self.format_value(max_val, 'currency')})")
+                summaries.append(f"Largest segment: {max_point.label} ({self.format_value(maximum_value, 'currency')})")
             elif chart_data.type in [ChartType.LINE, ChartType.AREA]:
                 if self._is_date_label(chart_data.data[0].label):
                     summaries.append(f"Period range: {chart_data.data[0].label} to {chart_data.data[-1].label}")
                 summaries.append(f"Average: {self.format_value(average, 'currency')}")
-                summaries.append(f"Peak: {self.format_value(max_val, 'currency')} on {max_point.label}")
-                summaries.append(f"Low: {self.format_value(min_val, 'currency')} on {min_point.label}")
+                summaries.append(f"Peak: {self.format_value(maximum_value, 'currency')} on {max_point.label}")
+                summaries.append(f"Low: {self.format_value(minimum_value, 'currency')} on {min_point.label}")
             else:
-                summaries.append(f"Highest: {max_point.label} ({self.format_value(max_val, 'currency')})")
-                summaries.append(f"Lowest: {min_point.label} ({self.format_value(min_val, 'currency')})")
+                summaries.append(f"Highest: {max_point.label} ({self.format_value(maximum_value, 'currency')})")
+                summaries.append(f"Lowest: {min_point.label} ({self.format_value(minimum_value, 'currency')})")
                 summaries.append(f"Average: {self.format_value(average, 'currency')}")
         
         return " | ".join(summaries) if summaries else None
@@ -261,22 +263,22 @@ class AIResultFormatter:
             summaries.append(f"Showing {len(table_data.rows)} records")
         
         # Summarize numeric columns
-        for col in table_data.columns:
-            if col['type'] in ['number', 'currency', 'percentage']:
-                col_values = [
-                    float(row[col['key']]) 
+        for column in table_data.columns:
+            if column['type'] in ['number', 'currency', 'percentage']:
+                column_values = [
+                    float(row[column['key']]) 
                     for row in table_data.rows 
-                    if col['key'] in row and isinstance(row[col['key']], (int, float))
+                    if column['key'] in row and isinstance(row[column['key']], (int, float))
                 ]
                 
-                if col_values:
-                    total = sum(col_values)
-                    avg = total / len(col_values)
+                if column_values:
+                    total = sum(column_values)
+                    average = total / len(column_values)
                     
-                    if col['type'] == 'currency':
-                        summaries.append(f"Total {col['label']}: {self.format_value(total, 'currency')}")
+                    if column['type'] == 'currency':
+                        summaries.append(f"Total {column['label']}: {self.format_value(total, 'currency')}")
                     else:
-                        summaries.append(f"Average {col['label']}: {self.format_value(avg, col['type'])}")
+                        summaries.append(f"Average {column['label']}: {self.format_value(average, column['type'])}")
         
         return " | ".join(summaries) if summaries else None
     

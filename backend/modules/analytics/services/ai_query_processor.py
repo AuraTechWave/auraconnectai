@@ -192,7 +192,22 @@ class AIQueryProcessor:
         return text.strip()
     
     def _detect_intent(self, text: str, context: Optional[QueryContext] = None) -> Tuple[QueryIntent, float]:
-        """Detect the intent of the query"""
+        """
+        Detect the intent of the query using pattern matching.
+        
+        Args:
+            text: The user's query text
+            context: Optional conversation context for better intent detection
+            
+        Returns:
+            Tuple of (intent, confidence_score)
+            - intent: The detected QueryIntent enum value
+            - confidence_score: Float between 0.0 and 1.0 indicating confidence
+            
+        Note:
+            Uses regex patterns and keyword matching to determine intent.
+            Context can boost confidence for follow-up queries.
+        """
         scores = {}
         
         # Check each intent pattern

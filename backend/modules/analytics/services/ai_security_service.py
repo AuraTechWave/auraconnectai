@@ -211,6 +211,17 @@ class AISecurityService:
             
         Returns:
             Complexity score (0.0 to 10.0)
+            
+        Scoring factors:
+            - Time range: 0.01 per day
+            - Entities: 0.1 per entity
+            - Metrics: 0.2 per metric
+            - Grouping: 0.3 per group field
+            - Forecast queries: +2.0
+            - Comparison queries: +1.5
+            
+        Example:
+            Query for 30 days with 3 metrics and 2 groupings = 1.5 complexity
         """
         score = 0.0
         

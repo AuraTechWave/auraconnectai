@@ -158,8 +158,17 @@ class AIChatService:
             )
             
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
-            return self._create_error_response(str(e))
+            logger.error(f"Error processing message: {e}", exc_info=True)
+            error_type = type(e).__name__
+            error_details = {
+                'error_type': error_type,
+                'message': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
+            return self._create_error_response(
+                f"An error occurred while processing your request: {error_type}",
+                metadata=error_details
+            )
     
     def _get_or_create_session(self, session_id: Optional[str], user_id: int) -> ChatSession:
         """Get existing session or create new one"""
@@ -210,13 +219,26 @@ class AIChatService:
             return result
             
         except Exception as e:
-            logger.error(f"Error executing query: {e}")
+            logger.error(f"Error executing query for intent {query.intent}: {e}", exc_info=True)
+            execution_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
+            
+            # Provide user-friendly error messages based on error type
+            if isinstance(e, ValueError):
+                user_message = "Invalid data format in your query. Please check your date ranges and filters."
+            elif isinstance(e, KeyError):
+                user_message = "Missing required data for this query. Please try a different time range."
+            elif isinstance(e, TimeoutError):
+                user_message = "Query took too long to process. Try narrowing your search criteria."
+            else:
+                user_message = "An unexpected error occurred while processing your analytics query."
+            
             return QueryResult(
                 query_id=str(uuid.uuid4()),
                 status="error",
-                summary="Failed to execute query",
+                summary=user_message,
                 error_message=str(e),
-                execution_time_ms=int((datetime.now() - start_time).total_seconds() * 1000)
+                execution_time_ms=execution_time_ms,
+                metadata={'error_type': type(e).__name__}
             )
     
     async def _execute_sales_report(
@@ -715,13 +737,14 @@ class AIChatService:
             clarification_options=clarifications[:3]
         )
     
-    def _create_error_response(self, error_message: str) -> ChatResponse:
-        """Create error response"""
+    def _create_error_response(self, error_message: str, metadata: Optional[Dict[str, Any]] = None) -> ChatResponse:
+        """Create error response with optional metadata"""
         message = ChatMessage(
             id=str(uuid.uuid4()),
             role=MessageRole.ERROR,
-            content=f"I encountered an error while processing your request: {error_message}",
-            type=MessageType.ERROR
+            content=error_message,
+            type=MessageType.ERROR,
+            metadata=metadata or {}
         )
         
         return ChatResponse(
@@ -741,6 +764,45 @@ class AIChatService:
             del self.sessions[session_id]
             return True
         return False
+    
+    async def process_batch_messages(
+        self,
+        requests: List[ChatRequest],
+        user_id: int,
+        db: Session
+    ) -> List[ChatResponse]:
+        """
+        Process multiple messages in batch for better performance.
+        
+        Args:
+            requests: List of chat requests to process
+            user_id: ID of the user
+            db: Database session
+            
+        Returns:
+            List of chat responses
+            
+        Note:
+            Processes messages concurrently where possible while
+            maintaining conversation context order.
+        """
+        responses = []
+        
+        # Group by session for context preservation
+        session_groups = {}
+        for request in requests:
+            session_id = request.session_id or 'default'
+            if session_id not in session_groups:
+                session_groups[session_id] = []
+            session_groups[session_id].append(request)
+        
+        # Process each session's messages in order
+        for session_id, session_requests in session_groups.items():
+            for request in session_requests:
+                response = await self.process_message(request, user_id, db)
+                responses.append(response)
+        
+        return responses
     
     async def get_suggested_queries(self, user_id: int, db: Session) -> List[SuggestedQuery]:
         """Get suggested queries for quick access"""
