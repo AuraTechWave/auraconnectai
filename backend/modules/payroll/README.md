@@ -321,6 +321,129 @@ The payroll module now provides dedicated API endpoints. Applications using the 
 - Payment queries use database indexes for fast retrieval
 - Configuration lookups are cached in memory
 
+## Rate Limiting
+
+The payroll module implements rate limiting to prevent abuse and ensure fair usage:
+
+### Export Endpoints
+- **Limit**: 3 concurrent export requests per user
+- **Window**: 5 minutes
+- **Error**: 429 Too Many Requests
+
+### Calculation Endpoints
+- **Limit**: 100 requests per minute per user
+- **Window**: 1 minute sliding window
+- **Error**: 429 Too Many Requests
+
+### Configuration Updates
+- **Limit**: 50 updates per hour per user
+- **Window**: 1 hour rolling window
+- **Error**: 429 Too Many Requests
+
+## Error Response Format
+
+All API errors follow a standardized format:
+
+```json
+{
+  "error": "ValidationError",
+  "message": "Invalid request parameters",
+  "code": "PAYROLL_VALIDATION_ERROR",
+  "details": [
+    {
+      "field": "gross_amount",
+      "message": "Must be a positive number",
+      "code": "INVALID_AMOUNT"
+    }
+  ],
+  "timestamp": "2025-01-30T12:00:00Z",
+  "request_id": "req_123abc"
+}
+```
+
+### Common Error Codes
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `PAYROLL_INVALID_AMOUNT` | 422 | Invalid monetary amount |
+| `PAYROLL_INVALID_DATE_RANGE` | 422 | Start date after end date |
+| `PAYROLL_NO_PAY_POLICY` | 404 | No active pay policy found |
+| `PAYROLL_PAYMENT_ALREADY_PROCESSED` | 400 | Cannot modify processed payment |
+| `PAYROLL_TAX_CALCULATION_FAILED` | 400 | Tax calculation error |
+| `PAYROLL_CONFIG_NOT_FOUND` | 404 | Configuration not found |
+| `PAYROLL_DATABASE_ERROR` | 500 | Database operation failed |
+| `PAYROLL_INSUFFICIENT_PERMISSIONS` | 403 | Insufficient permissions |
+| `PAYROLL_RATE_LIMIT_EXCEEDED` | 429 | Rate limit exceeded |
+
+### Error Response Examples
+
+#### Validation Error
+```http
+POST /api/payroll/tax/calculate
+{
+  "gross_amount": "invalid",
+  "pay_date": "2025-01-30"
+}
+
+Response: 422 Unprocessable Entity
+{
+  "error": "ValidationError",
+  "message": "Invalid request parameters",
+  "code": "PAYROLL_VALIDATION_ERROR",
+  "details": [
+    {
+      "field": "gross_amount",
+      "message": "value is not a valid decimal",
+      "code": "type_error.decimal"
+    }
+  ],
+  "timestamp": "2025-01-30T12:00:00Z"
+}
+```
+
+#### Not Found Error
+```http
+GET /api/payroll/payments/details/99999
+
+Response: 404 Not Found
+{
+  "error": "NotFound",
+  "message": "Payment with ID 99999 not found",
+  "code": "PAYROLL_RECORD_NOT_FOUND",
+  "timestamp": "2025-01-30T12:00:00Z"
+}
+```
+
+#### Business Rule Violation
+```http
+PUT /api/payroll/payments/123/status
+{
+  "status": "PENDING"
+}
+
+Response: 400 Bad Request
+{
+  "error": "InvalidTransition",
+  "message": "Cannot change status of a paid payment",
+  "code": "PAYROLL_PAYMENT_ALREADY_PROCESSED",
+  "timestamp": "2025-01-30T12:00:00Z"
+}
+```
+
+#### Rate Limit Exceeded
+```http
+POST /api/payroll/payments/export
+
+Response: 429 Too Many Requests
+{
+  "error": "RateLimitExceeded",
+  "message": "Too many export requests. Please wait for existing exports to complete.",
+  "code": "PAYROLL_RATE_LIMIT_EXCEEDED",
+  "timestamp": "2025-01-30T12:00:00Z",
+  "retry_after": 300
+}
+```
+
 ## Future Enhancements
 
 - GraphQL API support

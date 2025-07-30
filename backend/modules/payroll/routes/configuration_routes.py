@@ -3,40 +3,50 @@
 """
 Payroll configuration management API endpoints.
 
-Provides endpoints for managing payroll configurations:
+Main router that aggregates all configuration sub-routes:
 - Payroll configurations
-- Staff pay policies
+- Staff pay policies 
 - Overtime rules
-- Tax approximation rules
 - Role-based pay rates
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
-from decimal import Decimal
 
 from ....core.database import get_db
 from ....core.auth import require_payroll_write, get_current_user, User
 from ..services.payroll_configuration_service import PayrollConfigurationService
-from ..models.payroll_configuration import (
-    PayrollConfiguration,
-    StaffPayPolicy,
-    OvertimeRule,
-    TaxApproximationRule,
-    RoleBasedPayRate
+from ..models.payroll_configuration import PayrollConfiguration
+from ..schemas.payroll_schemas import (
+    PayrollConfigurationResponse,
+    PayrollConfigurationCreate
 )
+from ..schemas.error_schemas import ErrorResponse, PayrollErrorCodes
+from ..exceptions import PayrollNotFoundError
+
+# Import sub-routers
+from .pay_policy_routes import router as pay_policy_router
+from .overtime_rules_routes import router as overtime_router
+from .role_pay_rates_routes import router as role_rates_router
 
 router = APIRouter()
 
+# Include sub-routers
+router.include_router(pay_policy_router, prefix="/pay-policies", tags=["Pay Policies"])
+router.include_router(overtime_router, prefix="/overtime-rules", tags=["Overtime Rules"])
+router.include_router(role_rates_router, prefix="/role-pay-rates", tags=["Role Pay Rates"])
 
-# Payroll Configuration Endpoints
 
-@router.get("/payroll-configs")
+# Core Payroll Configuration Endpoints
+
+@router.get("/payroll-configs", response_model=List[PayrollConfigurationResponse])
 async def get_payroll_configurations(
     tenant_id: Optional[int] = Query(None, description="Filter by tenant ID"),
     active_only: bool = Query(True, description="Only return active configurations"),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_write)
 ):
@@ -46,30 +56,43 @@ async def get_payroll_configurations(
     ## Query Parameters
     - **tenant_id**: Optional tenant ID filter
     - **active_only**: Only return active configurations (default: true)
+    - **limit**: Maximum records to return
+    - **offset**: Records to skip for pagination
     
     ## Response
     Returns list of payroll configurations.
     
-    ## Authentication
-    Requires payroll write permissions.
+    ## Error Responses
+    - **500**: Database error
     """
-    config_service = PayrollConfigurationService(db)
-    
-    configs = config_service.get_all_payroll_configurations()
-    
-    # Apply filters
-    if tenant_id:
-        configs = [c for c in configs if c.tenant_id == tenant_id]
-    
-    if active_only:
-        configs = [c for c in configs if c.is_active]
-    
-    return configs
+    try:
+        config_service = PayrollConfigurationService(db)
+        configs = config_service.get_all_payroll_configurations()
+        
+        # Apply filters
+        if tenant_id:
+            configs = [c for c in configs if c.tenant_id == tenant_id]
+        
+        if active_only:
+            configs = [c for c in configs if c.is_active]
+        
+        # Apply pagination
+        return configs[offset:offset + limit]
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                error="DatabaseError",
+                message="Failed to retrieve configurations",
+                code=PayrollErrorCodes.DATABASE_ERROR
+            ).dict()
+        )
 
 
-@router.post("/payroll-configs")
+@router.post("/payroll-configs", response_model=PayrollConfigurationResponse, status_code=201)
 async def create_payroll_configuration(
-    config_data: dict,
+    config_data: PayrollConfigurationCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_write)
 ):
@@ -77,23 +100,35 @@ async def create_payroll_configuration(
     Create a new payroll configuration.
     
     ## Request Body
-    - **tenant_id**: Tenant ID
-    - **config_key**: Configuration key
-    - **config_value**: Configuration value
-    - **is_active**: Whether configuration is active
+    See PayrollConfigurationCreate schema.
     
     ## Response
     Returns the created configuration.
     
-    ## Authentication
-    Requires payroll write permissions.
+    ## Error Responses
+    - **400**: Invalid configuration data
+    - **409**: Duplicate configuration key
     """
     try:
+        # Check for duplicate key
+        existing = db.query(PayrollConfiguration).filter(
+            PayrollConfiguration.config_key == config_data.config_key,
+            PayrollConfiguration.tenant_id == config_data.tenant_id,
+            PayrollConfiguration.is_active == True
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=ErrorResponse(
+                    error="DuplicateKey",
+                    message=f"Configuration key '{config_data.config_key}' already exists",
+                    code=PayrollErrorCodes.DUPLICATE_PAY_POLICY
+                ).dict()
+            )
+        
         config = PayrollConfiguration(
-            tenant_id=config_data.get("tenant_id"),
-            config_key=config_data["config_key"],
-            config_value=config_data["config_value"],
-            is_active=config_data.get("is_active", True),
+            **config_data.dict(),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -104,326 +139,159 @@ async def create_payroll_configuration(
         
         return config
         
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create configuration: {str(e)}"
+            status_code=400,
+            detail=ErrorResponse(
+                error="CreationError",
+                message=f"Failed to create configuration: {str(e)}",
+                code=PayrollErrorCodes.DATABASE_ERROR
+            ).dict()
         )
 
 
-# Staff Pay Policy Endpoints
-
-@router.get("/pay-policies")
-async def get_staff_pay_policies(
-    staff_id: Optional[int] = Query(None, description="Filter by staff ID"),
-    active_only: bool = Query(True, description="Only return active policies"),
+@router.get("/payroll-configs/{config_id}", response_model=PayrollConfigurationResponse)
+async def get_payroll_configuration(
+    config_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_write)
 ):
     """
-    Get staff pay policies with optional filtering.
-    
-    ## Query Parameters
-    - **staff_id**: Optional staff ID filter
-    - **active_only**: Only return active policies (default: true)
-    
-    ## Response
-    Returns list of staff pay policies.
-    
-    ## Authentication
-    Requires payroll write permissions.
-    """
-    config_service = PayrollConfigurationService(db)
-    
-    if staff_id:
-        policy = config_service.get_staff_pay_policy(staff_id)
-        return [policy] if policy else []
-    
-    # Get all policies
-    policies = db.query(StaffPayPolicy)
-    
-    if active_only:
-        policies = policies.filter(StaffPayPolicy.is_active == True)
-    
-    return policies.all()
-
-
-@router.post("/pay-policies")
-async def create_staff_pay_policy(
-    policy_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_payroll_write)
-):
-    """
-    Create a new staff pay policy.
-    
-    ## Request Body
-    - **staff_id**: Staff member ID
-    - **base_hourly_rate**: Base hourly rate
-    - **overtime_multiplier**: Overtime rate multiplier
-    - **location**: Location for tax calculations
-    - **health_insurance**: Monthly health insurance deduction
-    - **dental_insurance**: Monthly dental insurance deduction
-    - **retirement_contribution**: Monthly retirement contribution
-    - **other fields**: Additional policy fields
-    
-    ## Response
-    Returns the created pay policy.
-    
-    ## Authentication
-    Requires payroll write permissions.
-    """
-    try:
-        policy = StaffPayPolicy(
-            staff_id=policy_data["staff_id"],
-            base_hourly_rate=Decimal(str(policy_data["base_hourly_rate"])),
-            overtime_multiplier=Decimal(str(policy_data.get("overtime_multiplier", "1.5"))),
-            double_time_multiplier=Decimal(str(policy_data.get("double_time_multiplier", "2.0"))),
-            location=policy_data.get("location", "default"),
-            health_insurance=Decimal(str(policy_data.get("health_insurance", "0"))),
-            dental_insurance=Decimal(str(policy_data.get("dental_insurance", "0"))),
-            vision_insurance=Decimal(str(policy_data.get("vision_insurance", "0"))),
-            retirement_401k_percentage=Decimal(str(policy_data.get("retirement_401k_percentage", "0"))),
-            life_insurance=Decimal(str(policy_data.get("life_insurance", "0"))),
-            disability_insurance=Decimal(str(policy_data.get("disability_insurance", "0"))),
-            parking_fee=Decimal(str(policy_data.get("parking_fee", "0"))),
-            other_deductions=Decimal(str(policy_data.get("other_deductions", "0"))),
-            is_active=policy_data.get("is_active", True),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        
-        db.add(policy)
-        db.commit()
-        db.refresh(policy)
-        
-        return policy
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create pay policy: {str(e)}"
-        )
-
-
-@router.put("/pay-policies/{staff_id}")
-async def update_staff_pay_policy(
-    staff_id: int,
-    policy_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_payroll_write)
-):
-    """
-    Update an existing staff pay policy.
+    Get a specific payroll configuration.
     
     ## Path Parameters
-    - **staff_id**: Staff member ID
-    
-    ## Request Body
-    Same as create, but all fields are optional.
+    - **config_id**: Configuration ID
     
     ## Response
-    Returns the updated pay policy.
+    Returns the configuration.
     
-    ## Authentication
-    Requires payroll write permissions.
+    ## Error Responses
+    - **404**: Configuration not found
     """
-    policy = db.query(StaffPayPolicy).filter(
-        StaffPayPolicy.staff_id == staff_id,
-        StaffPayPolicy.is_active == True
+    config = db.query(PayrollConfiguration).filter(
+        PayrollConfiguration.id == config_id
     ).first()
     
-    if not policy:
+    if not config:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No active pay policy found for staff ID {staff_id}"
+            status_code=404,
+            detail=ErrorResponse(
+                error="NotFound",
+                message=f"Configuration with ID {config_id} not found",
+                code=PayrollErrorCodes.CONFIG_NOT_FOUND
+            ).dict()
         )
     
-    # Update fields
-    for field, value in policy_data.items():
-        if hasattr(policy, field) and field not in ["id", "staff_id", "created_at"]:
-            if field in ["base_hourly_rate", "overtime_multiplier", "double_time_multiplier",
-                        "health_insurance", "dental_insurance", "vision_insurance",
-                        "retirement_401k_percentage", "life_insurance", "disability_insurance",
-                        "parking_fee", "other_deductions"]:
-                setattr(policy, field, Decimal(str(value)))
-            else:
-                setattr(policy, field, value)
-    
-    policy.updated_at = datetime.utcnow()
-    
-    try:
-        db.commit()
-        db.refresh(policy)
-        return policy
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to update pay policy: {str(e)}"
-        )
+    return config
 
 
-# Overtime Rules Endpoints
-
-@router.get("/overtime-rules")
-async def get_overtime_rules(
-    location: Optional[str] = Query(None, description="Filter by location"),
+@router.put("/payroll-configs/{config_id}", response_model=PayrollConfigurationResponse)
+async def update_payroll_configuration(
+    config_id: int,
+    config_update: Dict[str, Any],
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_write)
 ):
     """
-    Get overtime rules with optional location filtering.
+    Update a payroll configuration.
     
-    ## Query Parameters
-    - **location**: Optional location filter
-    
-    ## Response
-    Returns list of overtime rules.
-    
-    ## Authentication
-    Requires payroll write permissions.
-    """
-    config_service = PayrollConfigurationService(db)
-    
-    if location:
-        rules = config_service.get_overtime_rules(location)
-        return rules
-    
-    # Get all rules
-    return db.query(OvertimeRule).all()
-
-
-@router.post("/overtime-rules")
-async def create_overtime_rule(
-    rule_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_payroll_write)
-):
-    """
-    Create a new overtime rule.
+    ## Path Parameters
+    - **config_id**: Configuration ID
     
     ## Request Body
-    - **location**: Location/jurisdiction
-    - **daily_overtime_threshold**: Hours before daily overtime
-    - **weekly_overtime_threshold**: Hours before weekly overtime
-    - **daily_double_time_threshold**: Hours before daily double time
-    - **weekly_double_time_threshold**: Hours before weekly double time
+    Partial update - only include fields to update.
     
     ## Response
-    Returns the created overtime rule.
+    Returns the updated configuration.
     
-    ## Authentication
-    Requires payroll write permissions.
+    ## Error Responses
+    - **404**: Configuration not found
+    - **400**: Invalid update data
     """
-    try:
-        rule = OvertimeRule(
-            location=rule_data["location"],
-            daily_overtime_threshold=Decimal(str(rule_data.get("daily_overtime_threshold", "8.0"))),
-            weekly_overtime_threshold=Decimal(str(rule_data.get("weekly_overtime_threshold", "40.0"))),
-            daily_double_time_threshold=Decimal(str(rule_data.get("daily_double_time_threshold", "12.0"))),
-            weekly_double_time_threshold=Decimal(str(rule_data.get("weekly_double_time_threshold", "60.0"))),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+    config = db.query(PayrollConfiguration).filter(
+        PayrollConfiguration.id == config_id
+    ).first()
+    
+    if not config:
+        raise HTTPException(
+            status_code=404,
+            detail=ErrorResponse(
+                error="NotFound",
+                message=f"Configuration with ID {config_id} not found",
+                code=PayrollErrorCodes.CONFIG_NOT_FOUND
+            ).dict()
         )
+    
+    try:
+        for field, value in config_update.items():
+            if hasattr(config, field) and field not in ["id", "created_at"]:
+                setattr(config, field, value)
         
-        db.add(rule)
+        config.updated_at = datetime.utcnow()
+        
         db.commit()
-        db.refresh(rule)
-        
-        return rule
+        db.refresh(config)
+        return config
         
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create overtime rule: {str(e)}"
+            status_code=400,
+            detail=ErrorResponse(
+                error="UpdateError",
+                message=f"Failed to update configuration: {str(e)}",
+                code=PayrollErrorCodes.DATABASE_ERROR
+            ).dict()
         )
 
 
-# Role-Based Pay Rates Endpoints
-
-@router.get("/role-pay-rates")
-async def get_role_based_pay_rates(
-    role_name: Optional[str] = Query(None, description="Filter by role name"),
-    location: Optional[str] = Query(None, description="Filter by location"),
+@router.delete("/payroll-configs/{config_id}", status_code=204)
+async def delete_payroll_configuration(
+    config_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_write)
 ):
     """
-    Get role-based pay rates with optional filtering.
+    Delete (deactivate) a payroll configuration.
     
-    ## Query Parameters
-    - **role_name**: Optional role name filter
-    - **location**: Optional location filter
-    
-    ## Response
-    Returns list of role-based pay rates.
-    
-    ## Authentication
-    Requires payroll write permissions.
-    """
-    config_service = PayrollConfigurationService(db)
-    
-    if role_name:
-        rate = config_service.get_role_based_pay_rate(role_name, location)
-        return [rate] if rate else []
-    
-    # Get all rates
-    query = db.query(RoleBasedPayRate)
-    
-    if location:
-        query = query.filter(RoleBasedPayRate.location == location)
-    
-    return query.all()
-
-
-@router.post("/role-pay-rates")
-async def create_role_based_pay_rate(
-    rate_data: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_payroll_write)
-):
-    """
-    Create a new role-based pay rate.
-    
-    ## Request Body
-    - **role_name**: Role name
-    - **location**: Location (optional)
-    - **base_hourly_rate**: Base hourly rate for the role
-    - **overtime_multiplier**: Overtime multiplier (optional)
-    - **effective_date**: When the rate becomes effective
-    - **expiry_date**: When the rate expires (optional)
+    ## Path Parameters
+    - **config_id**: Configuration ID
     
     ## Response
-    Returns the created role-based pay rate.
+    No content on success.
     
-    ## Authentication
-    Requires payroll write permissions.
+    ## Error Responses
+    - **404**: Configuration not found
     """
+    config = db.query(PayrollConfiguration).filter(
+        PayrollConfiguration.id == config_id
+    ).first()
+    
+    if not config:
+        raise HTTPException(
+            status_code=404,
+            detail=ErrorResponse(
+                error="NotFound",
+                message=f"Configuration with ID {config_id} not found",
+                code=PayrollErrorCodes.CONFIG_NOT_FOUND
+            ).dict()
+        )
+    
+    config.is_active = False
+    config.updated_at = datetime.utcnow()
+    
     try:
-        rate = RoleBasedPayRate(
-            role_name=rate_data["role_name"],
-            location=rate_data.get("location", "default"),
-            base_hourly_rate=Decimal(str(rate_data["base_hourly_rate"])),
-            overtime_multiplier=Decimal(str(rate_data.get("overtime_multiplier", "1.5"))),
-            effective_date=datetime.fromisoformat(rate_data.get("effective_date", datetime.utcnow().isoformat())),
-            expiry_date=datetime.fromisoformat(rate_data["expiry_date"]) if rate_data.get("expiry_date") else None,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        
-        db.add(rate)
         db.commit()
-        db.refresh(rate)
-        
-        return rate
-        
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to create role-based pay rate: {str(e)}"
+            status_code=500,
+            detail=ErrorResponse(
+                error="DatabaseError",
+                message="Failed to delete configuration",
+                code=PayrollErrorCodes.DATABASE_ERROR
+            ).dict()
         )
