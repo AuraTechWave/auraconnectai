@@ -14,6 +14,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy.orm import Session
+import sqlalchemy.exc
+import httpx
 
 from backend.core.database import get_db
 from backend.modules.orders.services.sync_service import OrderSyncService
@@ -46,16 +48,16 @@ class OrderSyncScheduler:
             # Add health check job - runs every hour
             self.scheduler.add_job(
                 func=self._health_check_task,
-                trigger=IntervalTrigger(hours=1),
+                trigger=IntervalTrigger(minutes=settings.SYNC_HEALTH_CHECK_INTERVAL_MINUTES),
                 id=self.health_check_job_id,
                 name="Sync Health Check",
                 replace_existing=True
             )
             
-            # Add cleanup job - runs daily at 2 AM
+            # Add cleanup job - runs periodically
             self.scheduler.add_job(
                 func=self._cleanup_task,
-                trigger=CronTrigger(hour=2, minute=0),
+                trigger=IntervalTrigger(hours=settings.SYNC_CLEANUP_INTERVAL_HOURS),
                 id=self.cleanup_job_id,
                 name="Sync Cleanup",
                 replace_existing=True
@@ -67,8 +69,11 @@ class OrderSyncScheduler:
             
             logger.info("Order sync scheduler started successfully")
             
+        except ImportError as e:
+            logger.error(f"Missing required dependency for scheduler: {e}")
+            raise
         except Exception as e:
-            logger.error(f"Failed to start sync scheduler: {e}", exc_info=True)
+            logger.critical(f"Failed to start sync scheduler: {e}", exc_info=True)
             raise
     
     def stop(self):
@@ -80,8 +85,10 @@ class OrderSyncScheduler:
             self.scheduler.shutdown(wait=True)
             self.is_running = False
             logger.info("Order sync scheduler stopped")
+        except RuntimeError as e:
+            logger.warning(f"Scheduler already stopped: {e}")
         except Exception as e:
-            logger.error(f"Error stopping sync scheduler: {e}", exc_info=True)
+            logger.error(f"Unexpected error stopping sync scheduler: {e}", exc_info=True)
     
     def _add_sync_job(self):
         """Add or update the main sync job"""
@@ -148,8 +155,11 @@ class OrderSyncScheduler:
                     "High failure rate detected, consider checking connectivity"
                 )
             
+        except httpx.HTTPError as e:
+            logger.error(f"Network error during sync task: {e}")
+            # Don't re-raise to prevent job from being removed
         except Exception as e:
-            logger.error(f"Sync task failed: {e}", exc_info=True)
+            logger.critical(f"Unexpected sync task failure: {e}", exc_info=True)
             # Don't re-raise to prevent job from being removed
         finally:
             await sync_service.close()
@@ -200,8 +210,10 @@ class OrderSyncScheduler:
             else:
                 logger.info("Sync health check passed")
             
+        except (httpx.HTTPError, asyncio.TimeoutError) as e:
+            logger.warning(f"Health check network issue: {e}")
         except Exception as e:
-            logger.error(f"Health check failed: {e}", exc_info=True)
+            logger.error(f"Unexpected health check failure: {e}", exc_info=True)
         finally:
             await sync_service.close()
             db.close()
@@ -240,8 +252,11 @@ class OrderSyncScheduler:
                 f"and {deleted_batches} batches older than {retention_days} days"
             )
             
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            logger.error(f"Database error during cleanup: {e}")
+            db.rollback()
         except Exception as e:
-            logger.error(f"Cleanup task failed: {e}", exc_info=True)
+            logger.critical(f"Unexpected cleanup task failure: {e}", exc_info=True)
             db.rollback()
         finally:
             db.close()
@@ -258,8 +273,11 @@ class OrderSyncScheduler:
             )
             logger.info("Manual sync triggered")
             return True
+        except RuntimeError as e:
+            logger.warning(f"Scheduler not running: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to trigger manual sync: {e}", exc_info=True)
+            logger.error(f"Unexpected error triggering manual sync: {e}", exc_info=True)
             return False
     
     def update_sync_interval(self, minutes: int) -> bool:
@@ -292,8 +310,14 @@ class OrderSyncScheduler:
             finally:
                 db.close()
                 
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            logger.error(f"Database error updating sync interval: {e}")
+            return False
+        except ValueError as e:
+            logger.error(f"Invalid sync interval value: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to update sync interval: {e}", exc_info=True)
+            logger.critical(f"Unexpected error updating sync interval: {e}", exc_info=True)
             return False
     
     def get_job_status(self) -> Dict[str, Any]:

@@ -1,8 +1,8 @@
 """Add order sync tables
 
-Revision ID: add_order_sync_tables
-Revises: 
-Create Date: 2025-07-30
+Revision ID: 20250730_1000_add_order_sync_tables
+Revises: 20250729_1900_add_feedback_and_reviews_tables
+Create Date: 2025-07-30 10:00:00.000000
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'add_order_sync_tables'
-down_revision = None
+revision = '20250730_1000_add_order_sync_tables'
+down_revision = '20250729_1900_add_feedback_and_reviews_tables'
 branch_labels = None
 depends_on = None
 

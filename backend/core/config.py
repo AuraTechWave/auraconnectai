@@ -88,6 +88,15 @@ class Settings(BaseSettings):
     SYNC_INTERVAL_MINUTES: int = 10
     SYNC_BATCH_SIZE: int = 50
     SYNC_MAX_RETRIES: int = 3
+    SYNC_RETRY_BACKOFF_BASE: float = 2.0  # Exponential backoff base
+    SYNC_RETRY_MAX_WAIT_MINUTES: int = 60  # Max retry wait time
+    SYNC_CONCURRENT_ORDERS: int = 10  # Max concurrent order syncs
+    SYNC_HTTP_TIMEOUT_SECONDS: int = 30  # HTTP request timeout
+    SYNC_HEALTH_CHECK_INTERVAL_MINUTES: int = 5  # Health check frequency
+    SYNC_CLEANUP_INTERVAL_HOURS: int = 24  # Old log cleanup frequency
+    SYNC_LOG_RETENTION_DAYS: int = 30  # How long to keep sync logs
+    SYNC_CONFLICT_AUTO_RESOLVE_HOURS: int = 24  # Auto-resolve old conflicts
+    SYNC_DASHBOARD_POLL_SECONDS: int = 30  # Frontend polling interval
     
     class Config:
         env_file = ".env"

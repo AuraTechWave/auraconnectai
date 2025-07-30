@@ -79,9 +79,12 @@ class OrderSyncService:
             # Complete batch
             return self._complete_batch(batch, "completed")
             
-        except Exception as e:
+        except (httpx.HTTPError, asyncio.TimeoutError, ValueError) as e:
             logger.error(f"Sync batch {batch.batch_id} failed: {e}", exc_info=True)
             return self._complete_batch(batch, "failed", str(e))
+        except Exception as e:
+            logger.critical(f"Unexpected error in sync batch {batch.batch_id}: {e}", exc_info=True)
+            return self._complete_batch(batch, "failed", f"Critical error: {str(e)}")
     
     async def sync_single_order(self, order_id: int) -> Tuple[bool, Optional[str]]:
         """
@@ -97,9 +100,17 @@ class OrderSyncService:
         try:
             result = await self._sync_order(order, sync_status)
             return result, None
+        except (httpx.HTTPError, asyncio.TimeoutError) as e:
+            error_msg = f"Network error syncing order {order_id}: {e}"
+            logger.error(error_msg)
+            return False, error_msg
+        except ValueError as e:
+            error_msg = f"Data validation error for order {order_id}: {e}"
+            logger.error(error_msg)
+            return False, error_msg
         except Exception as e:
-            error_msg = f"Failed to sync order {order_id}: {e}"
-            logger.error(error_msg, exc_info=True)
+            error_msg = f"Unexpected error syncing order {order_id}: {e}"
+            logger.critical(error_msg, exc_info=True)
             return False, error_msg
     
     async def _sync_order_batch(
@@ -172,9 +183,22 @@ class OrderSyncService:
             
             return result
             
+        except httpx.HTTPStatusError as e:
+            sync_log.status = "failed"
+            sync_log.error_message = f"HTTP {e.response.status_code}: {str(e)}"
+            sync_log.http_status_code = e.response.status_code
+        except httpx.TimeoutException:
+            sync_log.status = "failed"
+            sync_log.error_message = "Request timeout"
+            sync_log.error_code = "TIMEOUT"
+        except httpx.HTTPError as e:
+            sync_log.status = "failed"
+            sync_log.error_message = f"HTTP error: {str(e)}"
+            sync_log.error_code = "HTTP_ERROR"
         except Exception as e:
             sync_log.status = "failed"
-            sync_log.error_message = str(e)
+            sync_log.error_message = f"Unexpected error: {str(e)}"
+            sync_log.error_code = "UNKNOWN"
             sync_log.completed_at = datetime.utcnow()
             sync_log.duration_ms = int(
                 (sync_log.completed_at - sync_log.started_at).total_seconds() * 1000
@@ -272,9 +296,25 @@ class OrderSyncService:
             self._handle_sync_error(sync_status, f"Network error: {e}", "NETWORK")
             return False
             
+        except httpx.HTTPStatusError as e:
+            self._handle_sync_error(sync_status, f"HTTP {e.response.status_code}: {str(e)}", f"HTTP_{e.response.status_code}")
+            logger.error(f"HTTP error syncing order {order.id}: {e}")
+            return False
+        except httpx.TimeoutException:
+            self._handle_sync_error(sync_status, "Request timeout", "TIMEOUT")
+            logger.warning(f"Timeout syncing order {order.id}")
+            return False
+        except httpx.HTTPError as e:
+            self._handle_sync_error(sync_status, f"Network error: {e}", "NETWORK_ERROR")
+            logger.error(f"Network error syncing order {order.id}: {e}")
+            return False
+        except ValueError as e:
+            self._handle_sync_error(sync_status, f"Data validation error: {e}", "VALIDATION_ERROR")
+            logger.error(f"Validation error for order {order.id}: {e}")
+            return False
         except Exception as e:
             self._handle_sync_error(sync_status, f"Unexpected error: {e}", "UNKNOWN")
-            logger.error(f"Sync error for order {order.id}: {e}", exc_info=True)
+            logger.critical(f"Unexpected sync error for order {order.id}: {e}", exc_info=True)
             return False
     
     async def _handle_conflict(

@@ -29,8 +29,8 @@ from backend.modules.orders.routes.print_ticket_routes import (
 from backend.modules.orders.routes.pricing_routes import (
     router as pricing_router
 )
-from backend.modules.orders.routers.sync_router import (
-    router as order_sync_router
+from backend.modules.orders.routers.sync import (
+    sync_router as order_sync_router
 )
 from backend.modules.tax.routes.tax_routes import router as tax_router
 from backend.modules.settings.routes.pos_sync_routes import (

@@ -54,11 +54,12 @@ export const SyncStatusDashboard: React.FC = () => {
     fetchSyncStatus();
     fetchSyncMetrics();
     
-    // Poll for updates every 30 seconds
+    // Poll for updates periodically
+    const pollInterval = parseInt(process.env.REACT_APP_SYNC_DASHBOARD_POLL_SECONDS || '30') * 1000;
     const interval = setInterval(() => {
       fetchSyncStatus();
       fetchSyncMetrics();
-    }, 30000);
+    }, pollInterval);
     
     return () => clearInterval(interval);
   }, []);
