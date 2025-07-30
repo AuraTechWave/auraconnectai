@@ -123,6 +123,12 @@ class Settings(BaseSettings):
     SYNC_CONFLICT_AUTO_RESOLVE_HOURS: int = 24  # Auto-resolve old conflicts
     SYNC_DASHBOARD_POLL_SECONDS: int = 30  # Frontend polling interval
     
+    # POS Sync configuration
+    POS_SYNC_RECENT_HOURS: int = 24  # Hours to consider for recent orders
+    POS_SYNC_BATCH_PREFIX: str = "manual"  # Prefix for manual sync batch IDs
+    POS_SYNC_DATE_FORMAT: str = "%Y%m%d_%H%M%S"  # Date format for batch IDs
+    POS_SYNC_RATE_LIMIT_PER_MINUTE: int = 1  # Max sync requests per minute
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
