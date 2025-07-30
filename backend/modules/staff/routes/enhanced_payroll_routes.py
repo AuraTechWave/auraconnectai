@@ -28,6 +28,7 @@ from ..schemas.enhanced_payroll_schemas import (
     PayrollExportRequest, PayrollExportResponse
 )
 from ...payroll.services.payroll_tax_engine import PayrollTaxEngine
+from ...payroll.services.payroll_configuration_service import PayrollConfigurationService
 from ...payroll.models.payroll_models import TaxRule
 from .payroll_background_tasks import process_payroll_batch_persistent
 
