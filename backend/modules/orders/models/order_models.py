@@ -63,6 +63,12 @@ class Order(Base, TimestampMixin):
     # Referral tracking
     referral_code_used = Column(String(50), nullable=True, index=True)
     is_referral_qualifying = Column(Boolean, nullable=True, default=False)
+    
+    # Sync tracking
+    is_synced = Column(Boolean, nullable=False, default=False, index=True)
+    last_sync_at = Column(DateTime, nullable=True)
+    sync_version = Column(Integer, nullable=False, default=1)
+    offline_created = Column(Boolean, nullable=False, default=False)
 
     order_items = relationship("OrderItem", back_populates="order")
     customer = relationship("Customer", back_populates="orders")

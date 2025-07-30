@@ -11,3 +11,5 @@ redis
 websockets
 asyncio-mqtt
 numpy
+apscheduler
+httpx

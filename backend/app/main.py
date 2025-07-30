@@ -29,6 +29,9 @@ from backend.modules.orders.routes.print_ticket_routes import (
 from backend.modules.orders.routes.pricing_routes import (
     router as pricing_router
 )
+from backend.modules.orders.routers.sync import (
+    sync_router as order_sync_router
+)
 from backend.modules.tax.routes.tax_routes import router as tax_router
 from backend.modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
@@ -65,6 +68,10 @@ from backend.modules.ai_recommendations.routers import (
     router as ai_recommendations_router
 )
 from backend.core.menu_versioning_triggers import init_versioning_triggers
+from backend.modules.orders.tasks.sync_tasks import (
+    start_sync_scheduler,
+    stop_sync_scheduler
+)
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -135,6 +142,7 @@ app.include_router(inventory_router)
 app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
 app.include_router(pricing_router)
+app.include_router(order_sync_router)
 app.include_router(tax_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
@@ -151,6 +159,21 @@ app.include_router(ai_recommendations_router)
 
 # Initialize menu versioning triggers
 init_versioning_triggers()
+
+
+# Startup and shutdown events
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on application startup"""
+    # Start order sync scheduler
+    await start_sync_scheduler()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on application shutdown"""
+    # Stop order sync scheduler
+    await stop_sync_scheduler()
 
 
 @app.get("/")
