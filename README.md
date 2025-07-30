@@ -129,6 +129,80 @@ CORS_ORIGINS=["https://your-domain.com"]
 - Tenant isolation for multi-restaurant support
 - Automatic token refresh mechanism
 
+## 📧 Notification System
+
+### Overview
+AuraConnect includes an async notification system for sending emails, SMS, and push notifications. The system uses background task processing to ensure notifications are sent reliably without blocking API responses.
+
+### Configuration
+
+```bash
+# Email Configuration (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FROM_EMAIL=noreply@auraconnect.ai
+FROM_NAME=AuraConnect
+
+# SMS Configuration (Twilio)
+TWILIO_ACCOUNT_SID=your-account-sid
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_FROM_NUMBER=+1234567890
+
+# Push Notifications (Firebase)
+FIREBASE_CREDENTIALS_PATH=/path/to/credentials.json
+```
+
+### Features
+- **Multi-channel Support**: Email (SMTP), SMS (Twilio), Push (Firebase)
+- **Template System**: Pre-built templates for common notifications
+- **Background Processing**: Async queue with retry logic
+- **Rate Limiting**: Prevents notification spam
+- **Audit Trail**: Complete logging of all sent notifications
+
+### Usage Example
+
+```python
+# Send review invitation
+await notification_service.send_review_invitation(
+    customer_id=123,
+    entity_type='product',
+    entity_id=456
+)
+
+# Send feedback response
+await notification_service.send_feedback_response_notification(
+    feedback_id=789,
+    response_id=101
+)
+```
+
+### Background Task Processing
+The notification system uses an async task queue instead of Celery for lighter weight processing:
+
+```python
+# Start background workers (automatically done on app startup)
+await background_processor.start_workers(num_workers=3)
+
+# Queue a notification task
+await background_processor.enqueue_notification(
+    notification_type='review_invitation',
+    customer_id=123
+)
+```
+
+### Testing
+Comprehensive unit tests are included for all notification backends:
+
+```bash
+# Run notification tests
+pytest backend/modules/feedback/tests/test_notification_service.py -v
+
+# Test specific backend
+pytest backend/modules/feedback/tests/test_notification_service.py::TestEmailBackend -v
+```
+
 ## 📊 API Documentation
 
 Once running, access the interactive API documentation:
