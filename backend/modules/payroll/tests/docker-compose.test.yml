@@ -1,0 +1,97 @@
+# backend/modules/payroll/tests/docker-compose.test.yml
+
+version: '3.8'
+
+services:
+  # PostgreSQL database for integration tests
+  test-db:
+    image: postgres:15-alpine
+    container_name: payroll-test-db
+    environment:
+      POSTGRES_DB: payroll_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d payroll_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis for testing Celery tasks
+  test-redis:
+    image: redis:7-alpine
+    container_name: payroll-test-redis
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Test runner container
+  test-runner:
+    build:
+      context: ../../../..
+      dockerfile: backend/modules/payroll/tests/Dockerfile.test
+    container_name: payroll-test-runner
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    environment:
+      # Database configuration
+      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/payroll_test
+      TEST_DATABASE_URL: postgresql://test_user:test_password@test-db:5432/payroll_test
+      
+      # Redis configuration
+      REDIS_URL: redis://test-redis:6379/0
+      
+      # Test environment
+      ENVIRONMENT: test
+      TESTING: "true"
+      
+      # Disable external services in tests
+      DISABLE_EMAIL: "true"
+      DISABLE_SMS: "true"
+      DISABLE_WEBHOOKS: "true"
+    volumes:
+      - ../..:/app/backend/modules/payroll
+      - ./test-results:/app/test-results
+    command: |
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Running integration tests...' &&
+        pytest tests/ -m 'integration' --junit-xml=/app/test-results/junit.xml --cov-report=xml:/app/test-results/coverage.xml
+      "
+
+  # Optional: Celery worker for async task testing
+  test-celery-worker:
+    build:
+      context: ../../../..
+      dockerfile: backend/modules/payroll/tests/Dockerfile.test
+    container_name: payroll-test-celery
+    depends_on:
+      - test-redis
+      - test-db
+    environment:
+      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/payroll_test
+      REDIS_URL: redis://test-redis:6379/0
+      ENVIRONMENT: test
+    command: celery -A backend.modules.payroll.tasks.celery_config:celery_app worker --loglevel=info
+
+volumes:
+  test-db-data:
+    driver: local
+
+networks:
+  default:
+    name: payroll-test-network

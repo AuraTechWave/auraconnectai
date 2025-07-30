@@ -1,0 +1,65 @@
+# backend/modules/payroll/tests/.coveragerc
+
+[run]
+branch = True
+source = ..
+omit = 
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */migrations/*
+    */alembic/*
+    */.venv/*
+    */venv/*
+    */env/*
+    */.env/*
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+skip_empty = True
+
+# Exclude patterns
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+    
+    # Don't complain about missing debug-only code:
+    def __repr__
+    def __str__
+    
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't complain if non-runnable code isn't run:
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    
+    # Don't complain about abstract methods
+    @abstract
+    @abstractmethod
+    
+    # Don't complain about deprecation warnings
+    warnings.warn
+    
+    # Defensive programming
+    except ImportError
+    except Exception as e:
+    except:
+
+ignore_errors = True
+
+[html]
+directory = htmlcov
+title = Payroll Module Test Coverage
+show_contexts = True
+
+[xml]
+output = coverage.xml
+
+[json]
+output = coverage.json
+pretty_print = True
+show_contexts = True
