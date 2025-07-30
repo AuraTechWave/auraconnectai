@@ -73,6 +73,9 @@ from backend.modules.analytics.routers.realtime_router import (
 from backend.modules.analytics.routers.ai_insights_router import (
     router as ai_insights_router
 )
+from backend.modules.analytics.routers.pos import (
+    router as pos_analytics_router
+)
 from backend.modules.ai_recommendations.routers import (
     router as ai_recommendations_router
 )
@@ -171,6 +174,7 @@ app.include_router(vendor_management_router)
 app.include_router(analytics_router)
 app.include_router(realtime_analytics_router)
 app.include_router(ai_insights_router)
+app.include_router(pos_analytics_router)
 app.include_router(ai_recommendations_router)
 
 # Initialize menu versioning triggers
