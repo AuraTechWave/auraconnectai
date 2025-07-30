@@ -42,6 +42,7 @@ from backend.modules.orders.routers.webhook_monitoring_router import (
     router as webhook_monitoring_router
 )
 from backend.modules.tax.routes.tax_routes import router as tax_router
+from backend.modules.payroll import payroll_router
 from backend.modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
 )
@@ -163,6 +164,7 @@ app.include_router(order_pos_sync_router)
 app.include_router(external_pos_webhook_router)
 app.include_router(webhook_monitoring_router)
 app.include_router(tax_router)
+app.include_router(payroll_router)  # Phase 3 payroll module routes
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
 app.include_router(webhook_router)
