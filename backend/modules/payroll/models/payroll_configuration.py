@@ -14,6 +14,7 @@ from backend.core.database import Base
 from backend.core.mixins import TimestampMixin
 from decimal import Decimal
 from enum import Enum as PyEnum
+from ..enums.payroll_enums import PayrollJobStatus
 
 
 class PayrollConfigurationType(str, PyEnum):
@@ -47,6 +48,36 @@ class PayrollConfiguration(Base, TimestampMixin):
     
     __table_args__ = (
         {'comment': 'Configurable payroll business logic settings'}
+    )
+
+
+class PayrollJobTracking(Base, TimestampMixin):
+    """
+    Tracking table for batch payroll processing jobs.
+    
+    Stores job status, metadata, and results for async batch operations.
+    """
+    __tablename__ = "payroll_job_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(String(100), unique=True, nullable=False, index=True)
+    job_type = Column(String(50), nullable=False, index=True)
+    status = Column(Enum(PayrollJobStatus), nullable=False, index=True)
+    
+    # Timing information
+    started_at = Column(DateTime, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Job metadata and results
+    metadata = Column(JSON, nullable=False, default={})
+    error_message = Column(Text, nullable=True)
+    
+    # Multi-tenant support
+    tenant_id = Column(Integer, nullable=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True)
+    
+    __table_args__ = (
+        {'comment': 'Tracking for batch payroll processing jobs'}
     )
 
 
@@ -217,42 +248,62 @@ class RoleBasedPayRate(Base, TimestampMixin):
 
 class PayrollJobTracking(Base, TimestampMixin):
     """
-    Persistent tracking for batch payroll jobs.
+    Tracking table for batch payroll processing jobs.
     
-    Addresses the concern about in-memory job tracking.
+    Stores job status, metadata, and results for async batch operations.
     """
     __tablename__ = "payroll_job_tracking"
     
     id = Column(Integer, primary_key=True, index=True)
     job_id = Column(String(100), unique=True, nullable=False, index=True)
-    job_type = Column(String(50), nullable=False)  # 'batch_payroll', 'export', etc.
+    job_type = Column(String(50), nullable=False, index=True)
+    status = Column(Enum(PayrollJobStatus), nullable=False, index=True)
     
-    # Job parameters
-    staff_ids = Column(JSON, nullable=True)
-    pay_period_start = Column(DateTime, nullable=True)
-    pay_period_end = Column(DateTime, nullable=True)
-    tenant_id = Column(Integer, nullable=True)
-    
-    # Status tracking
-    status = Column(String(50), default='pending', nullable=False, index=True)
-    total_items = Column(Integer, default=0, nullable=False)
-    completed_items = Column(Integer, default=0, nullable=False)
-    failed_items = Column(Integer, default=0, nullable=False)
-    
-    # Progress and timing
-    progress_percentage = Column(Integer, default=0, nullable=False)
-    started_at = Column(DateTime, nullable=True)
+    # Timing information
+    started_at = Column(DateTime, nullable=False)
     completed_at = Column(DateTime, nullable=True)
-    estimated_completion = Column(DateTime, nullable=True)
     
-    # Results and errors
-    result_data = Column(JSON, nullable=True)
-    error_details = Column(JSON, nullable=True)
+    # Job metadata and results
+    metadata = Column(JSON, nullable=False, default={})
+    error_message = Column(Text, nullable=True)
     
-    # Metadata
-    created_by = Column(String(100), nullable=True)
-    tenant_id_filter = Column(Integer, nullable=True)
+    # Multi-tenant support
+    tenant_id = Column(Integer, nullable=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True)
     
     __table_args__ = (
-        {'comment': 'Persistent tracking for batch payroll operations'}
+        {'comment': 'Tracking for batch payroll processing jobs'}
+    )
+
+
+class PayrollWebhookSubscription(Base, TimestampMixin):
+    """
+    Webhook subscriptions for payroll event notifications.
+    
+    Stores webhook URLs and configurations for event-driven notifications.
+    """
+    __tablename__ = "payroll_webhook_subscriptions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    webhook_url = Column(String(500), nullable=False)
+    event_types = Column(JSON, nullable=False)  # List of subscribed event types
+    secret_key = Column(String(100), nullable=False)  # For signature validation
+    
+    # Configuration
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
+    headers = Column(JSON, nullable=True)  # Custom headers
+    retry_policy = Column(JSON, nullable=True)  # Retry configuration
+    
+    # Tracking
+    last_triggered_at = Column(DateTime, nullable=True)
+    failure_count = Column(Integer, default=0, nullable=False)
+    total_events_sent = Column(Integer, default=0, nullable=False)
+    
+    # Metadata
+    description = Column(Text, nullable=True)
+    created_by_user_id = Column(Integer, nullable=True)
+    tenant_id = Column(Integer, nullable=True, index=True)
+    
+    __table_args__ = (
+        {'comment': 'Webhook subscriptions for payroll event notifications'}
     )

@@ -34,3 +34,12 @@ class PaymentMethod(str, Enum):
     CHECK = "check"
     CASH = "cash"
     DIGITAL_WALLET = "digital_wallet"
+
+
+class PayrollJobStatus(str, Enum):
+    """Status values for payroll job tracking."""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
