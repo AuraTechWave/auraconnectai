@@ -91,3 +91,70 @@ class AuthenticationType(str, Enum):
     BEARER_TOKEN = "bearer_token"
     OAUTH2 = "oauth2"
     CUSTOM = "custom"
+
+
+class SquareEventType(str, Enum):
+    """Square-specific webhook event types"""
+    PAYMENT_UPDATED = "payment.updated"
+    PAYMENT_CREATED = "payment.created"
+
+
+class StripeEventType(str, Enum):
+    """Stripe-specific webhook event types"""
+    PAYMENT_INTENT_SUCCEEDED = "payment_intent.succeeded"
+    PAYMENT_INTENT_PAYMENT_FAILED = "payment_intent.payment_failed"
+    PAYMENT_INTENT_CREATED = "payment_intent.created"
+    PAYMENT_INTENT_CANCELED = "payment_intent.canceled"
+
+
+class ToastEventType(str, Enum):
+    """Toast-specific webhook event types"""
+    PAYMENT_COMPLETED = "payment.completed"
+    PAYMENT_VOIDED = "payment.voided"
+
+
+class CloverEventType(str, Enum):
+    """Clover-specific webhook event types"""
+    PAYMENT_PROCESSED = "payment.processed"
+    PAYMENT_REFUNDED = "payment.refunded"
+
+
+class WebhookLogType(str, Enum):
+    """Types of webhook log entries"""
+    PROCESSING = "processing"
+    PAYMENT_PROCESSING = "payment_processing"
+    AUTHENTICATION = "authentication"
+    ERROR = "error"
+    DEBUG = "debug"
+
+
+class WebhookLogLevel(str, Enum):
+    """Log levels for webhook events"""
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+
+
+# Mapping of provider-specific events to generic event types
+PROVIDER_EVENT_MAPPING = {
+    ExternalPOSProvider.SQUARE: {
+        SquareEventType.PAYMENT_UPDATED: ExternalPOSEventType.PAYMENT_COMPLETED,
+        SquareEventType.PAYMENT_CREATED: ExternalPOSEventType.PAYMENT_PENDING,
+    },
+    ExternalPOSProvider.STRIPE: {
+        StripeEventType.PAYMENT_INTENT_SUCCEEDED: ExternalPOSEventType.PAYMENT_COMPLETED,
+        StripeEventType.PAYMENT_INTENT_PAYMENT_FAILED: ExternalPOSEventType.PAYMENT_FAILED,
+        StripeEventType.PAYMENT_INTENT_CREATED: ExternalPOSEventType.PAYMENT_PENDING,
+        StripeEventType.PAYMENT_INTENT_CANCELED: ExternalPOSEventType.PAYMENT_CANCELLED,
+    },
+    ExternalPOSProvider.TOAST: {
+        ToastEventType.PAYMENT_COMPLETED: ExternalPOSEventType.PAYMENT_COMPLETED,
+        ToastEventType.PAYMENT_VOIDED: ExternalPOSEventType.PAYMENT_VOIDED,
+    },
+    ExternalPOSProvider.CLOVER: {
+        CloverEventType.PAYMENT_PROCESSED: ExternalPOSEventType.PAYMENT_COMPLETED,
+        CloverEventType.PAYMENT_REFUNDED: ExternalPOSEventType.PAYMENT_REFUNDED,
+    },
+}

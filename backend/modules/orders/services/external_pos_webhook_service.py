@@ -22,9 +22,12 @@ from backend.modules.orders.models.order_models import Order
 from backend.modules.orders.models.payment_reconciliation_models import PaymentReconciliation
 from backend.modules.orders.enums.external_pos_enums import (
     WebhookProcessingStatus, ExternalPOSEventType,
-    PaymentStatus, PaymentMethod, ExternalPOSProvider as POSProviderEnum
+    PaymentStatus, PaymentMethod, ExternalPOSProvider as POSProviderEnum,
+    WebhookLogType, WebhookLogLevel
 )
 from backend.modules.orders.enums.payment_enums import ReconciliationStatus, DiscrepancyType
+from backend.modules.orders.enums.order_enums import OrderStatus, OrderPaymentStatus
+from backend.modules.orders.utils.security_utils import mask_sensitive_dict, mask_headers
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ class ExternalPOSWebhookService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.max_processing_attempts = 3
+        self.max_processing_attempts = settings.WEBHOOK_MAX_RETRY_ATTEMPTS
         
     async def process_webhook_event(self, webhook_event_id: int) -> bool:
         """
@@ -69,8 +72,8 @@ class ExternalPOSWebhookService:
             # Log processing start
             self._log_webhook_event(
                 webhook_event_id,
-                "info",
-                "processing",
+                WebhookLogLevel.INFO.value,
+                WebhookLogType.PROCESSING.value,
                 "Starting webhook processing"
             )
             
@@ -82,8 +85,8 @@ class ExternalPOSWebhookService:
                 
                 self._log_webhook_event(
                     webhook_event_id,
-                    "warning",
-                    "processing",
+                    WebhookLogLevel.WARNING.value,
+                    WebhookLogType.PROCESSING.value,
                     "Duplicate event detected"
                 )
                 return True
@@ -104,8 +107,8 @@ class ExternalPOSWebhookService:
                 # Log unsupported event type
                 self._log_webhook_event(
                     webhook_event_id,
-                    "warning",
-                    "processing",
+                    WebhookLogLevel.WARNING.value,
+                    WebhookLogType.PROCESSING.value,
                     f"Unsupported event type: {event_type}"
                 )
                 webhook_event.processing_status = WebhookProcessingStatus.IGNORED
@@ -120,8 +123,8 @@ class ExternalPOSWebhookService:
                 
                 self._log_webhook_event(
                     webhook_event_id,
-                    "info",
-                    "processing",
+                    WebhookLogLevel.INFO.value,
+                    WebhookLogType.PROCESSING.value,
                     "Successfully processed webhook event"
                 )
                 return True
@@ -141,16 +144,16 @@ class ExternalPOSWebhookService:
                 webhook_event.processing_status = WebhookProcessingStatus.RETRY
                 self._log_webhook_event(
                     webhook_event_id,
-                    "error",
-                    "processing",
+                    WebhookLogLevel.ERROR.value,
+                    WebhookLogType.PROCESSING.value,
                     f"Processing failed, will retry: {str(e)}"
                 )
             else:
                 webhook_event.processing_status = WebhookProcessingStatus.FAILED
                 self._log_webhook_event(
                     webhook_event_id,
-                    "error",
-                    "processing",
+                    WebhookLogLevel.ERROR.value,
+                    WebhookLogType.PROCESSING.value,
                     f"Processing failed after {webhook_event.processing_attempts} attempts: {str(e)}"
                 )
                 
@@ -210,8 +213,8 @@ class ExternalPOSWebhookService:
             
             self._log_webhook_event(
                 webhook_event.id,
-                "info",
-                "payment_processing",
+                WebhookLogLevel.INFO.value,
+                WebhookLogType.PAYMENT_PROCESSING.value,
                 f"Payment matched to order {order.id}",
                 {"order_id": order.id, "payment_amount": str(payment_update.payment_amount)}
             )
@@ -220,8 +223,8 @@ class ExternalPOSWebhookService:
             
             self._log_webhook_event(
                 webhook_event.id,
-                "warning",
-                "payment_processing",
+                WebhookLogLevel.WARNING.value,
+                WebhookLogType.PAYMENT_PROCESSING.value,
                 "Payment could not be matched to any order",
                 {"external_order_id": payment_update.external_order_id}
             )
@@ -257,12 +260,12 @@ class ExternalPOSWebhookService:
             "order_id": payment.get("order_id"),
             "status": self._map_square_status(payment.get("status")),
             "method": self._map_square_card_details(payment.get("card_details", {})),
-            "amount": amount_money.get("amount", 0) / 100,  # Square uses cents
+            "amount": amount_money.get("amount", 0) / settings.WEBHOOK_CENTS_TO_DOLLARS,  # Square uses cents
             "currency": amount_money.get("currency", "USD"),
             "card_last_four": payment.get("card_details", {}).get("card", {}).get("last_4"),
             "card_brand": payment.get("card_details", {}).get("card", {}).get("card_brand"),
             "customer_email": payment.get("buyer_email_address"),
-            "tip_amount": payment.get("tip_money", {}).get("amount", 0) / 100
+            "tip_amount": payment.get("tip_money", {}).get("amount", 0) / settings.WEBHOOK_CENTS_TO_DOLLARS
         }
     
     def _extract_stripe_payment_data(self, body: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -281,7 +284,7 @@ class ExternalPOSWebhookService:
             "order_id": metadata.get("order_id"),
             "status": self._map_stripe_status(payment_intent.get("status")),
             "method": self._map_stripe_payment_method(payment_intent.get("payment_method_types", [])),
-            "amount": payment_intent.get("amount", 0) / 100,  # Stripe uses cents
+            "amount": payment_intent.get("amount", 0) / settings.WEBHOOK_CENTS_TO_DOLLARS,  # Stripe uses cents
             "currency": payment_intent.get("currency", "usd").upper(),
             "customer_email": payment_intent.get("receipt_email"),
             "tip_amount": metadata.get("tip_amount", 0)
@@ -373,15 +376,19 @@ class ExternalPOSWebhookService:
                 return order
                 
         # Try to match by amount and time window
-        # Look for orders created within 1 hour of payment
-        time_window_start = payment_update.created_at - timedelta(hours=1)
-        time_window_end = payment_update.created_at + timedelta(minutes=10)
+        # Look for orders created within time window of payment
+        time_window_start = payment_update.created_at - timedelta(minutes=settings.WEBHOOK_DUPLICATE_WINDOW_MINUTES)
+        time_window_end = payment_update.created_at + timedelta(minutes=settings.WEBHOOK_ORDER_MATCH_WINDOW_MINUTES)
         
         potential_orders = self.db.query(Order).filter(
             and_(
                 Order.created_at >= time_window_start,
                 Order.created_at <= time_window_end,
-                Order.status.in_(["pending", "confirmed", "preparing"])
+                Order.status.in_([
+                    OrderStatus.PENDING.value,
+                    OrderStatus.IN_PROGRESS.value,
+                    OrderStatus.IN_KITCHEN.value
+                ])
             )
         ).all()
         
@@ -431,11 +438,11 @@ class ExternalPOSWebhookService:
         """Update order status based on payment completion"""
         # Update order as paid
         if hasattr(order, 'payment_status'):
-            order.payment_status = 'paid'
+            order.payment_status = OrderPaymentStatus.PAID.value
         
         # Update order status if still pending
-        if order.status in ['pending', 'confirmed']:
-            order.status = 'paid'
+        if order.status in [OrderStatus.PENDING.value, OrderStatus.IN_PROGRESS.value]:
+            order.status = OrderStatus.PAID.value
             
         # Store payment reference
         if hasattr(order, 'external_payment_id'):
@@ -443,8 +450,8 @@ class ExternalPOSWebhookService:
             
     async def _is_duplicate_event(self, webhook_event: ExternalPOSWebhookEvent) -> bool:
         """Check if this is a duplicate event"""
-        # Look for similar events in the last hour
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        # Look for similar events in the duplicate window
+        duplicate_window = datetime.utcnow() - timedelta(minutes=settings.WEBHOOK_DUPLICATE_WINDOW_MINUTES)
         
         duplicate = self.db.query(ExternalPOSWebhookEvent).filter(
             and_(
@@ -452,7 +459,7 @@ class ExternalPOSWebhookService:
                 ExternalPOSWebhookEvent.provider_id == webhook_event.provider_id,
                 ExternalPOSWebhookEvent.event_type == webhook_event.event_type,
                 ExternalPOSWebhookEvent.request_body == webhook_event.request_body,
-                ExternalPOSWebhookEvent.created_at >= one_hour_ago,
+                ExternalPOSWebhookEvent.created_at >= duplicate_window,
                 ExternalPOSWebhookEvent.processing_status.in_([
                     WebhookProcessingStatus.PROCESSED,
                     WebhookProcessingStatus.DUPLICATE
@@ -471,18 +478,33 @@ class ExternalPOSWebhookService:
         details: Optional[Dict[str, Any]] = None
     ):
         """Create a webhook processing log entry"""
+        # Mask sensitive data in details before logging
+        safe_details = mask_sensitive_dict(details) if details else None
+        
         log_entry = ExternalPOSWebhookLog(
             webhook_event_id=webhook_event_id,
             log_level=log_level,
             log_type=log_type,
             message=message,
-            details=details,
+            details=safe_details,
             occurred_at=datetime.utcnow()
         )
         self.db.add(log_entry)
         self.db.flush()
+        
+        # Also log to Python logger with masked data
+        log_message = f"Webhook {webhook_event_id}: {message}"
+        if safe_details:
+            log_message += f" Details: {safe_details}"
+            
+        if log_level == WebhookLogLevel.ERROR.value:
+            logger.error(log_message)
+        elif log_level == WebhookLogLevel.WARNING.value:
+            logger.warning(log_message)
+        else:
+            logger.info(log_message)
     
-    async def retry_failed_webhooks(self, limit: int = 10) -> int:
+    async def retry_failed_webhooks(self, limit: int = settings.WEBHOOK_RECENT_EVENTS_LIMIT) -> int:
         """Retry failed webhook events"""
         failed_events = self.db.query(ExternalPOSWebhookEvent).filter(
             ExternalPOSWebhookEvent.processing_status == WebhookProcessingStatus.RETRY,

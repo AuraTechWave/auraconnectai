@@ -15,11 +15,13 @@ from typing import Dict, Optional, Any, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
+from backend.core.config import settings
 from backend.modules.orders.models.external_pos_models import ExternalPOSProvider
 from backend.modules.orders.enums.external_pos_enums import (
     ExternalPOSProvider as POSProviderEnum,
     AuthenticationType
 )
+from backend.modules.orders.utils.security_utils import mask_sensitive_dict, mask_headers
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class WebhookAuthService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.timestamp_tolerance_seconds = 300  # 5 minutes
+        self.timestamp_tolerance_seconds = settings.WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS
         
     async def verify_webhook_request(
         self,
@@ -67,7 +69,9 @@ class WebhookAuthService:
                 return False, f"Unsupported auth type: {provider.auth_type}", None
                 
         except Exception as e:
-            logger.error(f"Error verifying webhook for {provider_code}: {str(e)}")
+            # Log error with masked headers for security
+            masked_hdrs = mask_headers(headers)
+            logger.error(f"Error verifying webhook for {provider_code}: {str(e)}, headers: {masked_hdrs}")
             return False, f"Verification error: {str(e)}", None
     
     async def _verify_hmac_sha256(

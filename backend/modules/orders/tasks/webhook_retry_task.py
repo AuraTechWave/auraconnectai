@@ -38,20 +38,20 @@ class WebhookRetryScheduler:
             return
             
         try:
-            # Add retry job - runs every 5 minutes
+            # Add retry job
             self.scheduler.add_job(
                 func=self._retry_webhooks_task,
-                trigger=IntervalTrigger(minutes=5),
+                trigger=IntervalTrigger(minutes=settings.WEBHOOK_RETRY_SCHEDULER_INTERVAL_MINUTES),
                 id=self.retry_job_id,
                 name="Webhook Retry Task",
                 replace_existing=True,
                 max_instances=1
             )
             
-            # Add cleanup job - runs every hour
+            # Add cleanup job
             self.scheduler.add_job(
                 func=self._cleanup_old_webhooks_task,
-                trigger=IntervalTrigger(hours=1),
+                trigger=IntervalTrigger(hours=settings.WEBHOOK_CLEANUP_INTERVAL_HOURS),
                 id=self.cleanup_job_id,
                 name="Webhook Cleanup Task",
                 replace_existing=True,
@@ -88,10 +88,10 @@ class WebhookRetryScheduler:
             # Get webhooks that need retry
             retry_webhooks = db.query(ExternalPOSWebhookEvent).filter(
                 ExternalPOSWebhookEvent.processing_status == WebhookProcessingStatus.RETRY,
-                ExternalPOSWebhookEvent.processing_attempts < 3
+                ExternalPOSWebhookEvent.processing_attempts < settings.WEBHOOK_MAX_RETRY_ATTEMPTS
             ).order_by(
                 ExternalPOSWebhookEvent.created_at.asc()
-            ).limit(20).all()
+            ).limit(settings.WEBHOOK_RETRY_BATCH_SIZE).all()
             
             if not retry_webhooks:
                 logger.debug("No webhooks to retry")
@@ -147,11 +147,10 @@ class WebhookRetryScheduler:
         """Clean up old processed webhooks"""
         db = next(get_db())
         try:
-            # Keep webhooks for 30 days
-            retention_days = getattr(settings, 'WEBHOOK_RETENTION_DAYS', 30)
-            cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+            # Keep webhooks for configured retention period
+            cutoff_date = datetime.utcnow() - timedelta(days=settings.WEBHOOK_RETENTION_DAYS)
             
-            # Delete old processed webhooks
+            # Delete old processed webhooks with batch limit
             deleted_count = db.query(ExternalPOSWebhookEvent).filter(
                 ExternalPOSWebhookEvent.processing_status.in_([
                     WebhookProcessingStatus.PROCESSED,
@@ -159,7 +158,7 @@ class WebhookRetryScheduler:
                     WebhookProcessingStatus.IGNORED
                 ]),
                 ExternalPOSWebhookEvent.created_at < cutoff_date
-            ).delete()
+            ).limit(settings.WEBHOOK_CLEANUP_MAX_DELETE_BATCH).delete(synchronize_session='fetch')
             
             db.commit()
             

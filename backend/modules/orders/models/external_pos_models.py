@@ -40,7 +40,20 @@ class ExternalPOSProvider(Base, TimestampMixin):
     # Rate limiting
     rate_limit_per_minute = Column(Integer, default=60)
     
-    webhook_events = relationship("ExternalPOSWebhookEvent", back_populates="provider")
+    # Relationships
+    webhook_events = relationship("ExternalPOSWebhookEvent", back_populates="provider", cascade="all, delete-orphan")
+    
+    @property
+    def total_events(self):
+        """Total number of webhook events for this provider"""
+        return len(self.webhook_events) if self.webhook_events else 0
+    
+    @property
+    def failed_events_count(self):
+        """Count of failed webhook events"""
+        if not self.webhook_events:
+            return 0
+        return sum(1 for event in self.webhook_events if event.processing_status == "failed")
 
 
 class ExternalPOSWebhookEvent(Base, TimestampMixin):
@@ -72,13 +85,39 @@ class ExternalPOSWebhookEvent(Base, TimestampMixin):
     is_verified = Column(Boolean, default=False, nullable=False)
     verification_details = Column(JSONB, nullable=True)
     
+    # Relationships
     provider = relationship("ExternalPOSProvider", back_populates="webhook_events")
-    payment_updates = relationship("ExternalPOSPaymentUpdate", back_populates="webhook_event")
+    payment_updates = relationship("ExternalPOSPaymentUpdate", back_populates="webhook_event", cascade="all, delete-orphan")
+    logs = relationship("ExternalPOSWebhookLog", back_populates="webhook_event", cascade="all, delete-orphan", order_by="ExternalPOSWebhookLog.occurred_at.desc()")
     
     __table_args__ = (
         Index('idx_webhook_event_processing', 'processing_status', 'created_at'),
         Index('idx_webhook_event_provider_type', 'provider_id', 'event_type'),
     )
+    
+    @property
+    def is_failed(self):
+        """Check if webhook processing failed"""
+        return self.processing_status == "failed"
+    
+    @property
+    def is_processed(self):
+        """Check if webhook was successfully processed"""
+        return self.processing_status == "processed"
+    
+    @property
+    def processing_duration(self):
+        """Calculate processing duration in seconds"""
+        if self.processed_at and self.created_at:
+            return (self.processed_at - self.created_at).total_seconds()
+        return None
+    
+    @property
+    def latest_payment_update(self):
+        """Get the most recent payment update"""
+        if self.payment_updates:
+            return max(self.payment_updates, key=lambda x: x.created_at)
+        return None
 
 
 class ExternalPOSPaymentUpdate(Base, TimestampMixin):
@@ -130,6 +169,19 @@ class ExternalPOSPaymentUpdate(Base, TimestampMixin):
         Index('idx_payment_update_external_refs', 'external_transaction_id', 'external_order_id'),
         Index('idx_payment_update_processing', 'is_processed', 'created_at'),
     )
+    
+    @property
+    def total_amount(self):
+        """Calculate total amount including tip"""
+        total = self.payment_amount or 0
+        if self.tip_amount:
+            total += self.tip_amount
+        return total
+    
+    @property
+    def is_matched(self):
+        """Check if payment is matched to a local order"""
+        return self.order_id is not None
 
 
 class ExternalPOSWebhookLog(Base, TimestampMixin):
@@ -145,6 +197,9 @@ class ExternalPOSWebhookLog(Base, TimestampMixin):
     details = Column(JSONB, nullable=True)
     
     occurred_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationships
+    webhook_event = relationship("ExternalPOSWebhookEvent", back_populates="logs")
     
     __table_args__ = (
         Index('idx_webhook_log_event', 'webhook_event_id', 'occurred_at'),

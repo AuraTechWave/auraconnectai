@@ -129,13 +129,18 @@ def upgrade():
     op.create_index('idx_orders_payment_status', 'orders', ['payment_status'])
     op.create_index('idx_orders_external_payment_id', 'orders', ['external_payment_id'])
     
+    # Import enums for use in migration
+    from backend.modules.orders.enums.external_pos_enums import (
+        SquareEventType, StripeEventType, ToastEventType, CloverEventType
+    )
+    
     # Insert default providers
-    op.execute("""
+    op.execute(f"""
         INSERT INTO external_pos_providers (provider_code, provider_name, webhook_endpoint_id, auth_type, auth_config, supported_events) VALUES
-        ('square', 'Square', 'square-webhook', 'hmac_sha256', '{"webhook_secret": "", "signature_header": "X-Square-Signature"}', '["payment.updated", "payment.created"]'),
-        ('stripe', 'Stripe', 'stripe-webhook', 'hmac_sha256', '{"webhook_secret": "", "signature_header": "Stripe-Signature"}', '["payment_intent.succeeded", "payment_intent.payment_failed"]'),
-        ('toast', 'Toast', 'toast-webhook', 'api_key', '{"api_key": "", "api_key_header": "X-Toast-API-Key"}', '["payment.completed", "payment.voided"]'),
-        ('clover', 'Clover', 'clover-webhook', 'api_key', '{"api_key": "", "api_key_header": "X-Clover-API-Key"}', '["payment.processed", "payment.refunded"]')
+        ('square', 'Square', 'square-webhook', 'hmac_sha256', '{{{"webhook_secret": "", "signature_header": "X-Square-Signature"}}}', '["{SquareEventType.PAYMENT_UPDATED.value}", "{SquareEventType.PAYMENT_CREATED.value}"]'),
+        ('stripe', 'Stripe', 'stripe-webhook', 'hmac_sha256', '{{{"webhook_secret": "", "signature_header": "Stripe-Signature"}}}', '["{StripeEventType.PAYMENT_INTENT_SUCCEEDED.value}", "{StripeEventType.PAYMENT_INTENT_PAYMENT_FAILED.value}"]'),
+        ('toast', 'Toast', 'toast-webhook', 'api_key', '{{{"api_key": "", "api_key_header": "X-Toast-API-Key"}}}', '["{ToastEventType.PAYMENT_COMPLETED.value}", "{ToastEventType.PAYMENT_VOIDED.value}"]'),
+        ('clover', 'Clover', 'clover-webhook', 'api_key', '{{{"api_key": "", "api_key_header": "X-Clover-API-Key"}}}', '["{CloverEventType.PAYMENT_PROCESSED.value}", "{CloverEventType.PAYMENT_REFUNDED.value}"]')
         ON CONFLICT (provider_code) DO NOTHING
     """)
 
