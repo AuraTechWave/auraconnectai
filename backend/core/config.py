@@ -61,6 +61,31 @@ class Settings(BaseSettings):
     debug: bool = True
     log_level: str = "INFO"
     
+    # External POS Webhook Configuration
+    WEBHOOK_MAX_RETRY_ATTEMPTS: int = 3
+    WEBHOOK_RETRY_DELAYS: List[int] = [60, 300, 900]  # seconds: 1min, 5min, 15min
+    WEBHOOK_RETRY_SCHEDULER_INTERVAL_MINUTES: int = 5
+    WEBHOOK_HEALTH_CHECK_INTERVAL_MINUTES: int = 5
+    WEBHOOK_CLEANUP_INTERVAL_HOURS: int = 1
+    WEBHOOK_RETENTION_DAYS: int = 30
+    WEBHOOK_DUPLICATE_WINDOW_MINUTES: int = 60
+    WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS: int = 300  # 5 minutes
+    WEBHOOK_HTTP_TIMEOUT_SECONDS: int = 30
+    WEBHOOK_CLEANUP_MAX_DELETE_BATCH: int = 1000
+    WEBHOOK_RATE_LIMIT_PER_MINUTE: int = 60
+    WEBHOOK_RETRY_BATCH_SIZE: int = 20  # Max webhooks to retry per batch
+    WEBHOOK_ORDER_MATCH_WINDOW_MINUTES: int = 10  # Time window for order matching
+    WEBHOOK_RECENT_EVENTS_LIMIT: int = 10  # Number of recent events to display
+    WEBHOOK_HEALTH_CHECK_HOURS: int = 24  # Time window for health check stats
+    WEBHOOK_HEALTH_DEGRADED_THRESHOLD: int = 5  # Failed webhooks before status is degraded
+    WEBHOOK_STATS_DEFAULT_HOURS: int = 24  # Default time period for statistics
+    WEBHOOK_STATS_MAX_HOURS: int = 168  # Maximum time period for statistics (7 days)
+    WEBHOOK_RETRY_API_LIMIT: int = 50  # Maximum webhooks to retry via API
+    WEBHOOK_LOG_RESPONSE_TRUNCATE: int = 1000  # Max response body chars to store
+    WEBHOOK_SUCCESS_STATUS_MIN: int = 200  # Minimum successful HTTP status code
+    WEBHOOK_SUCCESS_STATUS_MAX: int = 300  # Maximum successful HTTP status code (exclusive)
+    WEBHOOK_CENTS_TO_DOLLARS: int = 100  # Conversion factor for cents to dollars
+    
     # File Upload Configuration
     max_upload_size_mb: int = 10
     allowed_file_types: List[str] = ["csv", "xlsx", "pdf"]

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 import httpx
+from backend.core.config import settings
 from ..models.webhook_models import WebhookConfiguration, WebhookDeliveryLog
 from ..models.order_models import Order
 from ..schemas.webhook_schemas import (
@@ -22,9 +23,9 @@ logger = logging.getLogger(__name__)
 class WebhookService:
     def __init__(self, db: Session):
         self.db = db
-        self.max_retries = 3
-        self.retry_delays = [1, 5, 15]
-        self.timeout = 30
+        self.max_retries = settings.WEBHOOK_MAX_RETRY_ATTEMPTS
+        self.retry_delays = [delay // 60 for delay in settings.WEBHOOK_RETRY_DELAYS]  # Convert seconds to minutes
+        self.timeout = settings.WEBHOOK_HTTP_TIMEOUT_SECONDS
 
     async def create_webhook_config(
         self,
@@ -181,10 +182,10 @@ class WebhookService:
 
                     delivery_log.attempt_count = attempt + 1
                     delivery_log.response_status_code = response.status_code
-                    delivery_log.response_body = response.text[:1000]
+                    delivery_log.response_body = response.text[:settings.WEBHOOK_LOG_RESPONSE_TRUNCATE]
                     delivery_log.delivered_at = datetime.utcnow()
 
-                    if 200 <= response.status_code < 300:
+                    if settings.WEBHOOK_SUCCESS_STATUS_MIN <= response.status_code < settings.WEBHOOK_SUCCESS_STATUS_MAX:
                         delivery_log.status = WebhookStatus.DELIVERED
                         delivery_log.delivery_status = (
                             WebhookDeliveryStatus.SUCCESS
@@ -293,11 +294,11 @@ class WebhookService:
                 )
 
                 return WebhookTestResponse(
-                    success=200 <= response.status_code < 300,
+                    success=settings.WEBHOOK_SUCCESS_STATUS_MIN <= response.status_code < settings.WEBHOOK_SUCCESS_STATUS_MAX,
                     status_code=response.status_code,
                     response_body=response.text[:500],
                     error_message=(
-                        None if 200 <= response.status_code < 300
+                        None if settings.WEBHOOK_SUCCESS_STATUS_MIN <= response.status_code < settings.WEBHOOK_SUCCESS_STATUS_MAX
                         else "HTTP error"
                     )
                 )

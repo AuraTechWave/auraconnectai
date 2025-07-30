@@ -13,6 +13,17 @@ class OrderStatus(str, Enum):
     SCHEDULED = "scheduled"
     AWAITING_FULFILLMENT = "awaiting_fulfillment"
     ARCHIVED = "archived"
+    PAID = "paid"  # Order has been paid externally
+
+
+class OrderPaymentStatus(str, Enum):
+    UNPAID = "unpaid"
+    PENDING = "pending"
+    PAID = "paid"
+    PARTIALLY_PAID = "partially_paid"
+    REFUNDED = "refunded"
+    PARTIALLY_REFUNDED = "partially_refunded"
+    FAILED = "failed"
 
 
 class OrderItemStatus(str, Enum):

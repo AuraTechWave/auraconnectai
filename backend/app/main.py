@@ -32,6 +32,12 @@ from backend.modules.orders.routes.pricing_routes import (
 from backend.modules.orders.routers.sync import (
     sync_router as order_sync_router
 )
+from backend.modules.orders.routers.external_pos_webhook_router import (
+    router as external_pos_webhook_router
+)
+from backend.modules.orders.routers.webhook_monitoring_router import (
+    router as webhook_monitoring_router
+)
 from backend.modules.tax.routes.tax_routes import router as tax_router
 from backend.modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
@@ -71,6 +77,10 @@ from backend.core.menu_versioning_triggers import init_versioning_triggers
 from backend.modules.orders.tasks.sync_tasks import (
     start_sync_scheduler,
     stop_sync_scheduler
+)
+from backend.modules.orders.tasks.webhook_retry_task import (
+    start_webhook_retry_scheduler,
+    stop_webhook_retry_scheduler
 )
 
 # FastAPI app with enhanced OpenAPI documentation
@@ -143,6 +153,8 @@ app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
 app.include_router(pricing_router)
 app.include_router(order_sync_router)
+app.include_router(external_pos_webhook_router)
+app.include_router(webhook_monitoring_router)
 app.include_router(tax_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
@@ -167,6 +179,8 @@ async def startup_event():
     """Initialize services on application startup"""
     # Start order sync scheduler
     await start_sync_scheduler()
+    # Start webhook retry scheduler
+    await start_webhook_retry_scheduler()
 
 
 @app.on_event("shutdown")
@@ -174,6 +188,8 @@ async def shutdown_event():
     """Cleanup on application shutdown"""
     # Stop order sync scheduler
     await stop_sync_scheduler()
+    # Stop webhook retry scheduler
+    await stop_webhook_retry_scheduler()
 
 
 @app.get("/")
