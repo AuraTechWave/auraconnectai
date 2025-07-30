@@ -23,9 +23,23 @@ from ...schemas.batch_processing_schemas import (
     BatchJobDetail,
     EmployeePayrollResult
 )
+from ...schemas.error_schemas import ErrorDetail
 from ...schemas.error_schemas import ErrorResponse, PayrollErrorCodes
 from ...services.batch_payroll_service import BatchPayrollService
 from ...enums.payroll_enums import PayrollJobStatus
+from ...exceptions import (
+    BatchProcessingError,
+    JobNotFoundException,
+    JobCancellationError,
+    PayrollValidationError,
+    DatabaseError
+)
+from .helpers import (
+    calculate_job_progress,
+    format_job_summary,
+    get_tenant_filter,
+    validate_date_range
+)
 
 router = APIRouter()
 
@@ -104,15 +118,12 @@ async def run_batch_payroll(
     """
     try:
         # Validate date range
-        if batch_request.pay_period_start >= batch_request.pay_period_end:
-            raise HTTPException(
-                status_code=422,
-                detail=ErrorResponse(
-                    error="ValidationError",
-                    message="Pay period end must be after start",
-                    code=PayrollErrorCodes.INVALID_DATE_RANGE
-                ).dict()
-            )
+        date_validation = validate_date_range(
+            batch_request.pay_period_start,
+            batch_request.pay_period_end
+        )
+        if not date_validation["valid"]:
+            raise PayrollValidationError(date_validation["error"])
         
         # Create job tracking
         job_id = str(uuid.uuid4())
@@ -149,17 +160,21 @@ async def run_batch_payroll(
             estimated_completion_time=datetime.utcnow().replace(minute=datetime.utcnow().minute + 5)
         )
         
-    except HTTPException:
-        raise
-    except Exception as e:
+    except PayrollValidationError as e:
         raise HTTPException(
-            status_code=500,
+            status_code=e.status_code,
             detail=ErrorResponse(
-                error="BatchProcessingError",
-                message=f"Failed to start batch processing: {str(e)}",
-                code=PayrollErrorCodes.DATABASE_ERROR
+                error=e.__class__.__name__,
+                message=e.message,
+                code=e.code,
+                details=e.details
             ).dict()
         )
+    except Exception as e:
+        raise BatchProcessingError(
+            message="Failed to start batch processing",
+            details=[ErrorDetail(field="system", message=str(e))]
+        ) from e
 
 
 @router.get("/status/{job_id}", response_model=BatchJobStatus)
@@ -177,41 +192,48 @@ async def get_batch_job_status(
     ## Response
     Returns current job status and progress.
     """
-    job = db.query(PayrollJobTracking).filter(
-        PayrollJobTracking.job_id == job_id,
-        PayrollJobTracking.job_type == "batch_payroll"
-    ).first()
-    
-    if not job:
+    try:
+        job = db.query(PayrollJobTracking).filter(
+            PayrollJobTracking.job_id == job_id,
+            PayrollJobTracking.job_type == "batch_payroll"
+        ).first()
+        
+        if not job:
+            raise JobNotFoundException(job_id)
+        
+        # Calculate progress using helper
+        progress_data = calculate_job_progress(job)
+        
+        return BatchJobStatus(
+            job_id=job.job_id,
+            status=job.status,
+            progress=progress_data["progress"],
+            started_at=job.started_at,
+            completed_at=job.completed_at,
+            total_employees=progress_data["total_items"],
+            processed_employees=progress_data["processed_items"],
+            successful_count=progress_data["successful_items"],
+            failed_count=progress_data["failed_items"],
+            error_message=job.error_message,
+            estimated_time_remaining=(
+                int((progress_data["estimated_completion"] - datetime.utcnow()).total_seconds())
+                if progress_data["estimated_completion"] else None
+            )
+        )
+    except JobNotFoundException as e:
         raise HTTPException(
-            status_code=404,
+            status_code=e.status_code,
             detail=ErrorResponse(
-                error="NotFound",
-                message=f"Batch job {job_id} not found",
-                code=PayrollErrorCodes.RECORD_NOT_FOUND
+                error=e.__class__.__name__,
+                message=e.message,
+                code=e.code
             ).dict()
         )
-    
-    # Calculate progress
-    total = job.metadata.get("employee_count", 0)
-    if isinstance(total, str) and total == "all":
-        total = 100  # Placeholder for "all employees"
-    
-    processed = job.metadata.get("total_processed", 0)
-    progress = (processed / total * 100) if total > 0 else 0
-    
-    return BatchJobStatus(
-        job_id=job.job_id,
-        status=job.status,
-        progress=progress,
-        started_at=job.started_at,
-        completed_at=job.completed_at,
-        total_employees=total,
-        processed_employees=processed,
-        successful_count=job.metadata.get("successful", 0),
-        failed_count=job.metadata.get("failed", 0),
-        error_message=job.error_message
-    )
+    except Exception as e:
+        raise DatabaseError(
+            message="Failed to retrieve job status",
+            operation="query"
+        ) from e
 
 
 @router.get("/details/{job_id}", response_model=BatchJobDetail)
