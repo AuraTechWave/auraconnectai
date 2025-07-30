@@ -73,7 +73,7 @@ from backend.modules.analytics.routers.realtime_router import (
 from backend.modules.analytics.routers.ai_insights_router import (
     router as ai_insights_router
 )
-from backend.modules.analytics.routers.pos_analytics_router import (
+from backend.modules.analytics.routers.pos import (
     router as pos_analytics_router
 )
 from backend.modules.ai_recommendations.routers import (

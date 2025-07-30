@@ -10,18 +10,49 @@ The POS Analytics API provides comprehensive analytics and reporting for Point o
 /api/analytics/pos
 ```
 
-## Authentication
+## Authentication & Permissions
 
-All endpoints require authentication and appropriate permissions:
-- `analytics.view` - View analytics data
-- `analytics.manage` - Manage alerts and refresh data
-- `analytics.export` - Export analytics reports
-
-Include the authentication token in the Authorization header:
+All endpoints require authentication. Include the authentication token in the Authorization header:
 
 ```
 Authorization: Bearer <token>
 ```
+
+### Required Permissions by Endpoint
+
+| Endpoint | Required Permission | Description |
+|----------|-------------------|-------------|
+| `POST /analytics/pos/dashboard` | `analytics.view` | View dashboard data |
+| `POST /analytics/pos/provider/{id}/details` | `analytics.view` | View provider details |
+| `POST /analytics/pos/terminal/{id}/details` | `analytics.view` | View terminal details |
+| `POST /analytics/pos/compare` | `analytics.view` | Compare providers |
+| `GET /analytics/pos/alerts/active` | `analytics.view` | View active alerts |
+| `POST /analytics/pos/alerts/{id}/acknowledge` | `analytics.manage` | Acknowledge alerts |
+| `POST /analytics/pos/alerts/{id}/resolve` | `analytics.manage` | Resolve alerts |
+| `GET /analytics/pos/alerts/history` | `analytics.view` | View alert history |
+| `GET /analytics/pos/health/terminals` | `analytics.view` | View terminal health |
+| `GET /analytics/pos/trends/transactions` | `analytics.view` | View transaction trends |
+| `GET /analytics/pos/trends/performance` | `analytics.view` | View performance trends |
+| `POST /analytics/pos/export` | `analytics.export` | Export analytics data |
+| `POST /analytics/pos/refresh` | `analytics.manage` | Refresh analytics data |
+
+### Rate Limiting
+
+The following rate limits apply to POS analytics endpoints:
+
+| Endpoint Pattern | Rate Limit | Window |
+|-----------------|------------|---------|
+| `/analytics/pos/dashboard` | 60 requests | per minute |
+| `/analytics/pos/*/details` | 120 requests | per minute |
+| `/analytics/pos/alerts/*` | 60 requests | per minute |
+| `/analytics/pos/trends/*` | 120 requests | per minute |
+| `/analytics/pos/export` | 10 requests | per minute |
+| `/analytics/pos/refresh` | 5 requests | per minute |
+
+When rate limit is exceeded, the API returns HTTP 429 with headers:
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining
+- `X-RateLimit-Reset`: Unix timestamp when limit resets
 
 ## Endpoints
 
@@ -243,7 +274,7 @@ Compare analytics metrics across multiple POS providers.
 
 ### 5. Active Alerts
 
-Get active POS analytics alerts.
+Get active POS analytics alerts with pagination support.
 
 **Endpoint:** `GET /analytics/pos/alerts/active`
 
@@ -252,6 +283,7 @@ Get active POS analytics alerts.
 - `provider_id` - Filter by provider
 - `terminal_id` - Filter by terminal
 - `limit` - Maximum alerts to return (default: 50, max: 200)
+- `offset` - Pagination offset (default: 0)
 
 **Response:**
 
@@ -274,6 +306,9 @@ Get active POS analytics alerts.
     }
   ],
   "total_count": 3,
+  "limit": 50,
+  "offset": 0,
+  "has_more": false,
   "filters": {
     "severity": "warning",
     "provider_id": 1,
