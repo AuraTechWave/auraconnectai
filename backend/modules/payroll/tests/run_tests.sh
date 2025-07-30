@@ -40,6 +40,8 @@ while [[ $# -gt 0 ]]; do
         --performance)
             TEST_TYPE="performance"
             MARKERS="-m performance"
+            # Override default exclusion of performance tests
+            PYTEST_CMD="pytest tests/"
             shift
             ;;
         --smoke)

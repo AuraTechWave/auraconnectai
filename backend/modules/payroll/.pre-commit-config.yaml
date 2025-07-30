@@ -1,0 +1,90 @@
+# backend/modules/payroll/.pre-commit-config.yaml
+
+# Pre-commit hooks specific to payroll module
+# This extends the main backend pre-commit configuration
+
+repos:
+  # Payroll-specific checks
+  - repo: local
+    hooks:
+      # Run payroll unit tests (fast subset)
+      - id: payroll-unit-tests-fast
+        name: Payroll Unit Tests (Fast)
+        entry: bash -c 'cd backend/modules/payroll && pytest tests/ -m "unit and not slow" -x --tb=short --no-cov'
+        language: system
+        pass_filenames: false
+        files: '^backend/modules/payroll/(?!tests/).*\.py$'
+        stages: [commit]
+
+      # Check for payroll-specific patterns
+      - id: payroll-decimal-usage
+        name: Check Decimal Usage
+        entry: bash -c 'grep -r "float(" --include="*.py" backend/modules/payroll/ --exclude-dir=tests && echo "Use Decimal for monetary values!" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+        files: '^backend/modules/payroll/.*\.py$'
+
+      # Validate tax calculations
+      - id: payroll-tax-constants
+        name: Validate Tax Constants
+        entry: python backend/modules/payroll/scripts/validate_tax_constants.py
+        language: system
+        files: '^backend/modules/payroll/.*tax.*\.py$'
+
+      # Check for sensitive data
+      - id: payroll-no-ssn
+        name: No SSN in Code
+        entry: bash -c 'grep -r "\b\d{3}-\d{2}-\d{4}\b" --include="*.py" backend/modules/payroll/ --exclude-dir=tests && echo "Potential SSN found!" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+
+      # Verify model changes
+      - id: payroll-model-migration
+        name: Check Model Changes
+        entry: bash -c 'git diff --cached --name-only | grep -E "backend/modules/payroll/models/.*\.py$" && echo "Model changed - remember to create migration!" || exit 0'
+        language: system
+        pass_filenames: false
+        verbose: true
+
+      # Run specific validation tests
+      - id: payroll-validation-tests
+        name: Payroll Validation Tests
+        entry: bash -c 'cd backend/modules/payroll && pytest tests/test_payroll_models_validation.py -v'
+        language: system
+        pass_filenames: false
+        files: '^backend/modules/payroll/models/.*\.py$'
+
+      # Check for proper error handling
+      - id: payroll-error-handling
+        name: Check Error Handling
+        entry: python backend/modules/payroll/scripts/check_error_handling.py
+        language: system
+        files: '^backend/modules/payroll/services/.*\.py$'
+
+      # Verify API schema updates
+      - id: payroll-schema-sync
+        name: Check Schema Sync
+        entry: bash -c 'git diff --cached --name-only | grep -E "backend/modules/payroll/schemas/.*\.py$" && echo "Schema changed - update API docs!" || exit 0'
+        language: system
+        pass_filenames: false
+        verbose: true
+
+# Additional payroll-specific tool configurations
+ci:
+  skip: [payroll-unit-tests-fast, payroll-validation-tests]  # Skip in CI, run full tests there
+
+# Payroll module specific file patterns
+files: |
+  (?x)^(
+    backend/modules/payroll/.*\.py|
+    backend/modules/payroll/.*\.sql|
+    backend/modules/payroll/.*\.json
+  )$
+
+exclude: |
+  (?x)^(
+    backend/modules/payroll/migrations/.*|
+    backend/modules/payroll/tests/.*\.py|
+    backend/modules/payroll/__pycache__/.*|
+    backend/modules/payroll/\.coverage
+  )$
