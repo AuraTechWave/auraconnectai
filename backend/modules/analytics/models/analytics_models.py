@@ -2,7 +2,7 @@
 
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean, 
-    Index, text, func, Date, Enum as SQLEnum
+    Index, text, func, Date, Enum as SQLEnum, Float
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -32,6 +32,42 @@ class AggregationPeriod(str, Enum):
     MONTHLY = "monthly"
     QUARTERLY = "quarterly"
     YEARLY = "yearly"
+
+
+class ForecastHistory(Base, TimestampMixin):
+    """History of all forecasts made"""
+    __tablename__ = "forecast_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    forecast_id = Column(String, unique=True, index=True)
+    entity_type = Column(String, nullable=False, index=True)
+    entity_id = Column(Integer, nullable=True, index=True)
+    model_type = Column(String, nullable=False)
+    forecast_date = Column(Date, nullable=False)
+    horizon_days = Column(Integer, nullable=False)
+    predictions_json = Column(text, nullable=False)  # JSON array of predictions
+    metadata_json = Column(text, nullable=True)  # Additional metadata
+
+
+class ForecastPerformance(Base, TimestampMixin):
+    """Tracked performance metrics for forecasts"""
+    __tablename__ = "forecast_performance"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    entity_type = Column(String, nullable=False, index=True)
+    entity_id = Column(Integer, nullable=True, index=True)
+    evaluation_date = Column(Date, nullable=False, index=True)
+    mae = Column(Float, nullable=False)
+    mape = Column(Float, nullable=False)
+    rmse = Column(Float, nullable=False)
+    r_squared = Column(Float, nullable=True)
+    bias = Column(Float, nullable=True)
+    sample_size = Column(Integer, nullable=False)
+    metrics_json = Column(text, nullable=True)  # Additional metrics as JSON
+    
+    __table_args__ = (
+        Index('idx_forecast_performance_entity', 'entity_type', 'entity_id', 'evaluation_date'),
+    )
 
 
 class SalesAnalyticsSnapshot(Base, TimestampMixin):
