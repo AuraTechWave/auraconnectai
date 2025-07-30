@@ -32,7 +32,7 @@ from backend.modules.orders.routes.pricing_routes import (
 from backend.modules.orders.routers.sync import (
     sync_router as order_sync_router
 )
-from backend.modules.orders.routers.pos_sync_router import (
+from backend.modules.orders.routers.pos_sync import (
     router as order_pos_sync_router
 )
 from backend.modules.orders.routers.external_pos_webhook_router import (

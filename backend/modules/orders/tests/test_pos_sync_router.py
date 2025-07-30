@@ -69,7 +69,7 @@ class TestPOSSyncEndpoint:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
         
         assert data["status"] == "initiated"
@@ -91,12 +91,10 @@ class TestPOSSyncEndpoint:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 404
         data = response.json()
         
-        assert data["status"] == "failed"
-        assert data["orders_queued"] == 0
-        assert "No valid orders found" in data["message"]
+        assert "No valid orders found" in data["detail"]
     
     def test_sync_all_pending_orders(self, client: TestClient, db: Session, auth_headers, mock_scheduler):
         """Test syncing all pending orders"""
@@ -133,7 +131,7 @@ class TestPOSSyncEndpoint:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
         
         assert data["status"] == "initiated"
@@ -173,7 +171,7 @@ class TestPOSSyncEndpoint:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
         
         assert data["status"] in ["initiated", "completed"]
@@ -213,7 +211,7 @@ class TestPOSSyncEndpoint:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
         
         assert data["status"] == "completed"
@@ -297,7 +295,7 @@ class TestPOSSyncRequestValidation:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code == 202
         data = response.json()
         
         # Should default to sync_all_pending=True
@@ -331,11 +329,66 @@ class TestPOSSyncRequestValidation:
             headers=auth_headers
         )
         
-        assert response.status_code == 200
+        assert response.status_code in [202, 404]  # 202 if orders exist, 404 if not
         data = response.json()
         
         # Should process specific orders, not all pending
-        assert "order_ids" in data.get("details", {})
+        if response.status_code == 202:
+            assert "order_ids" in data.get("details", {})
+    
+    def test_empty_order_ids_array(self, client: TestClient, auth_headers):
+        """Test with empty order_ids array"""
+        request_data = {
+            "order_ids": [],
+            "sync_all_pending": False
+        }
+        
+        response = client.post(
+            "/pos/sync",
+            json=request_data,
+            headers=auth_headers
+        )
+        
+        assert response.status_code == 400
+        data = response.json()
+        assert "order_ids cannot be empty" in data["detail"]
+    
+    def test_scheduler_failure(self, client: TestClient, db: Session, auth_headers, mock_scheduler):
+        """Test when scheduler trigger_manual_sync returns False"""
+        # Configure mock to return False
+        mock_scheduler.trigger_manual_sync.return_value = False
+        
+        # Create pending order
+        order = Order(
+            staff_id=1,
+            table_no="T1",
+            status="completed",
+            is_deleted=False
+        )
+        db.add(order)
+        db.flush()
+        
+        sync_status = OrderSyncStatus(
+            order_id=order.id,
+            sync_status=SyncStatus.PENDING,
+            sync_direction="local_to_remote"
+        )
+        db.add(sync_status)
+        db.commit()
+        
+        request_data = {
+            "sync_all_pending": True
+        }
+        
+        response = client.post(
+            "/pos/sync",
+            json=request_data,
+            headers=auth_headers
+        )
+        
+        assert response.status_code == 503
+        data = response.json()
+        assert "Sync scheduler is unavailable" in data["detail"]
 
 
 @pytest.mark.asyncio

@@ -136,9 +136,13 @@ curl -X GET https://api.auraconnect.ai/api/pos/sync/status \
 
 | Status Code | Description |
 |-------------|-------------|
-| 200 | Success |
+| 200 | Success (GET requests) |
+| 202 | Accepted - Sync initiated in background |
+| 400 | Bad Request - Invalid input parameters |
 | 401 | Unauthorized - Invalid or missing authentication |
-| 422 | Validation Error - Invalid request data |
+| 404 | Not Found - Requested orders not found |
+| 422 | Validation Error - Invalid request data format |
+| 503 | Service Unavailable - Sync scheduler not available |
 | 500 | Internal Server Error |
 
 ## Sync Status Values
@@ -159,6 +163,42 @@ All error responses follow this format:
 ```json
 {
   "detail": "Error message describing what went wrong"
+}
+```
+
+### Example Error Responses
+
+**400 Bad Request - Empty order_ids:**
+```json
+{
+  "detail": "order_ids cannot be empty when provided"
+}
+```
+
+**404 Not Found - Invalid order IDs:**
+```json
+{
+  "detail": "No valid orders found for IDs: [9999, 10000]"
+}
+```
+
+**422 Validation Error - Invalid data type:**
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "order_ids"],
+      "msg": "value is not a valid list",
+      "type": "type_error.list"
+    }
+  ]
+}
+```
+
+**503 Service Unavailable - Scheduler offline:**
+```json
+{
+  "detail": "Sync scheduler is unavailable"
 }
 ```
 
@@ -211,8 +251,40 @@ GET /pos/sync/status
 1. **Regular Status Checks**: Poll `/pos/sync/status` periodically to monitor sync health
 2. **Batch Processing**: Use specific order IDs for targeted syncing of problematic orders
 3. **Error Handling**: Check the `status` field in responses and handle failures appropriately
-4. **Rate Limiting**: Avoid calling sync endpoints too frequently (recommended: max 1 call per minute)
+4. **Rate Limiting**: The sync endpoints are rate-limited to 1 request per minute per terminal. Implement exponential backoff for retries
 5. **Monitoring**: Track failed syncs and conflicts for manual intervention
+
+### Rate Limiting
+
+The POS sync endpoints enforce the following rate limits:
+- **POST /pos/sync**: 1 request per minute per terminal ID
+- **GET /pos/sync/status**: 60 requests per minute (standard API rate limit)
+
+When rate limit is exceeded, you'll receive a 429 response:
+```json
+{
+  "detail": "Rate limit exceeded. Please wait before retrying."
+}
+```
+
+Implement exponential backoff in your client:
+```python
+import time
+
+def sync_with_retry(client, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            response = client.trigger_sync()
+            if response.status_code == 429:
+                wait_time = 2 ** attempt * 60  # 1min, 2min, 4min
+                time.sleep(wait_time)
+                continue
+            return response
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)
+```
 
 ## Integration Example
 
