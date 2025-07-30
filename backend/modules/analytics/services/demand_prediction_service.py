@@ -30,6 +30,16 @@ from backend.modules.analytics.models.analytics_models import (
 from backend.modules.orders.models.order_models import Order, OrderItem
 from backend.modules.orders.models.inventory_models import Inventory
 from backend.modules.menu.models import MenuItem, MenuCategory
+from backend.modules.analytics.exceptions import (
+    InsufficientDataError, ForecastModelError, DataQualityError
+)
+from backend.modules.analytics.constants import (
+    MIN_DATA_POINTS_FOR_FORECAST, CACHE_TTL_SECONDS,
+    WEATHER_IMPACT_THRESHOLDS
+)
+from backend.modules.analytics.services.cache_service import (
+    get_historical_cache, get_model_cache
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +49,8 @@ class DemandPredictionService:
     
     def __init__(self, db: Session):
         self.db = db
-        self.model_cache = {}
+        self.historical_cache = get_historical_cache()
+        self.model_cache_service = get_model_cache()
         self.external_factors = ExternalFactorsAnalyzer()
         
     async def forecast_demand(
@@ -63,8 +74,13 @@ class DemandPredictionService:
                 request.time_granularity
             )
             
-            if len(historical_data) < 7:
-                raise ValueError("Insufficient historical data for forecasting")
+            if len(historical_data) < MIN_DATA_POINTS_FOR_FORECAST:
+                raise InsufficientDataError(
+                    required_points=MIN_DATA_POINTS_FOR_FORECAST,
+                    available_points=len(historical_data),
+                    entity_type=request.entity_type,
+                    entity_id=request.entity_id
+                )
             
             # Prepare time series data
             time_series = self._prepare_time_series(historical_data)
@@ -136,9 +152,18 @@ class DemandPredictionService:
                 recommended_actions=recommendations
             )
             
+        except InsufficientDataError:
+            raise  # Re-raise as is
+        except ForecastModelError:
+            raise  # Re-raise as is
         except Exception as e:
             logger.error(f"Demand forecasting failed: {e}", exc_info=True)
-            raise
+            raise ForecastModelError(
+                model_type=request.model_type or "auto",
+                reason=str(e),
+                entity_type=request.entity_type,
+                entity_id=request.entity_id
+            )
     
     def _get_historical_demand(
         self,
@@ -146,7 +171,15 @@ class DemandPredictionService:
         entity_id: Optional[int],
         granularity: TimeGranularity
     ) -> pd.DataFrame:
-        """Retrieve historical demand data"""
+        """Retrieve historical demand data with caching"""
+        
+        # Check cache first
+        cached_data = self.historical_cache.get_historical_data(
+            entity_type, entity_id, granularity.value
+        )
+        if cached_data is not None:
+            logger.debug(f"Using cached historical data for {entity_type}:{entity_id}")
+            return cached_data
         
         # Determine date range
         end_date = date.today()
@@ -190,6 +223,11 @@ class DemandPredictionService:
         
         df['date'] = pd.to_datetime(df['date'])
         df.set_index('date', inplace=True)
+        
+        # Cache the data
+        self.historical_cache.cache_historical_data(
+            entity_type, entity_id, granularity.value, df
+        )
         
         return df
     
@@ -344,21 +382,31 @@ class DemandPredictionService:
         time_series: pd.Series
     ) -> BaseForecastModel:
         """Get cached model or create new one"""
-        cache_key = f"{entity_type}_{entity_id}_{model_type}"
+        model_type_str = model_type.value if model_type else "auto"
         
-        if cache_key in self.model_cache:
-            model = self.model_cache[cache_key]
+        # Check cache first
+        cached_model = self.model_cache_service.get_model(
+            entity_type, entity_id, model_type_str
+        )
+        
+        if cached_model:
+            logger.debug(f"Using cached model for {entity_type}:{entity_id}:{model_type_str}")
             # Update with latest data
-            model.fit(time_series)
+            cached_model.fit(time_series)
+            return cached_model
+        
+        # Create new model
+        if model_type:
+            model = ModelFactory.create_model(model_type.value)
         else:
-            # Create new model
-            if model_type:
-                model = ModelFactory.create_model(model_type.value)
-            else:
-                model = ModelFactory.auto_select_model(time_series)
-            
-            model.fit(time_series)
-            self.model_cache[cache_key] = model
+            model = ModelFactory.auto_select_model(time_series)
+        
+        model.fit(time_series)
+        
+        # Cache the model
+        self.model_cache_service.cache_model(
+            entity_type, entity_id, model_type_str, model
+        )
         
         return model
     
