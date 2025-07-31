@@ -13,13 +13,16 @@ import { AppNavigator } from '@navigation/AppNavigator';
 import { AuthProvider } from '@contexts/AuthContext';
 import { theme } from '@constants/theme';
 import { toastConfig } from '@constants/toastConfig';
+import { syncManager } from '@sync';
+import { OfflineIndicator } from '@components/sync';
+import { CACHE_CONFIG } from '@constants/config';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      staleTime: CACHE_CONFIG.DEFAULT_STALE_TIME,
+      cacheTime: CACHE_CONFIG.DEFAULT_CACHE_TIME,
     },
   },
 });
@@ -28,6 +31,16 @@ const App: React.FC = () => {
   useEffect(() => {
     // Hide splash screen after app loads
     SplashScreen.hide();
+    
+    // Initialize sync manager
+    syncManager.initialize().catch(error => {
+      console.error('Failed to initialize sync manager:', error);
+    });
+    
+    return () => {
+      // Cleanup sync manager on app unmount
+      syncManager.destroy();
+    };
   }, []);
 
   return (
@@ -43,6 +56,7 @@ const App: React.FC = () => {
                     backgroundColor="transparent"
                     translucent
                   />
+                  <OfflineIndicator />
                   <AppNavigator />
                   <Toast config={toastConfig} />
                 </NavigationContainer>

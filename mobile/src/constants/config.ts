@@ -25,6 +25,22 @@ export const OFFLINE_CONFIG = {
   MAX_RETRY_COUNT: 3,
   SYNC_BATCH_SIZE: 10,
   ENCRYPT_QUEUE: true,
+  QUEUE_SIZE_LIMIT: 1000,
+  QUEUE_SIZE_WARNING: 800,
+  ENCRYPTED_FIELDS: ['payment_info', 'sensitive_notes'],
+  SYNC_RETRY_COUNT: 3,
+  SYNC_RETRY_DELAY: 1000,
+};
+
+// Sync Configuration
+export const SYNC_CONFIG = {
+  MAX_QUEUE_SIZE: 1000,
+  BATCH_SIZE: 100,
+  PULL_URL: '/api/sync/pull',
+  PUSH_URL: '/api/sync/push',
+  DEFAULT_CONFLICT_STRATEGY: 'last_write_wins' as const,
+  SYNC_INTERVAL: 300000, // 5 minutes
+  BACKGROUND_SYNC_INTERVAL: 900000, // 15 minutes
 };
 
 // Storage Keys

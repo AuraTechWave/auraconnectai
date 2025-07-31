@@ -46,7 +46,11 @@
     "react-native-splash-screen": "^3.3.0",
     "react-native-fast-image": "^8.6.3",
     "lottie-react-native": "^6.5.1",
-    "crypto-js": "^4.2.0"
+    "crypto-js": "^4.2.0",
+    "@nozbe/watermelondb": "^0.27.1",
+    "@nozbe/with-observables": "^1.6.0",
+    "react-native-background-timer": "^2.4.1",
+    "react-native-background-fetch": "^4.2.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
