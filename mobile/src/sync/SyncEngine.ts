@@ -7,6 +7,18 @@ import { showToast } from '@utils/toast';
 import SyncLog from '@database/models/SyncLog';
 import { ConflictResolver } from './ConflictResolver';
 import { SyncQueue } from './SyncQueue';
+import { SyncErrorHandler } from './errors/SyncErrorHandler';
+import type { 
+  PullRequest, 
+  PullResponse, 
+  PushRequest, 
+  PushResponse,
+  SyncError,
+  SyncResult,
+  SyncCollectionChanges,
+  SyncAcceptedItem,
+  SyncRejectedItem
+} from '@types/sync.types';
 
 export interface SyncConfig {
   pullUrl: string;
@@ -116,13 +128,12 @@ export class SyncEngine {
     let conflicts = 0;
 
     try {
-      const response = await apiClient.get(this.config.pullUrl, {
-        params: {
-          lastPulledAt: this.lastSyncTimestamp,
-          schemaVersion: 1,
-        },
-      });
+      const params: PullRequest = {
+        lastPulledAt: this.lastSyncTimestamp,
+        schemaVersion: 1,
+      };
 
+      const response = await apiClient.get<PullResponse>(this.config.pullUrl, { params });
       const { changes, timestamp } = response.data;
 
       // Process changes through WatermelonDB sync
@@ -150,8 +161,14 @@ export class SyncEngine {
       pulled = this.countChanges(changes);
       
     } catch (error) {
-      logger.error('Pull sync failed', error);
-      throw error;
+      const syncError = SyncErrorHandler.handleError(error);
+      logger.error('Pull sync failed', syncError);
+      
+      if (syncError.retryable) {
+        await SyncErrorHandler.recoverFromError(syncError);
+      }
+      
+      throw syncError;
     }
 
     return { pulled, conflicts };
@@ -174,11 +191,12 @@ export class SyncEngine {
       const batches = this.createBatches(pendingChanges, this.config.batchSize);
 
       for (const batch of batches) {
-        const response = await apiClient.post(this.config.pushUrl, {
+        const request: PushRequest = {
           changes: batch,
           lastPulledAt: this.lastSyncTimestamp,
-        });
+        };
 
+        const response = await apiClient.post<PushResponse>(this.config.pushUrl, request);
         const { accepted, rejected, conflicts: serverConflicts } = response.data;
 
         // Update local records with server IDs
@@ -198,15 +216,21 @@ export class SyncEngine {
       }
 
     } catch (error) {
-      logger.error('Push sync failed', error);
-      throw error;
+      const syncError = SyncErrorHandler.handleError(error);
+      logger.error('Push sync failed', syncError);
+      
+      if (syncError.retryable) {
+        await SyncErrorHandler.recoverFromError(syncError);
+      }
+      
+      throw syncError;
     }
 
     return { pushed, conflicts };
   }
 
-  private async collectPendingChanges() {
-    const changes: any = {};
+  private async collectPendingChanges(): Promise<SyncCollectionChanges> {
+    const changes: SyncCollectionChanges = {};
     const collections = ['orders', 'order_items', 'staff', 'shifts', 'menu_items', 'customers'];
 
     for (const collectionName of collections) {
@@ -318,7 +342,7 @@ export class SyncEngine {
     return batches;
   }
 
-  private async updateSyncedRecords(accepted: any[]) {
+  private async updateSyncedRecords(accepted: SyncAcceptedItem[]) {
     await database.write(async () => {
       for (const item of accepted) {
         const { collection: collectionName, localId, serverId } = item;
@@ -334,7 +358,7 @@ export class SyncEngine {
     });
   }
 
-  private async handleRejections(rejected: any[]) {
+  private async handleRejections(rejected: SyncRejectedItem[]) {
     for (const rejection of rejected) {
       logger.warn('Server rejected record', rejection);
       // Mark as conflict for manual resolution

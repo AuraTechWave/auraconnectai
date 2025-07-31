@@ -4,6 +4,7 @@ import { logger } from '@utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { SYNC_CONFIG } from '@constants/config';
+import { encrypt, decrypt } from '@utils/encryption';
 
 export interface QueueItem {
   id: string;
@@ -20,8 +21,6 @@ export class SyncQueue {
   private static QUEUE_KEY = 'auraconnect.sync.queue';
   private queue: QueueItem[] = [];
   private isProcessing = false;
-  private maxRetries = 3;
-  private retryDelay = 5000; // 5 seconds
 
   constructor() {
     this.loadQueue();
@@ -94,7 +93,7 @@ export class SyncQueue {
           // Increment retry count
           item.retryCount++;
           
-          if (item.retryCount >= this.maxRetries) {
+          if (item.retryCount >= SYNC_CONFIG.MAX_RETRY_COUNT) {
             logger.error('Max retries reached, removing item from queue', { item });
             this.queue.shift();
             await this.saveQueue();
@@ -105,8 +104,12 @@ export class SyncQueue {
             this.queue.push(item);
             await this.saveQueue();
             
-            // Wait before retrying
-            await this.delay(this.retryDelay * item.retryCount);
+            // Wait before retrying with exponential backoff
+            const delay = Math.min(
+              SYNC_CONFIG.RETRY_BASE_DELAY * Math.pow(SYNC_CONFIG.RETRY_BACKOFF_FACTOR, item.retryCount - 1),
+              SYNC_CONFIG.RETRY_MAX_DELAY
+            );
+            await this.delay(delay);
           }
         }
       }
@@ -164,11 +167,36 @@ export class SyncQueue {
     try {
       const stored = await AsyncStorage.getItem(SyncQueue.QUEUE_KEY);
       if (stored) {
-        this.queue = JSON.parse(stored);
+        // Decrypt queue if it was encrypted
+        let queueData: string;
+        try {
+          // Try to parse directly first (for backward compatibility)
+          JSON.parse(stored);
+          queueData = stored;
+        } catch {
+          // If parse fails, assume it's encrypted
+          queueData = await decrypt(stored);
+        }
+        
+        this.queue = JSON.parse(queueData);
+        
+        // Clean up expired items
+        const now = Date.now();
+        this.queue = this.queue.filter(item => {
+          const age = now - item.timestamp;
+          if (age > SYNC_CONFIG.QUEUE_ITEM_TTL) {
+            logger.debug('Removing expired queue item', { id: item.id, age });
+            return false;
+          }
+          return true;
+        });
+        
         logger.debug('Loaded sync queue', { count: this.queue.length });
       }
     } catch (error) {
       logger.error('Failed to load sync queue', error);
+      // Reset queue on corruption
+      this.queue = [];
     }
   }
 
@@ -189,7 +217,12 @@ export class SyncQueue {
         }
       }
 
-      await AsyncStorage.setItem(SyncQueue.QUEUE_KEY, JSON.stringify(this.queue));
+      // Encrypt queue if configured
+      const dataToStore = SYNC_CONFIG.ENCRYPT_QUEUE
+        ? await encrypt(JSON.stringify(this.queue))
+        : JSON.stringify(this.queue);
+
+      await AsyncStorage.setItem(SyncQueue.QUEUE_KEY, dataToStore);
     } catch (error) {
       logger.error('Failed to save sync queue', error);
     }

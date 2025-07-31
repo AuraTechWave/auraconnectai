@@ -6,6 +6,84 @@ This document describes the comprehensive offline sync implementation for the Au
 
 ## Architecture
 
+### Sequence Diagrams
+
+#### Pull Sync Process
+```mermaid
+sequenceDiagram
+    participant App
+    participant SyncManager
+    participant SyncEngine
+    participant ConflictResolver
+    participant Database
+    participant Server
+
+    App->>SyncManager: sync()
+    SyncManager->>SyncEngine: pull()
+    SyncEngine->>Server: GET /api/sync/pull
+    Server-->>SyncEngine: {changes, timestamp}
+    SyncEngine->>ConflictResolver: detectConflicts(changes)
+    ConflictResolver->>Database: Query local records
+    Database-->>ConflictResolver: Local records
+    ConflictResolver-->>SyncEngine: {resolved, conflicts}
+    SyncEngine->>Database: Apply changes
+    Database-->>SyncEngine: Success
+    SyncEngine-->>SyncManager: {pulled, conflicts}
+    SyncManager-->>App: Sync complete
+```
+
+#### Push Sync Process
+```mermaid
+sequenceDiagram
+    participant App
+    participant SyncManager
+    participant SyncEngine
+    participant SyncQueue
+    participant Database
+    participant Server
+
+    App->>SyncManager: sync()
+    SyncManager->>SyncQueue: processQueue()
+    SyncQueue-->>SyncManager: Queue processed
+    SyncManager->>SyncEngine: push()
+    SyncEngine->>Database: collectPendingChanges()
+    Database-->>SyncEngine: Pending records
+    SyncEngine->>SyncEngine: createBatches()
+    loop For each batch
+        SyncEngine->>Server: POST /api/sync/push
+        Server-->>SyncEngine: {accepted, rejected, conflicts}
+        SyncEngine->>Database: updateSyncedRecords()
+        SyncEngine->>ConflictResolver: resolveConflicts()
+    end
+    SyncEngine-->>SyncManager: {pushed, conflicts}
+    SyncManager-->>App: Sync complete
+```
+
+#### Offline Operation Flow
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant Database
+    participant SyncQueue
+    participant NetworkMonitor
+
+    User->>App: Create Order (Offline)
+    App->>Database: Save with syncStatus='pending'
+    Database-->>App: Order saved
+    App->>SyncQueue: Add to queue
+    SyncQueue-->>App: Queued
+    App-->>User: Success (offline indicator)
+    
+    Note over NetworkMonitor: Network becomes available
+    
+    NetworkMonitor->>SyncQueue: Network connected
+    SyncQueue->>App: Process pending operations
+    App->>Database: Sync pending records
+    Database-->>App: Records synced
+    App-->>User: Sync complete notification
+```
+
 ### Core Components
 
 1. **WatermelonDB** - Local SQLite database for offline data storage
@@ -300,3 +378,32 @@ export const SYNC_CONFIG = {
 3. **Delta Sync**: Send only changed fields instead of full records
 4. **Offline Analytics**: Track offline usage patterns
 5. **Sync Scheduling**: Allow users to configure sync frequency
+6. **WebSocket Real-time Sync**: Add real-time synchronization when online
+
+## Implementation Notes
+
+### Code Organization
+
+For future implementations, consider splitting large features into multiple PRs:
+
+1. **PR 1: Database Setup** (~800 LOC)
+   - WatermelonDB schema and models
+   - Base model with sync metadata
+   - Database migrations
+
+2. **PR 2: Sync Engine** (~1000 LOC)
+   - Sync engine core functionality
+   - Conflict resolver
+   - Sync queue implementation
+
+3. **PR 3: UI Integration** (~1200 LOC)
+   - Offline indicators
+   - Sync status components
+   - Offline-capable screens
+
+4. **PR 4: Testing & Documentation** (~1000 LOC)
+   - Unit tests
+   - Integration tests
+   - Documentation
+
+This approach makes code reviews more manageable and allows for incremental deployment.

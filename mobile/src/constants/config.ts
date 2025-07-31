@@ -34,13 +34,36 @@ export const OFFLINE_CONFIG = {
 
 // Sync Configuration
 export const SYNC_CONFIG = {
+  // Queue management
   MAX_QUEUE_SIZE: 1000,
+  QUEUE_SIZE_WARNING_THRESHOLD: 800,
+  QUEUE_CLEANUP_THRESHOLD: 900,
+  QUEUE_ITEM_TTL: 7 * 24 * 60 * 60 * 1000, // 7 days
+  
+  // Sync operations
   BATCH_SIZE: 100,
   PULL_URL: '/api/sync/pull',
   PUSH_URL: '/api/sync/push',
   DEFAULT_CONFLICT_STRATEGY: 'last_write_wins' as const,
+  
+  // Sync timing
   SYNC_INTERVAL: 300000, // 5 minutes
   BACKGROUND_SYNC_INTERVAL: 900000, // 15 minutes
+  SYNC_DEBOUNCE_DELAY: 1000, // 1 second
+  
+  // Retry configuration
+  MAX_RETRY_COUNT: 3,
+  RETRY_BASE_DELAY: 1000, // 1 second
+  RETRY_MAX_DELAY: 60000, // 1 minute
+  RETRY_BACKOFF_FACTOR: 2,
+  
+  // Performance
+  SYNC_TIMEOUT: 30000, // 30 seconds
+  CONCURRENT_OPERATIONS: 5,
+  
+  // Security
+  ENCRYPT_QUEUE: true,
+  ENCRYPT_OFFLINE_DATA: ['payment_info', 'sensitive_notes', 'customer_data'],
 };
 
 // Storage Keys
