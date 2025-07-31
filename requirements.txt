@@ -9,6 +9,9 @@ mkdocs
 mkdocs-material
 mkdocs-minify-plugin
 pymdown-extensions
+mike  # For versioning
+mkdocs-git-revision-date-localized-plugin  # Show last updated
+mkdocs-awesome-pages-plugin  # Auto-discover pages
 redis
 websockets
 asyncio-mqtt

@@ -20,11 +20,17 @@ theme:
     - navigation.expand
     - navigation.indexes
     - navigation.top
+    - navigation.path
+    - navigation.prune
+    - toc.follow
+    - toc.integrate
     - search.suggest
     - search.highlight
     - search.share
     - content.code.annotate
     - content.code.copy
+    - content.tabs.link
+    - announce.dismiss
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -42,19 +48,25 @@ theme:
         name: Switch to light mode
 
 nav:
-  - Home: index.md
-  - Getting Started:
+  - Home: 
+    - Welcome: index.md
     - Quick Start: guides/getting-started.md
-    - Installation: guides/installation.md
-    - Configuration: guides/configuration.md
-  - Architecture:
-    - Overview: architecture/README.md
-    - Database Design: architecture/database.md
-    - Security: architecture/security.md
-    - API Design: api/design-guide.md
-  - Modules:
-    - Overview: modules/README.md
-    - Core Modules:
+    - What's New: CHANGELOG.md
+    
+  - Getting Started:
+    - guides/getting-started.md
+    - Installation:
+      - Docker Setup: guides/docker-setup.md
+      - Local Development: guides/local-setup.md
+      - Configuration: guides/configuration.md
+    - First Steps:
+      - Create Restaurant: guides/first-restaurant.md
+      - Add Menu Items: guides/first-menu.md
+      - Process Orders: guides/first-order.md
+      
+  - Core Modules:
+    - modules/README.md
+    - Restaurant Operations:
       - Orders: modules/orders/README.md
       - Menu: modules/menu/README.md
       - Inventory: modules/inventory/README.md
@@ -63,45 +75,70 @@ nav:
       - Staff Management: modules/staff/README.md
       - Payroll: modules/payroll/README.md
       - Tax Management: modules/tax/README.md
-      - Auth & Users: modules/auth/README.md
     - Customer Experience:
       - Customers: modules/customers/README.md
       - Loyalty: modules/loyalty/README.md
       - Feedback: modules/feedback/README.md
       - Promotions: modules/promotions/README.md
-    - Analytics & AI:
-      - Analytics: modules/analytics/README.md
-      - AI Recommendations: modules/ai_recommendations/README.md
-      - Settings: modules/settings/README.md
+      
+  - Architecture:
+    - architecture/README.md
+    - System Design:
+      - Microservices: architecture/microservices.md
+      - Database Design: architecture/database.md
+      - Event System: architecture/events.md
+    - Security:
+      - Authentication: architecture/auth.md
+      - Authorization: architecture/rbac.md
+      - Data Protection: architecture/security.md
+    - Performance:
+      - Caching Strategy: architecture/caching.md
+      - Scaling: architecture/scaling.md
+      
   - API Reference:
-    - Overview: api/README.md
-    - Authentication: api/auth.md
-    - Endpoints: api/endpoints.md
-    - Webhooks: api/webhooks.md
-    - SDKs: api/sdks.md
+    - api/README.md
+    - Core APIs:
+      - Authentication: api/auth.md
+      - Orders: api/orders.md
+      - Menu: api/menu.md
+      - Staff: api/staff.md
+    - Integration APIs:
+      - Webhooks: api/webhooks.md
+      - POS Sync: api/pos-sync.md
+    - Tools:
+      - SDKs: api/sdks.md
+      - Postman Collection: api/postman.md
+      
   - Deployment:
-    - Overview: deployment/README.md
-    - Docker: deployment/docker.md
-    - Kubernetes: deployment/kubernetes.md
-    - Cloud Platforms: deployment/cloud.md
-    - Monitoring: deployment/monitoring.md
-  - Guides:
-    - Developer Guides:
-      - Development Workflow: guides/development-workflow.md
+    - deployment/README.md
+    - Production Setup:
+      - Docker Deployment: deployment/docker.md
+      - Kubernetes: deployment/kubernetes.md
+      - Cloud Platforms: deployment/cloud.md
+    - Operations:
+      - Monitoring: deployment/monitoring.md
+      - Backup & Recovery: deployment/backup.md
+      - Scaling: deployment/scaling.md
+      
+  - Developer Guide:
+    - Development:
+      - Setup: guides/development-workflow.md
       - Testing: guides/testing.md
       - Code Style: guides/code-style.md
-    - Feature Guides:
+    - Advanced Topics:
       - Menu Versioning: guides/features/menu-versioning-architecture.md
       - Multi-Location: guides/features/multi-location.md
-    - User Guides:
-      - Admin Portal: guides/users/admin-portal.md
-      - Mobile App: guides/users/mobile-app.md
-      - POS Setup: guides/users/pos-setup.md
+      - Custom Integrations: guides/custom-integrations.md
+      
   - Resources:
-    - FAQ: guides/faq.md
-    - Troubleshooting: guides/troubleshooting.md
-    - Glossary: glossary.md
-    - Changelog: CHANGELOG.md
+    - Support:
+      - FAQ: guides/faq.md
+      - Troubleshooting: guides/troubleshooting.md
+      - Contact: support.md
+    - Reference:
+      - Glossary: glossary.md
+      - Error Codes: reference/errors.md
+      - API Limits: reference/limits.md
 
 markdown_extensions:
   - toc:
@@ -135,10 +172,26 @@ plugins:
   - search:
       lang: en
       separator: '[\s\-\.]'
+      min_search_length: 3
+      prebuild_index: true
+      indexing: 'full'
   - minify:
       minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+  - mike:  # For versioning
+      canonical_version: latest
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
 
 extra:
+  version:
+    provider: mike
+    default: latest
+    alias: true
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/AuraTechWave
@@ -149,6 +202,14 @@ extra:
   analytics:
     provider: google
     property: G-XXXXXXXXXX
+  consent:
+    title: Cookie consent
+    description: >- 
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+  generator: false  # Remove "Made with Material for MkDocs" footer
 
 copyright: |
   &copy; 2025 <a href="https://auratechwave.com" target="_blank" rel="noopener">AuraTechWave</a>

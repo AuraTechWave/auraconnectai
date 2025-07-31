@@ -45,20 +45,32 @@ This directory contains comprehensive documentation for all AuraConnect modules.
 
 Each module documentation follows a consistent structure:
 
-```
-module-name/
-├── README.md              # Module overview and quick start
-├── architecture.md        # Technical architecture and design patterns
-├── api-reference.md       # Complete API documentation
-├── database-schema.md     # Database tables and relationships
-├── integration-guide.md   # How to integrate with other modules
-├── examples/             # Code examples and use cases
-│   ├── basic-usage.py
-│   ├── advanced-usage.py
-│   └── integration.py
-└── diagrams/             # Architecture and flow diagrams
-    ├── data-flow.png
-    └── component-diagram.png
+```mermaid
+graph TD
+    A[module-name/] --> B[README.md<br/>Module overview and quick start]
+    A --> C[architecture.md<br/>Technical architecture and design patterns]
+    A --> D[api-reference.md<br/>Complete API documentation]
+    A --> E[database-schema.md<br/>Database tables and relationships]
+    A --> F[integration-guide.md<br/>How to integrate with other modules]
+    A --> G[examples/<br/>Code examples and use cases]
+    A --> H[diagrams/<br/>Architecture and flow diagrams]
+    
+    G --> I[basic-usage.py]
+    G --> J[advanced-usage.py]
+    G --> K[integration.py]
+    
+    H --> L[data-flow.png]
+    H --> M[component-diagram.png]
+    
+    classDef folder fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef doc fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef code fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef image fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class A,G,H folder
+    class B,C,D,E,F doc
+    class I,J,K code
+    class L,M image
 ```
 
 ## Getting Started with a Module

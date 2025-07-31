@@ -4,7 +4,9 @@ Welcome to AuraConnect - the comprehensive restaurant management platform that r
 
 ## Quick Start
 
-- **[Getting Started Guide](guides/getting-started.md)** - Set up your development environment in minutes
+### 🎯 Find Your Path
+- **[Developer Personas](guides/developer-personas.md)** - Find documentation specific to your role
+- **[Getting Started Guide](guides/getting-started.md)** - Set up your development environment
 - **[Architecture Overview](architecture/README.md)** - Understand the system design
 - **[API Documentation](api/README.md)** - Interactive API reference
 
