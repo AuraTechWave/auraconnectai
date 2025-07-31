@@ -1,9 +1,154 @@
 site_name: AuraConnect Documentation
-nav: []
+site_description: Comprehensive restaurant management platform documentation
+site_author: AuraTechWave
+site_url: https://docs.auraconnect.com
+repo_url: https://github.com/AuraTechWave/auraconnectai
+repo_name: auraconnectai
+docs_dir: docs
+site_dir: site
+
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.annotate
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: guides/getting-started.md
+    - Installation: guides/installation.md
+    - Configuration: guides/configuration.md
+  - Architecture:
+    - Overview: architecture/README.md
+    - Database Design: architecture/database.md
+    - Security: architecture/security.md
+    - API Design: api/design-guide.md
+  - Modules:
+    - Overview: modules/README.md
+    - Core Modules:
+      - Orders: modules/orders/README.md
+      - Menu: modules/menu/README.md
+      - Inventory: modules/inventory/README.md
+      - POS Integration: modules/pos/README.md
+    - Staff & Finance:
+      - Staff Management: modules/staff/README.md
+      - Payroll: modules/payroll/README.md
+      - Tax Management: modules/tax/README.md
+      - Auth & Users: modules/auth/README.md
+    - Customer Experience:
+      - Customers: modules/customers/README.md
+      - Loyalty: modules/loyalty/README.md
+      - Feedback: modules/feedback/README.md
+      - Promotions: modules/promotions/README.md
+    - Analytics & AI:
+      - Analytics: modules/analytics/README.md
+      - AI Recommendations: modules/ai_recommendations/README.md
+      - Settings: modules/settings/README.md
+  - API Reference:
+    - Overview: api/README.md
+    - Authentication: api/auth.md
+    - Endpoints: api/endpoints.md
+    - Webhooks: api/webhooks.md
+    - SDKs: api/sdks.md
+  - Deployment:
+    - Overview: deployment/README.md
+    - Docker: deployment/docker.md
+    - Kubernetes: deployment/kubernetes.md
+    - Cloud Platforms: deployment/cloud.md
+    - Monitoring: deployment/monitoring.md
+  - Guides:
+    - Developer Guides:
+      - Development Workflow: guides/development-workflow.md
+      - Testing: guides/testing.md
+      - Code Style: guides/code-style.md
+    - Feature Guides:
+      - Menu Versioning: guides/features/menu-versioning-architecture.md
+      - Multi-Location: guides/features/multi-location.md
+    - User Guides:
+      - Admin Portal: guides/users/admin-portal.md
+      - Mobile App: guides/users/mobile-app.md
+      - POS Setup: guides/users/pos-setup.md
+  - Resources:
+    - FAQ: guides/faq.md
+    - Troubleshooting: guides/troubleshooting.md
+    - Glossary: glossary.md
+    - Changelog: CHANGELOG.md
+
 markdown_extensions:
-- toc
-- tables
-- fenced_code
-- codehilite
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - fenced_code
+  - codehilite:
+      guess_lang: false
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - meta
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-\.]'
+  - minify:
+      minify_html: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/AuraTechWave
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/auraconnect
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/auratechwave
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+
+copyright: |
+  &copy; 2025 <a href="https://auratechwave.com" target="_blank" rel="noopener">AuraTechWave</a>

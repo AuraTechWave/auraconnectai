@@ -21,3 +21,6 @@ android/app/build/
 
 # Docs output
 site/
+
+# MkDocs build output
+site/

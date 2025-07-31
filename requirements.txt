@@ -7,6 +7,8 @@ alembic
 pydantic
 mkdocs
 mkdocs-material
+mkdocs-minify-plugin
+pymdown-extensions
 redis
 websockets
 asyncio-mqtt
