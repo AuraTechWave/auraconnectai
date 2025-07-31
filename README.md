@@ -40,36 +40,82 @@ AuraConnect is an enterprise-grade restaurant management platform that revolutio
 
 AuraConnect follows a modern microservices architecture designed for scalability, maintainability, and performance:
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Frontend Applications                         │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────┐ │
-│  │ Restaurant  │  │   Kitchen    │  │   Customer   │  │  Admin  │ │
-│  │   Portal    │  │   Display    │  │     App      │  │  Panel  │ │
-│  └─────────────┘  └──────────────┘  └──────────────┘  └─────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                          API Gateway (Nginx)                         │
-│                    Load Balancing | Rate Limiting                    │
-└─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Backend Services (FastAPI)                       │
-├─────────┬──────────┬──────────┬──────────┬──────────┬─────────────┤
-│  Auth   │   POS    │  Orders  │ Payroll  │Analytics │    ...      │
-│ Service │Integration│ Service  │ Service  │ Service  │  Services   │
-├─────────┴──────────┴──────────┴──────────┴──────────┴─────────────┤
-│                    Shared Infrastructure Layer                       │
-├──────────────┬────────────────┬─────────────────┬─────────────────┤
-│   Message    │     Cache      │   Task Queue    │    Storage      │
-│    Queue     │    (Redis)     │   (Celery)      │     (S3)        │
-├──────────────┴────────────────┴─────────────────┴─────────────────┤
-│                      Data Layer (PostgreSQL)                         │
-│              Multi-tenant | Partitioned | Replicated                │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Frontend Applications"
+        A1[Restaurant Portal]
+        A2[Kitchen Display]
+        A3[Customer App]
+        A4[Admin Panel]
+    end
+    
+    subgraph "API Gateway"
+        B[Nginx<br/>Load Balancing & Rate Limiting]
+    end
+    
+    subgraph "Backend Services - FastAPI"
+        C1[Auth Service]
+        C2[POS Integration]
+        C3[Orders Service]
+        C4[Payroll Service]
+        C5[Analytics Service]
+        C6[... Other Services]
+    end
+    
+    subgraph "Shared Infrastructure Layer"
+        D1[Message Queue]
+        D2[Redis Cache]
+        D3[Celery Task Queue]
+        D4[S3 Storage]
+    end
+    
+    subgraph "Data Layer"
+        E[(PostgreSQL<br/>Multi-tenant | Partitioned | Replicated)]
+    end
+    
+    A1 --> B
+    A2 --> B
+    A3 --> B
+    A4 --> B
+    
+    B --> C1
+    B --> C2
+    B --> C3
+    B --> C4
+    B --> C5
+    B --> C6
+    
+    C1 --> D1
+    C1 --> D2
+    C2 --> D1
+    C2 --> D2
+    C3 --> D1
+    C3 --> D2
+    C3 --> D3
+    C4 --> D1
+    C4 --> D2
+    C4 --> D3
+    C5 --> D1
+    C5 --> D2
+    C5 --> D4
+    C6 --> D1
+    C6 --> D2
+    
+    D1 --> E
+    D2 --> E
+    D3 --> E
+    
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef gateway fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef infra fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class A1,A2,A3,A4 frontend
+    class B gateway
+    class C1,C2,C3,C4,C5,C6 service
+    class D1,D2,D3,D4 infra
+    class E database
 ```
 
 ## 📦 Core Modules
@@ -110,89 +156,29 @@ AuraConnect follows a modern microservices architecture designed for scalability
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- Python 3.11+
-- PostgreSQL 14+
-- Redis 6+
-- Node.js 16+ (for frontend)
-- Docker & Docker Compose (recommended)
-
-### 🐳 Docker Setup (Recommended)
+Get AuraConnect running in minutes with Docker:
 
 ```bash
-# Clone the repository
+# Clone and start
 git clone https://github.com/AuraTechWave/auraconnectai.git
 cd auraconnectai
-
-# Start all services
 docker-compose up -d
 
-# Check service status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
-
-# Access the application
-# API: http://localhost:8000
+# Access applications
 # API Docs: http://localhost:8000/docs
 # Frontend: http://localhost:3000
+# Admin: admin@restaurant.com / admin123
 ```
 
-### 💻 Local Development Setup
-
-```bash
-# Backend setup
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
-
-# Initialize database
-alembic upgrade head
-python scripts/seed_demo_data.py
-
-# Start backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-# Frontend setup (in new terminal)
-cd frontend
-npm install
-npm start
-```
+For detailed setup instructions, see our [Quick Start Guide](docs/guides/quick-start.md).
 
 ## 🛠️ Technology Stack
 
-### Backend Technologies
-- **Framework**: FastAPI (Python 3.11+)
-- **Database**: PostgreSQL 14+ with SQLAlchemy ORM
-- **Cache**: Redis for performance optimization
-- **Task Queue**: Celery for background processing
-- **API Documentation**: OpenAPI/Swagger
-- **Authentication**: JWT with refresh tokens
-- **Testing**: Pytest with 85%+ coverage
+**Backend**: FastAPI, PostgreSQL, Redis, Celery  
+**Frontend**: React, TypeScript, Redux Toolkit, Material-UI  
+**Infrastructure**: Docker, Kubernetes, GitHub Actions, Prometheus  
 
-### Frontend Technologies
-- **Framework**: React 18+ with TypeScript
-- **State Management**: Redux Toolkit
-- **UI Components**: Material-UI / Ant Design
-- **Charts**: Recharts for analytics
-- **Forms**: React Hook Form with Yup validation
-- **API Client**: Axios with interceptors
-
-### Infrastructure & DevOps
-- **Containerization**: Docker & Docker Compose
-- **Orchestration**: Kubernetes ready
-- **CI/CD**: GitHub Actions
-- **Monitoring**: Prometheus + Grafana
-- **Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **API Gateway**: Nginx with rate limiting
+See our complete [Technology Stack Documentation](docs/architecture/technology-stack.md) for detailed information.
 
 ## 🔐 Security Features
 

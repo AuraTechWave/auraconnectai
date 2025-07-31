@@ -12,34 +12,34 @@ This directory contains comprehensive documentation for all AuraConnect modules.
 |--------|-------------|--------------|
 | **[Orders](./orders/README.md)** | Order management, processing, and tracking | [View Docs](./orders/README.md) |
 | **[Menu](./menu/README.md)** | Menu management, categories, and modifiers | [View Docs](./menu/README.md) |
-| **[Inventory](./inventory/README.md)** | Stock tracking and supplier management | [View Docs](./inventory/README.md) |
-| **[POS Integration](./pos/README.md)** | Point of Sale system adapters | [View Docs](./pos/README.md) |
+| **Inventory** | Stock tracking and supplier management | *(Coming Soon)* |
+| **[POS Integration](../feature_docs/pos_integration/README.md)** | Point of Sale system adapters | [View Docs](../feature_docs/pos_integration/README.md) |
 
 ### 👥 Staff & Financial Management
 
 | Module | Description | Documentation |
 |--------|-------------|--------------|
 | **[Staff](./staff/README.md)** | Employee management and scheduling | [View Docs](./staff/README.md) |
-| **[Payroll](./payroll/README.md)** | Payroll processing and compliance | [View Docs](./payroll/README.md) |
-| **[Tax](./tax/README.md)** | Tax calculations and reporting | [View Docs](./tax/README.md) |
-| **[Auth](./auth/README.md)** | Authentication and authorization | [View Docs](./auth/README.md) |
+| **[Payroll](../feature_docs/payroll/README.md)** | Payroll processing and compliance | [View Docs](../feature_docs/payroll/README.md) |
+| **[Tax](../feature_docs/tax/README.md)** | Tax calculations and reporting | [View Docs](../feature_docs/tax/README.md) |
+| **Auth** | Authentication and authorization | *(Integrated)* |
 
 ### 🎯 Customer Experience
 
 | Module | Description | Documentation |
 |--------|-------------|--------------|
-| **[Customers](./customers/README.md)** | Customer relationship management | [View Docs](./customers/README.md) |
-| **[Feedback](./feedback/README.md)** | Reviews and feedback management | [View Docs](./feedback/README.md) |
-| **[Loyalty](./loyalty/README.md)** | Rewards and loyalty programs | [View Docs](./loyalty/README.md) |
-| **[Promotions](./promotions/README.md)** | Marketing and promotional campaigns | [View Docs](./promotions/README.md) |
+| **Customers** | Customer relationship management | *(Coming Soon)* |
+| **Feedback** | Reviews and feedback management | *(Coming Soon)* |
+| **Loyalty** | Rewards and loyalty programs | *(Coming Soon)* |
+| **Promotions** | Marketing and promotional campaigns | *(Coming Soon)* |
 
 ### 📊 Intelligence & Configuration
 
 | Module | Description | Documentation |
 |--------|-------------|--------------|
-| **[Analytics](./analytics/README.md)** | Business intelligence and reporting | [View Docs](./analytics/README.md) |
-| **[AI Recommendations](./ai_recommendations/README.md)** | Machine learning insights | [View Docs](./ai_recommendations/README.md) |
-| **[Settings](./settings/README.md)** | System configuration and preferences | [View Docs](./settings/README.md) |
+| **Analytics** | Business intelligence and reporting | *(Coming Soon)* |
+| **[AI Recommendations](../feature_docs/ai_agents/README.md)** | Machine learning insights | [View Docs](../feature_docs/ai_agents/README.md) |
+| **Settings** | System configuration and preferences | *(Integrated)* |
 
 ## Documentation Structure
 
@@ -84,7 +84,7 @@ graph TD
 ## Common Patterns Across Modules
 
 ### Authentication
-All modules use JWT-based authentication with the Auth module. See [Auth Module](./auth/README.md) for details.
+All modules use JWT-based authentication with the Auth module.
 
 ### Database Access
 - Multi-tenant architecture with row-level security
