@@ -32,23 +32,33 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
 
   useEffect(() => {
     loadNotifications();
-    setupListeners();
+    const cleanup = setupListeners();
 
     return () => {
-      // Cleanup listeners
+      cleanup();
     };
   }, []);
 
   const setupListeners = () => {
-    // Listen for new notifications
-    notificationService.on('notificationDisplayed', () => {
+    const handleNotificationDisplayed = () => {
       loadNotifications();
-    });
+    };
+
+    const handleNavigateToOrder = (orderId: string) => {
+      navigation.navigate('OrderDetails', { orderId });
+    };
+
+    // Listen for new notifications
+    notificationService.on('notificationDisplayed', handleNotificationDisplayed);
 
     // Listen for navigation events
-    notificationService.on('navigateToOrder', (orderId: string) => {
-      navigation.navigate('OrderDetails', { orderId });
-    });
+    notificationService.on('navigateToOrder', handleNavigateToOrder);
+
+    // Return cleanup function
+    return () => {
+      notificationService.off('notificationDisplayed', handleNotificationDisplayed);
+      notificationService.off('navigateToOrder', handleNavigateToOrder);
+    };
   };
 
   const loadNotifications = async () => {

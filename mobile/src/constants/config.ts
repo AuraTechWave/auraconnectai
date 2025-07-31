@@ -133,11 +133,54 @@ export const APP_INFO = {
 
 // Notification Configuration
 export const NOTIFICATION_CONFIG = {
+  // Storage
   MAX_STORED_NOTIFICATIONS: 100,
-  NOTIFICATION_SOUND: 'order_notification',
-  DEFAULT_VIBRATION_PATTERN: [0, 250, 250, 250],
-  ORDER_NOTIFICATION_PRIORITY: 'high',
-  PROMOTION_NOTIFICATION_PRIORITY: 'normal',
-  SYSTEM_NOTIFICATION_PRIORITY: 'high',
+  NOTIFICATION_HISTORY_ENCRYPT: true,
+  NOTIFICATION_PREFS_ENCRYPT: true,
+  
+  // Channels
+  CHANNELS: {
+    ORDER_UPDATES: 'order_updates',
+    PROMOTIONS: 'promotions', 
+    SYSTEM: 'system',
+  },
+  
+  // Sounds
+  SOUNDS: {
+    DEFAULT: 'default',
+    ORDER_NOTIFICATION: 'order_notification',
+    ORDER_READY: 'order_ready',
+  },
+  
+  // Vibration
+  VIBRATION_PATTERNS: {
+    DEFAULT: [0, 250, 250, 250],
+    ORDER_READY: [0, 500, 250, 500],
+    URGENT: [0, 300, 100, 300, 100, 300],
+  },
+  
+  // Priorities
+  PRIORITIES: {
+    ORDER: 'high',
+    PROMOTION: 'normal',
+    SYSTEM: 'high',
+  },
+  
+  // Timing
   AUTO_CANCEL_TIMEOUT: 30000, // 30 seconds
+  TOKEN_RETRY_DELAY: 5000, // 5 seconds
+  TOKEN_MAX_RETRIES: 3,
+  HISTORY_TRIM_BATCH_SIZE: 10,
+  
+  // Do Not Disturb
+  DND_DEFAULT_START: '22:00',
+  DND_DEFAULT_END: '07:00',
+  
+  // Actions
+  ACTIONS: {
+    VIEW_ORDER: 'view_order',
+    ACCEPT_ORDER: 'accept_order',
+    REJECT_ORDER: 'reject_order',
+    NOTIFY_CUSTOMER: 'notify_customer',
+  },
 };

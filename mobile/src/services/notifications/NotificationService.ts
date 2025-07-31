@@ -11,11 +11,13 @@ import notifee, {
 } from '@notifee/react-native';
 import PushNotification from 'react-native-push-notification';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@utils/logger';
-import { NOTIFICATION_CONFIG, STORAGE_KEYS } from '@constants/config';
+import { NOTIFICATION_CONFIG } from '@constants/config';
 import { NotificationPreferences, NotificationChannel } from './types';
 import { NotificationHandler } from './NotificationHandler';
+import { NotificationFactory } from './NotificationFactory';
+import { NotificationErrorHandler } from './NotificationErrorHandler';
+import { SecureNotificationStorage } from './SecureNotificationStorage';
 import { EventEmitter } from 'events';
 
 export class NotificationService extends EventEmitter {
@@ -31,8 +33,8 @@ export class NotificationService extends EventEmitter {
     vibration: true,
     doNotDisturb: {
       enabled: false,
-      startTime: '22:00',
-      endTime: '07:00',
+      startTime: NOTIFICATION_CONFIG.DND_DEFAULT_START,
+      endTime: NOTIFICATION_CONFIG.DND_DEFAULT_END,
     },
   };
 
@@ -107,19 +109,26 @@ export class NotificationService extends EventEmitter {
   }
 
   private async initializeFirebase(): Promise<void> {
-    try {
-      // Get FCM token
-      this.fcmToken = await messaging().getToken();
-      logger.debug('FCM token obtained', { token: this.fcmToken });
+    // Get FCM token with retry
+    const token = await NotificationErrorHandler.withRetry(
+      async () => messaging().getToken(),
+      {
+        onError: (error) => NotificationErrorHandler.handleTokenRegistrationError(error),
+        onRetry: (attempt) => logger.debug(`Retrying FCM token fetch, attempt ${attempt}`),
+      }
+    );
 
+    if (token) {
+      this.fcmToken = token;
+      await SecureNotificationStorage.saveFCMToken(token);
+      
       // Listen for token refresh
-      messaging().onTokenRefresh(token => {
-        this.fcmToken = token;
-        this.emit('tokenRefresh', token);
+      messaging().onTokenRefresh(async (newToken) => {
+        this.fcmToken = newToken;
+        await SecureNotificationStorage.saveFCMToken(newToken);
+        this.emit('tokenRefresh', newToken);
         this.registerDeviceToken();
       });
-    } catch (error) {
-      logger.error('Failed to initialize Firebase messaging', error);
     }
   }
 
@@ -129,33 +138,33 @@ export class NotificationService extends EventEmitter {
     try {
       // Order updates channel
       await notifee.createChannel({
-        id: NotificationChannel.ORDER_UPDATES,
+        id: NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
         name: 'Order Updates',
         description: 'Notifications for order status changes',
         importance: AndroidImportance.HIGH,
-        sound: 'order_notification',
+        sound: NOTIFICATION_CONFIG.SOUNDS.ORDER_NOTIFICATION,
         vibration: true,
         badge: true,
       });
 
       // Promotions channel
       await notifee.createChannel({
-        id: NotificationChannel.PROMOTIONS,
+        id: NOTIFICATION_CONFIG.CHANNELS.PROMOTIONS,
         name: 'Promotions',
         description: 'Promotional offers and announcements',
         importance: AndroidImportance.DEFAULT,
-        sound: 'default',
+        sound: NOTIFICATION_CONFIG.SOUNDS.DEFAULT,
         vibration: false,
         badge: false,
       });
 
       // System channel
       await notifee.createChannel({
-        id: NotificationChannel.SYSTEM,
+        id: NOTIFICATION_CONFIG.CHANNELS.SYSTEM,
         name: 'System',
         description: 'Important system notifications',
         importance: AndroidImportance.HIGH,
-        sound: 'default',
+        sound: NOTIFICATION_CONFIG.SOUNDS.DEFAULT,
         vibration: true,
         badge: true,
       });
@@ -255,75 +264,47 @@ export class NotificationService extends EventEmitter {
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
   ): Notification {
     const { notification, data } = remoteMessage;
-    const channel = this.getChannelFromData(data);
 
-    const notificationPayload: Notification = {
-      id: remoteMessage.messageId || Date.now().toString(),
-      title: notification?.title || 'AuraConnect',
-      body: notification?.body || '',
+    // Use factory for order notifications
+    if (data?.type && data.type.includes('order_')) {
+      return NotificationFactory.createOrderNotification(
+        data.type,
+        data,
+        {
+          title: notification?.title || 'AuraConnect',
+          body: notification?.body || '',
+        }
+      );
+    }
+
+    // Use factory for other notification types
+    const id = remoteMessage.messageId || Date.now().toString();
+    const title = notification?.title || 'AuraConnect';
+    const body = notification?.body || '';
+
+    if (data?.type === 'promotion') {
+      return NotificationFactory.createPromotionNotification(id, title, body, data);
+    } else if (data?.type === 'system_update') {
+      return NotificationFactory.createSystemNotification(id, title, body, data);
+    }
+
+    // Default notification for unknown types
+    return {
+      id,
+      title,
+      body,
       data: data || {},
       android: {
-        channelId: channel,
-        importance: AndroidImportance.HIGH,
+        channelId: NotificationFactory.getChannelFromType(data?.type || ''),
+        importance: AndroidImportance.DEFAULT,
         pressAction: {
           id: 'default',
           launchActivity: 'default',
         },
-        style: this.getNotificationStyle(data),
-        actions: this.getNotificationActions(data),
-      },
-      ios: {
-        categoryId: data?.category || 'default',
-        attachments: notification?.ios?.attachments || [],
       },
     };
-
-    return notificationPayload;
   }
 
-  private getChannelFromData(data: any): string {
-    if (data?.type === 'order_update') {
-      return NotificationChannel.ORDER_UPDATES;
-    } else if (data?.type === 'promotion') {
-      return NotificationChannel.PROMOTIONS;
-    }
-    return NotificationChannel.SYSTEM;
-  }
-
-  private getNotificationStyle(data: any): AndroidStyle | undefined {
-    if (data?.type === 'order_update' && data?.items) {
-      return {
-        type: AndroidStyle.BIGTEXT,
-        text: data.items,
-      };
-    }
-    return undefined;
-  }
-
-  private getNotificationActions(data: any): NotificationAndroid['actions'] {
-    const actions = [];
-
-    if (data?.type === 'order_update') {
-      actions.push({
-        title: 'View Order',
-        pressAction: {
-          id: 'view_order',
-          launchActivity: 'default',
-        },
-      });
-
-      if (data?.status === 'ready') {
-        actions.push({
-          title: 'Notify Customer',
-          pressAction: {
-            id: 'notify_customer',
-          },
-        });
-      }
-    }
-
-    return actions;
-  }
 
   async displayNotification(notification: Notification): Promise<void> {
     try {
@@ -430,20 +411,24 @@ export class NotificationService extends EventEmitter {
   private async registerDeviceToken(): Promise<void> {
     if (!this.fcmToken) return;
 
-    try {
-      // Send token to backend
-      this.emit('registerToken', this.fcmToken);
-      logger.info('Device token registered');
-    } catch (error) {
-      logger.error('Failed to register device token', error);
-    }
+    await NotificationErrorHandler.withRetry(
+      async () => {
+        // Send token to backend
+        this.emit('registerToken', this.fcmToken);
+        logger.info('Device token registered');
+      },
+      {
+        onError: (error) => logger.error('Failed to register device token after retries', error),
+        onRetry: (attempt) => logger.debug(`Retrying device token registration, attempt ${attempt}`),
+      }
+    );
   }
 
   private async loadPreferences(): Promise<void> {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PREFERENCES);
+      const stored = await SecureNotificationStorage.getPreferences();
       if (stored) {
-        this.preferences = { ...this.preferences, ...JSON.parse(stored) };
+        this.preferences = { ...this.preferences, ...stored };
       }
     } catch (error) {
       logger.error('Failed to load notification preferences', error);
@@ -453,10 +438,7 @@ export class NotificationService extends EventEmitter {
   async savePreferences(preferences: Partial<NotificationPreferences>): Promise<void> {
     try {
       this.preferences = { ...this.preferences, ...preferences };
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.NOTIFICATION_PREFERENCES,
-        JSON.stringify(this.preferences),
-      );
+      await SecureNotificationStorage.savePreferences(this.preferences);
       this.emit('preferencesUpdated', this.preferences);
     } catch (error) {
       logger.error('Failed to save notification preferences', error);
@@ -467,7 +449,7 @@ export class NotificationService extends EventEmitter {
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
   ): Promise<void> {
     try {
-      const notifications = await this.getStoredNotifications();
+      const notifications = await SecureNotificationStorage.getNotificationHistory();
       notifications.unshift({
         id: remoteMessage.messageId || Date.now().toString(),
         title: remoteMessage.notification?.title || '',
@@ -477,20 +459,16 @@ export class NotificationService extends EventEmitter {
         read: false,
       });
 
-      // Keep only last N notifications
-      const trimmed = notifications.slice(0, NOTIFICATION_CONFIG.MAX_STORED_NOTIFICATIONS);
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.NOTIFICATION_HISTORY,
-        JSON.stringify(trimmed),
-      );
+      await SecureNotificationStorage.saveNotificationHistory(notifications);
+      await SecureNotificationStorage.trimNotificationHistory();
     } catch (error) {
-      logger.error('Failed to store notification', error);
+      NotificationErrorHandler.handleNotificationError(error, 'storeNotification');
     }
   }
 
   private async storeNotificationLocally(notification: Notification): Promise<void> {
     try {
-      const notifications = await this.getStoredNotifications();
+      const notifications = await SecureNotificationStorage.getNotificationHistory();
       notifications.unshift({
         id: notification.id || Date.now().toString(),
         title: notification.title || '',
@@ -500,24 +478,15 @@ export class NotificationService extends EventEmitter {
         read: false,
       });
 
-      const trimmed = notifications.slice(0, NOTIFICATION_CONFIG.MAX_STORED_NOTIFICATIONS);
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.NOTIFICATION_HISTORY,
-        JSON.stringify(trimmed),
-      );
+      await SecureNotificationStorage.saveNotificationHistory(notifications);
+      await SecureNotificationStorage.trimNotificationHistory();
     } catch (error) {
-      logger.error('Failed to store notification locally', error);
+      NotificationErrorHandler.handleNotificationError(error, 'storeNotificationLocally');
     }
   }
 
   async getStoredNotifications(): Promise<any[]> {
-    try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_HISTORY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      logger.error('Failed to get stored notifications', error);
-      return [];
-    }
+    return SecureNotificationStorage.getNotificationHistory();
   }
 
   async markNotificationAsRead(notificationId: string): Promise<void> {
@@ -526,10 +495,7 @@ export class NotificationService extends EventEmitter {
       const updated = notifications.map(n => 
         n.id === notificationId ? { ...n, read: true } : n
       );
-      await AsyncStorage.setItem(
-        STORAGE_KEYS.NOTIFICATION_HISTORY,
-        JSON.stringify(updated),
-      );
+      await SecureNotificationStorage.saveNotificationHistory(updated);
     } catch (error) {
       logger.error('Failed to mark notification as read', error);
     }
@@ -537,7 +503,7 @@ export class NotificationService extends EventEmitter {
 
   async clearNotificationHistory(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.NOTIFICATION_HISTORY);
+      await SecureNotificationStorage.saveNotificationHistory([]);
       logger.info('Notification history cleared');
     } catch (error) {
       logger.error('Failed to clear notification history', error);
