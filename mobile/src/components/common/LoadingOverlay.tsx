@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,7 +7,9 @@ import {
   Dimensions,
 } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import LottieView from 'lottie-react-native';
+
+// Lazy load Lottie to reduce initial bundle size
+const LottieView = lazy(() => import('lottie-react-native'));
 
 interface LoadingOverlayProps {
   visible: boolean;
@@ -45,12 +47,21 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
               style={styles.spinner}
             />
           ) : (
-            <LottieView
-              source={lottieSource || require('@assets/animations/loading.json')}
-              autoPlay
-              loop
-              style={styles.lottie}
-            />
+            <Suspense
+              fallback={
+                <ActivityIndicator
+                  size="large"
+                  color={theme.colors.primary}
+                  style={styles.spinner}
+                />
+              }>
+              <LottieView
+                source={lottieSource || require('@assets/animations/loading.json')}
+                autoPlay
+                loop
+                style={styles.lottie}
+              />
+            </Suspense>
           )}
           <Text variant="bodyLarge" style={styles.message}>
             {message}

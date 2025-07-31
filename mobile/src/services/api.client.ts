@@ -4,7 +4,9 @@ import * as Keychain from 'react-native-keychain';
 import NetInfo from '@react-native-community/netinfo';
 import { MMKV } from 'react-native-mmkv';
 
-import { showToast } from '@utils/toast';
+import { errorService } from './error.service';
+import { API_CONFIG, AUTH_CONFIG, STORAGE_KEYS, DEV_CONFIG } from '@constants/config';
+import { logger } from '@utils/logger';
 
 const storage = new MMKV();
 
@@ -15,8 +17,8 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: Config.API_URL || 'https://api.auraconnect.ai/api',
-      timeout: 30000,
+      baseURL: Config.API_URL || API_CONFIG.BASE_URL,
+      timeout: API_CONFIG.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -43,6 +45,9 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
+        // Log request securely
+        logger.logNetworkRequest(config);
+
         return config;
       },
       error => {
@@ -52,7 +57,10 @@ class ApiClient {
 
     // Response interceptor
     this.client.interceptors.response.use(
-      response => response,
+      response => {
+        logger.logNetworkResponse(response);
+        return response;
+      },
       async error => {
         const originalRequest = error.config;
 
@@ -85,8 +93,9 @@ class ApiClient {
         }
 
         // Handle other errors
-        this.handleError(error);
-        return Promise.reject(error);
+        const appError = errorService.handleApiError(error);
+        errorService.showErrorToast(appError);
+        return Promise.reject(appError);
       },
     );
   }
@@ -94,7 +103,7 @@ class ApiClient {
   private async getAuthToken(): Promise<string | null> {
     try {
       const credentials = await Keychain.getInternetCredentials(
-        'auraconnect.api',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
       );
       return credentials ? credentials.password : null;
     } catch {
@@ -116,15 +125,15 @@ class ApiClient {
 
     // Store new tokens
     await Keychain.setInternetCredentials(
-      'auraconnect.api',
-      'access_token',
+      AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+      AUTH_CONFIG.TOKEN_KEY,
       access_token,
     );
 
     if (newRefreshToken) {
       await Keychain.setInternetCredentials(
-        'auraconnect.api',
-        'refresh_token',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+        AUTH_CONFIG.REFRESH_TOKEN_KEY,
         newRefreshToken,
       );
     }
@@ -135,7 +144,7 @@ class ApiClient {
   private async getRefreshToken(): Promise<string | null> {
     try {
       const credentials = await Keychain.getInternetCredentials(
-        'auraconnect.api',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
       );
       return credentials ? credentials.username : null;
     } catch {
@@ -149,42 +158,14 @@ class ApiClient {
 
   private onRefreshFailed() {
     // Clear auth data and redirect to login
-    Keychain.resetInternetCredentials('auraconnect.api');
-    storage.delete('user');
+    Keychain.resetInternetCredentials(AUTH_CONFIG.TOKEN_STORAGE_SERVICE);
+    storage.delete(STORAGE_KEYS.USER);
     // Navigation will be handled by AuthContext
-  }
-
-  private handleError(error: AxiosError) {
-    if (!error.response) {
-      if (error.message === 'No internet connection') {
-        showToast('error', 'Offline', 'No internet connection');
-      } else {
-        showToast('error', 'Network Error', 'Please check your connection');
-      }
-      return;
-    }
-
-    const { status, data } = error.response;
-
-    switch (status) {
-      case 400:
-        showToast('error', 'Bad Request', data.detail || 'Invalid request');
-        break;
-      case 403:
-        showToast('error', 'Forbidden', 'You do not have permission');
-        break;
-      case 404:
-        showToast('error', 'Not Found', 'Resource not found');
-        break;
-      case 500:
-        showToast('error', 'Server Error', 'Something went wrong');
-        break;
-    }
   }
 
   private queueOfflineRequest(config: any) {
     // Store request for later sync
-    const offlineQueue = storage.getString('offlineQueue');
+    const offlineQueue = storage.getString(STORAGE_KEYS.OFFLINE_QUEUE);
     const queue = offlineQueue ? JSON.parse(offlineQueue) : [];
     
     queue.push({
@@ -198,7 +179,7 @@ class ApiClient {
       },
     });
 
-    storage.set('offlineQueue', JSON.stringify(queue));
+    storage.set(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(queue));
   }
 
   // Public methods

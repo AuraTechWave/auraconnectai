@@ -2,6 +2,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { MMKV } from 'react-native-mmkv';
 import { apiClient } from './api.client';
 import { showToast } from '@utils/toast';
+import { encryptionService } from '@utils/encryption';
+import { OFFLINE_CONFIG, STORAGE_KEYS } from '@constants/config';
 
 const storage = new MMKV();
 
@@ -52,6 +54,12 @@ class OfflineService {
   public async queueRequest(request: Omit<QueuedRequest, 'id' | 'timestamp' | 'retryCount'>) {
     const queue = this.getQueue();
     
+    // Check queue size limit
+    if (queue.length >= OFFLINE_CONFIG.MAX_QUEUE_SIZE) {
+      showToast('warning', 'Queue Full', 'Offline queue is full. Please sync when online.');
+      return;
+    }
+    
     const queuedRequest: QueuedRequest = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -59,10 +67,15 @@ class OfflineService {
       ...request,
     };
 
+    // Encrypt sensitive data if enabled
+    if (OFFLINE_CONFIG.ENCRYPT_QUEUE && queuedRequest.config.data) {
+      queuedRequest.config.data = encryptionService.encrypt(queuedRequest.config.data);
+    }
+
     queue.push(queuedRequest);
     this.saveQueue(queue);
 
-    showToast('info', 'Offline', 'Request queued for sync');
+    showToast('info', 'Offline', `Request queued (${queue.length}/${OFFLINE_CONFIG.MAX_QUEUE_SIZE})`);
   }
 
   public async syncOfflineQueue() {
@@ -81,18 +94,26 @@ class OfflineService {
     showToast('info', 'Syncing', `Syncing ${queue.length} offline requests`);
 
     const failedRequests: QueuedRequest[] = [];
+    const batchSize = OFFLINE_CONFIG.SYNC_BATCH_SIZE;
 
-    for (const request of queue) {
-      try {
-        await this.executeRequest(request);
-      } catch (error) {
-        request.retryCount++;
-        
-        // Keep request in queue if retry count is below threshold
-        if (request.retryCount < 3) {
-          failedRequests.push(request);
-        }
-      }
+    // Process in batches
+    for (let i = 0; i < queue.length; i += batchSize) {
+      const batch = queue.slice(i, i + batchSize);
+      
+      await Promise.all(
+        batch.map(async request => {
+          try {
+            await this.executeRequest(request);
+          } catch (error) {
+            request.retryCount++;
+            
+            // Keep request in queue if retry count is below threshold
+            if (request.retryCount < OFFLINE_CONFIG.MAX_RETRY_COUNT) {
+              failedRequests.push(request);
+            }
+          }
+        })
+      );
     }
 
     // Update queue with failed requests
@@ -113,19 +134,30 @@ class OfflineService {
 
   private async executeRequest(request: QueuedRequest) {
     const { method, url, data, params } = request.config;
+    
+    // Decrypt data if it was encrypted
+    let decryptedData = data;
+    if (OFFLINE_CONFIG.ENCRYPT_QUEUE && data) {
+      try {
+        decryptedData = encryptionService.decrypt(data);
+      } catch (error) {
+        console.error('Failed to decrypt request data:', error);
+        throw error;
+      }
+    }
 
     switch (method.toLowerCase()) {
       case 'get':
         await apiClient.get(url, { params });
         break;
       case 'post':
-        await apiClient.post(url, data, { params });
+        await apiClient.post(url, decryptedData, { params });
         break;
       case 'put':
-        await apiClient.put(url, data, { params });
+        await apiClient.put(url, decryptedData, { params });
         break;
       case 'patch':
-        await apiClient.patch(url, data, { params });
+        await apiClient.patch(url, decryptedData, { params });
         break;
       case 'delete':
         await apiClient.delete(url, { params });
@@ -134,16 +166,16 @@ class OfflineService {
   }
 
   private getQueue(): QueuedRequest[] {
-    const queueString = storage.getString('offlineQueue');
+    const queueString = storage.getString(STORAGE_KEYS.OFFLINE_QUEUE);
     return queueString ? JSON.parse(queueString) : [];
   }
 
   private saveQueue(queue: QueuedRequest[]) {
-    storage.set('offlineQueue', JSON.stringify(queue));
+    storage.set(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(queue));
   }
 
   public clearQueue() {
-    storage.delete('offlineQueue');
+    storage.delete(STORAGE_KEYS.OFFLINE_QUEUE);
   }
 
   public getQueueSize(): number {

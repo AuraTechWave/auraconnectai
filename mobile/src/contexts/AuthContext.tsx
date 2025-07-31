@@ -10,6 +10,8 @@ import * as Keychain from 'react-native-keychain';
 
 import { authService } from '@services/auth.service';
 import { User } from '@types/user';
+import { AUTH_CONFIG, STORAGE_KEYS } from '@constants/config';
+import { logger } from '@utils/logger';
 
 interface AuthContextType {
   user: User | null;
@@ -38,11 +40,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     try {
       const token = await getStoredToken();
       if (token) {
+        logger.debug('Validating stored token');
         const userData = await authService.validateToken(token);
         setUser(userData);
+        logger.info('User authenticated', { userId: userData.id, username: userData.username });
       }
     } catch (error) {
-      // Token invalid or expired
+      logger.warn('Token validation failed', error);
       await clearAuthData();
     } finally {
       setIsLoading(false);
@@ -50,30 +54,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const login = async (username: string, password: string) => {
+    logger.info('User login attempt', { username });
     const response = await authService.login(username, password);
     
     // Store token securely
     await Keychain.setInternetCredentials(
-      'auraconnect.api',
-      'access_token',
+      AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+      AUTH_CONFIG.TOKEN_KEY,
       response.access_token,
     );
     
     // Store refresh token
     if (response.refresh_token) {
       await Keychain.setInternetCredentials(
-        'auraconnect.api',
-        'refresh_token',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+        AUTH_CONFIG.REFRESH_TOKEN_KEY,
         response.refresh_token,
       );
     }
     
     // Store user data
-    storage.set('user', JSON.stringify(response.user));
+    storage.set(STORAGE_KEYS.USER, JSON.stringify(response.user));
     setUser(response.user);
+    logger.info('User login successful', { userId: response.user.id, username: response.user.username });
   };
 
   const logout = async () => {
+    logger.info('User logout', { userId: user?.id });
     await clearAuthData();
     setUser(null);
   };
@@ -81,27 +88,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const refreshToken = async () => {
     try {
       const credentials = await Keychain.getInternetCredentials(
-        'auraconnect.api',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
       );
       if (credentials && credentials.password) {
+        logger.debug('Refreshing auth token');
         const response = await authService.refreshToken(credentials.password);
         
         // Update tokens
         await Keychain.setInternetCredentials(
-          'auraconnect.api',
-          'access_token',
+          AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+          AUTH_CONFIG.TOKEN_KEY,
           response.access_token,
         );
         
         if (response.refresh_token) {
           await Keychain.setInternetCredentials(
-            'auraconnect.api',
-            'refresh_token',
+            AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
+            AUTH_CONFIG.REFRESH_TOKEN_KEY,
             response.refresh_token,
           );
         }
+        logger.debug('Token refresh successful');
       }
     } catch (error) {
+      logger.error('Token refresh failed', error);
       // If refresh fails, logout
       await logout();
       throw error;
@@ -111,17 +121,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const getStoredToken = async (): Promise<string | null> => {
     try {
       const credentials = await Keychain.getInternetCredentials(
-        'auraconnect.api',
+        AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
       );
       return credentials ? credentials.password : null;
-    } catch {
+    } catch (error) {
+      logger.error('Failed to retrieve stored token', error);
       return null;
     }
   };
 
   const clearAuthData = async () => {
-    await Keychain.resetInternetCredentials('auraconnect.api');
-    storage.delete('user');
+    await Keychain.resetInternetCredentials(AUTH_CONFIG.TOKEN_STORAGE_SERVICE);
+    storage.delete(STORAGE_KEYS.USER);
   };
 
   const value: AuthContextType = {
