@@ -44,7 +44,7 @@ jobs:
         linkchecker --config .linkcheckerrc site/ || true
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: docs-build-logs
@@ -68,15 +68,31 @@ jobs:
     
     - name: Validate Mermaid diagrams
       run: |
-        find docs -name "*.md" -exec grep -l "```mermaid" {} \; | while read file; do
-          echo "Checking $file"
-          # Extract and validate mermaid diagrams
-          awk '/```mermaid/,/```/' "$file" | sed '1d;$d' > temp.mmd
-          if [ -s temp.mmd ]; then
-            mmdc -i temp.mmd -o output.png || echo "Error in $file"
+        # Find all markdown files with mermaid code blocks
+        for file in $(find docs -name "*.md" -type f); do
+          if grep -q '```mermaid' "$file"; then
+            echo "Checking mermaid diagrams in: $file"
+            # Extract each mermaid block
+            count=0
+            while IFS= read -r line; do
+              if [[ $line == '```mermaid' ]]; then
+                count=$((count + 1))
+                # Extract until closing ```
+                sed -n "/^${line}$/,/^\`\`\`$/p" "$file" | sed '1d;$d' > "temp_${count}.mmd"
+                if [ -s "temp_${count}.mmd" ]; then
+                  # Validate the diagram
+                  if ! mmdc -i "temp_${count}.mmd" -o "output_${count}.png" 2>/dev/null; then
+                    echo "  ❌ Error in diagram $count"
+                  else
+                    echo "  ✅ Diagram $count is valid"
+                  fi
+                fi
+              fi
+            done < "$file"
           fi
         done
-        rm -f temp.mmd output.png
+        # Cleanup
+        rm -f temp_*.mmd output_*.png
 
   check-links:
     runs-on: ubuntu-latest
