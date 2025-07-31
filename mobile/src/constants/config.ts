@@ -74,6 +74,9 @@ export const STORAGE_KEYS = {
   NOTIFICATIONS: 'notifications',
   OFFLINE_QUEUE: 'offlineQueue',
   APP_STATE: 'appState',
+  NOTIFICATION_PREFERENCES: 'notificationPreferences',
+  NOTIFICATION_HISTORY: 'notificationHistory',
+  FCM_TOKEN: 'fcmToken',
 };
 
 // Cache Configuration
@@ -126,4 +129,15 @@ export const APP_INFO = {
   VERSION: '1.0.0',
   BUILD_NUMBER: '1',
   BUNDLE_ID: 'com.auraconnect.mobile',
+};
+
+// Notification Configuration
+export const NOTIFICATION_CONFIG = {
+  MAX_STORED_NOTIFICATIONS: 100,
+  NOTIFICATION_SOUND: 'order_notification',
+  DEFAULT_VIBRATION_PATTERN: [0, 250, 250, 250],
+  ORDER_NOTIFICATION_PRIORITY: 'high',
+  PROMOTION_NOTIFICATION_PRIORITY: 'normal',
+  SYSTEM_NOTIFICATION_PRIORITY: 'high',
+  AUTO_CANCEL_TIMEOUT: 30000, // 30 seconds
 };
