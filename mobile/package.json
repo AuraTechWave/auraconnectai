@@ -50,7 +50,12 @@
     "@nozbe/watermelondb": "^0.27.1",
     "@nozbe/with-observables": "^1.6.0",
     "react-native-background-timer": "^2.4.1",
-    "react-native-background-fetch": "^4.2.1"
+    "react-native-background-fetch": "^4.2.1",
+    "@react-native-firebase/app": "^18.7.3",
+    "@react-native-firebase/messaging": "^18.7.3",
+    "@notifee/react-native": "^7.8.2",
+    "react-native-push-notification": "^8.1.1",
+    "@react-native-async-storage/async-storage": "^1.21.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

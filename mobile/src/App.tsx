@@ -16,6 +16,7 @@ import { toastConfig } from '@constants/toastConfig';
 import { syncManager } from '@sync';
 import { OfflineIndicator } from '@components/sync';
 import { CACHE_CONFIG } from '@constants/config';
+import { notificationService } from '@services/notifications';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,8 +38,13 @@ const App: React.FC = () => {
       console.error('Failed to initialize sync manager:', error);
     });
     
+    // Initialize notification service
+    notificationService.initialize().catch(error => {
+      console.error('Failed to initialize notification service:', error);
+    });
+    
     return () => {
-      // Cleanup sync manager on app unmount
+      // Cleanup on app unmount
       syncManager.destroy();
     };
   }, []);
