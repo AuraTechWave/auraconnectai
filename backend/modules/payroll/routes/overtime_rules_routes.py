@@ -6,7 +6,7 @@ Overtime rules management endpoints.
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 

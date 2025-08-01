@@ -343,7 +343,7 @@ class WebhookSecurityConfig(BaseModel):
     
     signature_algorithm: str = Field(
         "hmac-sha256",
-        regex="^(hmac-sha256|hmac-sha512)$",
+        pattern="^(hmac-sha256|hmac-sha512)$",
         description="Signature algorithm"
     )
     include_timestamp: bool = Field(

@@ -217,7 +217,7 @@ class TaxAuditLog(Base, TimestampMixin, TenantMixin):
     # Additional context
     reason = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    audit_metadata = Column(JSONB, nullable=True)
     
     # Relationships
     filing = relationship("TaxFiling", back_populates="audit_logs")
