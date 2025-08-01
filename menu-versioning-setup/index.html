@@ -1,0 +1,3526 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../menu-versioning-architecture/">
+      
+      
+        <link rel="next" href="../versioning-api-guide/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+    
+    
+      
+        <title>Menu Versioning System - Setup Guide - AuraConnect Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#menu-versioning-system-setup-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="AuraConnect Documentation" class="md-header__button md-logo" aria-label="AuraConnect Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AuraConnect Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Menu Versioning System - Setup Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="AuraConnect Documentation" class="md-nav__button md-logo" aria-label="AuraConnect Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AuraConnect Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    👋 Welcome to AuraConnect Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect System Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PAYROLL_PRODUCTION_READINESS_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Module Production Readiness Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../menu-versioning-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Menu Versioning &amp; Audit Trail Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Menu Versioning System - Setup Guide
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Menu Versioning System - Setup Guide
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      System Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Extensions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-backend-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Backend Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Backend Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialize-versioning-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialize Versioning System
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-frontend-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Frontend Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Frontend Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-dependencies_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Component Integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-verification-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Verification Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Verification Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frontend-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frontend Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto-versioning-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-Versioning Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Tuning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Redis Caching
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rbac-permissions-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC Permissions Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Audit Log Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-migration-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Migration Fails
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-auto-versioning-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Auto-Versioning Not Working
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frontend-components-not-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Frontend Components Not Loading
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-performance-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Performance Issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Health Checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Maintenance
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Maintenance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#regular-maintenance-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Regular Maintenance Tasks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Regular Maintenance Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-audit-log-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Audit Log Cleanup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-version-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Version Cleanup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backup Strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backup Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Backup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support-and-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Support and Documentation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Support and Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Resources
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Help
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Contributing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning-api-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Menu Versioning API Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Api
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Api
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/pos_analytics_endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    POS Analytics API Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/pos_sync_endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    POS Sync API Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Dev
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Dev
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Development Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/CI_CD_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CI/CD Pipeline Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/payroll_tax_developer_guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll &amp; Tax Module Developer Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_8_4" id="__nav_8_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_8_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8_4">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/ai_customization_suite/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – AI Customization Suite
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/analytics_reporting_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Analytics &amp; Reporting Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/customer_loyalty_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Customer &amp; Loyalty Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/global_architecture_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Global Architecture Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/menu_inventory_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Menu &amp; Inventory System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/offline_sync_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Offline Sync for Mobile
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/order_management_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Order Management (FOH + BOH)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/payroll_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Integration Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/payroll_tax_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Tax Architecture - AUR-275 Phase 1 (Enhanced)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/pos_integration_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – POS Integration Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/rbac_system_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Role-Based Access Control (RBAC) System Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/regulatory_compliance_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Regulatory &amp; Compliance Add-on
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/staff_management_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Staff Management Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/taxing_payroll_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – Taxing &amp; Payroll System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dev/architecture/white_labeling_architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AuraConnect – White-Labeling Support Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9" id="__nav_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Feature docs
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            Feature docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Feature Docs
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_2" id="__nav_9_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Ai agents
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_2">
+            <span class="md-nav__icon md-icon"></span>
+            Ai agents
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AI Agent Core
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_agents/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Ai Agents Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_3" id="__nav_9_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Ai customization
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_3">
+            <span class="md-nav__icon md-icon"></span>
+            Ai customization
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AI Customization Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/ai_customization/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Ai Customization Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_4" id="__nav_9_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Compliance
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            Compliance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/compliance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compliance Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/compliance/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Compliance Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_5" id="__nav_9_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Mobile
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_5">
+            <span class="md-nav__icon md-icon"></span>
+            Mobile
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/mobile/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mobile Features Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/mobile/push-notifications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Push Notifications Setup Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Offline sync
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_6">
+            <span class="md-nav__icon md-icon"></span>
+            Offline sync
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/offline_sync/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Offline Sync Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/offline_sync/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Offline Sync Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Payroll
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            Payroll
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/payroll/tax_calculation_flow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Payroll Tax Calculation Flow Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_8" id="__nav_9_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Pos integration
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_8">
+            <span class="md-nav__icon md-icon"></span>
+            Pos integration
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/pos_integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    POS Integration Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/pos_integration/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Pos Integration Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Reservation
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_9">
+            <span class="md-nav__icon md-icon"></span>
+            Reservation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/reservation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservation Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/reservation/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservation Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_10" id="__nav_9_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Tax
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_10_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_10">
+            <span class="md-nav__icon md-icon"></span>
+            Tax
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/tax/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tax Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/tax/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tax Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_11" >
+        
+          
+          <label class="md-nav__link" for="__nav_9_11" id="__nav_9_11_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    White label
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_11">
+            <span class="md-nav__icon md-icon"></span>
+            White label
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/white_label/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    White Labeling Module
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature_docs/white_label/architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    White Label Module Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#system-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      System Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Extensions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installation-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installation Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Installation Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-backend-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Backend Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. Backend Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#install-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initialize-versioning-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialize Versioning System
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-frontend-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Frontend Setup
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Frontend Setup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-dependencies_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install Dependencies
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-configuration_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Environment Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Component Integration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-verification-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Verification Steps
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Verification Steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frontend-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frontend Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#database-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto-versioning-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auto-Versioning Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Tuning
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Optimization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#redis-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Redis Caching
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Security Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rbac-permissions-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC Permissions Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      Audit Log Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Issues
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Issues">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-migration-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Migration Fails
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-auto-versioning-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Auto-Versioning Not Working
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-frontend-components-not-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Frontend Components Not Loading
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-performance-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Performance Issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#health-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Health Checks
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Maintenance
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Maintenance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#regular-maintenance-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Regular Maintenance Tasks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Regular Maintenance Tasks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-audit-log-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Audit Log Cleanup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-version-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Version Cleanup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backup-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backup Strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backup Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#database-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Backup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support-and-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Support and Documentation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Support and Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#additional-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Resources
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#getting-help" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting Help
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Contributing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="menu-versioning-system-setup-guide">Menu Versioning System - Setup Guide</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="system-requirements">System Requirements</h3>
+<ul>
+<li><strong>Python</strong>: 3.9+ (3.11+ recommended)</li>
+<li><strong>Node.js</strong>: 16+ (18+ recommended)</li>
+<li><strong>PostgreSQL</strong>: 12+ (14+ recommended)</li>
+<li><strong>Redis</strong>: 6+ (7+ recommended for persistence)</li>
+</ul>
+<h3 id="database-extensions">Database Extensions</h3>
+<p>Ensure the following PostgreSQL extensions are enabled:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Required extensions</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">&quot;uuid-ossp&quot;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">&quot;btree_gin&quot;</span><span class="p">;</span>
+
+<span class="c1">-- Optional but recommended for performance</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">&quot;pg_stat_statements&quot;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">&quot;pg_trgm&quot;</span><span class="p">;</span>
+</code></pre></div>
+
+<h2 id="installation-steps">Installation Steps</h2>
+<h3 id="1-backend-setup">1. Backend Setup</h3>
+<h4 id="environment-configuration">Environment Configuration</h4>
+<p>Create or update your <code>.env</code> file:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Database Configuration</span>
+<span class="nv">DATABASE_URL</span><span class="o">=</span>postgresql://user:password@localhost:5432/auraconnect
+<span class="nv">DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
+<span class="nv">DATABASE_POOL_OVERFLOW</span><span class="o">=</span><span class="m">30</span>
+
+<span class="c1"># Redis Configuration (for caching)</span>
+<span class="nv">REDIS_URL</span><span class="o">=</span>redis://localhost:6379/0
+<span class="nv">REDIS_CACHE_TTL</span><span class="o">=</span><span class="m">3600</span>
+
+<span class="c1"># Menu Versioning Configuration</span>
+<span class="nv">MENU_VERSIONING_ENABLED</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">AUTO_VERSIONING_THRESHOLD</span><span class="o">=</span><span class="m">10</span>
+<span class="nv">MAX_AUDIT_LOG_RETENTION_DAYS</span><span class="o">=</span><span class="m">365</span>
+<span class="nv">VERSION_COMPARISON_CACHE_TTL</span><span class="o">=</span><span class="m">1800</span>
+
+<span class="c1"># Optional: Advanced Configuration</span>
+<span class="nv">MENU_VERSION_COMPRESSION</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">ENABLE_VERSION_ENCRYPTION</span><span class="o">=</span><span class="nb">false</span>
+<span class="nv">BACKGROUND_VERSIONING</span><span class="o">=</span><span class="nb">true</span>
+</code></pre></div>
+
+<h4 id="database-migration">Database Migration</h4>
+<p>Run the database migration to create versioning tables:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># From the project root directory</span>
+<span class="nb">cd</span><span class="w"> </span>backend
+
+<span class="c1"># Run the migration</span>
+alembic<span class="w"> </span>upgrade<span class="w"> </span>head
+
+<span class="c1"># Verify tables were created</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\dt menu_*&quot;</span>
+</code></pre></div>
+
+<p>Expected tables:
+- <code>menu_versions</code>
+- <code>menu_category_versions</code>
+- <code>menu_item_versions</code>
+- <code>modifier_group_versions</code>
+- <code>modifier_versions</code>
+- <code>menu_item_modifier_versions</code>
+- <code>menu_audit_logs</code>
+- <code>menu_version_schedules</code>
+- <code>menu_version_comparisons</code></p>
+<h4 id="install-dependencies">Install Dependencies</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Install Python dependencies</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+
+<span class="c1"># Install additional dependencies for versioning (if not already included)</span>
+pip<span class="w"> </span>install<span class="w"> </span>redis<span class="w"> </span>python-dateutil<span class="w"> </span>pytz
+</code></pre></div>
+
+<h4 id="initialize-versioning-system">Initialize Versioning System</h4>
+<p>Add the following to your application startup (already included in <code>main.py</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">backend.core.menu_versioning_triggers</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_versioning_triggers</span>
+
+<span class="c1"># Initialize versioning triggers</span>
+<span class="n">init_versioning_triggers</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="2-frontend-setup">2. Frontend Setup</h3>
+<h4 id="install-dependencies_1">Install Dependencies</h4>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>frontend
+
+<span class="c1"># Install Node.js dependencies</span>
+npm<span class="w"> </span>install
+
+<span class="c1"># Install additional dependencies for versioning</span>
+npm<span class="w"> </span>install<span class="w"> </span>react-window<span class="w"> </span>react-window-infinite-loader<span class="w"> </span>date-fns
+</code></pre></div>
+
+<h4 id="environment-configuration_1">Environment Configuration</h4>
+<p>Update your frontend <code>.env</code> file:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># API Configuration</span>
+<span class="nv">REACT_APP_API_BASE_URL</span><span class="o">=</span>http://localhost:8000
+<span class="nv">REACT_APP_ENABLE_VERSIONING</span><span class="o">=</span><span class="nb">true</span>
+
+<span class="c1"># Feature Flags</span>
+<span class="nv">REACT_APP_ENABLE_VERSION_COMPARISON</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">REACT_APP_ENABLE_BULK_OPERATIONS</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">REACT_APP_MAX_VERSIONS_PER_PAGE</span><span class="o">=</span><span class="m">20</span>
+
+<span class="c1"># UI Configuration</span>
+<span class="nv">REACT_APP_VIRTUALIZATION_THRESHOLD</span><span class="o">=</span><span class="m">100</span>
+<span class="nv">REACT_APP_AUTO_REFRESH_INTERVAL</span><span class="o">=</span><span class="m">30000</span>
+</code></pre></div>
+
+<h4 id="component-integration">Component Integration</h4>
+<p>The versioning components are already integrated into the MenuDashboard. To verify:</p>
+<ol>
+<li>
+<p>Start the development server:
+   <code>bash
+   npm start</code></p>
+</li>
+<li>
+<p>Navigate to the Menu Management section</p>
+</li>
+<li>Look for the "Versioning" tab</li>
+</ol>
+<h3 id="3-verification-steps">3. Verification Steps</h3>
+<h4 id="backend-verification">Backend Verification</h4>
+<ol>
+<li>
+<p><strong>API Health Check</strong>:
+   <code>bash
+   curl http://localhost:8000/menu/versions/stats</code></p>
+</li>
+<li>
+<p><strong>Create Test Version</strong>:
+   <code>bash
+   curl -X POST http://localhost:8000/menu/versions \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -d '{
+       "version_name": "Test Version",
+       "description": "Initial test version",
+       "version_type": "manual"
+     }'</code></p>
+</li>
+<li>
+<p><strong>Check Audit Logs</strong>:
+   <code>bash
+   curl http://localhost:8000/menu/versions/audit/logs \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN"</code></p>
+</li>
+</ol>
+<h4 id="frontend-verification">Frontend Verification</h4>
+<ol>
+<li><strong>Access Versioning Interface</strong>:</li>
+<li>Go to <code>/menu</code> in your browser</li>
+<li>Click on the "Versioning" tab</li>
+<li>
+<p>Verify you can see the versioning interface</p>
+</li>
+<li>
+<p><strong>Test Version Creation</strong>:</p>
+</li>
+<li>Click "Create Version"</li>
+<li>Fill out the form</li>
+<li>
+<p>Submit and verify version appears in the list</p>
+</li>
+<li>
+<p><strong>Test Audit Trail</strong>:</p>
+</li>
+<li>Click on "Audit Trail" tab</li>
+<li>Verify audit entries are displayed</li>
+</ol>
+<h4 id="database-verification">Database Verification</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Check version tables have data</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">menu_versions</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">menu_audit_logs</span><span class="p">;</span>
+
+<span class="c1">-- Check triggers are working</span>
+<span class="k">SELECT</span><span class="w"> </span>
+<span class="w">  </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span>
+<span class="w">  </span><span class="n">tablename</span><span class="p">,</span><span class="w"> </span>
+<span class="w">  </span><span class="n">schemaname</span><span class="o">||</span><span class="s1">&#39;.&#39;</span><span class="o">||</span><span class="n">tablename</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="ss">&quot;relation&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">n_tup_ins</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="ss">&quot;inserts&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">n_tup_upd</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="ss">&quot;updates&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="n">n_tup_del</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="ss">&quot;deletes&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_user_tables</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tablename</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;menu_%&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tablename</span><span class="p">;</span>
+</code></pre></div>
+
+<h2 id="configuration-options">Configuration Options</h2>
+<h3 id="auto-versioning-configuration">Auto-Versioning Configuration</h3>
+<p>Customize auto-versioning behavior in your application:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># In your application initialization</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.core.menu_versioning_triggers</span><span class="w"> </span><span class="kn">import</span> <span class="n">menu_versioning_triggers</span>
+
+<span class="c1"># Adjust threshold for auto-versioning</span>
+<span class="n">menu_versioning_triggers</span><span class="o">.</span><span class="n">auto_version_threshold</span> <span class="o">=</span> <span class="mi">15</span>
+
+<span class="c1"># Enable/disable auto-versioning</span>
+<span class="n">menu_versioning_triggers</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">True</span>
+</code></pre></div>
+
+<h3 id="performance-tuning">Performance Tuning</h3>
+<h4 id="database-optimization">Database Optimization</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Create additional indexes for better performance</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_menu_versions_created_by</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">menu_versions</span><span class="p">(</span><span class="n">created_by</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_menu_audit_logs_batch</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">menu_audit_logs</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">batch_id</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+
+<span class="c1">-- Optimize for time-based queries</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_menu_audit_logs_created_at_desc</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">menu_audit_logs</span><span class="p">(</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+</code></pre></div>
+
+<h4 id="redis-caching">Redis Caching</h4>
+<p>Configure Redis for optimal caching:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Redis configuration (redis.conf)</span>
+maxmemory<span class="w"> </span>2gb
+maxmemory-policy<span class="w"> </span>allkeys-lru
+save<span class="w"> </span><span class="m">900</span><span class="w"> </span><span class="m">1</span>
+save<span class="w"> </span><span class="m">300</span><span class="w"> </span><span class="m">10</span>
+save<span class="w"> </span><span class="m">60</span><span class="w"> </span><span class="m">10000</span>
+</code></pre></div>
+
+<h3 id="security-configuration">Security Configuration</h3>
+<h4 id="rbac-permissions-setup">RBAC Permissions Setup</h4>
+<p>Ensure proper permissions are configured:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Required permissions for versioning</span>
+<span class="n">VERSIONING_PERMISSIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;menu:read&quot;</span><span class="p">,</span>           <span class="c1"># View versions and audit logs</span>
+    <span class="s2">&quot;menu:create&quot;</span><span class="p">,</span>         <span class="c1"># Create new versions</span>
+    <span class="s2">&quot;menu:update&quot;</span><span class="p">,</span>         <span class="c1"># Publish and rollback versions</span>
+    <span class="s2">&quot;menu:delete&quot;</span><span class="p">,</span>         <span class="c1"># Delete draft versions</span>
+    <span class="s2">&quot;menu:manage_versions&quot;</span> <span class="c1"># Advanced version management</span>
+<span class="p">]</span>
+</code></pre></div>
+
+<h4 id="audit-log-security">Audit Log Security</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Configure audit log retention</span>
+<span class="n">AUDIT_LOG_CONFIG</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;retention_days&quot;</span><span class="p">:</span> <span class="mi">365</span><span class="p">,</span>
+    <span class="s2">&quot;archive_after_days&quot;</span><span class="p">:</span> <span class="mi">90</span><span class="p">,</span>
+    <span class="s2">&quot;encryption_enabled&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Set to True for sensitive data</span>
+    <span class="s2">&quot;checksum_validation&quot;</span><span class="p">:</span> <span class="kc">True</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="1-migration-fails">1. Migration Fails</h4>
+<p><strong>Problem</strong>: Database migration fails with permission errors.</p>
+<p><strong>Solution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Ensure database user has proper permissions</span>
+GRANT<span class="w"> </span>CREATE<span class="w"> </span>ON<span class="w"> </span>DATABASE<span class="w"> </span>auraconnect<span class="w"> </span>TO<span class="w"> </span>your_user<span class="p">;</span>
+GRANT<span class="w"> </span>USAGE<span class="w"> </span>ON<span class="w"> </span>SCHEMA<span class="w"> </span>public<span class="w"> </span>TO<span class="w"> </span>your_user<span class="p">;</span>
+GRANT<span class="w"> </span>CREATE<span class="w"> </span>ON<span class="w"> </span>SCHEMA<span class="w"> </span>public<span class="w"> </span>TO<span class="w"> </span>your_user<span class="p">;</span>
+
+<span class="c1"># Run migration with verbose output</span>
+alembic<span class="w"> </span>upgrade<span class="w"> </span>head<span class="w"> </span>--sql
+</code></pre></div>
+
+<h4 id="2-auto-versioning-not-working">2. Auto-Versioning Not Working</h4>
+<p><strong>Problem</strong>: Changes to menu items don't trigger automatic versioning.</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p>Verify triggers are initialized:
+   <code>python
+   from backend.core.menu_versioning_triggers import get_change_buffer_status
+   print(get_change_buffer_status())</code></p>
+</li>
+<li>
+<p>Check if auto-versioning is enabled:
+   <code>python
+   from backend.core.menu_versioning_triggers import menu_versioning_triggers
+   print(f"Auto-versioning enabled: {menu_versioning_triggers.enabled}")</code></p>
+</li>
+<li>
+<p>Monitor change buffer:
+   <code>bash
+   # Check application logs for versioning events
+   grep "versioning" logs/application.log</code></p>
+</li>
+</ol>
+<h4 id="3-frontend-components-not-loading">3. Frontend Components Not Loading</h4>
+<p><strong>Problem</strong>: Versioning tab shows empty or error state.</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li>
+<p>Check API connectivity:
+   <code>bash
+   curl http://localhost:8000/menu/versions/stats \
+     -H "Authorization: Bearer YOUR_TOKEN"</code></p>
+</li>
+<li>
+<p>Verify permissions:
+   <code>javascript
+   // In browser console
+   console.log(window.localStorage.getItem('userPermissions'));</code></p>
+</li>
+<li>
+<p>Check browser console for errors:
+   <code>javascript
+   // Look for CORS, authentication, or API errors</code></p>
+</li>
+</ol>
+<h4 id="4-performance-issues">4. Performance Issues</h4>
+<p><strong>Problem</strong>: Version operations are slow.</p>
+<p><strong>Solutions</strong>:</p>
+<ol>
+<li><strong>Database Performance</strong>:
+   ```sql
+   -- Analyze query performance
+   EXPLAIN ANALYZE SELECT * FROM menu_versions 
+   WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 20;</li>
+</ol>
+<p>-- Update table statistics
+   ANALYZE menu_versions;
+   ANALYZE menu_audit_logs;
+   ```</p>
+<ol>
+<li><strong>Cache Performance</strong>:
+   ```bash
+   # Check Redis connectivity
+   redis-cli ping</li>
+</ol>
+<p># Monitor cache hit rates
+   redis-cli info stats | grep hit_rate
+   ```</p>
+<ol>
+<li><strong>Application Performance</strong>:
+   <code>python
+   # Enable SQL query logging
+   import logging
+   logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)</code></li>
+</ol>
+<h3 id="health-checks">Health Checks</h3>
+<p>Create health check endpoints to monitor system status:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health/versioning&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">versioning_health_check</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Health check for versioning system&quot;&quot;&quot;</span>
+
+    <span class="n">health_status</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;healthy&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">&quot;checks&quot;</span><span class="p">:</span> <span class="p">{}</span>
+    <span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Check database connectivity</span>
+        <span class="n">version_count</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">MenuVersion</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;checks&quot;</span><span class="p">][</span><span class="s2">&quot;database&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;version_count&quot;</span><span class="p">:</span> <span class="n">version_count</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Check auto-versioning system</span>
+        <span class="n">buffer_status</span> <span class="o">=</span> <span class="n">get_change_buffer_status</span><span class="p">()</span>
+        <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;checks&quot;</span><span class="p">][</span><span class="s2">&quot;auto_versioning&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span> <span class="k">if</span> <span class="n">buffer_status</span><span class="p">[</span><span class="s2">&quot;enabled&quot;</span><span class="p">]</span> <span class="k">else</span> <span class="s2">&quot;disabled&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;buffer_size&quot;</span><span class="p">:</span> <span class="n">buffer_status</span><span class="p">[</span><span class="s2">&quot;buffer_size&quot;</span><span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Check Redis connectivity (if configured)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Redis health check logic here</span>
+            <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;checks&quot;</span><span class="p">][</span><span class="s2">&quot;cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;checks&quot;</span><span class="p">][</span><span class="s2">&quot;cache&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;unavailable&quot;</span><span class="p">}</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;unhealthy&quot;</span>
+        <span class="n">health_status</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">health_status</span>
+</code></pre></div>
+
+<h2 id="maintenance">Maintenance</h2>
+<h3 id="regular-maintenance-tasks">Regular Maintenance Tasks</h3>
+<h4 id="1-audit-log-cleanup">1. Audit Log Cleanup</h4>
+<p>Create a scheduled task to manage audit log retention:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># scripts/cleanup_audit_logs.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.core.database</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">backend.core.menu_versioning_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">MenuAuditLog</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_audit_logs</span><span class="p">(</span><span class="n">retention_days</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">365</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clean up audit logs older than retention period&quot;&quot;&quot;</span>
+
+    <span class="n">cutoff_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">retention_days</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">get_db</span><span class="p">()</span> <span class="k">as</span> <span class="n">db</span><span class="p">:</span>
+        <span class="n">deleted_count</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">MenuAuditLog</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">MenuAuditLog</span><span class="o">.</span><span class="n">created_at</span> <span class="o">&lt;</span> <span class="n">cutoff_date</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cleaned up </span><span class="si">{</span><span class="n">deleted_count</span><span class="si">}</span><span class="s2"> old audit log entries&quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">cleanup_old_audit_logs</span><span class="p">()</span>
+</code></pre></div>
+
+<h4 id="2-version-cleanup">2. Version Cleanup</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># scripts/cleanup_old_versions.py</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_versions</span><span class="p">(</span><span class="n">keep_count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Keep only the most recent versions&quot;&quot;&quot;</span>
+
+    <span class="k">with</span> <span class="n">get_db</span><span class="p">()</span> <span class="k">as</span> <span class="n">db</span><span class="p">:</span>
+        <span class="c1"># Keep active version and most recent drafts</span>
+        <span class="n">versions_to_delete</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">MenuVersion</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">MenuVersion</span><span class="o">.</span><span class="n">is_active</span> <span class="o">==</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">MenuVersion</span><span class="o">.</span><span class="n">deleted_at</span> <span class="o">==</span> <span class="kc">None</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span>
+            <span class="n">MenuVersion</span><span class="o">.</span><span class="n">created_at</span><span class="o">.</span><span class="n">desc</span><span class="p">()</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">keep_count</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">versions_to_delete</span><span class="p">:</span>
+            <span class="n">version</span><span class="o">.</span><span class="n">deleted_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marked </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">versions_to_delete</span><span class="p">)</span><span class="si">}</span><span class="s2"> old versions for deletion&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="3-performance-monitoring">3. Performance Monitoring</h4>
+<p>Set up monitoring for key metrics:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Create monitoring script</span>
+<span class="c1">#!/bin/bash</span>
+<span class="c1"># scripts/monitor_versioning.sh</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Menu Versioning System Status ===&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Date: </span><span class="k">$(</span>date<span class="k">)</span><span class="s2">&quot;</span>
+<span class="nb">echo</span>
+
+<span class="c1"># Database metrics</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Database Metrics:&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+<span class="s2">SELECT </span>
+<span class="s2">    &#39;Total Versions&#39; as metric,</span>
+<span class="s2">    COUNT(*) as value </span>
+<span class="s2">FROM menu_versions WHERE deleted_at IS NULL</span>
+<span class="s2">UNION ALL</span>
+<span class="s2">SELECT </span>
+<span class="s2">    &#39;Active Versions&#39; as metric,</span>
+<span class="s2">    COUNT(*) as value </span>
+<span class="s2">FROM menu_versions WHERE is_active = true</span>
+<span class="s2">UNION ALL</span>
+<span class="s2">SELECT </span>
+<span class="s2">    &#39;Audit Log Entries (Last 24h)&#39; as metric,</span>
+<span class="s2">    COUNT(*) as value </span>
+<span class="s2">FROM menu_audit_logs </span>
+<span class="s2">WHERE created_at &gt; NOW() - INTERVAL &#39;24 hours&#39;;</span>
+<span class="s2">&quot;</span>
+
+<span class="c1"># Application metrics</span>
+<span class="nb">echo</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Application Metrics:&quot;</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/health/versioning<span class="w"> </span><span class="p">|</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>json.tool
+</code></pre></div>
+
+<h3 id="backup-strategy">Backup Strategy</h3>
+<h4 id="database-backup">Database Backup</h4>
+<div class="codehilite"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1"># scripts/backup_versioning_data.sh</span>
+
+<span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">&quot;/backups/versioning&quot;</span>
+<span class="nv">DATE</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>
+
+<span class="c1"># Create backup directory</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="nv">$BACKUP_DIR</span>
+
+<span class="c1"># Backup versioning tables</span>
+pg_dump<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>menu_versions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>menu_category_versions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>menu_item_versions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>modifier_group_versions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>modifier_versions<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--table<span class="o">=</span>menu_audit_logs<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--data-only<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--compress<span class="o">=</span><span class="m">9</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>&gt;<span class="w"> </span><span class="nv">$BACKUP_DIR</span>/versioning_data_<span class="nv">$DATE</span>.sql.gz
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Backup completed: </span><span class="nv">$BACKUP_DIR</span><span class="s2">/versioning_data_</span><span class="nv">$DATE</span><span class="s2">.sql.gz&quot;</span>
+</code></pre></div>
+
+<h2 id="support-and-documentation">Support and Documentation</h2>
+<h3 id="additional-resources">Additional Resources</h3>
+<ul>
+<li><strong>API Documentation</strong>: Visit <code>/docs</code> endpoint when server is running</li>
+<li><strong>Database Schema</strong>: Check <code>backend/alembic/versions/</code> for migration files</li>
+<li><strong>Component Documentation</strong>: See JSDoc comments in React components</li>
+<li><strong>Error Codes</strong>: Reference <code>backend/core/menu_versioning_service.py</code> for error handling</li>
+</ul>
+<h3 id="getting-help">Getting Help</h3>
+<p>If you encounter issues:</p>
+<ol>
+<li>Check the troubleshooting section above</li>
+<li>Review application logs for error messages</li>
+<li>Verify database and Redis connectivity</li>
+<li>Ensure all dependencies are properly installed</li>
+<li>Check that RBAC permissions are correctly configured</li>
+</ol>
+<h3 id="contributing">Contributing</h3>
+<p>When contributing to the versioning system:</p>
+<ol>
+<li>Run the test suite: <code>pytest backend/tests/test_menu_versioning_*.py</code></li>
+<li>Update documentation for any API changes</li>
+<li>Follow the existing code style and patterns</li>
+<li>Add appropriate error handling and logging</li>
+<li>Test with different user permission levels</li>
+</ol>
+<p>This setup guide should help you get the menu versioning system up and running in your environment. The system is designed to be robust and scalable, but proper configuration and maintenance are essential for optimal performance.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.50899def.min.js"></script>
+      
+    
+  </body>
+</html>
