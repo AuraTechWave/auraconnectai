@@ -14,7 +14,7 @@ import {
   Restaurant as RestaurantIcon,
   MenuBook as MenuBookIcon,
   EventSeat as EventSeatIcon,
-  Delivery as DeliveryIcon,
+  DeliveryDining as DeliveryIcon,
 } from '@mui/icons-material';
 
 export const HomePage: React.FC = () => {
