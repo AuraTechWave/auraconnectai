@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from core.exceptions import register_exception_handlers
+from app.startup import run_startup_checks
 from modules.staff.routes.staff_routes import router as staff_router
 from modules.staff.routes.payroll_routes import (
     router as payroll_router
@@ -142,6 +144,9 @@ app = FastAPI(
     },
 )
 
+# Register exception handlers for consistent error responses
+register_exception_handlers(app)
+
 # CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
@@ -193,6 +198,9 @@ init_versioning_triggers()
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on application startup"""
+    # Run startup validation checks
+    passed, warnings = run_startup_checks()
+    
     # Start order sync scheduler
     await start_sync_scheduler()
     # Start webhook retry scheduler
