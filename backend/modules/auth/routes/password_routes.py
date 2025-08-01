@@ -18,18 +18,18 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, validator, Field
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.rbac_service import get_rbac_service, RBACService
-from backend.core.rbac_models import RBACUser
-from backend.core.password_security import (
+from core.database import get_db
+from core.auth import get_current_user
+from core.rbac_service import get_rbac_service, RBACService
+from core.auth import User
+from core.password_security import (
     password_security, 
     PasswordValidationResult, 
     PasswordStrength,
     validate_email_address
 )
-from backend.core.password_models import PasswordResetToken, PasswordHistory, SecurityAuditLog
-from backend.core.email_service import email_service
+from core.password_models import PasswordResetToken, PasswordHistory, SecurityAuditLog
+from core.email_service import email_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth/password", tags=["Password Security"])
@@ -259,7 +259,7 @@ async def request_password_reset(
     ip_address, user_agent = get_client_info(http_request)
     
     # Look up user by email
-    user = db.query(RBACUser).filter(RBACUser.email == request.email).first()
+    user = db.query(User).filter(User.email == request.email).first()
     
     if user:
         # Generate reset token
@@ -379,7 +379,7 @@ async def confirm_password_reset(
         )
     
     # Get user
-    user = db.query(RBACUser).filter(RBACUser.id == db_token.user_id).first()
+    user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -500,7 +500,7 @@ async def confirm_password_reset(
 async def change_password(
     request: PasswordChangeModel,
     http_request: Request,
-    current_user: RBACUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     rbac_service: RBACService = Depends(get_rbac_service)
 ) -> SecurityEventResponse:
@@ -586,7 +586,7 @@ async def change_password(
     )
     
     # Update user password
-    user = db.query(RBACUser).filter(RBACUser.id == current_user.id).first()
+    user = db.query(User).filter(User.id == current_user.id).first()
     user.hashed_password = new_password_hash
     user.password_changed_at = datetime.utcnow()
     user.password_reset_required = False
@@ -627,7 +627,7 @@ async def change_password(
 
 @router.get("/history")
 async def get_password_history(
-    current_user: RBACUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -659,7 +659,7 @@ async def get_password_history(
 @router.post("/generate")
 async def generate_secure_password(
     length: int = 16,
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Generate a cryptographically secure password.

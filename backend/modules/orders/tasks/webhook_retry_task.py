@@ -13,11 +13,11 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy.orm import Session
 
-from backend.core.database import get_db
-from backend.core.config import settings
-from backend.modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
-from backend.modules.orders.models.external_pos_models import ExternalPOSWebhookEvent
-from backend.modules.orders.enums.external_pos_enums import WebhookProcessingStatus
+from core.database import get_db
+from core.config import settings
+from modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
+from modules.orders.models.external_pos_models import ExternalPOSWebhookEvent
+from modules.orders.enums.external_pos_enums import WebhookProcessingStatus
 
 logger = logging.getLogger(__name__)
 

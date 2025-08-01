@@ -5,14 +5,13 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from math import ceil
 
-from backend.core.database import get_db
-from backend.core.menu_service import MenuService
-from backend.core.menu_schemas import (
+from core.database import get_db
+from core.menu_service import MenuService
+from core.menu_schemas import (
     Inventory, InventoryCreate, InventoryUpdate,
     InventorySearchParams, InventoryResponse
 )
-from backend.core.rbac_auth import require_permission
-from backend.core.rbac_models import RBACUser
+from core.auth import require_permission, User
 
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
@@ -27,11 +26,11 @@ def get_menu_service(db: Session = Depends(get_db)) -> MenuService:
 async def create_inventory_item(
     inventory_data: InventoryCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:create"))
+    current_user: User = Depends(require_permission("inventory:create"))
 ):
     """Create a new inventory item"""
-    from backend.modules.orders.models.inventory_models import Inventory as InventoryModel
-    from backend.core.database import get_db
+    from core.inventory_models import Inventory as InventoryModel
+    from core.database import get_db
     
     # Use the existing inventory service or create directly
     db = next(get_db())
@@ -65,10 +64,10 @@ async def get_inventory_items(
     vendor_id: Optional[int] = Query(None, description="Filter by vendor"),
     limit: int = Query(50, ge=1, le=500, description="Items per page"),
     offset: int = Query(0, ge=0, description="Items to skip"),
-    sort_by: str = Query("item_name", regex=r'^(item_name|quantity|threshold|created_at)$'),
-    sort_order: str = Query("asc", regex=r'^(asc|desc)$'),
+    sort_by: str = Query("item_name", pattern=r'^(item_name|quantity|threshold|created_at)$'),
+    sort_order: str = Query("asc", pattern=r'^(asc|desc)$'),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory items with search and pagination"""
     params = InventorySearchParams(
@@ -98,7 +97,7 @@ async def get_inventory_items(
 @router.get("/low-stock", response_model=List[Inventory])
 async def get_low_stock_items(
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get items that are below their reorder threshold"""
     return menu_service.get_low_stock_items()
@@ -108,7 +107,7 @@ async def get_low_stock_items(
 async def get_inventory_item_by_id(
     inventory_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get an inventory item by ID"""
     item = menu_service.get_inventory_by_id(inventory_id)
@@ -125,11 +124,11 @@ async def update_inventory_item(
     inventory_id: int,
     inventory_data: InventoryUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Update an inventory item"""
-    from backend.modules.orders.models.inventory_models import Inventory as InventoryModel
-    from backend.core.database import get_db
+    from core.inventory_models import Inventory as InventoryModel
+    from core.database import get_db
     
     db = next(get_db())
     try:
@@ -172,11 +171,11 @@ async def update_inventory_item(
 async def delete_inventory_item(
     inventory_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:delete"))
+    current_user: User = Depends(require_permission("inventory:delete"))
 ):
     """Soft delete an inventory item"""
-    from backend.modules.orders.models.inventory_models import Inventory as InventoryModel
-    from backend.core.database import get_db
+    from core.inventory_models import Inventory as InventoryModel
+    from core.database import get_db
     from datetime import datetime
     
     db = next(get_db())
@@ -204,11 +203,11 @@ async def adjust_inventory_quantity(
     adjustment: float,
     reason: str = Query(..., description="Reason for adjustment"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Adjust inventory quantity (positive for increase, negative for decrease)"""
-    from backend.modules.orders.models.inventory_models import Inventory as InventoryModel
-    from backend.core.database import get_db
+    from core.inventory_models import Inventory as InventoryModel
+    from core.database import get_db
     
     db = next(get_db())
     try:
@@ -250,7 +249,7 @@ async def adjust_inventory_quantity(
 @router.get("/alerts/low-stock-count")
 async def get_low_stock_count(
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get count of items below reorder threshold"""
     low_stock_items = menu_service.get_low_stock_items()
@@ -262,7 +261,7 @@ async def get_inventory_usage_report(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory usage report (placeholder for future implementation)"""
     # TODO: Implement inventory usage tracking and reporting

@@ -12,15 +12,15 @@ import json
 import uuid
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.core.config import settings
-from backend.modules.orders.services.webhook_auth_service import WebhookAuthService
-from backend.modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
-from backend.modules.orders.models.external_pos_models import (
+from core.database import get_db
+from core.config import settings
+from modules.orders.services.webhook_auth_service import WebhookAuthService
+from modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
+from modules.orders.models.external_pos_models import (
     ExternalPOSWebhookEvent, ExternalPOSProvider
 )
-from backend.modules.orders.utils.security_utils import mask_headers, mask_sensitive_dict
-from backend.modules.orders.enums.external_pos_enums import (
+from modules.orders.utils.security_utils import mask_headers, mask_sensitive_dict
+from modules.orders.enums.external_pos_enums import (
     WebhookProcessingStatus, ExternalPOSProvider as POSProviderEnum,
     SquareEventType, StripeEventType, ToastEventType, CloverEventType,
     ExternalPOSEventType, PROVIDER_EVENT_MAPPING

@@ -5,9 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from datetime import date
 
-from backend.core.database import get_db
-from backend.core.auth import require_permission
-from backend.core.tenant import get_current_tenant
+from core.database import get_db
+from core.auth import require_permission, get_current_tenant
 
 from ..schemas import (
     EnhancedTaxCalculationRequest,

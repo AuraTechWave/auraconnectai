@@ -13,9 +13,8 @@ from datetime import datetime, timedelta
 from uuid import UUID
 import logging
 
-from backend.core.exceptions import NotFoundError
-from backend.modules.analytics.models.pos_analytics_models import POSAnalyticsAlert
-from backend.modules.analytics.schemas.pos_analytics_schemas import (
+from modules.analytics.models.pos_analytics_models import POSAnalyticsAlert
+from modules.analytics.schemas.pos_analytics_schemas import (
     POSAlert, AlertSeverity
 )
 from .pos.base_service import POSAnalyticsBaseService
@@ -100,7 +99,7 @@ class POSAlertsService(POSAnalyticsBaseService):
         try:
             alert_uuid = UUID(alert_id)
         except ValueError:
-            raise NotFoundError("Invalid alert ID format")
+            raise KeyError("Invalid alert ID format")
         
         alert = self.db.query(POSAnalyticsAlert).filter(
             POSAnalyticsAlert.alert_id == alert_uuid,
@@ -109,7 +108,7 @@ class POSAlertsService(POSAnalyticsBaseService):
         ).first()
         
         if not alert:
-            raise NotFoundError("Alert not found or already acknowledged")
+            raise KeyError("Alert not found or already acknowledged")
         
         # Update alert
         alert.acknowledged = True
@@ -135,7 +134,7 @@ class POSAlertsService(POSAnalyticsBaseService):
         try:
             alert_uuid = UUID(alert_id)
         except ValueError:
-            raise NotFoundError("Invalid alert ID format")
+            raise KeyError("Invalid alert ID format")
         
         alert = self.db.query(POSAnalyticsAlert).filter(
             POSAnalyticsAlert.alert_id == alert_uuid,
@@ -143,7 +142,7 @@ class POSAlertsService(POSAnalyticsBaseService):
         ).first()
         
         if not alert:
-            raise NotFoundError("Alert not found")
+            raise KeyError("Alert not found")
         
         # Update alert
         alert.is_active = False

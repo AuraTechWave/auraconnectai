@@ -12,11 +12,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.core.rbac import require_permissions, Permission
-from backend.core.exceptions import ValidationError
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
+from core.auth import require_permission
+# ValidationError replaced with standard ValueError
 
 from ...schemas.pos_analytics_schemas import POSExportRequest, TimeRange
 from ...services.pos_trends_service import POSTrendsService
@@ -32,9 +32,9 @@ async def get_transaction_trends(
     time_range: TimeRange = Query(TimeRange.LAST_7_DAYS),
     provider_id: Optional[int] = Query(None, description="Filter by provider"),
     terminal_id: Optional[str] = Query(None, description="Filter by terminal"),
-    granularity: str = Query("hourly", regex="^(hourly|daily|weekly)$"),
+    granularity: str = Query("hourly", pattern="^(hourly|daily|weekly)$"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get transaction trend data for charts.
@@ -43,8 +43,7 @@ async def get_transaction_trends(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSTrendsService(db)
         
@@ -81,12 +80,12 @@ async def get_transaction_trends(
 
 @router.get("/trends/performance")
 async def get_performance_trends(
-    metric: str = Query(..., regex="^(response_time|success_rate|error_rate)$"),
+    metric: str = Query(..., pattern="^(response_time|success_rate|error_rate)$"),
     time_range: TimeRange = Query(TimeRange.LAST_7_DAYS),
     provider_id: Optional[int] = Query(None, description="Filter by provider"),
-    granularity: str = Query("daily", regex="^(hourly|daily|weekly)$"),
+    granularity: str = Query("daily", pattern="^(hourly|daily|weekly)$"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get performance metric trends.
@@ -95,8 +94,7 @@ async def get_performance_trends(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSTrendsService(db)
         
@@ -136,7 +134,7 @@ async def get_performance_trends(
 async def export_pos_analytics(
     request: POSExportRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Export POS analytics data to file.
@@ -145,8 +143,7 @@ async def export_pos_analytics(
     
     Requires: analytics.export permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_EXPORT])
-    
+
     try:
         service = POSExportService(db)
         
@@ -178,7 +175,7 @@ async def export_pos_analytics(
             media_type=get_media_type(request.format)
         )
         
-    except ValidationError as e:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -194,7 +191,7 @@ async def export_pos_analytics(
 @router.get("/export/templates")
 async def get_export_templates(
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get available export templates.
@@ -203,8 +200,7 @@ async def get_export_templates(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     return {
         "templates": [
             {

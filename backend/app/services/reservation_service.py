@@ -10,8 +10,8 @@ from app.schemas.reservation import (
     ReservationCreate, ReservationUpdate, ReservationResponse,
     ReservationAvailability, ReservationCancellation
 )
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.notifications.services.notification_service import NotificationService
+from modules.customers.models.customer_models import Customer
+from modules.feedback.services.notification_service import NotificationService
 
 
 class ReservationService:

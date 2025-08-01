@@ -361,8 +361,8 @@ class POSComparisonResponse(BaseModel):
 
 class POSExportRequest(BaseModel):
     """Request for exporting POS analytics data"""
-    report_type: str = Field(..., regex="^(summary|detailed|transactions|errors)$")
-    format: str = Field(..., regex="^(csv|xlsx|pdf)$")
+    report_type: str = Field(..., pattern="^(summary|detailed|transactions|errors)$")
+    format: str = Field(..., pattern="^(csv|xlsx|pdf)$")
     time_range: TimeRange = Field(TimeRange.LAST_7_DAYS)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None

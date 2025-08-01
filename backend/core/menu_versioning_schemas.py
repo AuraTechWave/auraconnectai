@@ -149,7 +149,7 @@ class ModifierVersion(ModifierVersionBase):
 class ModifierGroupVersionBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
-    selection_type: str = Field(default="single", regex="^(single|multiple)$")
+    selection_type: str = Field(default="single", pattern="^(single|multiple)$")
     is_required: bool = False
     min_selections: int = Field(default=0, ge=0)
     max_selections: Optional[int] = None
@@ -343,13 +343,13 @@ class BulkChangeRequest(BaseModel):
 
 class VersionExportRequest(BaseModel):
     version_id: int
-    format: str = Field(default="json", regex="^(json|csv|excel)$")
+    format: str = Field(default="json", pattern="^(json|csv|excel)$")
     include_audit_trail: bool = False
     include_inactive: bool = False
 
 
 class VersionImportRequest(BaseModel):
     import_data: Dict[str, Any]
-    import_mode: str = Field(default="merge", regex="^(merge|replace|append)$")
+    import_mode: str = Field(default="merge", pattern="^(merge|replace|append)$")
     create_version: bool = True
     version_name: Optional[str] = None

@@ -10,8 +10,8 @@ import redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.core.config import settings
-from backend.core.database import get_db
+from core.config import settings
+from core.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -193,13 +193,13 @@ def calculate_daily_analytics(self):
         try:
             # Calculate loyalty analytics
             self.update_state(state="PROGRESS", meta={"current": 1, "total": 4, "status": "Calculating loyalty analytics"})
-            from backend.modules.loyalty.services.analytics_service import LoyaltyAnalyticsService
+            from modules.loyalty.services.analytics_service import LoyaltyAnalyticsService
             loyalty_analytics = LoyaltyAnalyticsService(db)
             loyalty_results = loyalty_analytics.calculate_daily_analytics()
             
             # Calculate customer analytics
             self.update_state(state="PROGRESS", meta={"current": 2, "total": 4, "status": "Calculating customer analytics"})
-            from backend.modules.customers.services.analytics_service import CustomerAnalyticsService
+            from modules.customers.services.analytics_service import CustomerAnalyticsService
             customer_analytics = CustomerAnalyticsService(db)
             customer_results = customer_analytics.calculate_daily_analytics()
             

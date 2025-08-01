@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.order_controller import (
     update_order, generate_kitchen_print_ticket
 )

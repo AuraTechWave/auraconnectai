@@ -24,7 +24,7 @@ from ...models.payroll_configuration import (
 from ...services.payroll_service import PayrollService
 from ...services.payroll_configuration_service import PayrollConfigurationService
 from ....staff.models.staff import Staff
-from ....core.database import Base
+from core.database import Base
 
 
 @pytest.fixture(scope="session")

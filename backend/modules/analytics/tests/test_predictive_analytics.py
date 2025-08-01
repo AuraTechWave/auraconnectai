@@ -16,20 +16,20 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, AsyncMock
 from typing import List, Dict, Any
 
-from backend.modules.analytics.services.predictive_models import (
+from modules.analytics.services.predictive_models import (
     ARIMAModel, ExponentialSmoothingModel, MovingAverageModel,
     ProphetModel, EnsembleModel, ModelFactory
 )
-from backend.modules.analytics.services.demand_prediction_service import (
+from modules.analytics.services.demand_prediction_service import (
     DemandPredictionService, ExternalFactorsAnalyzer
 )
-from backend.modules.analytics.services.stock_optimization_service import (
+from modules.analytics.services.stock_optimization_service import (
     StockOptimizationService, InventoryCostCalculator
 )
-from backend.modules.analytics.services.forecast_monitoring_service import (
+from modules.analytics.services.forecast_monitoring_service import (
     ForecastMonitoringService
 )
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from modules.analytics.schemas.predictive_analytics_schemas import (
     DemandForecastRequest, StockOptimizationRequest,
     TimeGranularity, ModelType, PredictionConfidence
 )
@@ -595,7 +595,7 @@ class TestRealTimePredictions:
     @pytest.mark.asyncio
     async def test_prediction_subscription(self):
         """Test subscription to prediction updates"""
-        from backend.modules.analytics.services.predictive_realtime_service import predictive_realtime_service
+        from modules.analytics.services.predictive_realtime_service import predictive_realtime_service
         
         client_id = "test_client"
         entity_type = "product"

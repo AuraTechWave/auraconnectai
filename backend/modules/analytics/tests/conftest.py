@@ -6,14 +6,14 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 
-from backend.modules.analytics.models.analytics_models import (
+from modules.analytics.models.analytics_models import (
     SalesAnalyticsSnapshot, ReportTemplate, ReportExecution, 
     SalesMetric, AggregationPeriod, ReportType
 )
-from backend.modules.analytics.schemas.analytics_schemas import SalesFilterRequest
-from backend.modules.orders.models.order_models import Order, OrderItem, Category
-from backend.modules.staff.models.staff_models import StaffMember, Role
-from backend.modules.customers.models.customer_models import Customer
+from modules.analytics.schemas.analytics_schemas import SalesFilterRequest
+from modules.orders.models.order_models import Order, OrderItem, Category
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.customers.models.customer_models import Customer
 
 
 @pytest.fixture

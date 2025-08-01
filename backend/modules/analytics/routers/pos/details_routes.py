@@ -10,11 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.core.rbac import require_permissions, Permission
-from backend.core.exceptions import NotFoundError
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
+from core.auth import require_permission
+# NotFoundError replaced with standard KeyError
 
 from ...schemas.pos_analytics_schemas import (
     POSProviderDetailsRequest, POSProviderDetailsResponse,
@@ -33,7 +33,7 @@ async def get_provider_analytics_details(
     provider_id: int,
     request: POSProviderDetailsRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get detailed analytics for a specific POS provider.
@@ -43,8 +43,7 @@ async def get_provider_analytics_details(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSDetailsService(db)
         
@@ -66,7 +65,7 @@ async def get_provider_analytics_details(
         
         return provider_details
         
-    except NotFoundError:
+    except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"POS provider {provider_id} not found"
@@ -89,7 +88,7 @@ async def get_terminal_analytics_details(
     terminal_id: str,
     request: POSTerminalDetailsRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get detailed analytics for a specific POS terminal.
@@ -99,8 +98,7 @@ async def get_terminal_analytics_details(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSDetailsService(db)
         
@@ -120,7 +118,7 @@ async def get_terminal_analytics_details(
         
         return terminal_details
         
-    except NotFoundError:
+    except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"POS terminal {terminal_id} not found"
@@ -142,7 +140,7 @@ async def get_terminal_analytics_details(
 async def compare_pos_providers(
     request: POSComparisonRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Compare analytics metrics across multiple POS providers.
@@ -152,8 +150,7 @@ async def compare_pos_providers(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSDetailsService(db)
         

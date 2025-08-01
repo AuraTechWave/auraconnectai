@@ -10,8 +10,9 @@ from .menu_versioning_triggers import create_manual_version_on_bulk_change
 
 from .menu_models import (
     MenuCategory, MenuItem, ModifierGroup, Modifier, 
-    MenuItemModifier, MenuItemInventory, Inventory
+    MenuItemModifier, MenuItemInventory
 )
+from .inventory_models import Inventory
 from .menu_schemas import (
     MenuCategoryCreate, MenuCategoryUpdate, MenuItemCreate, MenuItemUpdate,
     ModifierGroupCreate, ModifierGroupUpdate, ModifierCreate, ModifierUpdate,

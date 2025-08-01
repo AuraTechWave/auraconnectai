@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.core.database import Base
-from backend.modules.promotions.models.promotion_models import *
-from backend.modules.promotions.services.discount_service import DiscountCalculationService
-from backend.modules.promotions.services.coupon_service import CouponService
-from backend.modules.promotions.services.analytics_service import PromotionAnalyticsService
+from core.database import Base
+from modules.promotions.models.promotion_models import *
+from modules.promotions.services.discount_service import DiscountCalculationService
+from modules.promotions.services.coupon_service import CouponService
+from modules.promotions.services.analytics_service import PromotionAnalyticsService
 
 
 class TestPromotionPerformance:
@@ -117,7 +117,7 @@ class TestPromotionPerformance:
         """Test performance of checking promotion eligibility for many promotions"""
         session, promotions = perf_db_session
         
-        from backend.modules.promotions.services.promotion_service import PromotionService
+        from modules.promotions.services.promotion_service import PromotionService
         promotion_service = PromotionService(session)
         
         # Test eligibility check for many promotions
@@ -316,7 +316,7 @@ class TestPromotionPerformance:
         """Simulate cache performance for repeated operations"""
         session, promotions = perf_db_session
         
-        from backend.modules.promotions.services.promotion_service import PromotionService
+        from modules.promotions.services.promotion_service import PromotionService
         promotion_service = PromotionService(session)
         
         # Simulate cache miss (first access)

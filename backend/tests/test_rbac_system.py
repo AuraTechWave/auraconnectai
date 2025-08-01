@@ -17,12 +17,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from unittest.mock import patch
 
-from backend.app.main import app
-from backend.core.database import get_db
-from backend.core.rbac_models import RBACUser, RBACRole, RBACPermission, UserPermission
-from backend.core.rbac_service import RBACService
-from backend.core.rbac_auth import RBACDependency
-from backend.core.auth import get_password_hash
+from app.main import app
+from core.database import get_db
+from core.rbac_models import RBACUser, RBACRole, RBACPermission, UserPermission
+from core.rbac_service import RBACService
+from core.rbac_auth import RBACDependency
+from core.auth import get_password_hash
 
 
 @pytest.fixture

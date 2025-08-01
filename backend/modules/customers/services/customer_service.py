@@ -17,7 +17,7 @@ from ..schemas.customer_schemas import (
     CustomerTierUpdate, CustomerAddressCreate, CustomerAddressUpdate,
     CustomerPreferenceCreate, CustomerAnalytics
 )
-from backend.core.auth import get_password_hash, verify_password
+from core.auth import get_password_hash, verify_password
 from .security_service import CustomerSecurityService
 
 
@@ -313,7 +313,7 @@ class CustomerService:
                 order_frequency_days = days_active / (customer.total_orders - 1)
         
         # Get analytics data with optimized queries
-        from backend.modules.orders.models.order_models import Order, OrderItem
+        from modules.orders.models.order_models import Order, OrderItem
         
         # Get favorite categories and items with single query
         favorite_data = self.db.query(

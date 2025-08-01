@@ -7,21 +7,22 @@ Handles forecast performance tracking and model evaluation.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from datetime import date, datetime, timedelta
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.analytics.schemas.predictive_analytics_schemas import (
     ForecastComparison, ForecastAccuracyReport,
     ModelPerformanceReport, PredictionAlert
 )
-from backend.modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
-from backend.modules.analytics.services.permissions import require_analytics_permission
-from backend.modules.analytics.constants import (
+from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
+from modules.analytics.services.permissions_service import require_analytics_permission
+from modules.analytics.constants import (
     MIN_ACCURACY_THRESHOLD,
     ANOMALY_DETECTION_WINDOW_DAYS,
     MAX_HISTORICAL_DAYS
@@ -31,12 +32,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/monitoring", tags=["predictive-monitoring"])
 
 
+class TrackAccuracyRequest(BaseModel):
+    """Request model for tracking forecast accuracy"""
+    entity_type: str
+    entity_id: Optional[int] = None
+    predictions: List[Dict[str, Any]]
+    actuals: List[Dict[str, Any]]
+
+
 @router.post("/accuracy/track", response_model=ForecastComparison)
 async def track_forecast_accuracy(
-    entity_type: str,
-    entity_id: Optional[int] = None,
-    predictions: List[Dict] = Query(..., description="List of predictions with timestamps"),
-    actuals: List[Dict] = Query(..., description="List of actual values with timestamps"),
+    request: TrackAccuracyRequest,
     db: Session = Depends(get_db),
     current_user: StaffMember = Depends(get_current_user)
 ) -> ForecastComparison:
@@ -86,14 +92,14 @@ async def track_forecast_accuracy(
     try:
         service = ForecastMonitoringService(db)
         comparison = await service.track_forecast_accuracy(
-            entity_type=entity_type,
-            entity_id=entity_id,
-            predictions=predictions,
-            actuals=actuals
+            entity_type=request.entity_type,
+            entity_id=request.entity_id,
+            predictions=request.predictions,
+            actuals=request.actuals
         )
         
         logger.info(
-            f"Forecast accuracy tracked for {entity_type} {entity_id} "
+            f"Forecast accuracy tracked for {request.entity_type} {request.entity_id} "
             f"by user {current_user.id}"
         )
         

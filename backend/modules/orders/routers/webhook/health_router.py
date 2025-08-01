@@ -10,18 +10,18 @@ from sqlalchemy import func
 from typing import List
 from datetime import datetime, timedelta
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.config import settings
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.external_pos_models import (
+from core.database import get_db
+from core.auth import get_current_user
+from core.config import settings
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.external_pos_models import (
     ExternalPOSProvider, ExternalPOSWebhookEvent
 )
-from backend.modules.orders.schemas.external_pos_schemas import (
+from modules.orders.schemas.external_pos_schemas import (
     WebhookStatistics, WebhookHealthStatus
 )
-from backend.modules.orders.enums.external_pos_enums import WebhookProcessingStatus
-from backend.modules.orders.tasks.webhook_retry_task import webhook_retry_scheduler
+from modules.orders.enums.external_pos_enums import WebhookProcessingStatus
+from modules.orders.tasks.webhook_retry_task import webhook_retry_scheduler
 
 router = APIRouter(
     prefix="/webhooks/external-pos/health",

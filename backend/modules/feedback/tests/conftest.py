@@ -9,20 +9,20 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
 import uuid
 
-from backend.core.database import Base, get_db
-from backend.modules.feedback.models.feedback_models import (
+from core.database import Base, get_db
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewAggregate, ReviewTemplate, ReviewInvitation,
     ReviewMedia, ReviewVote, BusinessResponse, FeedbackResponse,
     FeedbackCategory, ReviewStatus, FeedbackStatus, ReviewType,
     FeedbackType, FeedbackPriority, SentimentScore, ReviewSource
 )
-from backend.modules.feedback.services.review_service import ReviewService
-from backend.modules.feedback.services.feedback_service import FeedbackService
-from backend.modules.feedback.services.sentiment_service import SentimentAnalysisService
-from backend.modules.feedback.services.moderation_service import ContentModerationService
-from backend.modules.feedback.services.aggregation_service import ReviewAggregationService
-from backend.modules.feedback.services.analytics_service import FeedbackAnalyticsService
-from backend.modules.feedback.services.notification_service import NotificationService
+from modules.feedback.services.review_service import ReviewService
+from modules.feedback.services.feedback_service import FeedbackService
+from modules.feedback.services.sentiment_service import SentimentAnalysisService
+from modules.feedback.services.moderation_service import ContentModerationService
+from modules.feedback.services.aggregation_service import ReviewAggregationService
+from modules.feedback.services.analytics_service import FeedbackAnalyticsService
+from modules.feedback.services.notification_service import NotificationService
 
 
 # Test database setup

@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from backend.modules.promotions.models.promotion_models import CouponStatus
+from modules.promotions.models.promotion_models import CouponStatus
 
 
 class TestCouponService:
@@ -237,7 +237,7 @@ class TestCouponService:
     def test_get_coupons_by_promotion(self, coupon_service, sample_promotion, db_session):
         """Test getting all coupons for a promotion"""
         # Create additional coupons
-        from backend.modules.promotions.models.promotion_models import Coupon
+        from modules.promotions.models.promotion_models import Coupon
         
         coupon1 = Coupon(
             promotion_id=sample_promotion.id,
@@ -303,7 +303,7 @@ class TestCouponService:
     def test_get_coupon_usage_statistics(self, coupon_service, sample_coupon, db_session):
         """Test getting coupon usage statistics"""
         # Add some usage records
-        from backend.modules.promotions.models.promotion_models import CouponUsage
+        from modules.promotions.models.promotion_models import CouponUsage
         
         usage1 = CouponUsage(
             coupon_id=sample_coupon.id,

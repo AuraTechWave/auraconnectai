@@ -3,8 +3,8 @@
 import pytest
 from datetime import datetime, timedelta
 
-from backend.modules.promotions.schemas.promotion_schemas import PromotionCreate
-from backend.modules.promotions.models.promotion_models import (
+from modules.promotions.schemas.promotion_schemas import PromotionCreate
+from modules.promotions.models.promotion_models import (
     PromotionType, DiscountType, PromotionStatus
 )
 
@@ -264,7 +264,7 @@ class TestABTestingService:
         assert start_result['promotions_activated'] == 2
         
         # Verify promotions are active
-        from backend.modules.promotions.models.promotion_models import Promotion
+        from modules.promotions.models.promotion_models import Promotion
         test_promotions = db_session.query(Promotion).filter(
             Promotion.metadata['ab_test']['test_id'].astext == test_id
         ).all()
@@ -314,7 +314,7 @@ class TestABTestingService:
         assert stop_result['winning_variant'] == 'variant_1'
         
         # Verify promotion statuses
-        from backend.modules.promotions.models.promotion_models import Promotion
+        from modules.promotions.models.promotion_models import Promotion
         test_promotions = db_session.query(Promotion).filter(
             Promotion.metadata['ab_test']['test_id'].astext == test_id
         ).all()
@@ -364,7 +364,7 @@ class TestABTestingService:
         ab_testing_service.start_ab_test(test_id)
         
         # Add some usage data
-        from backend.modules.promotions.models.promotion_models import PromotionUsage
+        from modules.promotions.models.promotion_models import PromotionUsage
         
         control_promotion_obj = result['control_promotion']
         variant_promotion_obj = result['variant_promotions'][0]

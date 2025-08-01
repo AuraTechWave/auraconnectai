@@ -8,17 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user, check_permission
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.external_pos_models import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.external_pos_models import (
     ExternalPOSProvider, ExternalPOSWebhookEvent
 )
-from backend.modules.orders.schemas.external_pos_schemas import (
+from modules.orders.schemas.external_pos_schemas import (
     ExternalPOSProviderResponse, ExternalPOSProviderCreate,
     ExternalPOSProviderUpdate
 )
-from backend.modules.orders.utils.security_utils import mask_sensitive_dict
+from modules.orders.utils.security_utils import mask_sensitive_dict
 
 router = APIRouter(
     prefix="/webhooks/external-pos/providers",

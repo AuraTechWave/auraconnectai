@@ -17,8 +17,8 @@ import hmac
 import hashlib
 import json
 
-from .....core.database import get_db
-from .....core.auth import require_payroll_write, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_write, get_current_user, User
 from ...models.payroll_configuration import PayrollWebhookSubscription
 from ...schemas.webhook_schemas import (
     WebhookSubscriptionRequest,

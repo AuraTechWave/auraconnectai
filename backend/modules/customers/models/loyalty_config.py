@@ -2,8 +2,8 @@
 
 from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from datetime import datetime
 from typing import Dict, Any, List
 

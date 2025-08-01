@@ -9,8 +9,8 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from datetime import date, datetime
 import enum
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin, TenantMixin
+from core.database import Base
+from core.mixins import TimestampMixin, TenantMixin
 
 
 class FilingStatus(str, enum.Enum):

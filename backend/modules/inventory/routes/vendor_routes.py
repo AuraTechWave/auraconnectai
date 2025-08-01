@@ -5,16 +5,15 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from math import ceil
 
-from backend.core.database import get_db
-from backend.core.inventory_service import InventoryService
-from backend.core.inventory_schemas import (
+from core.database import get_db
+from core.inventory_service import InventoryService
+from core.inventory_schemas import (
     Vendor, VendorCreate, VendorUpdate,
     PurchaseOrder, PurchaseOrderCreate, PurchaseOrderUpdate, PurchaseOrderWithItems,
     PurchaseOrderItem, PurchaseOrderItemCreate,
     VendorStatus
 )
-from backend.core.rbac_auth import require_permission
-from backend.core.rbac_models import RBACUser
+from core.auth import require_permission, User
 
 
 router = APIRouter(prefix="/vendors", tags=["Vendor Management"])
@@ -30,7 +29,7 @@ def get_inventory_service(db: Session = Depends(get_db)) -> InventoryService:
 async def create_vendor(
     vendor_data: VendorCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:create"))
+    current_user: User = Depends(require_permission("inventory:create"))
 ):
     """Create a new vendor"""
     return inventory_service.create_vendor(vendor_data.dict(), current_user.id)
@@ -42,7 +41,7 @@ async def get_vendors(
     status_filter: Optional[VendorStatus] = Query(None, description="Filter by vendor status"),
     search: Optional[str] = Query(None, description="Search vendors by name"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get all vendors"""
     vendors = inventory_service.get_vendors(active_only)
@@ -63,7 +62,7 @@ async def get_vendors(
 async def get_vendor(
     vendor_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get vendor by ID"""
     vendor = inventory_service.get_vendor_by_id(vendor_id)
@@ -80,7 +79,7 @@ async def update_vendor(
     vendor_id: int,
     vendor_data: VendorUpdate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Update vendor"""
     vendor = inventory_service.get_vendor_by_id(vendor_id)
@@ -104,7 +103,7 @@ async def update_vendor(
 async def delete_vendor(
     vendor_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:delete"))
+    current_user: User = Depends(require_permission("inventory:delete"))
 ):
     """Soft delete vendor"""
     vendor = inventory_service.get_vendor_by_id(vendor_id)
@@ -124,10 +123,10 @@ async def delete_vendor(
 async def get_vendor_inventory(
     vendor_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory items supplied by vendor"""
-    from backend.core.inventory_models import Inventory
+    from core.inventory_models import Inventory
     
     items = inventory_service.db.query(Inventory).filter(
         Inventory.vendor_id == vendor_id,
@@ -157,7 +156,7 @@ async def create_purchase_order(
     vendor_id: int,
     po_data: PurchaseOrderCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:create"))
+    current_user: User = Depends(require_permission("inventory:create"))
 ):
     """Create purchase order for vendor"""
     # Verify vendor exists
@@ -181,10 +180,10 @@ async def get_vendor_purchase_orders(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get purchase orders for vendor"""
-    from backend.core.inventory_models import PurchaseOrder
+    from core.inventory_models import PurchaseOrder
     
     query = inventory_service.db.query(PurchaseOrder).filter(
         PurchaseOrder.vendor_id == vendor_id,
@@ -202,10 +201,10 @@ async def get_purchase_order(
     vendor_id: int,
     po_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get specific purchase order with items"""
-    from backend.core.inventory_models import PurchaseOrder
+    from core.inventory_models import PurchaseOrder
     from sqlalchemy.orm import joinedload
     
     po = inventory_service.db.query(PurchaseOrder).options(
@@ -232,10 +231,10 @@ async def update_purchase_order(
     po_id: int,
     po_data: PurchaseOrderUpdate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Update purchase order"""
-    from backend.core.inventory_models import PurchaseOrder
+    from core.inventory_models import PurchaseOrder
     
     po = inventory_service.db.query(PurchaseOrder).filter(
         PurchaseOrder.id == po_id,
@@ -265,10 +264,10 @@ async def add_item_to_purchase_order(
     po_id: int,
     item_data: PurchaseOrderItemCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Add item to purchase order"""
-    from backend.core.inventory_models import PurchaseOrder
+    from core.inventory_models import PurchaseOrder
     
     # Verify PO exists and belongs to vendor
     po = inventory_service.db.query(PurchaseOrder).filter(
@@ -304,11 +303,11 @@ async def receive_purchase_order(
     po_id: int,
     received_items: List[dict],  # List of {item_id, quantity_received, quality_rating, condition_notes}
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Receive items from purchase order and update inventory"""
-    from backend.core.inventory_models import PurchaseOrder, PurchaseOrderItem
-    from backend.core.inventory_schemas import AdjustmentType
+    from core.inventory_models import PurchaseOrder, PurchaseOrderItem
+    from core.inventory_schemas import AdjustmentType
     from datetime import datetime
     
     # Get purchase order
@@ -376,10 +375,10 @@ async def get_vendor_analytics(
     start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get vendor performance analytics"""
-    from backend.core.inventory_models import PurchaseOrder, PurchaseOrderItem
+    from core.inventory_models import PurchaseOrder, PurchaseOrderItem
     from sqlalchemy import func
     from datetime import datetime
     
@@ -461,7 +460,7 @@ async def rate_vendor(
     rating: float = Query(..., ge=1, le=5, description="Rating from 1 to 5"),
     notes: Optional[str] = Query(None, description="Rating notes"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Rate vendor performance"""
     vendor = inventory_service.get_vendor_by_id(vendor_id)

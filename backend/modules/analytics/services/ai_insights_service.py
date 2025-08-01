@@ -17,10 +17,10 @@ from ..schemas.ai_insights_schemas import (
     InsightType, ConfidenceLevel, InsightRequest
 )
 from ..models.analytics_models import SalesAnalyticsSnapshot
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.core.cache import cache_service
-from backend.modules.analytics.utils.performance_monitor import PerformanceMonitor, check_performance_threshold
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
+from core.cache import cache_service
+from modules.analytics.utils.performance_monitor import PerformanceMonitor, check_performance_threshold
 
 logger = logging.getLogger(__name__)
 

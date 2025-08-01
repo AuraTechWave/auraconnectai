@@ -15,11 +15,11 @@ import json
 import httpx
 from jinja2 import Template
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewInvitation, ReviewStatus, FeedbackStatus,
     FeedbackPriority
 )
-from backend.core.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -779,7 +779,7 @@ class NotificationService:
         """Render notification template with variables"""
         
         try:
-            from backend.modules.feedback.templates.email_templates import render_email_template
+            from modules.feedback.templates.email_templates import render_email_template
             
             # Use proper email templates for email notifications
             if template.template_id.startswith('review_') or template.template_id.startswith('feedback_'):

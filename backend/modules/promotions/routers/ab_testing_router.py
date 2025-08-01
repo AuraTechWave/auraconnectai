@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
 
 from ..services.ab_testing_service import ABTestingService
 from ..schemas.promotion_schemas import PromotionCreate
@@ -158,7 +158,7 @@ def get_active_ab_tests(
 
 @router.get("/all")
 def get_all_ab_tests(
-    status_filter: Optional[str] = Query(None, regex="^(draft|active|stopped|winner|loser)$"),
+    status_filter: Optional[str] = Query(None, pattern="^(draft|active|stopped|winner|loser)$"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),

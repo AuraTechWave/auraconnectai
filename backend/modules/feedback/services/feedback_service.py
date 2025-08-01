@@ -7,16 +7,15 @@ from datetime import datetime, timedelta
 import uuid
 import logging
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Feedback, FeedbackResponse, FeedbackCategory, FeedbackStatus,
     FeedbackType, FeedbackPriority, SentimentScore
 )
-from backend.modules.feedback.schemas.feedback_schemas import (
+from modules.feedback.schemas.feedback_schemas import (
     FeedbackCreate, FeedbackUpdate, FeedbackResponse as FeedbackResponseSchema,
     FeedbackSummary, FeedbackFilters, FeedbackResponseCreate,
     FeedbackCategoryCreate, FeedbackCategoryUpdate, PaginatedResponse
 )
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +102,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         return self._format_feedback_response(feedback)
     
@@ -112,7 +111,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.uuid == feedback_uuid).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_uuid} not found")
+            raise KeyError(f"Feedback {feedback_uuid} not found")
         
         return self._format_feedback_response(feedback)
     
@@ -126,7 +125,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         # Update allowed fields
         if update_data.subject is not None:
@@ -177,7 +176,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         old_assignee = feedback.assigned_to
         feedback.assigned_to = assignee_id
@@ -206,7 +205,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         feedback.status = FeedbackStatus.RESOLVED
         feedback.resolved_at = datetime.utcnow()
@@ -233,7 +232,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         feedback.status = FeedbackStatus.ESCALATED
         feedback.escalated_at = datetime.utcnow()
@@ -265,7 +264,7 @@ class FeedbackService:
         
         feedback = self.db.query(Feedback).filter(Feedback.id == feedback_id).first()
         if not feedback:
-            raise NotFoundError(f"Feedback {feedback_id} not found")
+            raise KeyError(f"Feedback {feedback_id} not found")
         
         # Create feedback response
         response = FeedbackResponse(
@@ -477,7 +476,7 @@ class FeedbackService:
         ).first()
         
         if existing:
-            raise ValidationError(f"Category '{category_data.name}' already exists")
+            raise ValueError(f"Category '{category_data.name}' already exists")
         
         category = FeedbackCategory(
             name=category_data.name,

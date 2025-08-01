@@ -8,8 +8,8 @@ from datetime import datetime
 import uuid
 import enum
 
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 # Enums for various feedback and review types

@@ -1,14 +1,14 @@
 import pytest
 from decimal import Decimal
-from backend.modules.orders.controllers.payment_reconciliation_controller import (  # noqa: E501
+from modules.orders.controllers.payment_reconciliation_controller import (  # noqa: E501
     create_reconciliation, get_reconciliation_by_id, update_reconciliation,
     list_reconciliations, reconcile_payments, resolve_discrepancy
 )
-from backend.modules.orders.schemas.payment_reconciliation_schemas import (
+from modules.orders.schemas.payment_reconciliation_schemas import (
     PaymentReconciliationCreate, PaymentReconciliationUpdate,
     ReconciliationRequest, ReconciliationFilter, ResolutionRequest
 )
-from backend.modules.orders.enums.payment_enums import (
+from modules.orders.enums.payment_enums import (
     ReconciliationStatus, DiscrepancyType, ReconciliationAction
 )
 

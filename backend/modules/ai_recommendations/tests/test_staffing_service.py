@@ -6,9 +6,9 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.orm import Session
 
-from backend.modules.staff.models.staff_models import StaffMember, Role
-from backend.modules.staff.models.shift_models import Shift
-from backend.modules.orders.models.order_models import Order
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.staff.models.shift_models import Shift
+from modules.orders.models.order_models import Order
 
 from ..schemas.staffing_schemas import (
     StaffingOptimizationRequest, StaffRole, ShiftType, DayOfWeek,

@@ -15,12 +15,12 @@ import logging
 import json
 from collections import defaultdict
 
-from backend.core.cache import cache_service
-from backend.modules.orders.models.external_pos_models import ExternalPOSProvider
-from backend.modules.analytics.models.pos_analytics_models import (
+from core.cache import cache_service
+from modules.orders.models.external_pos_models import ExternalPOSProvider
+from modules.analytics.models.pos_analytics_models import (
     POSAnalyticsSnapshot, POSProviderPerformance, POSTerminalHealth, POSAnalyticsAlert
 )
-from backend.modules.analytics.schemas.pos_analytics_schemas import (
+from modules.analytics.schemas.pos_analytics_schemas import (
     POSDashboardResponse, POSProviderSummary, POSTransactionTrend,
     POSAlert, POSHealthStatus, AlertSeverity
 )

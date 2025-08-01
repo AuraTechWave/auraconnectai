@@ -5,7 +5,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import case, and_
 from fastapi import HTTPException, UploadFile
-from backend.core.file_service import file_service
+from core.file_service import file_service
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
                                  FraudCheckStatus)
 from ..enums.webhook_enums import WebhookEventType
@@ -23,7 +23,7 @@ from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
 from .webhook_service import WebhookService
-from backend.core.compliance import AuditLog
+from core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
 

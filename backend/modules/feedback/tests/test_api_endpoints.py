@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 import json
 from datetime import datetime
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewStatus, FeedbackStatus, ReviewType, FeedbackType
 )
 
@@ -216,7 +216,7 @@ class TestReviewsAPI:
             "is_published": True
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100, "name": "Staff Member"}
             
             response = client.post(
@@ -291,7 +291,7 @@ class TestReviewsAPI:
             "is_featured": True
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(
@@ -311,7 +311,7 @@ class TestReviewsAPI:
             "notes": "Bulk approval"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(
@@ -326,7 +326,7 @@ class TestReviewsAPI:
     
     def test_get_moderation_queue_staff_only(self, client: TestClient, auth_headers_staff):
         """Test getting moderation queue"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.get(
@@ -421,7 +421,7 @@ class TestFeedbackAPI:
         """Test getting feedback by ID"""
         with patch('backend.core.auth.get_optional_current_user') as mock_user:
             mock_user.return_value = {"id": sample_feedback.customer_id}
-            with patch('backend.core.auth.get_current_staff_user') as mock_staff:
+            with patch('backend.core.auth.get_current_user') as mock_staff:
                 mock_staff.return_value = None  # Not staff
                 
                 response = client.get(
@@ -437,7 +437,7 @@ class TestFeedbackAPI:
         """Test getting feedback with wrong customer"""
         with patch('backend.core.auth.get_optional_current_user') as mock_user:
             mock_user.return_value = {"id": 999}  # Different customer
-            with patch('backend.core.auth.get_current_staff_user') as mock_staff:
+            with patch('backend.core.auth.get_current_user') as mock_staff:
                 mock_staff.return_value = None
                 
                 response = client.get(
@@ -455,7 +455,7 @@ class TestFeedbackAPI:
             "priority": "high"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.put(
@@ -472,7 +472,7 @@ class TestFeedbackAPI:
         """Test customer can only list their own feedback"""
         with patch('backend.core.auth.get_optional_current_user') as mock_user:
             mock_user.return_value = {"id": 1}  # Customer 1
-            with patch('backend.core.auth.get_current_staff_user') as mock_staff:
+            with patch('backend.core.auth.get_current_user') as mock_staff:
                 mock_staff.return_value = None
                 
                 response = client.get("/feedback/", headers=auth_headers_customer)
@@ -488,7 +488,7 @@ class TestFeedbackAPI:
         """Test staff can list all feedback"""
         with patch('backend.core.auth.get_optional_current_user') as mock_user:
             mock_user.return_value = None
-            with patch('backend.core.auth.get_current_staff_user') as mock_staff:
+            with patch('backend.core.auth.get_current_user') as mock_staff:
                 mock_staff.return_value = {"id": 100}
                 
                 response = client.get("/feedback/", headers=auth_headers_staff)
@@ -502,7 +502,7 @@ class TestFeedbackAPI:
         """Test feedback assignment (staff only)"""
         assign_data = {"assignee_id": 101}
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(
@@ -519,7 +519,7 @@ class TestFeedbackAPI:
         """Test feedback resolution (staff only)"""
         resolve_data = {"resolution_notes": "Issue has been resolved successfully."}
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(
@@ -539,7 +539,7 @@ class TestFeedbackAPI:
             "reason": "Requires senior support attention"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(
@@ -560,7 +560,7 @@ class TestFeedbackAPI:
             "is_resolution": False
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100, "name": "Support Agent"}
             
             response = client.post(
@@ -575,7 +575,7 @@ class TestFeedbackAPI:
     
     def test_get_feedback_analytics_staff_only(self, client: TestClient, auth_headers_staff):
         """Test getting feedback analytics (staff only)"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.get(
@@ -601,7 +601,7 @@ class TestFeedbackAPI:
             "escalation_priority": "high"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 100}
             
             response = client.post(

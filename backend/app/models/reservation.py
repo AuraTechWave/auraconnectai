@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Date, Time, Text, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.database import Base
+from core.database import Base
 import enum
 
 
@@ -35,4 +35,4 @@ class Reservation(Base):
     customer = relationship("Customer", back_populates="reservations")
     
     def __repr__(self):
-        return f"<Reservation {self.id} - {self.customer_id} on {self.reservation_date} at {self.reservation_time}>">
+        return f"<Reservation {self.id} - {self.customer_id} on {self.reservation_date} at {self.reservation_time}>"

@@ -2,8 +2,8 @@ from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Numeric, Text, Table, Enum, Boolean, Index)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from ..enums.order_enums import OrderPriority
 from typing import Optional
 from datetime import datetime

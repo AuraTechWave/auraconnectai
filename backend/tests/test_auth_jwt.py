@@ -16,13 +16,13 @@ from fastapi.testclient import TestClient
 from jose import jwt
 import time
 
-from backend.app.main import app
-from backend.core.auth import (
+from app.main import app
+from core.auth import (
     create_access_token, create_refresh_token, verify_token,
     SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS, generate_token_id, isTokenExpired
 )
-from backend.core.session_manager import session_manager
+from core.session_manager import session_manager
 
 
 @pytest.fixture
@@ -404,7 +404,7 @@ class TestSecurityFeatures:
         client.post("/auth/logout", headers=auth_headers)
         
         # Token should be blacklisted
-        from backend.core.session_manager import session_manager
+        from core.session_manager import session_manager
         assert session_manager.is_token_blacklisted(token)
     
     def test_concurrent_request_handling(self, client, test_user):
@@ -419,7 +419,7 @@ class TestSecurityFeatures:
         expired_time = datetime.utcnow() - timedelta(days=1)
         
         # Test cleanup
-        from backend.core.session_manager import session_manager
+        from core.session_manager import session_manager
         cleaned = session_manager.cleanup_expired_sessions()
         assert cleaned >= 0
 

@@ -11,8 +11,8 @@ from ..models.promotion_models import (
     Promotion, PromotionUsage, PromotionAnalytics, CouponUsage, 
     CustomerReferral, ReferralProgram, PromotionStatus, ReferralStatus
 )
-from backend.modules.orders.models.order_models import Order
-from backend.modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
+from modules.customers.models.customer_models import Customer
 
 logger = logging.getLogger(__name__)
 

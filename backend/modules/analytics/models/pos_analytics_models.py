@@ -17,8 +17,8 @@ from datetime import datetime, date
 from enum import Enum
 import uuid
 
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 class POSMetricType(str, Enum):

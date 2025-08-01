@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import logging
 import asyncio
 
-from backend.core.database import get_db
+from core.database import get_db
 from .analytics_service import PromotionAnalyticsService
 from .reporting_service import PromotionReportingService
 from ..models.promotion_models import PromotionAnalytics

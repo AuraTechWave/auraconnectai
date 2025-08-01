@@ -12,11 +12,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from unittest.mock import Mock, patch, AsyncMock
 
-from backend.modules.orders.models.external_pos_models import ExternalPOSProvider
-from backend.modules.analytics.models.pos_analytics_models import (
+from modules.orders.models.external_pos_models import ExternalPOSProvider
+from modules.analytics.models.pos_analytics_models import (
     POSAnalyticsSnapshot, POSTerminalHealth, POSAnalyticsAlert
 )
-from backend.modules.analytics.schemas.pos_analytics_schemas import (
+from modules.analytics.schemas.pos_analytics_schemas import (
     TimeRange, POSHealthStatus, AlertSeverity
 )
 

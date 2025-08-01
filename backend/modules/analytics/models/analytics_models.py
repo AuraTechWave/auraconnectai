@@ -2,7 +2,7 @@
 
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean, 
-    Index, text, func, Date, Enum as SQLEnum, Float
+    Index, Text, text, func, Date, Enum as SQLEnum, Float
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -10,8 +10,8 @@ from datetime import datetime, date
 from enum import Enum
 import uuid
 
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 class ReportType(str, Enum):
@@ -45,8 +45,8 @@ class ForecastHistory(Base, TimestampMixin):
     model_type = Column(String, nullable=False)
     forecast_date = Column(Date, nullable=False)
     horizon_days = Column(Integer, nullable=False)
-    predictions_json = Column(text, nullable=False)  # JSON array of predictions
-    metadata_json = Column(text, nullable=True)  # Additional metadata
+    predictions_json = Column(Text, nullable=False)  # JSON array of predictions
+    metadata_json = Column(Text, nullable=True)  # Additional metadata
 
 
 class ForecastPerformance(Base, TimestampMixin):
@@ -63,7 +63,7 @@ class ForecastPerformance(Base, TimestampMixin):
     r_squared = Column(Float, nullable=True)
     bias = Column(Float, nullable=True)
     sample_size = Column(Integer, nullable=False)
-    metrics_json = Column(text, nullable=True)  # Additional metrics as JSON
+    metrics_json = Column(Text, nullable=True)  # Additional metrics as JSON
     
     __table_args__ = (
         Index('idx_forecast_performance_entity', 'entity_type', 'entity_id', 'evaluation_date'),

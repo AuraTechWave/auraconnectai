@@ -7,7 +7,7 @@ Handles data export in various formats.
 """
 
 from sqlalchemy.orm import Session
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 import logging
 import csv
@@ -16,7 +16,6 @@ import os
 import tempfile
 from pathlib import Path
 
-from backend.core.exceptions import ValidationError
 from .pos.base_service import POSAnalyticsBaseService
 from .pos_dashboard_service import POSDashboardService
 from .pos_trends_service import POSTrendsService
@@ -47,10 +46,10 @@ class POSExportService(POSAnalyticsBaseService):
         
         # Validate inputs
         if report_type not in ["summary", "detailed", "transactions", "errors"]:
-            raise ValidationError(f"Invalid report type: {report_type}")
+            raise ValueError(f"Invalid report type: {report_type}")
         
         if format not in ["csv", "xlsx", "pdf"]:
-            raise ValidationError(f"Invalid format: {format}")
+            raise ValueError(f"Invalid format: {format}")
         
         # Generate report data
         if report_type == "summary":
@@ -70,7 +69,7 @@ class POSExportService(POSAnalyticsBaseService):
                 start_date, end_date, provider_ids, terminal_ids
             )
         else:
-            raise ValidationError(f"Unknown report type: {report_type}")
+            raise ValueError(f"Unknown report type: {report_type}")
         
         # Export to file
         if format == "csv":
@@ -80,7 +79,7 @@ class POSExportService(POSAnalyticsBaseService):
         elif format == "pdf":
             file_path = await self._export_to_pdf(data, report_type, include_charts)
         else:
-            raise ValidationError(f"Unknown format: {format}")
+            raise ValueError(f"Unknown format: {format}")
         
         logger.info(
             f"Exported {report_type} report in {format} format for user {user_id}"

@@ -5,13 +5,12 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
-from backend.modules.analytics.services.sales_report_service import (
+from modules.analytics.services.sales_report_service import (
     SalesReportService, SalesCalculationResult
 )
-from backend.modules.analytics.schemas.analytics_schemas import (
+from modules.analytics.schemas.analytics_schemas import (
     SalesFilterRequest, AggregationPeriod
 )
-from backend.core.exceptions import ValidationError
 
 
 class TestSalesReportService:
@@ -258,7 +257,7 @@ class TestSalesReportService:
         """Test date range filtering"""
         service = SalesReportService(db_session)
         
-        from backend.modules.orders.models.order_models import Order, OrderItem
+        from modules.orders.models.order_models import Order, OrderItem
         base_query = db_session.query(Order).join(OrderItem)
         
         filters = SalesFilterRequest(
@@ -283,7 +282,7 @@ class TestSalesReportService:
         """Test staff filtering"""
         service = SalesReportService(db_session)
         
-        from backend.modules.orders.models.order_models import Order, OrderItem
+        from modules.orders.models.order_models import Order, OrderItem
         base_query = db_session.query(Order).join(OrderItem)
         
         filters = SalesFilterRequest(
@@ -301,7 +300,7 @@ class TestSalesReportService:
         """Test order value filtering"""
         service = SalesReportService(db_session)
         
-        from backend.modules.orders.models.order_models import Order, OrderItem
+        from modules.orders.models.order_models import Order, OrderItem
         base_query = db_session.query(Order).join(OrderItem)
         
         filters = SalesFilterRequest(
@@ -375,7 +374,7 @@ class TestSalesReportService:
             summary = service.generate_sales_summary(invalid_filters)
             # If it doesn't raise an error, that's also acceptable
             assert summary is not None
-        except ValidationError:
+        except ValueError:
             # If it raises a validation error, that's expected
             pass
     

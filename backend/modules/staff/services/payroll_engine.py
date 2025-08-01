@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from backend.modules.staff.models.attendance_models import AttendanceLog
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.modules.staff.schemas.payroll_schemas import PayrollBreakdown
+from modules.staff.models.attendance_models import AttendanceLog
+from modules.staff.models.staff_models import StaffMember
+from modules.staff.schemas.payroll_schemas import PayrollBreakdown
 from datetime import datetime
 from typing import Tuple
 

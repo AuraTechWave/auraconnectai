@@ -9,12 +9,12 @@ import hashlib
 import json
 import uuid
 
-from backend.modules.promotions.models.promotion_models import (
+from modules.promotions.models.promotion_models import (
     Promotion, Coupon, PromotionUsage, CouponUsage, PromotionStatus
 )
-from backend.modules.promotions.services.discount_service import DiscountCalculationService
-from backend.modules.promotions.services.cache_service import cache_service
-from backend.modules.orders.models.order_models import Order
+from modules.promotions.services.discount_service import DiscountCalculationService
+from modules.promotions.services.cache_service import cache_service
+from modules.orders.models.order_models import Order
 
 logger = logging.getLogger(__name__)
 
@@ -376,7 +376,7 @@ class IdempotentDiscountService:
             }
         
         # Validate coupon
-        from backend.modules.promotions.services.coupon_service import CouponService
+        from modules.promotions.services.coupon_service import CouponService
         coupon_service = CouponService(self.db)
         
         is_valid, reason, _ = coupon_service.validate_coupon_code(coupon_code, customer_id)

@@ -8,8 +8,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from datetime import date
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin, TenantMixin
+from core.database import Base
+from core.mixins import TimestampMixin, TenantMixin
 
 
 class TaxJurisdiction(Base, TimestampMixin, TenantMixin):

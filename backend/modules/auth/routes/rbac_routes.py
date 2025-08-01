@@ -11,10 +11,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user, require_admin
-from backend.core.rbac_service import RBACService, get_rbac_service
-from backend.core.rbac_models import RBACUser, RBACRole, RBACPermission, RBACSession
+from core.database import get_db
+from core.auth import get_current_user, require_admin
+from core.rbac_service import RBACService, get_rbac_service
+from core.auth import User, RBACRole, RBACPermission, RBACSession
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/rbac", tags=["RBAC Management"])
@@ -168,7 +168,7 @@ class AuditLogResponse(BaseModel):
 async def create_user(
     user_data: UserCreateRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Create a new user."""
     try:
@@ -201,7 +201,7 @@ async def list_users(
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """List users with pagination, search, and filtering."""
     
@@ -212,21 +212,21 @@ async def list_users(
             detail="Insufficient permissions: user:read required"
         )
     
-    query = rbac_service.db.query(RBACUser)
+    query = rbac_service.db.query(User)
     
     # Apply search filter
     if search:
         search_term = f"%{search}%"
         query = query.filter(
-            (RBACUser.username.ilike(search_term)) |
-            (RBACUser.email.ilike(search_term)) |
-            (RBACUser.first_name.ilike(search_term)) |
-            (RBACUser.last_name.ilike(search_term))
+            (User.username.ilike(search_term)) |
+            (User.email.ilike(search_term)) |
+            (User.first_name.ilike(search_term)) |
+            (User.last_name.ilike(search_term))
         )
     
     # Apply active status filter
     if is_active is not None:
-        query = query.filter(RBACUser.is_active == is_active)
+        query = query.filter(User.is_active == is_active)
     
     # Count total results
     total_count = query.count()
@@ -250,7 +250,7 @@ async def list_users(
 async def get_user(
     user_id: int,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get user by ID."""
     user = rbac_service.get_user_by_id(user_id)
@@ -264,7 +264,7 @@ async def get_user_permissions(
     user_id: int,
     tenant_id: Optional[int] = Query(None),
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get all permissions for a user."""
     user = rbac_service.get_user_by_id(user_id)
@@ -290,7 +290,7 @@ async def get_user_permissions(
 async def create_role(
     role_data: RoleCreateRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Create a new role."""
     try:
@@ -311,7 +311,7 @@ async def list_roles(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """List all roles."""
     roles = rbac_service.db.query(RBACRole).offset(skip).limit(limit).all()
@@ -322,7 +322,7 @@ async def list_roles(
 async def get_role(
     role_id: int,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get role by ID."""
     role = rbac_service.get_role_by_id(role_id)
@@ -339,7 +339,7 @@ async def list_permissions(
     limit: int = Query(100, ge=1, le=1000),
     resource: Optional[str] = Query(None),
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """List all permissions."""
     query = rbac_service.db.query(RBACPermission)
@@ -355,7 +355,7 @@ async def list_permissions(
 async def get_permission(
     permission_id: int,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get permission by ID."""
     permission = rbac_service.db.query(RBACPermission).filter(
@@ -374,7 +374,7 @@ async def get_permission(
 async def assign_role_to_user(
     assignment: RoleAssignmentRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Assign a role to a user."""
     
@@ -406,7 +406,7 @@ async def assign_role_to_user(
 async def remove_role_from_user(
     assignment: RoleAssignmentRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Remove a role from a user."""
     
@@ -427,7 +427,7 @@ async def remove_role_from_user(
 async def assign_permission_to_role(
     assignment: PermissionAssignmentRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Assign a permission to a role."""
     
@@ -459,7 +459,7 @@ async def assign_permission_to_role(
 async def remove_permission_from_role(
     assignment: PermissionAssignmentRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Remove a permission from a role."""
     
@@ -480,7 +480,7 @@ async def remove_permission_from_role(
 async def grant_direct_permission(
     permission_grant: DirectPermissionRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Grant a direct permission to a user."""
     
@@ -511,7 +511,7 @@ async def grant_direct_permission(
 async def check_user_permission(
     check_request: PermissionCheckRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Check if a user has a specific permission."""
     
@@ -538,7 +538,7 @@ async def check_user_permission(
 @router.post("/setup-defaults")
 async def setup_default_permissions(
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Set up default role-permission assignments."""
     
@@ -550,11 +550,11 @@ async def setup_default_permissions(
 @router.get("/system-info")
 async def get_system_info(
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get RBAC system information."""
     
-    user_count = rbac_service.db.query(RBACUser).count()
+    user_count = rbac_service.db.query(User).count()
     role_count = rbac_service.db.query(RBACRole).count()
     permission_count = rbac_service.db.query(RBACPermission).count()
     
@@ -578,12 +578,12 @@ async def get_audit_logs(
     end_date: Optional[datetime] = Query(None),
     user_id: Optional[int] = Query(None),
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Get audit logs with filtering."""
     
     query = rbac_service.db.query(RBACSession).join(
-        RBACUser, RBACSession.user_id == RBACUser.id
+        User, RBACSession.user_id == User.id
     )
     
     # Apply filters
@@ -634,7 +634,7 @@ async def get_audit_logs(
 async def bulk_delete_users(
     request: BulkUserOperationRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Bulk delete users. Requires admin privileges and user:delete permission."""
     
@@ -687,7 +687,7 @@ async def bulk_delete_users(
 async def bulk_activate_users(
     request: BulkUserOperationRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Bulk activate users. Requires admin privileges and user:write permission."""
     
@@ -729,7 +729,7 @@ async def bulk_activate_users(
 async def bulk_deactivate_users(
     request: BulkUserOperationRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Bulk deactivate users. Requires admin privileges and user:write permission."""
     
@@ -783,7 +783,7 @@ async def bulk_deactivate_users(
 async def bulk_assign_role_to_users(
     request: BulkRoleAssignmentRequest,
     rbac_service: RBACService = Depends(get_rbac_service),
-    current_user: RBACUser = Depends(require_admin)
+    current_user: User = Depends(require_admin)
 ):
     """Bulk assign role to users. Requires admin privileges and user:manage_roles permission."""
     

@@ -8,14 +8,14 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.config import settings
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.schemas.sync_schemas import SyncStatusResponse
-from backend.modules.orders.tasks.sync_tasks import order_sync_scheduler
+from core.database import get_db
+from core.auth import get_current_user
+from core.config import settings
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
+from modules.orders.models.order_models import Order
+from modules.orders.schemas.sync_schemas import SyncStatusResponse
+from modules.orders.tasks.sync_tasks import order_sync_scheduler
 
 router = APIRouter()
 
@@ -52,13 +52,13 @@ async def get_pos_sync_status(
     ).count()
     
     # Get pending conflicts
-    from backend.modules.orders.models.sync_models import SyncConflict
+    from modules.orders.models.sync_models import SyncConflict
     pending_conflicts = db.query(SyncConflict).filter(
         SyncConflict.resolution_status == "pending"
     ).count()
     
     # Get last batch info
-    from backend.modules.orders.models.sync_models import SyncBatch
+    from modules.orders.models.sync_models import SyncBatch
     last_batch = db.query(SyncBatch).order_by(
         SyncBatch.started_at.desc()
     ).first()

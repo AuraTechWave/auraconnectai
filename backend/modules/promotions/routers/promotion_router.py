@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
-from backend.modules.customers.models.customer_models import Customer
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
+from modules.customers.models.customer_models import Customer
 
 from ..models.promotion_models import Promotion
 from ..schemas.promotion_schemas import (
@@ -59,7 +59,7 @@ def search_promotions(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     sort_by: str = "created_at",
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):

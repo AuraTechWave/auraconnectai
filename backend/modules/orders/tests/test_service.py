@@ -1,19 +1,19 @@
 import pytest
 from fastapi import HTTPException
-from backend.modules.orders.services.order_service import (
+from modules.orders.services.order_service import (
     get_order_by_id, update_order_service, get_orders_service,
     validate_multi_item_rules, schedule_delayed_fulfillment,
     get_scheduled_orders, process_due_delayed_orders,
     archive_order_service, restore_order_service,
     get_archived_orders_service, update_order_priority_service
 )
-from backend.modules.orders.schemas.order_schemas import (
+from modules.orders.schemas.order_schemas import (
     OrderUpdate, OrderItemUpdate, DelayFulfillmentRequest, OrderPriorityUpdate
 )
-from backend.modules.orders.enums.order_enums import (
+from modules.orders.enums.order_enums import (
     OrderStatus, MultiItemRuleType, DelayReason, OrderPriority
 )
-from backend.modules.orders.models.order_models import Order
+from modules.orders.models.order_models import Order
 from datetime import datetime
 
 
@@ -484,7 +484,7 @@ class TestOrderPriority:
     @pytest.mark.asyncio
     async def test_get_orders_priority_sorting(self, db_session):
         """Test that orders are sorted by priority correctly."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
 
         order_low = Order(staff_id=1, status=OrderStatus.PENDING.value,
                           priority=OrderPriority.LOW.value)

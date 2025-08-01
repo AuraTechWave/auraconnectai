@@ -1,93 +1,95 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.modules.staff.routes.staff_routes import router as staff_router
-from backend.modules.staff.routes.payroll_routes import (
+from modules.staff.routes.staff_routes import router as staff_router
+from modules.staff.routes.payroll_routes import (
     router as payroll_router
 )
-from backend.modules.staff.routes.enhanced_payroll_routes import (
+from modules.staff.routes.enhanced_payroll_routes import (
     router as enhanced_payroll_router
 )
-from backend.modules.auth.routes.auth_routes import (
+from modules.auth.routes.auth_routes import (
     router as auth_router
 )
 # TODO: Fix RBAC routes - SQLAlchemy/Pydantic mismatch
-# from backend.modules.auth.routes.rbac_routes import (
+# from modules.auth.routes.rbac_routes import (
 #     router as rbac_router
 # )
 # TODO: Fix password routes - SQLAlchemy/Pydantic mismatch
-# from backend.modules.auth.routes.password_routes import (
+# from modules.auth.routes.password_routes import (
 #     router as password_router
 # )
-from backend.modules.orders.routes.order_routes import router as order_router
-from backend.modules.orders.routes.inventory_routes import (
+from modules.orders.routes.order_routes import router as order_router
+from modules.orders.routes.inventory_routes import (
     router as inventory_router
 )
-from backend.modules.orders.routes.kitchen_routes import (
+from modules.orders.routes.kitchen_routes import (
     router as kitchen_router
 )
-from backend.modules.orders.routes.print_ticket_routes import (
+from modules.orders.routes.print_ticket_routes import (
     router as print_ticket_router
 )
-from backend.modules.orders.routes.pricing_routes import (
+from modules.orders.routes.pricing_routes import (
     router as pricing_router
 )
-from backend.modules.orders.routers.sync import (
+from modules.orders.routers.sync import (
     sync_router as order_sync_router
 )
-from backend.modules.orders.routers.pos_sync import (
+from modules.orders.routers.pos_sync import (
     router as order_pos_sync_router
 )
-from backend.modules.orders.routers.external_pos_webhook_router import (
+from modules.orders.routers.external_pos_webhook_router import (
     router as external_pos_webhook_router
 )
-from backend.modules.orders.routers.webhook_monitoring_router import (
+from modules.orders.routers.webhook_monitoring_router import (
     router as webhook_monitoring_router
 )
-from backend.modules.tax.routes.tax_routes import router as tax_router
-from backend.modules.payroll import payroll_router
-from backend.modules.settings.routes.pos_sync_routes import (
+from modules.tax.routes.tax_routes import router as tax_router
+from modules.payroll import payroll_router
+from modules.settings.routes.pos_sync_routes import (
     router as pos_sync_router
 )
-from backend.modules.pos.routes.pos_routes import router as pos_router
-from backend.modules.orders.routes.webhook_routes import (
+from modules.pos.routes.pos_routes import router as pos_router
+from modules.orders.routes.webhook_routes import (
     router as webhook_router
 )
-from backend.modules.menu.routes.menu_routes import (
+from modules.menu.routes.menu_routes import (
     router as menu_router
 )
-from backend.modules.menu.routes.inventory_routes import (
+from modules.menu.routes.inventory_routes import (
     router as menu_inventory_router
 )
-from backend.modules.menu.routes.versioning_routes import (
+from modules.menu.routes.versioning_routes import (
     router as menu_versioning_router
 )
-from backend.modules.inventory.routes.inventory_routes import (
+from modules.inventory.routes.inventory_routes import (
     router as inventory_management_router
 )
-from backend.modules.inventory.routes.vendor_routes import (
+from modules.inventory.routes.vendor_routes import (
     router as vendor_management_router
 )
-from backend.modules.analytics.routers.analytics_router import (
+from modules.analytics.routers.analytics_router import (
     router as analytics_router
 )
-from backend.modules.analytics.routers.realtime_router import (
+from modules.analytics.routers.realtime_router import (
     router as realtime_analytics_router  
 )
-from backend.modules.analytics.routers.ai_insights_router import (
+from modules.analytics.routers.ai_insights_router import (
     router as ai_insights_router
 )
-from backend.modules.analytics.routers.pos import (
+from modules.analytics.routers.pos import (
     router as pos_analytics_router
 )
-from backend.modules.ai_recommendations.routers import (
+from modules.ai_recommendations.routers import (
     router as ai_recommendations_router
 )
-from backend.core.menu_versioning_triggers import init_versioning_triggers
-from backend.modules.orders.tasks.sync_tasks import (
+from modules.customers.routers.customer_router import router as customer_router
+from app.api.v1.endpoints.reservations import router as reservation_router
+from core.menu_versioning_triggers import init_versioning_triggers
+from modules.orders.tasks.sync_tasks import (
     start_sync_scheduler,
     stop_sync_scheduler
 )
-from backend.modules.orders.tasks.webhook_retry_task import (
+from modules.orders.tasks.webhook_retry_task import (
     start_webhook_retry_scheduler,
     stop_webhook_retry_scheduler
 )
@@ -143,7 +145,7 @@ app = FastAPI(
 # CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://app.auraconnect.ai"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "https://app.auraconnect.ai"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -180,6 +182,8 @@ app.include_router(realtime_analytics_router)
 app.include_router(ai_insights_router)
 app.include_router(pos_analytics_router)
 app.include_router(ai_recommendations_router)
+app.include_router(customer_router)
+app.include_router(reservation_router, prefix="/api/v1/reservations", tags=["reservations"])
 
 # Initialize menu versioning triggers
 init_versioning_triggers()

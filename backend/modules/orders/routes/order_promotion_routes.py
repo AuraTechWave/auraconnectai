@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
-from backend.modules.promotions.services.order_promotion_service import OrderPromotionService
-from backend.modules.promotions.schemas.promotion_schemas import DiscountCalculationResponse
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
+from modules.promotions.services.order_promotion_service import OrderPromotionService
+from modules.promotions.schemas.promotion_schemas import DiscountCalculationResponse
 
 from ..models.order_models import Order
 from ..services.order_service import get_order_by_id

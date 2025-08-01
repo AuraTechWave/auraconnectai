@@ -4,14 +4,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from backend.core.database import Base, get_db
-from backend.app.main import app
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.models.inventory_models import (
-    Inventory, MenuItemInventory
-)
-from backend.modules.orders.enums.order_enums import OrderStatus
-from backend.modules.staff.models.staff_models import StaffMember, Role  # noqa
+from core.database import Base, get_db
+from app.main import app
+from modules.orders.models.order_models import Order, OrderItem
+from core.inventory_models import Inventory
+from core.menu_models import MenuItemInventory
+from modules.orders.enums.order_enums import OrderStatus
+from modules.staff.models.staff_models import StaffMember, Role  # noqa
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(

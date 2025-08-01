@@ -10,8 +10,8 @@ from sqlalchemy import (
     ForeignKey, Text, JSON, Enum
 )
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from decimal import Decimal
 from enum import Enum as PyEnum
 from ..enums.payroll_enums import PayrollJobStatus

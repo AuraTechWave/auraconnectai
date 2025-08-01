@@ -12,13 +12,13 @@ from typing import List, Dict
 from datetime import datetime
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.sync_models import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.sync_models import (
     SyncConflict, OrderSyncStatus, SyncStatus
 )
-from backend.modules.orders.schemas.sync_schemas import (
+from modules.orders.schemas.sync_schemas import (
     SyncConflictResponse, ConflictResolutionRequest
 )
 

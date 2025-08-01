@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
 
 from ..services.automation_service import PromotionAutomationService
 from ..schemas.promotion_schemas import PromotionCreate
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/automation", tags=["Promotion Automation"])
 @router.post("/create")
 def create_automated_promotion(
     name: str = Body(...),
-    trigger_type: str = Body(..., regex="^(customer_lifecycle|purchase_behavior|cart_abandonment|loyalty_milestone|inventory_level|weather_condition|competitor_price|seasonal_event)$"),
+    trigger_type: str = Body(..., pattern="^(customer_lifecycle|purchase_behavior|cart_abandonment|loyalty_milestone|inventory_level|weather_condition|competitor_price|seasonal_event)$"),
     trigger_conditions: Dict[str, Any] = Body(...),
     promotion_config: Dict[str, Any] = Body(...),
     automation_options: Dict[str, Any] = Body({}),

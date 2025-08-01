@@ -13,13 +13,13 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, AsyncMock
 import httpx
 
-from backend.modules.orders.services.sync_service import OrderSyncService
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.models.sync_models import (
+from modules.orders.services.sync_service import OrderSyncService
+from modules.orders.models.order_models import Order
+from modules.orders.models.sync_models import (
     OrderSyncStatus, SyncStatus, SyncBatch,
     SyncConflict, SyncConfiguration
 )
-from backend.modules.orders.tasks.sync_tasks import OrderSyncScheduler
+from modules.orders.tasks.sync_tasks import OrderSyncScheduler
 
 
 class TestOrderSyncService:

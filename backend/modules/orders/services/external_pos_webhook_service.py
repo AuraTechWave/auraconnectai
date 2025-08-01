@@ -14,21 +14,21 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from backend.modules.orders.models.external_pos_models import (
+from modules.orders.models.external_pos_models import (
     ExternalPOSWebhookEvent, ExternalPOSPaymentUpdate,
     ExternalPOSWebhookLog, ExternalPOSProvider
 )
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.models.payment_reconciliation_models import PaymentReconciliation
-from backend.modules.orders.enums.external_pos_enums import (
+from modules.orders.models.order_models import Order
+from modules.orders.models.payment_reconciliation_models import PaymentReconciliation
+from modules.orders.enums.external_pos_enums import (
     WebhookProcessingStatus, ExternalPOSEventType,
     PaymentStatus, PaymentMethod, ExternalPOSProvider as POSProviderEnum,
     WebhookLogType, WebhookLogLevel
 )
-from backend.modules.orders.enums.payment_enums import ReconciliationStatus, DiscrepancyType
-from backend.modules.orders.enums.order_enums import OrderStatus, OrderPaymentStatus
-from backend.modules.orders.utils.security_utils import mask_sensitive_dict, mask_headers
-from backend.core.config import settings
+from modules.orders.enums.payment_enums import ReconciliationStatus, DiscrepancyType
+from modules.orders.enums.order_enums import OrderStatus, OrderPaymentStatus
+from modules.orders.utils.security_utils import mask_sensitive_dict, mask_headers
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
