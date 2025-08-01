@@ -9,7 +9,7 @@ This guide helps different types of developers quickly find the most relevant do
 ### Quick Links
 - [API Reference](../api/README.md) - REST endpoints documentation
 - [Authentication Guide](../api/README.md#authentication) - JWT token handling
-- [JavaScript SDK](../api/README.md#sdks--libraries) - Pre-built client library
+- [JavaScript SDK](../api/README.md) - Pre-built client library
 - [WebSocket Events](../api/README.md#webhooks) - Real-time updates
 
 ### Common Tasks
@@ -44,7 +44,7 @@ This guide helps different types of developers quickly find the most relevant do
 - [Architecture Overview](../architecture/README.md) - System design
 - [Module Development](../modules/README.md) - Creating new modules
 - [Database Schema](../architecture/README.md#data-architecture) - Data models
-- [Event System](../architecture/README.md#event-driven-architecture) - Inter-module communication
+- [Event System](../architecture/README.md) - Inter-module communication
 
 ### Common Tasks
 1. **Create a custom module**
@@ -207,8 +207,8 @@ Based on your role:
 1. **Start with Quick Start**: [Getting Started Guide](getting-started.md)
 2. **Explore your area**: Use the quick links above
 3. **Join the community**: [Discord](https://discord.gg/auraconnect)
-4. **Get help**: [Support](../index.md#support--community)
+4. **Get help**: [Support](../index.md)
 
 ---
 
-Can't find what you're looking for? Check our [FAQ](../api/README.md) or [contact support](../index.md#support--community).
+Can't find what you're looking for? Check our [FAQ](../api/README.md) or [contact support](../index.md).

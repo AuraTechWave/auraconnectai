@@ -234,7 +234,7 @@ See [CI/CD Setup](CI_CD_SETUP.md) for detailed information about:
 ### Internal Documentation
 - [System Architecture](../architecture/README.md)
 - [API Documentation](http://localhost:8000/docs)
-- [Production Deployment](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
+- Production Deployment (see backend source code)
 
 ### External Resources
 - [FastAPI Documentation](https://fastapi.tiangolo.com)

@@ -319,7 +319,7 @@ Key metrics to monitor:
 - [API Reference](./api-reference.md)
 - Database Schema (Coming Soon)
 - Integration Guide (Coming Soon)
-- [Examples](./examples/)
+- Examples (Coming Soon)
 
 ## Support
 

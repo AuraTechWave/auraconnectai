@@ -599,10 +599,10 @@ For additional help:
 
 ### Deployment & Operations
 - [Production Readiness Checklist](../modules/payroll/production-checklist.md) - Pre-deployment requirements
-- [Production Deployment Guide](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md) - Deployment procedures
-- [API Phase 4 Documentation](../../backend/API_PHASE4_DOCUMENTATION.md) - API specifications
+- Production Deployment Guide (see backend source code) - Deployment procedures
+- API Phase 4 Documentation (see backend source code) - API specifications
 
 ### Frontend Integration
-- [PayrollIntegration Component](../../frontend/components/staff/PayrollIntegration.tsx) - Main UI component
-- [usePayrollAPI Hook](../../frontend/hooks/usePayrollAPI.ts) - API integration hook
-- [Payroll Types](../../frontend/types/payroll.ts) - TypeScript type definitions
+- PayrollIntegration Component (see frontend source code) - Main UI component
+- usePayrollAPI Hook (see frontend source code) - API integration hook
+- Payroll Types (see frontend source code) - TypeScript type definitions

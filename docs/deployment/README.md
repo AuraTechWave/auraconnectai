@@ -14,8 +14,8 @@ This guide covers deploying AuraConnect to production environments. We support m
 6. [Database Setup](#database-setup)
 7. [SSL/TLS Configuration](#ssltls-configuration)
 8. [Environment Configuration](#environment-configuration)
-9. [Monitoring & Logging](#monitoring--logging)
-10. [Backup & Recovery](#backup--recovery)
+9. [Monitoring & Logging](#monitoring-logging)
+10. [Backup & Recovery](#backup-recovery)
 11. [Scaling Strategies](#scaling-strategies)
 12. [Troubleshooting](#troubleshooting)
 
