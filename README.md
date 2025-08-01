@@ -1,233 +1,235 @@
-# AuraConnect – Enterprise Restaurant Management Platform
+# AuraConnect - Enterprise Restaurant Management Platform
 
 <div align="center">
-  <img src="docs/assets/AuraConnect_Architecture_ColorCoded.png" alt="AuraConnect Architecture" width="600">
+  <img src="docs/assets/AuraConnect_Architecture_ColorCoded.png" alt="AuraConnect Architecture" width="800">
   
-  **A comprehensive, AI-integrated restaurant management system built with modern architecture**
+  **A comprehensive, AI-powered restaurant management system built with modern microservices architecture**
   
   [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
   [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org)
   [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com)
+  [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 </div>
 
 ## 🎯 Overview
 
-AuraConnect is a production-ready restaurant management platform that integrates:
-- **Order Management** - Real-time order processing with kitchen integration
-- **Staff & Payroll** - Comprehensive employee management with automated payroll
-- **Tax Compliance** - Multi-jurisdiction tax calculation and reporting
-- **POS Integration** - Seamless integration with major POS systems
-- **Analytics & Insights** - AI-powered business intelligence
+AuraConnect is an enterprise-grade restaurant management platform that revolutionizes how restaurants operate. Built with a modern microservices architecture, it provides comprehensive solutions for every aspect of restaurant management - from order processing to payroll, from inventory to customer engagement.
 
-## 🏗️ Architecture
+### 🌟 Why AuraConnect?
 
-### Core Technologies
-- **Backend**: FastAPI (Python 3.11+) with async/await support
-- **Database**: PostgreSQL with Alembic migrations
-- **Authentication**: JWT-based with refresh token rotation
-- **Task Queue**: Background job processing with persistent tracking
-- **Caching**: Redis for performance optimization
-- **Container**: Docker & Docker Compose for development and deployment
+- **🚀 Complete Solution**: All-in-one platform covering every aspect of restaurant operations
+- **🏗️ Modern Architecture**: Microservices-based design for scalability and reliability
+- **🤖 AI-Powered**: Intelligent recommendations and predictive analytics
+- **🔄 Real-time Sync**: Live data synchronization across all modules
+- **🌍 Multi-location Ready**: Manage multiple restaurant locations from a single platform
+- **📱 Omnichannel**: Seamless integration across web, mobile, and POS systems
 
-### Key Modules
+## 📚 Documentation Hub
 
-#### 📦 Order Management
-- Real-time order processing with WebSocket support
-- Kitchen display system integration
-- Dynamic pricing and fraud detection
-- Payment reconciliation engine
-- Webhook system for external integrations
+| Documentation | Description |
+|--------------|-------------|
+| [🏗️ Architecture Overview](docs/architecture/README.md) | System design, patterns, and technical decisions |
+| [🚀 Getting Started](docs/guides/getting-started.md) | Quick start guide for developers |
+| [📦 Module Documentation](docs/modules/README.md) | Detailed documentation for each module |
+| [🔌 API Reference](docs/api/README.md) | Complete API documentation |
+| [💻 Development Guide](docs/development/README.md) | Development setup and best practices |
+| [🚢 Deployment Guide](docs/deployment/README.md) | Production deployment instructions |
 
-#### 👥 Staff & Payroll
-- Attendance tracking with SQL-optimized aggregation
-- Enhanced payroll engine with configurable business rules
-- Multi-jurisdiction tax calculation
-- Automated benefit proration
-- Comprehensive audit trails
+## 🏛️ System Architecture
 
-#### 💰 Tax Services
-- IRS-compliant tax calculations
-- Social Security and Medicare cap handling
-- State and local tax support
-- Year-to-date tracking
-- Tax form generation (W-2, 1099)
+AuraConnect follows a modern microservices architecture designed for scalability, maintainability, and performance:
 
-#### 🔌 POS Integration
-- Square, Clover, Toast adapter system
-- Real-time sync with conflict resolution
-- Offline-first architecture
-- Automatic retry mechanisms
+```mermaid
+graph TB
+    subgraph "Frontend Applications"
+        A1[Restaurant Portal]
+        A2[Kitchen Display]
+        A3[Customer App]
+        A4[Admin Panel]
+    end
+    
+    subgraph "API Gateway"
+        B[Nginx<br/>Load Balancing & Rate Limiting]
+    end
+    
+    subgraph "Backend Services - FastAPI"
+        C1[Auth Service]
+        C2[POS Integration]
+        C3[Orders Service]
+        C4[Payroll Service]
+        C5[Analytics Service]
+        C6[... Other Services]
+    end
+    
+    subgraph "Shared Infrastructure Layer"
+        D1[Message Queue]
+        D2[Redis Cache]
+        D3[Celery Task Queue]
+        D4[S3 Storage]
+    end
+    
+    subgraph "Data Layer"
+        E[(PostgreSQL<br/>Multi-tenant | Partitioned | Replicated)]
+    end
+    
+    A1 --> B
+    A2 --> B
+    A3 --> B
+    A4 --> B
+    
+    B --> C1
+    B --> C2
+    B --> C3
+    B --> C4
+    B --> C5
+    B --> C6
+    
+    C1 --> D1
+    C1 --> D2
+    C2 --> D1
+    C2 --> D2
+    C3 --> D1
+    C3 --> D2
+    C3 --> D3
+    C4 --> D1
+    C4 --> D2
+    C4 --> D3
+    C5 --> D1
+    C5 --> D2
+    C5 --> D4
+    C6 --> D1
+    C6 --> D2
+    
+    D1 --> E
+    D2 --> E
+    D3 --> E
+    
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef gateway fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef infra fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef database fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class A1,A2,A3,A4 frontend
+    class B gateway
+    class C1,C2,C3,C4,C5,C6 service
+    class D1,D2,D3,D4 infra
+    class E database
+```
+
+## 📦 Core Modules
+
+### Restaurant Operations
+
+| Module | Description | Key Features | Status |
+|--------|-------------|--------------|--------|
+| **[Orders](docs/modules/orders/README.md)** | Order management system | Real-time processing, Kitchen integration, Multi-channel support | ✅ Production |
+| **[Menu](docs/modules/menu/README.md)** | Menu management | Dynamic pricing, Modifiers, Categories, Dietary info | ✅ Production |
+| **[Inventory](docs/modules/inventory/README.md)** | Stock management | Real-time tracking, Low stock alerts, Supplier integration | ✅ Production |
+| **[POS](docs/modules/pos/README.md)** | POS system integration | Square, Clover, Toast adapters, Offline sync | ✅ Production |
+
+### Staff & Financial Management
+
+| Module | Description | Key Features | Status |
+|--------|-------------|--------------|--------|
+| **[Staff](docs/modules/staff/README.md)** | Employee management | Scheduling, Roles, Permissions, Time tracking | ✅ Production |
+| **[Payroll](docs/modules/payroll/README.md)** | Payroll processing | Multi-state tax, Direct deposit, Compliance | ✅ Production |
+| **[Tax](docs/modules/tax/README.md)** | Tax calculations | Federal/State/Local, Real-time updates, Reporting | ✅ Production |
+
+### Customer Experience
+
+| Module | Description | Key Features | Status |
+|--------|-------------|--------------|--------|
+| **[Customers](docs/modules/customers/README.md)** | CRM system | Profiles, Preferences, Order history | ✅ Production |
+| **[Feedback](docs/modules/feedback/README.md)** | Review management | Multi-channel collection, AI analysis, Response automation | ✅ Production |
+| **[Loyalty](docs/modules/loyalty/README.md)** | Rewards program | Points, Tiers, Campaigns, Redemption | ✅ Production |
+| **[Promotions](docs/modules/promotions/README.md)** | Marketing campaigns | Discounts, BOGO, Time-based, Targeted offers | ✅ Production |
+
+### Intelligence & Configuration
+
+| Module | Description | Key Features | Status |
+|--------|-------------|--------------|--------|
+| **[Analytics](docs/modules/analytics/README.md)** | Business intelligence | Real-time dashboards, Reports, Predictive analytics | ✅ Production |
+| **[AI Recommendations](docs/modules/ai_recommendations/README.md)** | AI insights | Menu optimization, Demand forecasting, Customer preferences | 🚧 Beta |
+| **[Settings](docs/modules/settings/README.md)** | System configuration | Multi-tenant, Feature flags, Preferences | ✅ Production |
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.11+
-- PostgreSQL 14+
-- Redis (optional, for caching)
-- Docker & Docker Compose
-
-### Development Setup
+Get AuraConnect running in minutes with Docker:
 
 ```bash
-# Clone the repository
+# Clone and start
 git clone https://github.com/AuraTechWave/auraconnectai.git
 cd auraconnectai
-
-# Set up Python environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-pip install -r backend/requirements-dev.txt
-
-# Set up environment variables
-cp backend/.env.example backend/.env
-# Edit .env with your configuration
-
-# Run database migrations
-cd backend
-alembic upgrade head
-
-# Start the development server
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Docker Setup
-
-```bash
-# Build and start all services
 docker-compose up -d
 
-# View logs
-docker-compose logs -f backend
-
-# Run tests
-docker-compose exec backend pytest
+# Access applications
+# API Docs: http://localhost:8000/docs
+# Frontend: http://localhost:3000
+# Admin: admin@restaurant.com / admin123
 ```
 
-## 🔐 Security
+For detailed setup instructions, see our [Quick Start Guide](docs/guides/quick-start.md).
 
-### Environment Variables
-```bash
-# Required for production
-JWT_SECRET_KEY=your-256-bit-secret-key
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
-REDIS_URL=redis://localhost:6379
-ENVIRONMENT=production
+## 🛠️ Technology Stack
 
-# Security features
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
-CORS_ORIGINS=["https://your-domain.com"]
-```
+**Backend**: FastAPI, PostgreSQL, Redis, Celery  
+**Frontend**: React, TypeScript, Redux Toolkit, Material-UI  
+**Infrastructure**: Docker, Kubernetes, GitHub Actions, Prometheus  
 
-### Authentication
-- JWT tokens with type validation (access/refresh)
-- Role-based access control (RBAC)
-- Tenant isolation for multi-restaurant support
-- Automatic token refresh mechanism
+See our complete [Technology Stack Documentation](docs/architecture/technology-stack.md) for detailed information.
 
-## 📧 Notification System
+## 🔐 Security Features
 
-### Overview
-AuraConnect includes an async notification system for sending emails, SMS, and push notifications. The system uses background task processing to ensure notifications are sent reliably without blocking API responses.
-
-### Configuration
-
-```bash
-# Email Configuration (SMTP)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=noreply@auraconnect.ai
-FROM_NAME=AuraConnect
-
-# SMS Configuration (Twilio)
-TWILIO_ACCOUNT_SID=your-account-sid
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_FROM_NUMBER=+1234567890
-
-# Push Notifications (Firebase)
-FIREBASE_CREDENTIALS_PATH=/path/to/credentials.json
-```
-
-### Features
-- **Multi-channel Support**: Email (SMTP), SMS (Twilio), Push (Firebase)
-- **Template System**: Pre-built templates for common notifications
-- **Background Processing**: Async queue with retry logic
-- **Rate Limiting**: Prevents notification spam
-- **Audit Trail**: Complete logging of all sent notifications
-
-### Usage Example
-
-```python
-# Send review invitation
-await notification_service.send_review_invitation(
-    customer_id=123,
-    entity_type='product',
-    entity_id=456
-)
-
-# Send feedback response
-await notification_service.send_feedback_response_notification(
-    feedback_id=789,
-    response_id=101
-)
-```
-
-### Background Task Processing
-The notification system uses an async task queue instead of Celery for lighter weight processing:
-
-```python
-# Start background workers (automatically done on app startup)
-await background_processor.start_workers(num_workers=3)
-
-# Queue a notification task
-await background_processor.enqueue_notification(
-    notification_type='review_invitation',
-    customer_id=123
-)
-```
-
-### Testing
-Comprehensive unit tests are included for all notification backends:
-
-```bash
-# Run notification tests
-pytest backend/modules/feedback/tests/test_notification_service.py -v
-
-# Test specific backend
-pytest backend/modules/feedback/tests/test_notification_service.py::TestEmailBackend -v
-```
+- **Authentication**: JWT-based with access/refresh token pattern
+- **Authorization**: Role-based access control (RBAC) with fine-grained permissions
+- **Data Protection**: Encryption at rest and in transit
+- **Multi-tenancy**: Complete data isolation between restaurants
+- **Audit Trails**: Comprehensive logging of all actions
+- **OWASP Compliance**: Protection against common vulnerabilities
+- **Rate Limiting**: API protection against abuse
+- **CORS**: Configurable cross-origin resource sharing
 
 ## 📊 API Documentation
 
-Once running, access the interactive API documentation:
+Interactive API documentation is available at:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-### Key Endpoints
+### Example API Calls
 
-#### Payroll Processing
+#### Authentication
 ```http
-POST /api/v1/payrolls/run
+POST /api/v1/auth/login
 {
-  "staff_ids": [1, 2, 3],
-  "pay_period_start": "2024-01-01",
-  "pay_period_end": "2024-01-15"
+  "email": "admin@restaurant.com",
+  "password": "secure_password"
 }
 ```
 
-#### Order Management
+#### Create Order
 ```http
 POST /api/v1/orders
+Authorization: Bearer <token>
 {
-  "items": [...],
+  "items": [
+    {"menu_item_id": 1, "quantity": 2, "modifiers": ["extra_cheese"]}
+  ],
   "customer_id": 123,
-  "special_instructions": "No onions"
+  "order_type": "dine_in",
+  "table_number": "5"
+}
+```
+
+#### Process Payroll
+```http
+POST /api/v1/payroll/process
+Authorization: Bearer <token>
+{
+  "pay_period_start": "2024-01-01",
+  "pay_period_end": "2024-01-15",
+  "employee_ids": [1, 2, 3]
 }
 ```
 
@@ -240,49 +242,32 @@ pytest
 # Run with coverage
 pytest --cov=modules --cov-report=html
 
-# Run specific test suite
-pytest backend/tests/test_payroll_engine_simple.py -v
-```
+# Run specific module tests
+pytest backend/modules/orders/tests/ -v
 
-### Test Coverage
-- ✅ Unit tests for business logic
-- ✅ Integration tests for API endpoints
-- ✅ Performance tests for SQL optimization
-- ✅ Mock-based tests for external services
+# Run integration tests
+pytest backend/tests/integration/ -v
+
+# Run performance tests
+pytest backend/tests/performance/ -v --benchmark
+```
 
 ## 🚢 Deployment
 
-### Production Checklist
-- [ ] Set secure JWT_SECRET_KEY
-- [ ] Configure production database
-- [ ] Enable Redis for caching
-- [ ] Set up SSL certificates
-- [ ] Configure monitoring (Prometheus/Grafana)
-- [ ] Set up log aggregation
-- [ ] Configure backup strategy
+### Production Deployment Options
 
-### Deployment Options
-- **Docker Swarm**: Production-ready orchestration
-- **Kubernetes**: For large-scale deployments
-- **Railway/Render**: Quick cloud deployment
-- **AWS ECS**: Managed container service
+1. **Docker Swarm** - For small to medium deployments
+2. **Kubernetes** - For large-scale, high-availability deployments
+3. **Cloud Platforms** - AWS ECS, Google Cloud Run, Azure Container Instances
+4. **PaaS** - Heroku, Railway, Render
 
-## 📈 Performance Optimizations
-
-### Implemented Optimizations
-- **SQL Aggregation**: Batch processing for attendance calculations
-- **Connection Pooling**: Optimized database connections
-- **Redis Caching**: For frequently accessed data
-- **Async Processing**: Non-blocking I/O operations
-- **Job Queue**: Background task processing
-
-### Monitoring
-- Health check endpoint: `/health`
-- Metrics endpoint: `/metrics`
-- Performance tracking with configurable thresholds
+See [Deployment Guide](docs/deployment/README.md) for detailed instructions.
 
 ## 🤝 Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Process
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -290,24 +275,26 @@ pytest backend/tests/test_payroll_engine_simple.py -v
 5. Open a Pull Request
 
 ### Code Standards
-- **Python**: Black formatter, flake8 linter
-- **Type Hints**: Required for all new code
-- **Tests**: Required for all features
-- **Documentation**: API endpoints must be documented
+- **Python**: Black formatter, Flake8 linter, Type hints required
+- **JavaScript/TypeScript**: ESLint, Prettier
+- **Tests**: Required for all new features (minimum 80% coverage)
+- **Documentation**: All APIs must be documented
 
 ## 📄 License
 
 This project is proprietary software owned by AuraTechWave. All rights reserved.
 
-## 🔗 Links
+## 🌟 Support
 
-- [API Documentation](http://localhost:8000/docs)
-- [Architecture Guide](docs/ARCHITECTURE.md)
-- [Deployment Guide](backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
+- **Documentation**: [docs.auraconnect.com](https://docs.auraconnect.com)
+- **Email**: support@auratechwave.com
+- **Issues**: [GitHub Issues](https://github.com/AuraTechWave/auraconnectai/issues)
+- **Discord**: [Join our community](https://discord.gg/auraconnect)
 
 ---
 
 <div align="center">
-  Built with ❤️ by AuraTechWave
+  <strong>Built with ❤️ by AuraTechWave</strong>
+  <br>
+  <sub>Empowering restaurants with intelligent technology</sub>
 </div>

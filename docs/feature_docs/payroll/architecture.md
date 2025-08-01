@@ -239,9 +239,9 @@ class PayrollService:
 ### Development & Integration
 - [Payroll Tax Developer Guide](../../dev/payroll_tax_developer_guide.md) - Complete developer documentation
 - [Payroll Integration Architecture](../../dev/architecture/payroll_integration.md) - System integration details
-- [Production Readiness Checklist](../../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Deployment requirements
+- [Production Readiness Checklist](../../modules/payroll/production-checklist.md) - Deployment requirements
 
 ### Implementation Details
 - [Tax Calculation Flow](tax_calculation_flow.md) - Tax processing workflow
-- [API Phase 4 Documentation](../../../backend/API_PHASE4_DOCUMENTATION.md) - REST API specifications
-- [PayrollIntegration Component](../../../frontend/components/staff/PayrollIntegration.tsx) - UI implementation
+- API Phase 4 Documentation (see backend source code) - REST API specifications
+- PayrollIntegration Component (see frontend source code) - UI implementation

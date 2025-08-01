@@ -27,43 +27,79 @@ The AuraConnect AI Payroll & Tax module provides comprehensive wage calculation,
 
 ### System Components
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend Layer                         │
-├─────────────────────────────────────────────────────────────┤
-│                         API Gateway                           │
-├─────────────────────────────────────────────────────────────┤
-│                       Service Layer                           │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐    │
-│  │   Payroll   │  │     Tax      │  │  Configuration  │    │
-│  │   Engine    │  │    Engine    │  │     Service     │    │
-│  └─────────────┘  └──────────────┘  └─────────────────┘    │
-├─────────────────────────────────────────────────────────────┤
-│                       Data Layer                              │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐    │
-│  │ PostgreSQL  │  │    Redis     │  │   S3 Storage    │    │
-│  └─────────────┘  └──────────────┘  └─────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        FE[Web Interface]
+    end
+    
+    subgraph "API Gateway"
+        GW[Gateway Router]
+    end
+    
+    subgraph "Service Layer"
+        S1[Payroll Engine]
+        S2[Tax Engine]
+        S3[Configuration Service]
+    end
+    
+    subgraph "Data Layer"
+        D1[(PostgreSQL)]
+        D2[(Redis)]
+        D3[S3 Storage]
+    end
+    
+    FE --> GW
+    GW --> S1
+    GW --> S2
+    GW --> S3
+    
+    S1 --> D1
+    S1 --> D2
+    S2 --> D1
+    S2 --> D2
+    S3 --> D1
+    S3 --> D3
+    
+    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef gateway fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef data fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    
+    class FE frontend
+    class GW gateway
+    class S1,S2,S3 service
+    class D1,D2,D3 data
 ```
 
 ### Module Structure
 
-```
-backend/
-├── modules/
-│   ├── payroll/
-│   │   ├── models/          # Database models
-│   │   ├── schemas/         # Pydantic schemas
-│   │   ├── services/        # Business logic
-│   │   ├── enums/          # Enumerations
-│   │   └── tests/          # Unit tests
-│   └── staff/
-│       ├── services/
-│       │   ├── enhanced_payroll_engine.py
-│       │   ├── enhanced_payroll_service.py
-│       │   └── payslip_service.py
-│       └── routes/
-│           └── enhanced_payroll_routes.py
+```mermaid
+graph TD
+    A[backend/] --> B[modules/]
+    B --> C[payroll/]
+    B --> D[staff/]
+    
+    C --> E[models/<br/>Database models]
+    C --> F[schemas/<br/>Pydantic schemas]
+    C --> G[services/<br/>Business logic]
+    C --> H[enums/<br/>Enumerations]
+    C --> I[tests/<br/>Unit tests]
+    
+    D --> J[services/]
+    D --> K[routes/]
+    
+    J --> L[enhanced_payroll_engine.py]
+    J --> M[enhanced_payroll_service.py]
+    J --> N[payslip_service.py]
+    
+    K --> O[enhanced_payroll_routes.py]
+    
+    classDef folder fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef file fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class A,B,C,D,E,F,G,H,I,J,K folder
+    class L,M,N,O file
 ```
 
 ## Getting Started
@@ -562,11 +598,11 @@ For additional help:
 - [Tax Calculation Flow](../feature_docs/payroll/tax_calculation_flow.md) - Tax processing workflow
 
 ### Deployment & Operations
-- [Production Readiness Checklist](../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Pre-deployment requirements
-- [Production Deployment Guide](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md) - Deployment procedures
-- [API Phase 4 Documentation](../../backend/API_PHASE4_DOCUMENTATION.md) - API specifications
+- [Production Readiness Checklist](../modules/payroll/production-checklist.md) - Pre-deployment requirements
+- Production Deployment Guide (see backend source code) - Deployment procedures
+- API Phase 4 Documentation (see backend source code) - API specifications
 
 ### Frontend Integration
-- [PayrollIntegration Component](../../frontend/components/staff/PayrollIntegration.tsx) - Main UI component
-- [usePayrollAPI Hook](../../frontend/hooks/usePayrollAPI.ts) - API integration hook
-- [Payroll Types](../../frontend/types/payroll.ts) - TypeScript type definitions
+- PayrollIntegration Component (see frontend source code) - Main UI component
+- usePayrollAPI Hook (see frontend source code) - API integration hook
+- Payroll Types (see frontend source code) - TypeScript type definitions

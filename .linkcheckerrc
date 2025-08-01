@@ -1,0 +1,39 @@
+[checking]
+# Number of threads to use
+threads=10
+
+# Timeout for requests
+timeout=30
+
+# User agent string
+useragent=Mozilla/5.0 (compatible; LinkChecker/10.0)
+
+[filtering]
+# Ignore these URL patterns
+ignore=
+  ^mailto:
+  ^tel:
+  ^javascript:
+  ^#
+  ^https://localhost
+  ^http://localhost
+  ^https://127.0.0.1
+  ^http://127.0.0.1
+  ^https://discord.gg
+  ^https://status.auraconnect.com
+  ^https://docs.auraconnect.com
+  ^https://blog.auraconnect.com
+  ^https://developers.auraconnect.com
+
+# Check external links (set to 0 to disable)
+checkextern=1
+
+[output]
+# Log file
+log=linkchecker.log
+
+# Output format
+format=text
+
+# Verbosity
+verbose=1

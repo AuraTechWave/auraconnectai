@@ -5,6 +5,7 @@ __pycache__/
 *.sqlite3
 *.log
 .env
+venv/
 .venv/
 .env.*
 
@@ -20,4 +21,7 @@ android/app/build/
 .vscode/
 
 # Docs output
+site/
+
+# MkDocs build output
 site/

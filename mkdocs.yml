@@ -1,9 +1,197 @@
 site_name: AuraConnect Documentation
-nav: []
+site_description: Comprehensive restaurant management platform documentation
+site_author: AuraTechWave
+site_url: https://docs.auraconnect.com
+repo_url: https://github.com/AuraTechWave/auraconnectai
+repo_name: auraconnectai
+docs_dir: docs
+site_dir: site
+
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/favicon.ico
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - navigation.path
+    - navigation.prune
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - announce.dismiss
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: 
+    - Welcome: index.md
+    - Quick Start: guides/getting-started.md
+    - Developer Personas: guides/developer-personas.md
+    
+  - Getting Started:
+    - guides/getting-started.md
+    - Developer Personas: guides/developer-personas.md
+      
+  - Core Modules:
+    - modules/README.md
+    - Restaurant Operations:
+      - Orders: modules/orders/README.md
+      - Menu: modules/menu/README.md
+    - Staff & Finance:
+      - Staff Management: modules/staff/README.md
+      - Payroll Production Checklist: modules/payroll/production-checklist.md
+      
+  - Architecture:
+    - architecture/README.md
+    - Dev Architecture:
+      - Order Management: dev/architecture/order_management_architecture.md
+      - Menu & Inventory: dev/architecture/menu_inventory_architecture.md
+      - Staff Management: dev/architecture/staff_management_architecture.md
+      - Payroll Integration: dev/architecture/payroll_integration.md
+      - Tax & Payroll: dev/architecture/taxing_payroll_architecture.md
+      - POS Integration: dev/architecture/pos_integration_architecture.md
+      - RBAC System: dev/architecture/rbac_system_architecture.md
+      
+  - API Reference:
+    - api/README.md
+    - Orders API: modules/orders/api-reference.md
+    - POS Sync Endpoints: api/pos_sync_endpoints.md
+    - POS Analytics Endpoints: api/pos_analytics_endpoints.md
+      
+  - Feature Documentation:
+    - feature_docs/README.md
+    - AI & Automation:
+      - AI Agents: feature_docs/ai_agents/README.md
+      - AI Agents Architecture: feature_docs/ai_agents/architecture.md
+      - AI Customization: feature_docs/ai_customization/README.md
+      - AI Customization Architecture: feature_docs/ai_customization/architecture.md
+    - Financial:
+      - Payroll: feature_docs/payroll/README.md
+      - Payroll Architecture: feature_docs/payroll/architecture.md
+      - Tax Calculation Flow: feature_docs/payroll/tax_calculation_flow.md
+      - Tax Management: feature_docs/tax/README.md
+      - Tax Architecture: feature_docs/tax/architecture.md
+    - Integration:
+      - POS Integration: feature_docs/pos_integration/README.md
+      - POS Architecture: feature_docs/pos_integration/architecture.md
+      - Offline Sync: feature_docs/offline_sync/README.md
+      - Offline Sync Architecture: feature_docs/offline_sync/architecture.md
+    - Mobile:
+      - Mobile App: feature_docs/mobile/README.md
+      - Push Notifications: feature_docs/mobile/push-notifications.md
+    - Other Features:
+      - Reservations: feature_docs/reservation/README.md
+      - Reservation Architecture: feature_docs/reservation/architecture.md
+      - Compliance: feature_docs/compliance/README.md
+      - Compliance Architecture: feature_docs/compliance/architecture.md
+      - White Label: feature_docs/white_label/README.md
+      - White Label Architecture: feature_docs/white_label/architecture.md
+      
+  - Deployment:
+    - deployment/README.md
+    - CI/CD Setup: dev/CI_CD_SETUP.md
+      
+  - Developer Guide:
+    - dev/README.md
+    - Development:
+      - Payroll Tax Developer Guide: dev/payroll_tax_developer_guide.md
+    - Advanced Topics:
+      - Menu Versioning: guides/features/menu-versioning-architecture.md
+      - Menu Versioning Setup: guides/features/menu-versioning-setup.md
+      - Versioning API Guide: guides/features/versioning-api-guide.md
+
 markdown_extensions:
-- toc
-- tables
-- fenced_code
-- codehilite
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - fenced_code
+  - codehilite:
+      guess_lang: false
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - meta
+
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-\.]'
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
+  - mike:  # For versioning
+      canonical_version: latest
+      version_selector: true
+      css_dir: css
+      javascript_dir: js
+
+extra:
+  version:
+    provider: mike
+    default: latest
+    alias: true
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/AuraTechWave
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/auraconnect
+    - icon: fontawesome/brands/linkedin
+      link: https://linkedin.com/company/auratechwave
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+  consent:
+    title: Cookie consent
+    description: >- 
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+  generator: false  # Remove "Made with Material for MkDocs" footer
+
+copyright: |
+  &copy; 2025 <a href="https://auratechwave.com" target="_blank" rel="noopener">AuraTechWave</a>
