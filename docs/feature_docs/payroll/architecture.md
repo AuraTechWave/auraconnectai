@@ -239,7 +239,7 @@ class PayrollService:
 ### Development & Integration
 - [Payroll Tax Developer Guide](../../dev/payroll_tax_developer_guide.md) - Complete developer documentation
 - [Payroll Integration Architecture](../../dev/architecture/payroll_integration.md) - System integration details
-- [Production Readiness Checklist](../../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Deployment requirements
+- [Production Readiness Checklist](../../modules/payroll/production-checklist.md) - Deployment requirements
 
 ### Implementation Details
 - [Tax Calculation Flow](tax_calculation_flow.md) - Tax processing workflow

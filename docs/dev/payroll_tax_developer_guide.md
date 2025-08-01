@@ -598,7 +598,7 @@ For additional help:
 - [Tax Calculation Flow](../feature_docs/payroll/tax_calculation_flow.md) - Tax processing workflow
 
 ### Deployment & Operations
-- [Production Readiness Checklist](../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Pre-deployment requirements
+- [Production Readiness Checklist](../modules/payroll/production-checklist.md) - Pre-deployment requirements
 - [Production Deployment Guide](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md) - Deployment procedures
 - [API Phase 4 Documentation](../../backend/API_PHASE4_DOCUMENTATION.md) - API specifications
 

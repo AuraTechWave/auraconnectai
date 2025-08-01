@@ -5,9 +5,9 @@ Welcome to the AuraConnect documentation. This guide will help you understand, d
 ## 📚 Documentation Structure
 
 ### Core Documentation
-- **[System Architecture](ARCHITECTURE.md)** - Comprehensive system design and technical architecture
+- **[System Architecture](architecture/README.md)** - Comprehensive system design and technical architecture
 - **[API Documentation](http://localhost:8000/docs)** - Interactive API documentation (when running locally)
-- **[Production Deployment Guide](../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)** - Step-by-step production deployment
+- **Production Deployment Guide (see source code)** - Step-by-step production deployment
 
 ### Module Documentation
 
@@ -53,14 +53,14 @@ Welcome to the AuraConnect documentation. This guide will help you understand, d
 ## 🚀 Getting Started
 
 ### For Developers
-1. Start with the [System Architecture](ARCHITECTURE.md) to understand the overall design
+1. Start with the [System Architecture](architecture/README.md) to understand the overall design
 2. Set up your development environment following the main [README](../README.md)
 3. Explore module-specific documentation based on your area of work
 
 ### For DevOps Engineers
-1. Review the [Production Deployment Guide](../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
+1. Review the Production Deployment Guide (see source code)
 2. Check the [CI/CD Setup](dev/CI_CD_SETUP.md) for automation
-3. Understand the [System Architecture](ARCHITECTURE.md) for infrastructure planning
+3. Understand the [System Architecture](architecture/README.md) for infrastructure planning
 
 ### For Product Managers
 1. Explore feature-specific documentation in the [feature_docs](feature_docs/) directory
@@ -95,7 +95,7 @@ Welcome to the AuraConnect documentation. This guide will help you understand, d
 ### By Topic
 - **Security**: See [System Architecture](ARCHITECTURE.md#security-architecture)
 - **Performance**: See [System Architecture](ARCHITECTURE.md#performance-architecture)
-- **Deployment**: See [Production Deployment Guide](../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
+- **Deployment**: See Production Deployment Guide (see source code)
 
 ## 🤝 Contributing
 
@@ -109,7 +109,7 @@ When adding new documentation:
 
 - **GitHub Issues**: Report bugs and request features
 - **API Documentation**: Available at `/docs` when running the application
-- **Architecture Questions**: Refer to [ARCHITECTURE.md](ARCHITECTURE.md)
+- **Architecture Questions**: Refer to [ARCHITECTURE.md](architecture/README.md)
 
 ---
 

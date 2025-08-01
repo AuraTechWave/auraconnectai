@@ -509,7 +509,7 @@ Recommended extensions:
 
 2. **Learn the Architecture**
    - [Architecture Overview](../architecture/README.md)
-   - [API Design Guide](../api/design-guide.md)
+   - [API Reference](../api/README.md)
    - [Database Schema](../modules/README.md)
 
 3. **Set Up Your Restaurant**
@@ -520,8 +520,8 @@ Recommended extensions:
 
 4. **Deploy to Production**
    - [Deployment Guide](../deployment/README.md)
-   - [Security Checklist](../guides/security.md)
-   - [Performance Tuning](../guides/performance.md)
+   - [Security Checklist](../architecture/README.md#security-architecture)
+   - [Performance Tuning](../architecture/README.md)
 
 ## Getting Help
 

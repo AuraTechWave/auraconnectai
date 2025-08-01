@@ -177,60 +177,61 @@ All POST and PUT requests should send JSON:
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Auth](./auth.md) | `/api/v1/auth` | Authentication endpoints |
-| [Users](./users.md) | `/api/v1/users` | User management |
-| [Roles](./roles.md) | `/api/v1/roles` | Role-based access control |
+| Auth | `/api/v1/auth` | Authentication endpoints |
+| Users | `/api/v1/users` | User management |
+| Roles | `/api/v1/roles` | Role-based access control |
 
 ### Restaurant Management
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Restaurants](./restaurants.md) | `/api/v1/restaurants` | Restaurant profiles |
-| [Locations](./locations.md) | `/api/v1/locations` | Location management |
-| [Settings](./settings.md) | `/api/v1/settings` | Configuration settings |
+| Restaurants | `/api/v1/restaurants` | Restaurant profiles |
+| Locations | `/api/v1/locations` | Location management |
+| Settings | `/api/v1/settings` | Configuration settings |
 
 ### Operations
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Orders](./orders.md) | `/api/v1/orders` | Order management |
-| [Menu](./menu.md) | `/api/v1/menu` | Menu items and categories |
-| [Inventory](./inventory.md) | `/api/v1/inventory` | Stock management |
-| [Tables](./tables.md) | `/api/v1/tables` | Table management |
+| [Orders](../modules/orders/api-reference.md) | `/api/v1/orders` | Order management |
+| Menu | `/api/v1/menu` | Menu items and categories |
+| Inventory | `/api/v1/inventory` | Stock management |
+| Tables | `/api/v1/tables` | Table management |
 
 ### Staff & HR
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Staff](./staff.md) | `/api/v1/staff` | Employee management |
-| [Schedules](./schedules.md) | `/api/v1/schedules` | Shift scheduling |
-| [Time Tracking](./time-tracking.md) | `/api/v1/time` | Clock in/out |
-| [Payroll](./payroll.md) | `/api/v1/payroll` | Payroll processing |
+| Staff | `/api/v1/staff` | Employee management |
+| Schedules | `/api/v1/schedules` | Shift scheduling |
+| Time Tracking | `/api/v1/time` | Clock in/out |
+| Payroll | `/api/v1/payroll` | Payroll processing |
 
 ### Customer Management
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Customers](./customers.md) | `/api/v1/customers` | Customer profiles |
-| [Loyalty](./loyalty.md) | `/api/v1/loyalty` | Rewards program |
-| [Feedback](./feedback.md) | `/api/v1/feedback` | Reviews and ratings |
-| [Promotions](./promotions.md) | `/api/v1/promotions` | Marketing campaigns |
+| Customers | `/api/v1/customers` | Customer profiles |
+| Loyalty | `/api/v1/loyalty` | Rewards program |
+| Feedback | `/api/v1/feedback` | Reviews and ratings |
+| Promotions | `/api/v1/promotions` | Marketing campaigns |
 
 ### Analytics & Reporting
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [Analytics](./analytics.md) | `/api/v1/analytics` | Business analytics |
-| [Reports](./reports.md) | `/api/v1/reports` | Generated reports |
-| [Insights](./insights.md) | `/api/v1/insights` | AI-powered insights |
+| Analytics | `/api/v1/analytics` | Business analytics |
+| Reports | `/api/v1/reports` | Generated reports |
+| Insights | `/api/v1/insights` | AI-powered insights |
 
 ### Integrations
 
 | Resource | Endpoint | Description |
 |----------|----------|-------------|
-| [POS](./pos.md) | `/api/v1/pos` | POS integrations |
-| [Payments](./payments.md) | `/api/v1/payments` | Payment processing |
-| [Webhooks](./webhooks.md) | `/api/v1/webhooks` | Event webhooks |
+| [POS Sync](./pos_sync_endpoints.md) | `/api/v1/pos` | POS integrations |
+| [POS Analytics](./pos_analytics_endpoints.md) | `/api/v1/pos/analytics` | POS analytics |
+| Payments | `/api/v1/payments` | Payment processing |
+| Webhooks | `/api/v1/webhooks` | Event webhooks |
 
 ## Status Codes
 

@@ -225,7 +225,7 @@ class TimeTracker:
 | `/api/v1/staff/time/entries` | GET | Get time entries |
 | `/api/v1/staff/time/entries/{id}` | PUT | Edit time entry |
 
-[View Complete API Reference](./api-reference.md)
+View Complete API Reference (Coming Soon)
 
 ## Employee Roles & Permissions
 
@@ -374,7 +374,7 @@ geofence_config = {
 - `time_off_requests` - PTO requests
 - `employee_documents` - Certifications, etc.
 
-[View Complete Schema](./database-schema.md)
+View Complete Schema (Coming Soon)
 
 ## Mobile App Features
 
@@ -506,11 +506,11 @@ pytest tests/integration/
 
 ## Related Documentation
 
-- [Architecture Details](./architecture.md)
-- [API Reference](./api-reference.md)
-- [Database Schema](./database-schema.md)
-- [Integration Guide](./integration-guide.md)
-- [Mobile App Guide](./guides/mobile-app.md)
+- Architecture Details (Coming Soon)
+- API Reference (Coming Soon)
+- Database Schema (Coming Soon)
+- Integration Guide (Coming Soon)
+- Mobile App Guide (Coming Soon)
 
 ## Support
 

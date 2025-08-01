@@ -8,9 +8,9 @@ This guide helps different types of developers quickly find the most relevant do
 
 ### Quick Links
 - [API Reference](../api/README.md) - REST endpoints documentation
-- [Authentication Guide](../api/auth.md) - JWT token handling
-- [JavaScript SDK](../api/sdks.md#javascript) - Pre-built client library
-- [WebSocket Events](../api/webhooks.md) - Real-time updates
+- [Authentication Guide](../api/README.md#authentication) - JWT token handling
+- [JavaScript SDK](../api/README.md#sdks--libraries) - Pre-built client library
+- [WebSocket Events](../api/README.md#webhooks) - Real-time updates
 
 ### Common Tasks
 1. **Set up authentication**
@@ -43,8 +43,8 @@ This guide helps different types of developers quickly find the most relevant do
 ### Quick Links
 - [Architecture Overview](../architecture/README.md) - System design
 - [Module Development](../modules/README.md) - Creating new modules
-- [Database Schema](../architecture/database.md) - Data models
-- [Event System](../architecture/events.md) - Inter-module communication
+- [Database Schema](../architecture/README.md#data-architecture) - Data models
+- [Event System](../architecture/README.md#event-driven-architecture) - Inter-module communication
 
 ### Common Tasks
 1. **Create a custom module**
@@ -70,9 +70,9 @@ This guide helps different types of developers quickly find the most relevant do
 
 ### Quick Links
 - [Getting Started](getting-started.md) - Initial setup
-- [Docker Deployment](../deployment/docker.md) - Quick deployment
-- [Configuration Guide](configuration.md) - System settings
-- [User Guides](users/README.md) - Day-to-day operations
+- [Docker Deployment](../deployment/README.md) - Quick deployment
+- [Configuration Guide](getting-started.md) - System settings
+- [User Guides](../index.md#for-restaurant-operators) - Day-to-day operations
 
 ### Common Tasks
 1. **Deploy with Docker**
@@ -91,10 +91,10 @@ This guide helps different types of developers quickly find the most relevant do
 **Goal**: Connect AuraConnect with third-party systems
 
 ### Quick Links
-- [POS Integration](../modules/pos/README.md) - Square, Clover, Toast
-- [Webhooks](../api/webhooks.md) - Event notifications
-- [API Authentication](../api/auth.md) - Secure access
-- [Data Import/Export](../guides/data-migration.md) - Bulk operations
+- [POS Integration](../feature_docs/pos_integration/README.md) - Square, Clover, Toast
+- [Webhooks](../api/README.md#webhooks) - Event notifications
+- [API Authentication](../api/README.md#authentication) - Secure access
+- [Data Import/Export](../dev/README.md) - Bulk operations
 
 ### Common Tasks
 1. **Set up webhook listener**
@@ -121,9 +121,9 @@ This guide helps different types of developers quickly find the most relevant do
 
 ### Quick Links
 - [Deployment Guide](../deployment/README.md) - Production setup
-- [Kubernetes Deployment](../deployment/kubernetes.md) - Container orchestration
-- [Monitoring Setup](../deployment/monitoring.md) - Metrics and logging
-- [Scaling Guide](../deployment/scaling.md) - Performance optimization
+- [Kubernetes Deployment](../deployment/README.md) - Container orchestration
+- [Monitoring Setup](../deployment/README.md) - Metrics and logging
+- [Scaling Guide](../deployment/README.md) - Performance optimization
 
 ### Common Tasks
 1. **Deploy to Kubernetes**
@@ -154,9 +154,9 @@ This guide helps different types of developers quickly find the most relevant do
 
 ### Quick Links
 - [API Reference](../api/README.md) - REST endpoints
-- [Authentication](../api/auth.md) - Mobile auth flow
-- [Push Notifications](../api/notifications.md) - Mobile notifications
-- [Offline Sync](../guides/offline-sync.md) - Handle connectivity issues
+- [Authentication](../api/README.md#authentication) - Mobile auth flow
+- [Push Notifications](../api/README.md) - Mobile notifications
+- [Offline Sync](../feature_docs/offline_sync/README.md) - Handle connectivity issues
 
 ### Common Tasks
 1. **Implement mobile authentication**
@@ -179,10 +179,10 @@ This guide helps different types of developers quickly find the most relevant do
 **Goal**: Test AuraConnect implementations
 
 ### Quick Links
-- [API Testing Guide](../guides/testing.md#api-testing) - Test strategies
-- [Test Data Setup](../guides/test-data.md) - Sample data
-- [Error Reference](../reference/errors.md) - Error codes
-- [Performance Testing](../guides/performance-testing.md) - Load testing
+- [API Testing Guide](../dev/README.md) - Test strategies
+- [Test Data Setup](../dev/README.md) - Sample data
+- [Error Reference](../api/README.md#error-codes) - Error codes
+- [Performance Testing](../architecture/README.md) - Load testing
 
 ### Common Tasks
 1. **Set up test environment**
@@ -207,8 +207,8 @@ Based on your role:
 1. **Start with Quick Start**: [Getting Started Guide](getting-started.md)
 2. **Explore your area**: Use the quick links above
 3. **Join the community**: [Discord](https://discord.gg/auraconnect)
-4. **Get help**: [Support](../support.md)
+4. **Get help**: [Support](../index.md#support--community)
 
 ---
 
-Can't find what you're looking for? Check our [FAQ](faq.md) or [contact support](../support.md).
+Can't find what you're looking for? Check our [FAQ](../api/README.md) or [contact support](../index.md#support--community).

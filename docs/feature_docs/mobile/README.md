@@ -57,8 +57,8 @@ Manages real-time data synchronization between mobile app and backend services.
 ## Getting Started
 
 1. **Push Notifications Setup**: See [push-notifications.md](./push-notifications.md)
-2. **Offline Configuration**: See [offline-setup.md](./offline-setup.md)
-3. **Testing Guide**: See [mobile-testing.md](./mobile-testing.md)
+2. **Offline Configuration**: See [Offline Sync Documentation](../offline_sync/README.md)
+3. **Testing Guide**: Testing Guide (Coming Soon)
 
 ## Performance Considerations
 

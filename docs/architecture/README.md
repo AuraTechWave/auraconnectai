@@ -512,6 +512,6 @@ async def health_check():
 ## Related Documentation
 
 - [Deployment Guide](../deployment/README.md)
-- [Security Guide](../guides/security.md)
-- [API Design Guide](../api/design-guide.md)
+- [API Documentation](../api/README.md)
+- [Developer Guide](../dev/README.md)
 - [Module Architecture](../modules/README.md)

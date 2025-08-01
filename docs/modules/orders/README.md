@@ -198,7 +198,7 @@ stateDiagram-v2
 - `order_status_history` - Status change tracking
 - `order_payments` - Payment information
 
-[View Complete Schema](./database-schema.md)
+View Complete Schema (Coming Soon)
 
 ## Integration Points
 
@@ -317,8 +317,8 @@ Key metrics to monitor:
 
 - [Architecture Details](./architecture.md)
 - [API Reference](./api-reference.md)
-- [Database Schema](./database-schema.md)
-- [Integration Guide](./integration-guide.md)
+- Database Schema (Coming Soon)
+- Integration Guide (Coming Soon)
 - [Examples](./examples/)
 
 ## Support

@@ -515,9 +515,9 @@ services:
 ## Related Documentation
 
 - [API Reference](./api-reference.md)
-- [Database Schema](./database-schema.md)
-- [Integration Guide](./integration-guide.md)
-- [Performance Guide](../guides/performance.md)
+- Database Schema (Coming Soon)
+- Integration Guide (Coming Soon)
+- [Performance Guide](../../architecture/README.md)
 
 ---
 

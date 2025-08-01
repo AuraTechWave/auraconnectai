@@ -177,7 +177,7 @@ Manages customization options, add-ons, and variations.
 | `/api/v1/menu/modifiers` | POST | Create modifier |
 | `/api/v1/menu/modifier-groups` | POST | Create modifier group |
 
-[View Complete API Reference](./api-reference.md)
+View Complete API Reference (Coming Soon)
 
 ## Menu Structure
 
@@ -218,7 +218,7 @@ graph TD
 - `menu_schedules` - Availability schedules
 - `dietary_info` - Nutritional and dietary information
 
-[View Complete Schema](./database-schema.md)
+View Complete Schema (Coming Soon)
 
 ## Pricing System
 
@@ -428,11 +428,11 @@ pytest tests/test_pricing_engine.py
 
 ## Related Documentation
 
-- [Architecture Details](./architecture.md)
-- [API Reference](./api-reference.md)
-- [Database Schema](./database-schema.md)
-- [Integration Guide](./integration-guide.md)
-- [Menu Builder Guide](./guides/menu-builder.md)
+- Architecture Details (Coming Soon)
+- API Reference (Coming Soon) 
+- Database Schema (Coming Soon)
+- Integration Guide (Coming Soon)
+- Menu Builder Guide (Coming Soon)
 
 ## Support
 

@@ -6,9 +6,73 @@ This document presents a high-level view of AuraConnect’s complete architectur
 ---
 
 ## 📊 Global System Diagram
-![Global Architecture Map](../assets/global_architecture_map.png)
 
-*(Ensure the image is added to `docs/assets/global_architecture_map.png` in the repo)*
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        WEB[Web Dashboard]
+        MOBILE[Mobile App]
+        POS_UI[POS Terminal]
+    end
+    
+    subgraph "API Gateway"
+        NGINX[Load Balancer]
+        AUTH[Auth Service]
+        RATE[Rate Limiter]
+    end
+    
+    subgraph "Core Services"
+        STAFF[Staff Management]
+        MENU[Menu & Inventory]
+        ORDER[Order Management]
+        CUST[Customer & Loyalty]
+        ANALYTICS[Analytics]
+        TAX[Tax & Payroll]
+    end
+    
+    subgraph "Integration Layer"
+        POS_INT[POS Integration]
+        WHITE[White Label]
+        OFFLINE[Offline Sync]
+        AI[AI Suite]
+        COMP[Compliance]
+    end
+    
+    subgraph "Data Layer"
+        PG[(PostgreSQL)]
+        REDIS[(Redis)]
+        S3[Object Storage]
+    end
+    
+    WEB --> NGINX
+    MOBILE --> NGINX
+    POS_UI --> NGINX
+    
+    NGINX --> AUTH
+    AUTH --> RATE
+    RATE --> STAFF
+    RATE --> MENU
+    RATE --> ORDER
+    RATE --> CUST
+    RATE --> ANALYTICS
+    RATE --> TAX
+    
+    ORDER --> POS_INT
+    MOBILE --> OFFLINE
+    ANALYTICS --> AI
+    TAX --> COMP
+    
+    STAFF --> PG
+    MENU --> PG
+    ORDER --> PG
+    CUST --> PG
+    
+    ORDER --> REDIS
+    ANALYTICS --> REDIS
+    
+    MENU --> S3
+    CUST --> S3
+```
 
 ---
 

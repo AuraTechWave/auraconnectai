@@ -232,7 +232,7 @@ See [CI/CD Setup](CI_CD_SETUP.md) for detailed information about:
 ## 📚 Additional Resources
 
 ### Internal Documentation
-- [System Architecture](../ARCHITECTURE.md)
+- [System Architecture](../architecture/README.md)
 - [API Documentation](http://localhost:8000/docs)
 - [Production Deployment](../../backend/PRODUCTION_DEPLOYMENT_GUIDE.md)
 

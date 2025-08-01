@@ -290,7 +290,7 @@ PAYROLL_CACHE_TTL: "3600"
 - [Payroll Tax Developer Guide](../payroll_tax_developer_guide.md) - Complete developer documentation
 - [Payroll Module Architecture](../../feature_docs/payroll/architecture.md) - Core architecture overview
 - [Tax Engine Architecture](./payroll_tax_architecture.md) - Tax calculation system
-- [Production Readiness Checklist](../../PAYROLL_PRODUCTION_READINESS_CHECKLIST.md) - Go-live requirements
+- [Production Readiness Checklist](../../modules/payroll/production-checklist.md) - Go-live requirements
 - [API Phase 4 Documentation](../../../backend/API_PHASE4_DOCUMENTATION.md) - API implementation details
 
 ### Code References
