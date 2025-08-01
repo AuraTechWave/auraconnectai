@@ -43,3 +43,19 @@ class PayrollJobStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+
+class TaxRuleType(str, Enum):
+    """Types of tax rules."""
+    PERCENTAGE = "percentage"
+    FIXED_AMOUNT = "fixed_amount"
+    BRACKETED = "bracketed"
+    TIERED = "tiered"
+
+
+class TaxRuleStatus(str, Enum):
+    """Status of tax rules."""
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    PENDING = "pending"
+    EXPIRED = "expired"
