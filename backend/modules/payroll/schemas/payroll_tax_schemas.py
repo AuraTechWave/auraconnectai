@@ -185,3 +185,26 @@ class PayrollTaxServiceResponse(BaseModel):
             Decimal: str,
             datetime: lambda v: v.isoformat()
         }
+
+
+class TaxRuleResponse(BaseModel):
+    """Response schema for tax rule information."""
+    
+    id: int = Field(..., description="Tax rule ID")
+    name: str = Field(..., description="Tax rule name")
+    tax_type: TaxType = Field(..., description="Type of tax")
+    location: str = Field(..., description="Jurisdiction location")
+    rate: Decimal = Field(..., ge=0, description="Tax rate")
+    fixed_amount: Optional[Decimal] = Field(None, description="Fixed tax amount if applicable")
+    threshold_amount: Optional[Decimal] = Field(None, description="Income threshold")
+    cap_amount: Optional[Decimal] = Field(None, description="Maximum tax cap")
+    effective_date: date = Field(..., description="When rule becomes effective")
+    expiry_date: Optional[date] = Field(None, description="When rule expires")
+    is_active: bool = Field(default=True, description="Whether rule is currently active")
+    
+    class Config:
+        json_encoders = {
+            Decimal: str,
+            date: lambda v: v.isoformat()
+        }
+        from_attributes = True

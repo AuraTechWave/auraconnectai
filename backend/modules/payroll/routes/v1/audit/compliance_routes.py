@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 from datetime import date, datetime, timedelta
+from typing import Optional, List, Dict, Any
 import uuid
 
 from ......core.database import get_db

@@ -15,7 +15,7 @@ import logging
 
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
+from backend.modules.staff.models.staff_models import StaffMember
 from backend.modules.orders.services.sync_service import OrderSyncService
 from backend.modules.orders.models.sync_models import (
     SyncBatch, OrderSyncStatus, SyncStatus, SyncLog,

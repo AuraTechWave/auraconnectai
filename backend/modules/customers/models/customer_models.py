@@ -109,6 +109,7 @@ class Customer(Base, TimestampMixin):
     segments = relationship("CustomerSegment", secondary="customer_segment_members", back_populates="customers")
     rewards = relationship("CustomerReward", back_populates="customer", cascade="all, delete-orphan")
     preferences = relationship("CustomerPreference", back_populates="customer", cascade="all, delete-orphan")
+    reservations = relationship("Reservation", back_populates="customer", cascade="all, delete-orphan")
     referred_customers = relationship("Customer", backref="referrer")
     
     # Indexes for performance
@@ -232,7 +233,7 @@ class CustomerNotification(Base, TimestampMixin):
     failure_reason = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, nullable=True)  # Additional data like order_id, promotion_id
+    notification_metadata = Column(JSONB, nullable=True)  # Additional data like order_id, promotion_id
     
     # Relationships
     customer = relationship("Customer", back_populates="notifications")

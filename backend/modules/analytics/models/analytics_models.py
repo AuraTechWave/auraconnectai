@@ -116,7 +116,7 @@ class SalesAnalyticsSnapshot(Base, TimestampMixin):
     product_popularity_rank = Column(Integer, nullable=True)
     
     # Additional analytics data
-    metadata = Column(JSONB, nullable=True)
+    analytics_metadata = Column(JSONB, nullable=True)
     
     # Calculated timestamp for data freshness
     calculated_at = Column(DateTime, nullable=False, default=datetime.utcnow)

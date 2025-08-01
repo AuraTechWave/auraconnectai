@@ -69,7 +69,7 @@ class PayrollJobTracking(Base, TimestampMixin):
     completed_at = Column(DateTime, nullable=True)
     
     # Job metadata and results
-    metadata = Column(JSON, nullable=False, default={})
+    job_metadata = Column(JSON, nullable=False, default={})
     error_message = Column(Text, nullable=True)
     
     # Multi-tenant support
@@ -243,36 +243,6 @@ class RoleBasedPayRate(Base, TimestampMixin):
     
     __table_args__ = (
         {'comment': 'Role-based default pay rates by location'}
-    )
-
-
-class PayrollJobTracking(Base, TimestampMixin):
-    """
-    Tracking table for batch payroll processing jobs.
-    
-    Stores job status, metadata, and results for async batch operations.
-    """
-    __tablename__ = "payroll_job_tracking"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(String(100), unique=True, nullable=False, index=True)
-    job_type = Column(String(50), nullable=False, index=True)
-    status = Column(Enum(PayrollJobStatus), nullable=False, index=True)
-    
-    # Timing information
-    started_at = Column(DateTime, nullable=False)
-    completed_at = Column(DateTime, nullable=True)
-    
-    # Job metadata and results
-    metadata = Column(JSON, nullable=False, default={})
-    error_message = Column(Text, nullable=True)
-    
-    # Multi-tenant support
-    tenant_id = Column(Integer, nullable=True, index=True)
-    created_by_user_id = Column(Integer, nullable=True)
-    
-    __table_args__ = (
-        {'comment': 'Tracking for batch payroll processing jobs'}
     )
 
 
