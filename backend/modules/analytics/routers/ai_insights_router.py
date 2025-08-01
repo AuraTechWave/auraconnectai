@@ -5,9 +5,9 @@ from typing import Optional, List, Dict
 from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_staff_user
-from backend.modules.staff.models.staff_models import StaffMember
+from core.database import get_db
+from core.auth import get_current_user, User
+from modules.staff.models.staff_models import StaffMember
 from ..services.permissions_service import (
     AnalyticsPermission, PermissionsService, require_analytics_permission
 )
@@ -360,7 +360,7 @@ async def get_task_status(
     current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """Check the status of an async insights generation task."""
-    from backend.core.cache import cache_service
+    from core.cache import cache_service
     
     status_key = f"task:status:{task_id}"
     status_data = await cache_service.get(status_key)
@@ -380,7 +380,7 @@ async def get_task_result(
     current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """Retrieve the results of a completed async insights generation task."""
-    from backend.core.cache import cache_service
+    from core.cache import cache_service
     
     # Check task status first
     status_data = await cache_service.get(f"task:status:{task_id}")

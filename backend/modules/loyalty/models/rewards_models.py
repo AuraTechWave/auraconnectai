@@ -4,8 +4,8 @@ from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Float, Text, Boolean, Enum as SQLEnum, Index, CheckConstraint)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, Any, Optional

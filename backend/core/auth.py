@@ -435,6 +435,33 @@ require_payroll_access = require_roles(["admin", "payroll_manager", "payroll_cle
 require_payroll_write = require_roles(["admin", "payroll_manager"])
 require_staff_access = require_roles(["admin", "payroll_manager", "payroll_clerk", "manager", "staff_viewer"])
 
+# Add permission function factory to support require_permission("tax.admin") pattern
+def require_permission(permission: str):
+    """Create a dependency that requires specific permission"""
+    # Map permission strings to roles
+    permission_role_map = {
+        "tax.admin": ["admin", "tax_admin"],
+        "tax.write": ["admin", "tax_admin", "tax_manager"],
+        "tax.read": ["admin", "tax_admin", "tax_manager", "tax_viewer"],
+        "tax.view": ["admin", "tax_admin", "tax_manager", "tax_viewer"],
+        "tax.report": ["admin", "tax_admin", "tax_manager"],
+        "menu:create": ["admin", "manager", "menu_admin"],
+        "menu:read": ["admin", "manager", "menu_admin", "staff"],
+        "menu:update": ["admin", "manager", "menu_admin"],
+        "menu:delete": ["admin", "menu_admin"],
+        "inventory:create": ["admin", "manager", "inventory_admin"],
+        "inventory:read": ["admin", "manager", "inventory_admin", "staff"],
+        "inventory:update": ["admin", "manager", "inventory_admin"],
+        "inventory:delete": ["admin", "inventory_admin"],
+    }
+    roles = permission_role_map.get(permission, ["admin"])
+    return require_roles(roles)
+
+
+# Tenant support (placeholder)
+async def get_current_tenant() -> Optional[int]:
+    """Get current tenant ID - placeholder for multi-tenant support"""
+    return None
 
 # Optional authentication (for public endpoints that can be enhanced with auth)
 async def get_current_user_optional(

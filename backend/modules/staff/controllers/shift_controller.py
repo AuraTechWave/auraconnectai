@@ -1,4 +1,4 @@
-from backend.modules.staff.services.shift_service import create_shift
+from modules.staff.services.shift_service import create_shift
 
 
 async def assign_shift(shift_data):

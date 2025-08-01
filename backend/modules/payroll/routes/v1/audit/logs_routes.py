@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date, timedelta
 
-from ......core.database import get_db
-from ......core.auth import require_payroll_access, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_access, get_current_user, User
 from ....models.payroll_audit import PayrollAuditLog
 from ....schemas.audit_schemas import (
     AuditLogEntry,
@@ -43,7 +43,7 @@ async def get_audit_logs(
     
     # Sorting
     sort_by: str = Query("timestamp", description="Field to sort by"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_access)

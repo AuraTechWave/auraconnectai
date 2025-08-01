@@ -6,9 +6,8 @@ from typing import List, Optional
 from datetime import date
 import uuid
 
-from backend.core.database import get_db
-from backend.core.auth import require_permission
-from backend.core.tenant import get_current_tenant
+from core.database import get_db
+from core.auth import require_permission, get_current_tenant
 
 from ..models import TaxJurisdiction, TaxRate, TaxNexus
 from ..schemas import (
@@ -66,7 +65,7 @@ async def create_jurisdiction(
 
 @router.get("/", response_model=List[TaxJurisdictionResponse])
 async def list_jurisdictions(
-    jurisdiction_type: Optional[str] = Query(None, regex="^(federal|state|county|city|special)$"),
+    jurisdiction_type: Optional[str] = Query(None, pattern="^(federal|state|county|city|special)$"),
     country_code: Optional[str] = Query(None, min_length=2, max_length=2),
     state_code: Optional[str] = Query(None, max_length=10),
     is_active: Optional[bool] = Query(None),
@@ -331,7 +330,7 @@ async def create_nexus(
 
 @router.get("/nexus", response_model=List[TaxNexusResponse])
 async def list_all_nexus(
-    nexus_type: Optional[str] = Query(None, regex="^(physical|economic|affiliate|click_through)$"),
+    nexus_type: Optional[str] = Query(None, pattern="^(physical|economic|affiliate|click_through)$"),
     is_active: Optional[bool] = Query(None),
     requires_filing: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
@@ -408,7 +407,7 @@ async def import_jurisdictions(
 
 @router.post("/sync/rates")
 async def sync_tax_rates(
-    provider: str = Query(..., regex="^(avalara|taxjar)$"),
+    provider: str = Query(..., pattern="^(avalara|taxjar)$"),
     jurisdiction_ids: List[int] = Query(...),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.admin")),

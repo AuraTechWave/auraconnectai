@@ -7,17 +7,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import uuid
 
-from backend.core.database import Base
-from backend.modules.tax.models import (
+from core.database import Base
+from modules.tax.models import (
     TaxJurisdiction, TaxFiling, TaxFilingLineItem,
     FilingStatus, FilingType
 )
-from backend.modules.tax.schemas import (
+from modules.tax.schemas import (
     TaxFilingCreate, TaxFilingUpdate, TaxFilingSubmit,
     TaxFilingLineItemCreate, TaxRemittanceCreate,
     TaxReportRequest
 )
-from backend.modules.tax.services import TaxComplianceService
+from modules.tax.services import TaxComplianceService
 
 
 class TestTaxComplianceService:

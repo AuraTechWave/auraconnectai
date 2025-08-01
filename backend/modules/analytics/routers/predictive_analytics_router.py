@@ -13,10 +13,10 @@ from typing import List, Optional, Dict, Any
 from datetime import date, datetime, timedelta
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.auth.models import User
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.auth.models import User
+from modules.analytics.schemas.predictive_analytics_schemas import (
     DemandForecastRequest, DemandForecast,
     StockOptimizationRequest, StockOptimizationResult,
     BatchPredictionRequest, PredictionAlert,
@@ -26,11 +26,11 @@ from backend.modules.analytics.schemas.predictive_analytics_schemas import (
     TimeGranularity, HistoricalDataRequest,
     ModelTrainingRequest, PredictionExportRequest
 )
-from backend.modules.analytics.services.demand_prediction_service import DemandPredictionService
-from backend.modules.analytics.services.stock_optimization_service import StockOptimizationService
-from backend.modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
-from backend.modules.analytics.services.permissions_service import require_analytics_permission
-from backend.modules.analytics.permissions import AnalyticsPermission
+from modules.analytics.services.demand_prediction_service import DemandPredictionService
+from modules.analytics.services.stock_optimization_service import StockOptimizationService
+from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
+from modules.analytics.services.permissions_service import require_analytics_permission
+from modules.analytics.permissions import AnalyticsPermission
 
 logger = logging.getLogger(__name__)
 

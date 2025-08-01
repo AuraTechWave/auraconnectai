@@ -13,8 +13,8 @@ from ..schemas.ai_insights_schemas import (
     TimePattern, ProductTrend, CustomerPattern,
     SeasonalityPattern, AnomalyDetection, AIInsightSummary
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
 
 
 class TestAIInsightsService:

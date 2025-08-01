@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 import logging
 from enum import Enum
 
-from backend.modules.customers.models.customer_models import Customer, CustomerNotification
+from modules.customers.models.customer_models import Customer, CustomerNotification
 from ..models.rewards_models import CustomerReward, RewardTemplate
-from backend.modules.customers.models.loyalty_config import LoyaltyTierConfig
+from modules.customers.models.loyalty_config import LoyaltyTierConfig
 
 
 logger = logging.getLogger(__name__)

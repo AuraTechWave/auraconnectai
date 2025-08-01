@@ -16,8 +16,8 @@ from typing import List, Optional
 from datetime import date
 from decimal import Decimal
 
-from ....core.database import get_db
-from ....core.auth import require_payroll_access, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_access, get_current_user, User
 from ..services.payroll_tax_engine import PayrollTaxEngine
 from ..services.payroll_tax_service import PayrollTaxService
 from ..schemas.payroll_tax_schemas import (

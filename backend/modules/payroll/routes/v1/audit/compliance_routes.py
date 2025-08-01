@@ -13,8 +13,8 @@ from datetime import date, datetime, timedelta
 from typing import Optional, List, Dict, Any
 import uuid
 
-from ......core.database import get_db
-from ......core.auth import require_payroll_access, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_access, get_current_user, User
 from ....models.payroll_audit import PayrollAuditLog
 from ....schemas.audit_schemas import (
     AuditEventType,
@@ -31,7 +31,7 @@ router = APIRouter()
 async def get_compliance_report(
     report_type: str = Query(
         ...,
-        regex="^(access|changes|sensitive|all)$",
+        pattern="^(access|changes|sensitive|all)$",
         description="Type of compliance report"
     ),
     start_date: date = Query(..., description="Report start date"),

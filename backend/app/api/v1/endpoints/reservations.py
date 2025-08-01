@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 
-from backend.core.database import get_db
-from backend.modules.customers.auth.customer_auth import get_current_customer
-from backend.modules.customers.models.customer_models import Customer
+from core.database import get_db
+from modules.customers.auth.customer_auth import get_current_customer
+from modules.customers.models.customer_models import Customer
 from app.models.reservation import Reservation
 from app.services.reservation_service import ReservationService
 from app.schemas.reservation import (

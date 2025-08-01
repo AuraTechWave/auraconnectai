@@ -12,9 +12,9 @@ from ..services.coupon_service import CouponService
 from ..services.promotion_service import PromotionService
 from ..services.referral_service import ReferralService
 
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.services.order_calculation_service import OrderCalculationService
-from backend.modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order, OrderItem
+from modules.orders.services.order_calculation_service import OrderCalculationService
+from modules.customers.models.customer_models import Customer
 
 logger = logging.getLogger(__name__)
 

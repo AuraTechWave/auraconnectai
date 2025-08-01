@@ -4,14 +4,14 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone
 
-from backend.core.menu_versioning_triggers import (
+from core.menu_versioning_triggers import (
     MenuVersioningTriggers, 
     create_manual_version_on_bulk_change,
     disable_auto_versioning,
     enable_auto_versioning,
     get_change_buffer_status
 )
-from backend.core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
+from core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
 
 
 class TestMenuVersioningTriggers:

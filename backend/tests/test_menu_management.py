@@ -3,10 +3,10 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from backend.app.main import app
-from backend.core.database import get_db
-from backend.core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
-from backend.core.menu_service import MenuService
+from app.main import app
+from core.database import get_db
+from core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
+from core.menu_service import MenuService
 
 
 client = TestClient(app)
@@ -19,7 +19,7 @@ class TestMenuService:
         """Test creating a menu category"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import MenuCategoryCreate
+        from core.menu_schemas import MenuCategoryCreate
         category_data = MenuCategoryCreate(
             name="Appetizers",
             description="Delicious starters",
@@ -40,7 +40,7 @@ class TestMenuService:
         service = MenuService(db_session)
         
         # First create a category
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate
         category_data = MenuCategoryCreate(name="Main Courses", display_order=1)
         category = service.create_category(category_data)
         
@@ -70,7 +70,7 @@ class TestMenuService:
         """Test creating a modifier group"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import ModifierGroupCreate
+        from core.menu_schemas import ModifierGroupCreate
         group_data = ModifierGroupCreate(
             name="Size Options",
             description="Choose your size",
@@ -92,7 +92,7 @@ class TestMenuService:
         service = MenuService(db_session)
         
         # First create a modifier group
-        from backend.core.menu_schemas import ModifierGroupCreate, ModifierCreate
+        from core.menu_schemas import ModifierGroupCreate, ModifierCreate
         group_data = ModifierGroupCreate(name="Size Options", selection_type="single")
         group = service.create_modifier_group(group_data)
         
@@ -118,7 +118,7 @@ class TestMenuService:
         service = MenuService(db_session)
         
         # Create test data
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
         category_data = MenuCategoryCreate(name="Test Category", display_order=1)
         category = service.create_category(category_data)
         
@@ -145,7 +145,7 @@ class TestMenuService:
         service = MenuService(db_session)
         
         # Create test data
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
         category_data = MenuCategoryCreate(name="Test Category", display_order=1)
         category = service.create_category(category_data)
         
@@ -171,7 +171,7 @@ class TestMenuService:
         """Test SKU uniqueness constraint"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate
         category_data = MenuCategoryCreate(name="Test Category", display_order=1)
         category = service.create_category(category_data)
         
@@ -199,7 +199,7 @@ class TestMenuService:
         """Test category parent-child relationship"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import MenuCategoryCreate
+        from core.menu_schemas import MenuCategoryCreate
         
         # Create parent category
         parent_data = MenuCategoryCreate(name="Beverages", display_order=1)
@@ -219,7 +219,7 @@ class TestMenuService:
         """Test menu statistics functionality"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate, ModifierGroupCreate, ModifierCreate
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate, ModifierGroupCreate, ModifierCreate
         
         # Create test data
         category_data = MenuCategoryCreate(name="Test Category", display_order=1)
@@ -306,7 +306,7 @@ class TestMenuIntegration:
         """Test complete menu setup workflow"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import (
+        from core.menu_schemas import (
             MenuCategoryCreate, MenuItemCreate, ModifierGroupCreate, 
             ModifierCreate, MenuItemModifierCreate
         )
@@ -363,7 +363,7 @@ class TestMenuIntegration:
         """Test menu item availability logic"""
         service = MenuService(db_session)
         
-        from backend.core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
+        from core.menu_schemas import MenuCategoryCreate, MenuItemCreate, MenuSearchParams
         
         # Create category
         category_data = MenuCategoryCreate(name="Test Category", display_order=1)

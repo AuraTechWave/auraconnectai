@@ -7,16 +7,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import uuid
 
-from backend.core.database import Base
-from backend.modules.tax.models import (
+from core.database import Base
+from modules.tax.models import (
     TaxJurisdiction, TaxRate, TaxRuleConfiguration,
     TaxExemptionCertificate
 )
-from backend.modules.tax.schemas import (
+from modules.tax.schemas import (
     EnhancedTaxCalculationRequest, TaxCalculationLocation,
     TaxCalculationLineItem
 )
-from backend.modules.tax.services import TaxCalculationEngine
+from modules.tax.services import TaxCalculationEngine
 
 
 class TestTaxCalculationEngine:

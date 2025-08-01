@@ -19,7 +19,7 @@ from ..schemas.batch_processing_schemas import (
     CalculationOptions
 )
 # from .payroll_service import PayrollService  # TODO: Fix this import
-from ....modules.staff.models.staff_models import StaffMember as Staff
+from modules.staff.models.staff_models import StaffMember as Staff
 # from ....staff.models.timesheet import Timesheet  # TODO: Fix this import
 from ..models.payroll_models import EmployeePayment
 

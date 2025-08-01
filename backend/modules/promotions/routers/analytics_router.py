@@ -7,8 +7,8 @@ from typing import Optional, List
 from datetime import datetime
 import io
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
 
 from ..services.analytics_service import PromotionAnalyticsService
 from ..services.reporting_service import PromotionReportingService
@@ -140,8 +140,8 @@ def get_comparison_report(
 
 @router.get("/scheduled-report")
 def get_scheduled_report(
-    report_type: str = Query(..., regex="^(executive|performance|coupons|referrals)$"),
-    frequency: str = Query("weekly", regex="^(daily|weekly|monthly)$"),
+    report_type: str = Query(..., pattern="^(executive|performance|coupons|referrals)$"),
+    frequency: str = Query("weekly", pattern="^(daily|weekly|monthly)$"),
     recipients: Optional[List[str]] = Query(None),
     db: Session = Depends(get_db),
     current_user = Depends(require_admin)
@@ -161,7 +161,7 @@ def get_scheduled_report(
 
 @router.get("/export/csv")
 def export_report_csv(
-    report_type: str = Query(..., regex="^(performance|coupons|referrals)$"),
+    report_type: str = Query(..., pattern="^(performance|coupons|referrals)$"),
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     promotion_ids: Optional[List[int]] = Query(None),
@@ -211,7 +211,7 @@ def export_report_csv(
 
 @router.get("/export/json")
 def export_report_json(
-    report_type: str = Query(..., regex="^(executive|performance|coupons|referrals)$"),
+    report_type: str = Query(..., pattern="^(executive|performance|coupons|referrals)$"),
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     promotion_ids: Optional[List[int]] = Query(None),

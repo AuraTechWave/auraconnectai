@@ -11,8 +11,8 @@ from ..models.promotion_models import (
     Promotion, PromotionStatus, PromotionRule, RuleConditionType
 )
 from ..services.promotion_service import PromotionService
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.orders.models.order_models import Order
+from modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
 
 logger = logging.getLogger(__name__)
 

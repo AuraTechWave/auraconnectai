@@ -6,10 +6,10 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 import json
 
-from backend.core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
-from backend.core.menu_versioning_service import MenuVersioningService
-from backend.core.menu_versioning_schemas import CreateVersionRequest, VersionType, ChangeType
-from backend.core.menu_versioning_models import MenuAuditLog
+from core.menu_models import MenuCategory, MenuItem, ModifierGroup, Modifier
+from core.menu_versioning_service import MenuVersioningService
+from core.menu_versioning_schemas import CreateVersionRequest, VersionType, ChangeType
+from core.menu_versioning_models import MenuAuditLog
 
 
 class MenuVersioningTriggers:

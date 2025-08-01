@@ -11,8 +11,8 @@ from sqlalchemy import (
     Column, Integer, String, DateTime, Text, JSON,
     Index, Enum as SQLEnum
 )
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from ..schemas.audit_schemas import AuditEventType
 
 

@@ -19,15 +19,15 @@ import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from backend.modules.feedback.services.notification_service import (
+from modules.feedback.services.notification_service import (
     NotificationService,
     EmailBackend,
     SMSBackend,
     PushNotificationBackend,
     NotificationTemplate
 )
-from backend.modules.feedback.models.feedback_models import Review, Feedback, Customer
-from backend.modules.feedback.services.background_tasks import BackgroundTaskProcessor
+from modules.feedback.models.feedback_models import Review, Feedback, Customer
+from modules.feedback.services.background_tasks import BackgroundTaskProcessor
 
 
 @pytest.fixture

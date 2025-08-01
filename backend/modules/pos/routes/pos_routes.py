@@ -6,7 +6,7 @@ import hmac
 import hashlib
 import logging
 from fastapi_limiter.depends import RateLimiter
-from backend.core.database import get_db
+from core.database import get_db
 from ..models.pos_integration import POSIntegration
 from ..models.pos_sync_log import POSSyncLog
 from ..services.pos_bridge_service import POSBridgeService

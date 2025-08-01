@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.modules.staff.controllers.attendance_controller import (
+from modules.staff.controllers.attendance_controller import (
     log_attendance
 )
 

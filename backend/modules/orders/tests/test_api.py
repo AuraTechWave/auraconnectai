@@ -1,5 +1,5 @@
 from fastapi import status
-from backend.modules.orders.enums.order_enums import OrderStatus, DelayReason
+from modules.orders.enums.order_enums import OrderStatus, DelayReason
 from datetime import datetime
 
 
@@ -23,7 +23,7 @@ class TestOrderAPI:
 
     def test_get_orders_with_status_filter(self, client, db_session):
         """Test GET /orders with status filter."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
         order1 = Order(staff_id=1, status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, status=OrderStatus.IN_PROGRESS.value)
         db_session.add_all([order1, order2])
@@ -37,7 +37,7 @@ class TestOrderAPI:
 
     def test_get_orders_with_staff_id_filter(self, client, db_session):
         """Test GET /orders with staff_id filter."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
         order1 = Order(staff_id=1, status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2])
@@ -51,7 +51,7 @@ class TestOrderAPI:
 
     def test_get_orders_with_table_no_filter(self, client, db_session):
         """Test GET /orders with table_no filter."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
         order1 = Order(staff_id=1, table_no=5,
                        status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, table_no=3,
@@ -67,7 +67,7 @@ class TestOrderAPI:
 
     def test_get_orders_pagination(self, client, db_session):
         """Test GET /orders pagination parameters."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
         orders = [Order(staff_id=i, status=OrderStatus.PENDING.value)
                   for i in range(5)]
         db_session.add_all(orders)
@@ -320,7 +320,7 @@ class TestDelayedFulfillmentAPI:
 
     def test_get_delayed_orders_with_data(self, client, db_session):
         """Test GET /orders/delayed returns delayed orders."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
 
         order1 = Order(
             staff_id=1, status=OrderStatus.DELAYED.value,
@@ -345,7 +345,7 @@ class TestDelayedFulfillmentAPI:
 
     def test_get_delayed_orders_with_time_filters(self, client, db_session):
         """Test GET /orders/delayed with time range filters."""
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
 
         order1 = Order(
             staff_id=1, status=OrderStatus.DELAYED.value,

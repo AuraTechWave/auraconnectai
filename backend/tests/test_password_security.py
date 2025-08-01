@@ -12,16 +12,16 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.core.password_security import (
+from core.password_security import (
     EnhancedPasswordSecurity,
     PasswordStrength,
     PasswordValidationResult,
     password_security,
     validate_email_address
 )
-from backend.core.password_models import PasswordResetToken, PasswordHistory, SecurityAuditLog
-from backend.core.rbac_models import RBACUser
-from backend.app.main import app
+from core.password_models import PasswordResetToken, PasswordHistory, SecurityAuditLog
+from core.rbac_models import RBACUser
+from app.main import app
 
 
 client = TestClient(app)
@@ -318,7 +318,7 @@ class TestSecurityAuditLogging:
     
     def test_security_event_logging(self, db_session):
         """Test logging of security events."""
-        from backend.modules.auth.routes.password_routes import log_security_event
+        from modules.auth.routes.password_routes import log_security_event
         
         event = log_security_event(
             db=db_session,
@@ -348,7 +348,7 @@ class TestPasswordHistory:
     
     def test_password_history_tracking(self, db_session):
         """Test password history tracking."""
-        from backend.modules.auth.routes.password_routes import add_password_to_history
+        from modules.auth.routes.password_routes import add_password_to_history
         
         add_password_to_history(
             db=db_session,
@@ -365,7 +365,7 @@ class TestPasswordHistory:
     
     def test_password_reuse_prevention(self, db_session):
         """Test prevention of password reuse."""
-        from backend.modules.auth.routes.password_routes import check_password_reuse
+        from modules.auth.routes.password_routes import check_password_reuse
         
         # Mock query to return previous password
         mock_history = MagicMock()

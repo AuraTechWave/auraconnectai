@@ -8,25 +8,25 @@ Handles demand forecasting and time series predictions.
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.analytics.schemas.predictive_analytics_schemas import (
     DemandForecastRequest, DemandForecast,
-    BatchForecastRequest, BatchForecastResult,
+    BatchPredictionRequest, BatchForecastResult,
     ModelType, TimeGranularity
 )
-from backend.modules.analytics.services.demand_prediction_service import DemandPredictionService
-from backend.modules.analytics.services.permissions import require_analytics_permission
-from backend.modules.analytics.constants import (
+from modules.analytics.services.demand_prediction_service import DemandPredictionService
+from modules.analytics.services.permissions_service import require_analytics_permission
+from modules.analytics.constants import (
     MAX_BATCH_SIZE,
     DEFAULT_HORIZON_DAYS,
     CACHE_TTL_SECONDS
 )
-from backend.modules.analytics.middleware.rate_limiter import rate_limit
+from modules.analytics.middleware.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/forecasting", tags=["predictive-forecasting"])
@@ -101,7 +101,7 @@ async def forecast_demand(
 @rate_limit("batch_forecast", tokens=5)  # Batch requests consume more resources
 async def batch_forecast(
     request: Request,
-    batch_request: BatchForecastRequest,
+    batch_request: BatchPredictionRequest,
     background: bool = Query(False, description="Run as background task"),
     db: Session = Depends(get_db),
     current_user: StaffMember = Depends(get_current_user)
@@ -173,10 +173,10 @@ async def batch_forecast(
         )
 
 
-@router.get("/models", response_model=List[Dict[str, any]])
+@router.get("/models", response_model=List[Dict[str, Any]])
 async def list_available_models(
     current_user: StaffMember = Depends(get_current_user)
-) -> List[Dict[str, any]]:
+) -> List[Dict[str, Any]]:
     """
     List available forecasting models and their characteristics.
     

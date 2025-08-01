@@ -339,7 +339,7 @@ class PromotionSearchParams(BaseModel):
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
     sort_by: str = "created_at"
-    sort_order: str = Field("desc", regex="^(asc|desc)$")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$")
 
 
 class PromotionSearchResponse(BaseModel):

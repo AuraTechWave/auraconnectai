@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, Path, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.order_controller import (
     update_order, get_order_by_id, list_orders, list_kitchen_orders,
     validate_order_rules, validate_special_instructions,
@@ -724,7 +724,7 @@ async def get_auto_cancellation_metrics(
 ):
     """Get auto-cancellation metrics and statistics."""
     from sqlalchemy import func
-    from backend.core.compliance import AuditLog
+    from core.compliance import AuditLog
 
     query = db.query(
         func.count(AuditLog.id).label('total_cancellations'),

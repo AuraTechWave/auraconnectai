@@ -20,10 +20,10 @@ try:
 except ImportError:
     HAS_REDIS = False
 
-from backend.modules.analytics.constants import (
+from modules.analytics.constants import (
     CACHE_TTL_SECONDS, REPORT_CACHE_TTL, MODEL_CACHE_TTL
 )
-from backend.modules.analytics.exceptions import CacheError
+from modules.analytics.exceptions import CacheError
 
 logger = logging.getLogger(__name__)
 

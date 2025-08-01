@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 import tempfile
 import os
 
-from backend.core.database import Base
-from backend.modules.promotions.models.promotion_models import *
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.orders.models.order_models import Order
+from core.database import Base
+from modules.promotions.models.promotion_models import *
+from modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
 
 
 @pytest.fixture(scope="session")
@@ -160,35 +160,35 @@ def sample_customer_referral(db_session, sample_customer, sample_referral_progra
 @pytest.fixture
 def promotion_service(db_session):
     """Create a promotion service instance for testing"""
-    from backend.modules.promotions.services.promotion_service import PromotionService
+    from modules.promotions.services.promotion_service import PromotionService
     return PromotionService(db_session)
 
 
 @pytest.fixture
 def coupon_service(db_session):
     """Create a coupon service instance for testing"""
-    from backend.modules.promotions.services.coupon_service import CouponService
+    from modules.promotions.services.coupon_service import CouponService
     return CouponService(db_session)
 
 
 @pytest.fixture
 def referral_service(db_session):
     """Create a referral service instance for testing"""
-    from backend.modules.promotions.services.referral_service import ReferralService
+    from modules.promotions.services.referral_service import ReferralService
     return ReferralService(db_session)
 
 
 @pytest.fixture
 def discount_service(db_session):
     """Create a discount service instance for testing"""
-    from backend.modules.promotions.services.discount_service import DiscountCalculationService
+    from modules.promotions.services.discount_service import DiscountCalculationService
     return DiscountCalculationService(db_session)
 
 
 @pytest.fixture
 def ab_testing_service(db_session):
     """Create an A/B testing service instance for testing"""
-    from backend.modules.promotions.services.ab_testing_service import ABTestingService
+    from modules.promotions.services.ab_testing_service import ABTestingService
     return ABTestingService(db_session)
 
 

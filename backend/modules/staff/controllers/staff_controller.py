@@ -1,4 +1,4 @@
-from backend.modules.staff.services.staff_service import (
+from modules.staff.services.staff_service import (
     fetch_all_staff, register_staff
 )
 

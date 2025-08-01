@@ -13,8 +13,8 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 import logging
 
-from backend.core.cache import cache_service
-from backend.modules.analytics.models.pos_analytics_models import POSAnalyticsSnapshot
+from core.cache import cache_service
+from modules.analytics.models.pos_analytics_models import POSAnalyticsSnapshot
 from .pos.base_service import POSAnalyticsBaseService
 
 logger = logging.getLogger(__name__)

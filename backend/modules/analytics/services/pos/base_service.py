@@ -13,11 +13,10 @@ from decimal import Decimal
 import logging
 from functools import lru_cache
 
-from backend.modules.orders.models.external_pos_models import ExternalPOSProvider
-from backend.modules.analytics.models.pos_analytics_models import (
+from modules.orders.models.external_pos_models import ExternalPOSProvider
+from modules.analytics.models.pos_analytics_models import (
     POSAnalyticsSnapshot, POSTerminalHealth
 )
-from backend.core.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -41,24 +40,24 @@ class POSAnalyticsBaseService:
         ).count() > 0
     
     def get_provider_or_404(self, provider_id: int) -> ExternalPOSProvider:
-        """Get provider or raise NotFoundError"""
+        """Get provider or raise KeyError"""
         provider = self.db.query(ExternalPOSProvider).filter(
             ExternalPOSProvider.id == provider_id
         ).first()
         
         if not provider:
-            raise NotFoundError(f"POS provider {provider_id} not found")
+            raise KeyError(f"POS provider {provider_id} not found")
         
         return provider
     
     def get_terminal_or_404(self, terminal_id: str) -> POSTerminalHealth:
-        """Get terminal or raise NotFoundError"""
+        """Get terminal or raise KeyError"""
         terminal = self.db.query(POSTerminalHealth).filter(
             POSTerminalHealth.terminal_id == terminal_id
         ).first()
         
         if not terminal:
-            raise NotFoundError(f"POS terminal {terminal_id} not found")
+            raise KeyError(f"POS terminal {terminal_id} not found")
         
         return terminal
     

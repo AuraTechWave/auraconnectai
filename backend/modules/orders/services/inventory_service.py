@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List, Dict
-from ..models.inventory_models import Inventory, MenuItemInventory
+from core.inventory_models import Inventory
+from core.menu_models import MenuItemInventory
 from ..models.order_models import OrderItem
 from ..schemas.inventory_schemas import InventoryOut, InventoryUpdate
 

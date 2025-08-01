@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewStatus, FeedbackStatus, SentimentScore
 )
-from backend.modules.feedback.services.sentiment_service import sentiment_service
-from backend.core.config import settings
+from modules.feedback.services.sentiment_service import sentiment_service
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ class ContentModerationService:
             )
             
             if priority != "all":
-                from backend.modules.feedback.models.feedback_models import FeedbackPriority
+                from modules.feedback.models.feedback_models import FeedbackPriority
                 query = query.filter(Feedback.priority == FeedbackPriority(priority))
             
             # Sort by priority and date

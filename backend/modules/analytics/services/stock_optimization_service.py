@@ -19,15 +19,16 @@ from scipy import stats
 from scipy.optimize import minimize, linprog
 import uuid
 
-from backend.core.database import get_db
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from modules.analytics.schemas.predictive_analytics_schemas import (
     StockOptimizationRequest, StockOptimizationResult, StockRecommendation,
     DemandForecastRequest, TimeGranularity
 )
-from backend.modules.analytics.services.demand_prediction_service import DemandPredictionService
-from backend.modules.orders.models.inventory_models import Inventory, MenuItemInventory
-from backend.modules.menu.models import MenuItem
-from backend.modules.orders.models.order_models import Order, OrderItem
+from modules.analytics.services.demand_prediction_service import DemandPredictionService
+from core.inventory_models import Inventory
+from core.menu_models import MenuItemInventory
+from core.menu_models import MenuItem
+from modules.orders.models.order_models import Order, OrderItem
 
 logger = logging.getLogger(__name__)
 

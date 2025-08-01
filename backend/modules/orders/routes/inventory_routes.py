@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.inventory_controller import (
     get_inventory_by_id, check_low_stock, list_inventory, update_inventory
 )

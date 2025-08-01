@@ -7,7 +7,7 @@ import json
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 
-from backend.modules.analytics.models.analytics_models import AggregationPeriod
+from modules.analytics.models.analytics_models import AggregationPeriod
 
 
 class TestAnalyticsAPI:
@@ -32,7 +32,7 @@ class TestAnalyticsAPI:
         sample_orders
     ):
         """Test successful dashboard metrics retrieval"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -70,7 +70,7 @@ class TestAnalyticsAPI:
         """Test dashboard metrics with specific date"""
         test_date = "2024-01-15"
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -102,7 +102,7 @@ class TestAnalyticsAPI:
             "only_completed_orders": True
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -149,7 +149,7 @@ class TestAnalyticsAPI:
             "max_order_value": 100.00
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -172,7 +172,7 @@ class TestAnalyticsAPI:
             "period_type": "daily"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -196,7 +196,7 @@ class TestAnalyticsAPI:
             "period_type": "daily"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -245,7 +245,7 @@ class TestAnalyticsAPI:
             "period_type": "daily"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test different pagination parameters
@@ -274,7 +274,7 @@ class TestAnalyticsAPI:
             "period_type": "daily"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -312,7 +312,7 @@ class TestAnalyticsAPI:
             "period_type": "daily"
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.post(
@@ -344,7 +344,7 @@ class TestAnalyticsAPI:
         sample_orders
     ):
         """Test quick stats endpoint"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -383,7 +383,7 @@ class TestAnalyticsAPI:
         sample_staff_member
     ):
         """Test quick stats with filters"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -400,7 +400,7 @@ class TestAnalyticsAPI:
         sample_sales_snapshots
     ):
         """Test top performers endpoint for staff"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -429,7 +429,7 @@ class TestAnalyticsAPI:
         sample_orders
     ):
         """Test top performers endpoint for products"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -449,7 +449,7 @@ class TestAnalyticsAPI:
         auth_headers_staff
     ):
         """Test top performers with invalid entity type"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -466,7 +466,7 @@ class TestAnalyticsAPI:
         sample_orders
     ):
         """Test trends endpoint"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             response = client.get(
@@ -510,7 +510,7 @@ class TestAnalyticsAPI:
         """Test trends endpoint with different metrics"""
         metrics = ["revenue", "orders", "customers"]
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             for metric in metrics:
@@ -537,7 +537,7 @@ class TestAnalyticsAPI:
             }
         }
         
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test CSV export
@@ -570,7 +570,7 @@ class TestAnalyticsAPI:
         auth_headers_staff
     ):
         """Test internal server error handling"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Mock service to raise an exception
@@ -612,7 +612,7 @@ class TestAnalyticsAPIValidation:
     
     def test_sales_filter_validation(self, client: TestClient, auth_headers_staff):
         """Test sales filter validation"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test invalid period type
@@ -641,7 +641,7 @@ class TestAnalyticsAPIValidation:
     
     def test_pagination_validation(self, client: TestClient, auth_headers_staff):
         """Test pagination parameter validation"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test invalid page number
@@ -670,7 +670,7 @@ class TestAnalyticsAPIValidation:
     
     def test_sort_order_validation(self, client: TestClient, auth_headers_staff):
         """Test sort order validation"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test invalid sort order
@@ -683,7 +683,7 @@ class TestAnalyticsAPIValidation:
     
     def test_query_parameter_validation(self, client: TestClient, auth_headers_staff):
         """Test query parameter validation"""
-        with patch('backend.core.auth.get_current_staff_user') as mock_auth:
+        with patch('backend.core.auth.get_current_user') as mock_auth:
             mock_auth.return_value = {"id": 1, "name": "Staff User"}
             
             # Test invalid metric in top performers

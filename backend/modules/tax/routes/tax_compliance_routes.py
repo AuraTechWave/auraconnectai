@@ -6,9 +6,8 @@ from typing import List, Optional
 from datetime import date
 import uuid
 
-from backend.core.database import get_db
-from backend.core.auth import require_permission
-from backend.core.tenant import get_current_tenant
+from core.database import get_db
+from core.auth import require_permission, get_current_tenant
 
 from ..schemas import (
     TaxFilingCreate, TaxFilingUpdate, TaxFilingSubmit, TaxFilingResponse,
@@ -212,7 +211,7 @@ async def generate_report(
 @router.get("/reports/{report_id}/download")
 async def download_report(
     report_id: str,
-    format: str = Query("pdf", regex="^(pdf|excel|csv)$"),
+    format: str = Query("pdf", pattern="^(pdf|excel|csv)$"),
     current_user: dict = Depends(require_permission("tax.report"))
 ):
     """Download a generated report"""

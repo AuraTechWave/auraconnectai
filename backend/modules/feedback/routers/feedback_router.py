@@ -6,16 +6,15 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user, get_current_staff_user, get_optional_current_user
-from backend.modules.feedback.services.feedback_service import FeedbackService
-from backend.modules.feedback.services.moderation_service import create_moderation_service
-from backend.modules.feedback.schemas.feedback_schemas import (
+from core.database import get_db
+from core.auth import get_current_user, get_optional_current_user
+from modules.feedback.services.feedback_service import FeedbackService
+from modules.feedback.services.moderation_service import create_moderation_service
+from modules.feedback.schemas.feedback_schemas import (
     FeedbackCreate, FeedbackUpdate, FeedbackResponse, FeedbackSummary,
     FeedbackFilters, FeedbackResponseCreate, FeedbackCategoryCreate,
     FeedbackCategoryUpdate, PaginatedResponse, FeedbackListResponse
 )
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
@@ -42,7 +41,7 @@ async def create_feedback(
         
         # For anonymous feedback, customer_id will be None but email should be provided
         if not feedback_data.customer_id and not feedback_data.customer_email:
-            raise ValidationError("Either customer authentication or email is required")
+            raise ValueError("Either customer authentication or email is required")
         
         feedback_service = FeedbackService(db)
         result = feedback_service.create_feedback(feedback_data, auto_categorize=True)
@@ -51,7 +50,7 @@ async def create_feedback(
         
     except Exception as e:
         logger.error(f"Error creating feedback: {e}")
-        if isinstance(e, (ValidationError, PermissionError)):
+        if isinstance(e, (ValueError, PermissionError)):
             raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -61,7 +60,7 @@ async def get_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     db: Session = Depends(get_db),
     current_user: Optional[Dict] = Depends(get_optional_current_user),
-    current_staff: Optional[Dict] = Depends(get_current_staff_user)
+    current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """Get specific feedback by ID"""
     
@@ -76,7 +75,7 @@ async def get_feedback(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -90,7 +89,7 @@ async def get_feedback_by_uuid(
     feedback_uuid: str = Path(..., description="Feedback UUID"),
     db: Session = Depends(get_db),
     current_user: Optional[Dict] = Depends(get_optional_current_user),
-    current_staff: Optional[Dict] = Depends(get_current_staff_user)
+    current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """Get feedback by UUID"""
     
@@ -105,7 +104,7 @@ async def get_feedback_by_uuid(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -114,12 +113,12 @@ async def get_feedback_by_uuid(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.put("/{feedback_id}", response_model=FeedbackResponse, dependencies=[Depends(get_current_staff_user)])
+@router.put("/{feedback_id}", response_model=FeedbackResponse, dependencies=[Depends(get_current_user)])
 async def update_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     update_data: FeedbackUpdate = Body(...),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Update feedback (staff only)"""
     
@@ -133,7 +132,7 @@ async def update_feedback(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating feedback {feedback_id}: {e}")
@@ -157,11 +156,11 @@ async def list_feedback(
     
     # Sorting parameters
     sort_by: str = Query("created_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     
     db: Session = Depends(get_db),
     current_user: Optional[Dict] = Depends(get_optional_current_user),
-    current_staff: Optional[Dict] = Depends(get_current_staff_user)
+    current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """List feedback with filtering and pagination"""
     
@@ -221,12 +220,12 @@ async def list_feedback(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/{feedback_id}/assign", dependencies=[Depends(get_current_staff_user)])
+@router.post("/{feedback_id}/assign", dependencies=[Depends(get_current_user)])
 async def assign_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     assignee_id: int = Body(..., description="Staff member to assign to"),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Assign feedback to a staff member (staff only)"""
     
@@ -240,19 +239,19 @@ async def assign_feedback(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error assigning feedback {feedback_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/{feedback_id}/resolve", dependencies=[Depends(get_current_staff_user)])
+@router.post("/{feedback_id}/resolve", dependencies=[Depends(get_current_user)])
 async def resolve_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     resolution_notes: str = Body(..., description="Resolution notes"),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Mark feedback as resolved (staff only)"""
     
@@ -266,20 +265,20 @@ async def resolve_feedback(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error resolving feedback {feedback_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/{feedback_id}/escalate", dependencies=[Depends(get_current_staff_user)])
+@router.post("/{feedback_id}/escalate", dependencies=[Depends(get_current_user)])
 async def escalate_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     escalated_to: int = Body(..., description="Staff member to escalate to"),
     reason: Optional[str] = Body(None, description="Escalation reason"),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Escalate feedback to higher level support (staff only)"""
     
@@ -294,7 +293,7 @@ async def escalate_feedback(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error escalating feedback {feedback_id}: {e}")
@@ -306,7 +305,7 @@ async def add_feedback_response(
     feedback_id: int = Path(..., description="Feedback ID"),
     response_data: FeedbackResponseCreate = Body(...),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Add response to feedback (staff only)"""
     
@@ -322,14 +321,14 @@ async def add_feedback_response(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error adding response to feedback {feedback_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/analytics/overview", dependencies=[Depends(get_current_staff_user)])
+@router.get("/analytics/overview", dependencies=[Depends(get_current_user)])
 async def get_feedback_analytics(
     start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
     end_date: Optional[str] = Query(None, description="End date (ISO format)"),
@@ -360,7 +359,7 @@ async def get_feedback_analytics(
 
 # Category management endpoints
 
-@router.post("/categories", dependencies=[Depends(get_current_staff_user)])
+@router.post("/categories", dependencies=[Depends(get_current_user)])
 async def create_feedback_category(
     category_data: FeedbackCategoryCreate = Body(...),
     db: Session = Depends(get_db)
@@ -373,7 +372,7 @@ async def create_feedback_category(
         
         return result
         
-    except ValidationError as e:
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating feedback category: {e}")
@@ -400,9 +399,9 @@ async def list_feedback_categories(
 
 # Moderation endpoints
 
-@router.get("/moderation/queue", dependencies=[Depends(get_current_staff_user)])
+@router.get("/moderation/queue", dependencies=[Depends(get_current_user)])
 async def get_feedback_moderation_queue(
-    priority: str = Query("all", regex="^(all|low|medium|high|urgent)$", description="Priority filter"),
+    priority: str = Query("all", pattern="^(all|low|medium|high|urgent)$", description="Priority filter"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db)
@@ -425,16 +424,16 @@ async def get_feedback_moderation_queue(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/{feedback_id}/moderate", dependencies=[Depends(get_current_staff_user)])
+@router.post("/{feedback_id}/moderate", dependencies=[Depends(get_current_user)])
 async def moderate_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Run moderation analysis on feedback (staff only)"""
     
     try:
-        from backend.modules.feedback.models.feedback_models import Feedback
+        from modules.feedback.models.feedback_models import Feedback
         
         # Get feedback
         feedback = db.query(Feedback).filter(Feedback.id == feedback_id).first()
@@ -519,7 +518,7 @@ async def get_my_feedback_detail(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting customer feedback {feedback_id}: {e}")

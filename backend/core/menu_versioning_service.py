@@ -8,16 +8,16 @@ import json
 import uuid
 from contextlib import contextmanager
 
-from backend.core.menu_versioning_models import (
+from core.menu_versioning_models import (
     MenuVersion, MenuCategoryVersion, MenuItemVersion, 
     ModifierGroupVersion, ModifierVersion, MenuItemModifierVersion,
     MenuAuditLog, MenuVersionSchedule, MenuVersionComparison,
     VersionType, ChangeType
 )
-from backend.core.menu_models import (
+from core.menu_models import (
     MenuCategory, MenuItem, ModifierGroup, Modifier, MenuItemModifier
 )
-from backend.core.menu_versioning_schemas import (
+from core.menu_versioning_schemas import (
     CreateVersionRequest, PublishVersionRequest, RollbackVersionRequest,
     VersionComparisonRequest, MenuVersionWithDetails, MenuVersionComparison,
     FieldComparison, EntityComparison, BulkChangeRequest

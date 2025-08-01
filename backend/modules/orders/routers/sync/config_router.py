@@ -11,12 +11,12 @@ from sqlalchemy.orm import Session
 from typing import Dict
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.sync_models import SyncConfiguration
-from backend.modules.orders.tasks.sync_tasks import order_sync_scheduler
-from backend.modules.orders.schemas.sync_schemas import SyncConfigurationUpdate
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.sync_models import SyncConfiguration
+from modules.orders.tasks.sync_tasks import order_sync_scheduler
+from modules.orders.schemas.sync_schemas import SyncConfigurationUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sync-config"])

@@ -16,7 +16,6 @@ from ..services.permissions_service import PermissionsService, AnalyticsPermissi
 from ..services.async_processing import AsyncTaskProcessor, TaskStatus
 from ..schemas.analytics_schemas import SalesFilterRequest
 from ..models.analytics_models import AlertRule
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 
 class TestSalesReportServiceNegativeCases:
@@ -27,7 +26,7 @@ class TestSalesReportServiceNegativeCases:
         service = SalesReportService(db_session)
         
         # Future start date
-        with pytest.raises(ValidationError, match="Start date cannot be in the future"):
+        with pytest.raises(ValueError, match="Start date cannot be in the future"):
             filters = SalesFilterRequest(
                 date_from=date.today() + timedelta(days=1),
                 date_to=date.today()
@@ -35,7 +34,7 @@ class TestSalesReportServiceNegativeCases:
             service.generate_sales_summary(filters)
         
         # Start date after end date
-        with pytest.raises(ValidationError, match="Start date must be before end date"):
+        with pytest.raises(ValueError, match="Start date must be before end date"):
             filters = SalesFilterRequest(
                 date_from=date.today(),
                 date_to=date.today() - timedelta(days=1)
@@ -43,7 +42,7 @@ class TestSalesReportServiceNegativeCases:
             service.generate_sales_summary(filters)
         
         # Excessively large date range
-        with pytest.raises(ValidationError, match="Date range too large"):
+        with pytest.raises(ValueError, match="Date range too large"):
             filters = SalesFilterRequest(
                 date_from=date(2000, 1, 1),
                 date_to=date(2025, 12, 31)
@@ -55,7 +54,7 @@ class TestSalesReportServiceNegativeCases:
         service = SalesReportService(db_session)
         
         # Negative staff IDs
-        with pytest.raises(ValidationError, match="Invalid staff ID"):
+        with pytest.raises(ValueError, match="Invalid staff ID"):
             filters = SalesFilterRequest(staff_ids=[-1, 0])
             service.generate_sales_summary(filters)
         
@@ -65,7 +64,7 @@ class TestSalesReportServiceNegativeCases:
         assert result is not None  # Should handle empty filters gracefully
         
         # Excessively large filter lists
-        with pytest.raises(ValidationError, match="Too many filter values"):
+        with pytest.raises(ValueError, match="Too many filter values"):
             filters = SalesFilterRequest(staff_ids=list(range(1001)))  # Over limit
             service.generate_sales_summary(filters)
 
@@ -116,14 +115,14 @@ class TestSalesReportServiceNegativeCases:
         )
         
         # Page 0 or negative
-        with pytest.raises(ValidationError, match="Page must be positive"):
+        with pytest.raises(ValueError, match="Page must be positive"):
             service.generate_detailed_sales_report(filters, page=0, per_page=10)
         
-        with pytest.raises(ValidationError, match="Page must be positive"):
+        with pytest.raises(ValueError, match="Page must be positive"):
             service.generate_detailed_sales_report(filters, page=-1, per_page=10)
         
         # Per page 0 or negative
-        with pytest.raises(ValidationError, match="Per page must be positive"):
+        with pytest.raises(ValueError, match="Per page must be positive"):
             service.generate_detailed_sales_report(filters, page=1, per_page=0)
         
         # Extremely large page number
@@ -141,13 +140,13 @@ class TestSalesReportServiceNegativeCases:
         )
         
         # Invalid sort field
-        with pytest.raises(ValidationError, match="Invalid sort field"):
+        with pytest.raises(ValueError, match="Invalid sort field"):
             service.generate_detailed_sales_report(
                 filters, page=1, per_page=10, sort_by="invalid_field"
             )
         
         # Invalid sort order
-        with pytest.raises(ValidationError, match="Invalid sort order"):
+        with pytest.raises(ValueError, match="Invalid sort order"):
             service.generate_detailed_sales_report(
                 filters, page=1, per_page=10, sort_order="invalid"
             )
@@ -177,7 +176,7 @@ class TestTrendServiceNegativeCases:
         start_date = date.today() - timedelta(days=30)
         end_date = date.today()
         
-        with pytest.raises(ValidationError, match="Invalid granularity"):
+        with pytest.raises(ValueError, match="Invalid granularity"):
             service.get_revenue_trend(start_date, end_date, "invalid_granularity")
 
     def test_trend_calculation_overflow(self, db_session: Session):
@@ -216,7 +215,7 @@ class TestExportServiceNegativeCases:
             filters=SalesFilterRequest()
         )
         
-        with pytest.raises(ValidationError, match="Unsupported format"):
+        with pytest.raises(ValueError, match="Unsupported format"):
             service.export_sales_report(request, "unsupported_format", 1)
 
     def test_missing_optional_libraries(self, db_session: Session):
@@ -277,7 +276,7 @@ class TestAlertingServiceNegativeCases:
         service = AlertingService(db_session)
         
         # Invalid condition type
-        with pytest.raises(ValidationError, match="Invalid condition type"):
+        with pytest.raises(ValueError, match="Invalid condition type"):
             service.create_alert_rule(
                 name="Test Alert",
                 description="Test",
@@ -291,7 +290,7 @@ class TestAlertingServiceNegativeCases:
             )
         
         # Invalid threshold value
-        with pytest.raises(ValidationError, match="Invalid threshold"):
+        with pytest.raises(ValueError, match="Invalid threshold"):
             service.create_alert_rule(
                 name="Test Alert",
                 description="Test",
@@ -305,7 +304,7 @@ class TestAlertingServiceNegativeCases:
             )
         
         # Empty notification channels
-        with pytest.raises(ValidationError, match="At least one notification channel required"):
+        with pytest.raises(ValueError, match="At least one notification channel required"):
             service.create_alert_rule(
                 name="Test Alert",
                 description="Test",

@@ -11,14 +11,12 @@ from fastapi.security import OAuth2PasswordRequestForm, HTTPBearer
 from pydantic import BaseModel
 from typing import Optional
 
-from ....core.auth import (
+from core.auth import (
     authenticate_user, create_user_session, get_current_user, logout_user,
     refresh_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, User
 )
-from ....core.session_manager import session_manager
-from ....core.rbac_service import RBACService, get_rbac_service
-from ....core.rbac_auth import get_current_user_required_rbac
-from ....core.rbac_models import RBACUser
+from core.session_manager import session_manager
+from core.rbac_service import RBACService, get_rbac_service
 
 
 class Token(BaseModel):
@@ -332,7 +330,7 @@ class RBACUserInfo(BaseModel):
 
 # @router.get("/me/rbac", response_model=RBACUserInfo)
 # async def read_users_me_rbac(
-#     current_user: RBACUser = Depends(get_current_user_required_rbac),
+#     current_user: User = Depends(get_current_user_required_rbac),
 #     rbac_service: RBACService = Depends(get_rbac_service),
 #     tenant_id: Optional[int] = None
 # ):
@@ -404,11 +402,11 @@ class PermissionCheckResponse(BaseModel):
     checked_at: str
 
 
-# TODO: Fix RBAC endpoint - RBACUser is SQLAlchemy model
+# TODO: Fix RBAC endpoint - User is SQLAlchemy model
 # @router.post("/check-permission", response_model=PermissionCheckResponse)
 # async def check_my_permission(
 #     permission_check: PermissionCheckRequest,
-#     current_user: RBACUser = Depends(get_current_user_required_rbac),
+#     current_user: User = Depends(get_current_user_required_rbac),
 #     rbac_service: RBACService = Depends(get_rbac_service)
 # ):
     """

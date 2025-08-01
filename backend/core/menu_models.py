@@ -4,8 +4,8 @@ from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Float, Text, Boolean, JSON)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 import uuid
 
 
@@ -185,40 +185,9 @@ class MenuItemInventory(Base, TimestampMixin):
         return f"<MenuItemInventory(menu_item_id={self.menu_item_id}, inventory_id={self.inventory_id}, quantity={self.quantity_needed})>"
 
 
-# Updated Inventory model to include more fields
-class Inventory(Base, TimestampMixin):
-    """Enhanced inventory model"""
-    __tablename__ = "inventory"
-
-    id = Column(Integer, primary_key=True, index=True)
-    item_name = Column(String(200), nullable=False, index=True)
-    description = Column(Text, nullable=True)
-    sku = Column(String(50), nullable=True, unique=True, index=True)
-    
-    # Quantity tracking
-    quantity = Column(Float, nullable=False, default=0.0)
-    unit = Column(String(20), nullable=False)  # kg, lbs, pieces, liters, etc.
-    threshold = Column(Float, nullable=False, default=0.0)  # Reorder threshold
-    reorder_quantity = Column(Float, nullable=True)  # Suggested reorder amount
-    
-    # Pricing
-    cost_per_unit = Column(Float, nullable=True)
-    last_purchase_price = Column(Float, nullable=True)
-    
-    # Vendor information
-    vendor_id = Column(Integer, nullable=True)
-    vendor_item_code = Column(String(100), nullable=True)
-    
-    # Storage and handling
-    storage_location = Column(String(100), nullable=True)
-    expiration_days = Column(Integer, nullable=True)  # Days until expiration
-    
-    # Status
-    is_active = Column(Boolean, nullable=False, default=True)
-    deleted_at = Column(DateTime, nullable=True)
-
-    # Relationships
-    menu_mappings = relationship("MenuItemInventory", back_populates="inventory_item")
+# NOTE: The Inventory model has been moved to core.inventory_models to avoid duplicate table definitions
+# Please import from core.inventory_models instead:
+# from core.inventory_models import Inventory
 
     def __repr__(self):
         return f"<Inventory(id={self.id}, item_name='{self.item_name}', quantity={self.quantity})>"

@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List
 import logging
 
 from ..services.referral_service import ReferralService
-from backend.modules.customers.models.customer_models import Customer
+from modules.customers.models.customer_models import Customer
 
 logger = logging.getLogger(__name__)
 

@@ -14,11 +14,12 @@ import redis
 from redis import Redis
 import json
 import logging
+from .config_validation import config, get_redis_url
 
 logger = logging.getLogger(__name__)
 
 # Redis Configuration
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_URL = get_redis_url()
 SESSION_CLEANUP_INTERVAL = int(os.getenv("SESSION_CLEANUP_INTERVAL", "3600"))  # 1 hour
 
 @dataclass

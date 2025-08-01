@@ -9,7 +9,7 @@ from ..models.order_models import Order
 from ..schemas.order_schemas import FraudCheckResponse
 from ..enums.order_enums import (FraudCheckStatus, FraudRiskLevel,
                                  CheckpointType)
-from backend.core.compliance import ComplianceEngine
+from core.compliance import ComplianceEngine
 
 
 async def perform_fraud_check(

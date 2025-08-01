@@ -10,9 +10,9 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
-from backend.modules.orders.routers.pos_sync_router import POSSyncRequest, POSSyncResponse
+from modules.orders.models.order_models import Order
+from modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
+from modules.orders.routers.pos_sync_router import POSSyncRequest, POSSyncResponse
 
 
 @pytest.fixture
@@ -394,7 +394,7 @@ class TestPOSSyncRequestValidation:
 @pytest.mark.asyncio
 async def test_background_sync_processing():
     """Test background sync task processing"""
-    from backend.modules.orders.routers.pos_sync_router import _process_sync_batch
+    from modules.orders.routers.pos_sync_router import _process_sync_batch
     
     with patch('backend.modules.orders.routers.pos_sync_router.get_db') as mock_get_db:
         mock_db = Mock()

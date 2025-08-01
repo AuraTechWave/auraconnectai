@@ -15,14 +15,14 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 import uuid
 
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from modules.analytics.schemas.predictive_analytics_schemas import (
     RealTimePredictionUpdate, PredictionAlert, DemandForecast,
     PredictiveInsight, StockRecommendation, PredictionConfidence
 )
-from backend.modules.analytics.services.websocket_manager import WebSocketManager
-from backend.modules.analytics.services.demand_prediction_service import DemandPredictionService
-from backend.modules.analytics.services.stock_optimization_service import StockOptimizationService
-from backend.modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
+from modules.analytics.services.websocket_manager import WebSocketManager
+from modules.analytics.services.demand_prediction_service import DemandPredictionService
+from modules.analytics.services.stock_optimization_service import StockOptimizationService
+from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class PredictiveRealtimeService:
                         entity_id = int(entity_id)
                         
                         # Generate updated forecast
-                        from backend.modules.analytics.schemas.predictive_analytics_schemas import DemandForecastRequest
+                        from modules.analytics.schemas.predictive_analytics_schemas import DemandForecastRequest
                         
                         request = DemandForecastRequest(
                             entity_id=entity_id,
@@ -177,8 +177,9 @@ class PredictiveRealtimeService:
                 await asyncio.sleep(self.update_intervals['stock_alert'])
                 
                 # Check for stock alerts across all products
-                from backend.modules.orders.models.inventory_models import Inventory, MenuItemInventory
-                from backend.modules.menu.models import MenuItem
+                from core.inventory_models import Inventory
+from core.menu_models import MenuItemInventory
+                from modules.menu.models import MenuItem
                 
                 # Get low stock items
                 low_stock_items = db.query(Inventory).filter(
@@ -314,7 +315,7 @@ class PredictiveRealtimeService:
     ) -> int:
         """Estimate days until stockout based on recent demand"""
         # Get average daily demand from last 7 days
-        from backend.modules.orders.models.order_models import Order, OrderItem
+        from modules.orders.models.order_models import Order, OrderItem
         
         seven_days_ago = datetime.now() - timedelta(days=7)
         
@@ -335,7 +336,7 @@ class PredictiveRealtimeService:
         # Analyze recent order patterns and forecasts
         # This is a simplified implementation
         
-        from backend.modules.orders.models.order_models import Order
+        from modules.orders.models.order_models import Order
         
         # Check if current demand is higher than usual
         today_orders = db.query(func.count(Order.id)).filter(
@@ -412,7 +413,7 @@ class PredictiveRealtimeService:
     async def _detect_optimization_opportunities(self, db: Session) -> Optional[PredictiveInsight]:
         """Detect inventory optimization opportunities"""
         # Check for overstocked items
-        from backend.modules.orders.models.inventory_models import Inventory
+        from core.inventory_models import Inventory
         
         overstocked = db.query(Inventory).filter(
             Inventory.quantity > Inventory.threshold * 5

@@ -5,9 +5,9 @@ from typing import Optional, List
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_staff_user
-from backend.modules.analytics.services.permissions_service import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.analytics.services.permissions_service import (
     AnalyticsPermission, require_analytics_permission
 )
 from sqlalchemy.orm import Session

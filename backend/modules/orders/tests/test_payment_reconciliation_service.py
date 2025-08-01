@@ -1,19 +1,19 @@
 import pytest
 from fastapi import HTTPException
 from decimal import Decimal
-from backend.modules.orders.services.payment_reconciliation_service import (
+from modules.orders.services.payment_reconciliation_service import (
     create_payment_reconciliation, get_payment_reconciliation_by_id,
     update_payment_reconciliation, get_payment_reconciliations,
     perform_payment_reconciliation, resolve_payment_discrepancy
 )
-from backend.modules.orders.schemas.payment_reconciliation_schemas import (
+from modules.orders.schemas.payment_reconciliation_schemas import (
     PaymentReconciliationCreate, PaymentReconciliationUpdate,
     ReconciliationRequest, ReconciliationFilter, ResolutionRequest
 )
-from backend.modules.orders.enums.payment_enums import (
+from modules.orders.enums.payment_enums import (
     ReconciliationStatus, DiscrepancyType, ReconciliationAction
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
+from modules.orders.models.order_models import Order, OrderItem
 
 
 class TestPaymentReconciliationService:

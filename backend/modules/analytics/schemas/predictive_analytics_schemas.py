@@ -157,9 +157,45 @@ class StockOptimizationResult(BaseModel):
     recommendations: List[StockRecommendation]
     total_investment_required: Decimal
     expected_service_level: float
+
+
+class BatchForecastResult(BaseModel):
+    """Result of batch forecast request"""
+    task_id: Optional[str] = None
+    status: str
+    message: Optional[str] = None
+    forecasts: Optional[List[DemandForecast]] = None
     expected_waste_reduction: float
     optimization_summary: Dict[str, Any]
     generated_at: datetime = Field(default_factory=datetime.now)
+
+
+class InventoryHealthCheck(BaseModel):
+    """Health check result for inventory item"""
+    product_id: int
+    product_name: str
+    current_stock: float
+    days_of_stock_remaining: Optional[float]
+    stockout_risk: float = Field(..., ge=0, le=1)
+    overstock_risk: float = Field(..., ge=0, le=1)
+    health_score: float = Field(..., ge=0, le=100)
+    issues: List[str] = []
+    recommendations: List[str] = []
+
+
+class InventoryHealthReport(BaseModel):
+    """Overall inventory health report"""
+    report_id: str
+    generated_at: datetime = Field(default_factory=datetime.now)
+    total_products: int
+    healthy_products: int
+    at_risk_products: int
+    critical_products: int
+    overall_health_score: float = Field(..., ge=0, le=100)
+    total_inventory_value: Decimal
+    at_risk_value: Decimal
+    health_checks: List[InventoryHealthCheck]
+    summary_recommendations: List[str]
 
 
 class PredictionAlert(BaseModel):
@@ -187,6 +223,16 @@ class ModelPerformance(BaseModel):
     training_samples: int
     evaluation_period: Dict[str, date]
     last_updated: datetime
+
+
+class ModelPerformanceReport(BaseModel):
+    """Report containing model performance metrics for all models"""
+    report_id: str
+    generated_at: datetime = Field(default_factory=datetime.now)
+    performance_metrics: List[ModelPerformance]
+    best_performing_model: Optional[ModelType] = None
+    recommendations: List[str] = []
+    evaluation_summary: Dict[str, Any]
 
 
 class ForecastComparison(BaseModel):

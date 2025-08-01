@@ -14,8 +14,8 @@ from ..models.promotion_models import (
 from ..schemas.promotion_schemas import (
     ReferralProgramCreate, CustomerReferralCreate
 )
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.orders.models.order_models import Order
+from modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
 
 logger = logging.getLogger(__name__)
 
@@ -432,7 +432,7 @@ class ReferralService:
         try:
             if reward_type == "points":
                 # Award loyalty points
-                from backend.modules.loyalty.services.loyalty_service import LoyaltyService
+                from modules.loyalty.services.loyalty_service import LoyaltyService
                 loyalty_service = LoyaltyService(self.db)
                 
                 return loyalty_service.award_points(

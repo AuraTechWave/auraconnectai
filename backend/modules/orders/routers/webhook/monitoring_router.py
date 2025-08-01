@@ -9,21 +9,21 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user, check_permission
-from backend.core.config import settings
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.external_pos_models import (
+from core.database import get_db
+from core.auth import get_current_user
+from core.config import settings
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.external_pos_models import (
     ExternalPOSProvider, ExternalPOSWebhookEvent, 
     ExternalPOSWebhookLog, ExternalPOSPaymentUpdate
 )
-from backend.modules.orders.schemas.external_pos_schemas import (
+from modules.orders.schemas.external_pos_schemas import (
     WebhookEventResponse, WebhookEventDetailResponse,
     WebhookLogResponse
 )
-from backend.modules.orders.enums.external_pos_enums import WebhookProcessingStatus
-from backend.modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
-from backend.modules.orders.tasks.webhook_retry_task import webhook_retry_scheduler
+from modules.orders.enums.external_pos_enums import WebhookProcessingStatus
+from modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
+from modules.orders.tasks.webhook_retry_task import webhook_retry_scheduler
 
 router = APIRouter(
     prefix="/webhooks/external-pos/monitoring",

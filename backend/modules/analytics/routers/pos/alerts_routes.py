@@ -11,11 +11,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.core.rbac import require_permissions, Permission
-from backend.core.exceptions import NotFoundError
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
+from core.auth import require_permission
+# NotFoundError replaced with standard KeyError
 
 from ...schemas.pos_analytics_schemas import AlertSeverity
 from ...services.pos_alerts_service import POSAlertsService
@@ -32,7 +32,7 @@ async def get_active_pos_alerts(
     limit: int = Query(50, ge=1, le=200, description="Maximum alerts to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get active POS analytics alerts with pagination.
@@ -42,8 +42,7 @@ async def get_active_pos_alerts(
     Requires: analytics.view permission
     Rate limit: 60 requests per minute
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSAlertsService(db)
         
@@ -81,7 +80,7 @@ async def acknowledge_pos_alert(
     alert_id: str,
     notes: Optional[str] = Query(None, description="Acknowledgment notes", max_length=500),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Acknowledge a POS analytics alert.
@@ -90,8 +89,7 @@ async def acknowledge_pos_alert(
     
     Requires: analytics.manage permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_MANAGE])
-    
+
     try:
         service = POSAlertsService(db)
         
@@ -107,7 +105,7 @@ async def acknowledge_pos_alert(
             "alert_id": alert_id
         }
         
-    except NotFoundError:
+    except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Alert not found or already acknowledged"
@@ -125,7 +123,7 @@ async def resolve_pos_alert(
     alert_id: str,
     resolution_notes: str = Query(..., description="Resolution notes", max_length=1000),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Resolve a POS analytics alert.
@@ -134,8 +132,7 @@ async def resolve_pos_alert(
     
     Requires: analytics.manage permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_MANAGE])
-    
+
     try:
         service = POSAlertsService(db)
         
@@ -151,7 +148,7 @@ async def resolve_pos_alert(
             "alert_id": alert_id
         }
         
-    except NotFoundError:
+    except KeyError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Alert not found"
@@ -171,7 +168,7 @@ async def get_alert_history(
     days_back: int = Query(7, ge=1, le=90, description="Days of history to retrieve"),
     limit: int = Query(100, ge=1, le=500, description="Maximum alerts to return"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get historical alerts.
@@ -180,8 +177,7 @@ async def get_alert_history(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSAlertsService(db)
         

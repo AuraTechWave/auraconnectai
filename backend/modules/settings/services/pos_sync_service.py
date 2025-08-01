@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from backend.modules.settings.models.pos_sync_models import POSSyncSetting
-from backend.modules.settings.schemas.pos_sync_schemas import (
+from modules.settings.models.pos_sync_models import POSSyncSetting
+from modules.settings.schemas.pos_sync_schemas import (
     POSSyncSettingCreate
 )
 from typing import List, Optional

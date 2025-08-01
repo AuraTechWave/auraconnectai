@@ -12,16 +12,16 @@ from typing import List, Optional
 from decimal import Decimal
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.analytics.schemas.predictive_analytics_schemas import (
     StockOptimizationRequest, StockOptimizationResult,
     InventoryHealthCheck, InventoryHealthReport
 )
-from backend.modules.analytics.services.stock_optimization_service import StockOptimizationService
-from backend.modules.analytics.services.permissions import require_analytics_permission
-from backend.modules.analytics.constants import (
+from modules.analytics.services.stock_optimization_service import StockOptimizationService
+from modules.analytics.services.permissions_service import require_analytics_permission
+from modules.analytics.constants import (
     MAX_PRODUCTS_PER_OPTIMIZATION,
     DEFAULT_SERVICE_LEVEL,
     MIN_SERVICE_LEVEL,

@@ -13,17 +13,17 @@ from typing import Dict, Any
 from datetime import datetime, timedelta, date
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.modules.orders.services.sync_service import OrderSyncService
-from backend.modules.orders.models.sync_models import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.services.sync_service import OrderSyncService
+from modules.orders.models.sync_models import (
     SyncBatch, OrderSyncStatus, SyncStatus, SyncLog,
     SyncConfiguration, SyncConflict
 )
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.tasks.sync_tasks import order_sync_scheduler
-from backend.modules.orders.schemas.sync_schemas import (
+from modules.orders.models.order_models import Order
+from modules.orders.tasks.sync_tasks import order_sync_scheduler
+from modules.orders.schemas.sync_schemas import (
     SyncStatusResponse, SyncBatchResponse,
     SyncMetricsResponse, SyncHealthCheckResponse
 )

@@ -13,7 +13,7 @@ from typing import List, Optional, Dict, Any
 import json
 
 from .celery_config import celery_app, TASK_PRIORITIES
-from ....core.database import SessionLocal
+from core.database import SessionLocal
 from ..models.payroll_configuration import PayrollJobTracking
 from ..enums.payroll_enums import PayrollJobStatus
 from ..services.batch_payroll_service import BatchPayrollService

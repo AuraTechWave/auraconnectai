@@ -16,28 +16,34 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, text
 import uuid
 
-from backend.core.database import get_db
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from modules.analytics.schemas.predictive_analytics_schemas import (
     DemandForecastRequest, DemandForecast, PredictionPoint, ForecastMetadata,
     PredictionConfidence, ModelType, SeasonalityType, TimeGranularity
 )
-from backend.modules.analytics.services.predictive_models import (
+from modules.analytics.services.predictive_models import (
     ModelFactory, BaseForecastModel, EnsembleModel
 )
-from backend.modules.analytics.models.analytics_models import (
+from modules.analytics.models.analytics_models import (
     SalesAnalyticsSnapshot, AggregationPeriod
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.models.inventory_models import Inventory
-from backend.modules.menu.models import MenuItem, MenuCategory
-from backend.modules.analytics.exceptions import (
-    InsufficientDataError, ForecastModelError, DataQualityError
-)
-from backend.modules.analytics.constants import (
+from modules.orders.models.order_models import Order, OrderItem
+from core.inventory_models import Inventory
+from core.menu_models import MenuItem, MenuCategory
+# Custom exceptions - using standard Python exceptions instead
+class InsufficientDataError(ValueError):
+    pass
+
+class ForecastModelError(RuntimeError):
+    pass
+
+class DataQualityError(ValueError):
+    pass
+from modules.analytics.constants import (
     MIN_DATA_POINTS_FOR_FORECAST, CACHE_TTL_SECONDS,
     WEATHER_IMPACT_THRESHOLDS
 )
-from backend.modules.analytics.services.cache_service import (
+from modules.analytics.services.cache_service import (
     get_historical_cache, get_model_cache
 )
 

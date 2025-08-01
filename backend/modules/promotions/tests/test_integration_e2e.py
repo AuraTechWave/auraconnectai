@@ -7,11 +7,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.core.database import Base, get_db
+from core.database import Base, get_db
 from backend.main import app
-from backend.modules.promotions.models.promotion_models import *
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.orders.models.order_models import Order
+from modules.promotions.models.promotion_models import *
+from modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
 
 
 class TestPromotionSystemE2E:

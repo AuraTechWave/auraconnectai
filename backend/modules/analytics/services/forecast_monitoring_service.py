@@ -18,13 +18,13 @@ from sqlalchemy import func, and_, text
 import uuid
 import json
 
-from backend.core.database import get_db
-from backend.modules.analytics.schemas.predictive_analytics_schemas import (
+from core.database import get_db
+from modules.analytics.schemas.predictive_analytics_schemas import (
     ForecastAccuracyReport, ModelPerformance, ForecastComparison,
     TrendAnalysis, PredictiveInsight, PredictionAlert,
     PredictionConfidence, ModelType
 )
-from backend.modules.analytics.models.analytics_models import (
+from modules.analytics.models.analytics_models import (
     ForecastHistory, ForecastPerformance
 )
 
@@ -587,39 +587,4 @@ class ForecastMonitoringService:
         return f"{entity_type.capitalize()} #{entity_id}"
 
 
-# Add these models to your analytics_models.py
-
-class ForecastHistory(Base, TimestampMixin):
-    """History of all forecasts made"""
-    __tablename__ = "forecast_history"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    forecast_id = Column(String, unique=True, index=True)
-    entity_type = Column(String, nullable=False, index=True)
-    entity_id = Column(Integer, nullable=True, index=True)
-    model_type = Column(String, nullable=False)
-    forecast_date = Column(Date, nullable=False)
-    horizon_days = Column(Integer, nullable=False)
-    predictions_json = Column(text, nullable=False)  # JSON array of predictions
-    metadata_json = Column(text, nullable=True)  # Additional metadata
-
-
-class ForecastPerformance(Base, TimestampMixin):
-    """Tracked performance metrics for forecasts"""
-    __tablename__ = "forecast_performance"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    entity_type = Column(String, nullable=False, index=True)
-    entity_id = Column(Integer, nullable=True, index=True)
-    evaluation_date = Column(Date, nullable=False, index=True)
-    mae = Column(Float, nullable=False)
-    mape = Column(Float, nullable=False)
-    rmse = Column(Float, nullable=False)
-    r_squared = Column(Float, nullable=True)
-    bias = Column(Float, nullable=True)
-    sample_size = Column(Integer, nullable=False)
-    metrics_json = Column(text, nullable=True)  # Additional metrics as JSON
-    
-    __table_args__ = (
-        Index('idx_forecast_performance_entity', 'entity_type', 'entity_id', 'evaluation_date'),
-    )
+# Note: ForecastHistory and ForecastPerformance models are defined in analytics_models.py

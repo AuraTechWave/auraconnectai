@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 import json
 
-from backend.core.database import get_db
+from core.database import get_db
 from ..models.analytics_models import SalesAnalyticsSnapshot, AggregationPeriod
 from ..schemas.realtime_schemas import (
     WidgetConfiguration, DashboardLayout, WidgetDataResponse, 

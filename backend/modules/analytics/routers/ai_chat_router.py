@@ -17,9 +17,9 @@ import asyncio
 import uuid
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_staff_user, decode_access_token
-from backend.core.exceptions import ValidationError, PermissionError
+from core.database import get_db
+from core.auth import get_current_user, User, verify_token
+# Custom exceptions replaced with standard Python exceptions
 
 from ..services.permissions_service import (
     AnalyticsPermission, require_analytics_permission
@@ -97,7 +97,7 @@ async def chat_websocket_endpoint(
             
         try:
             # Decode token to get user info
-            user_info = decode_access_token(token)
+            user_info = verify_token(token)
         except Exception as e:
             await websocket.close(code=4001, reason="Invalid token")
             return
@@ -295,7 +295,7 @@ async def chat_rest_endpoint(
         )
         return response
         
-    except ValidationError as e:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -335,7 +335,7 @@ async def get_suggested_queries(
 
 @router.get("/capabilities", response_model=AssistantCapabilities)
 async def get_assistant_capabilities(
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Get AI assistant capabilities and limitations.
@@ -387,7 +387,7 @@ async def clear_session(
 async def submit_feedback(
     feedback: FeedbackRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Submit feedback on AI assistant response.

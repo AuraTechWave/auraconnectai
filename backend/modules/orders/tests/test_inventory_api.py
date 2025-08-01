@@ -1,5 +1,5 @@
 from fastapi import status
-from backend.modules.orders.models.inventory_models import Inventory
+from core.inventory_models import Inventory
 
 
 class TestInventoryAPI:

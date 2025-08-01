@@ -10,11 +10,11 @@ from dataclasses import dataclass
 import json
 from collections import defaultdict
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewAggregate, ReviewStatus, FeedbackStatus,
     SentimentScore, ReviewType, FeedbackType, FeedbackPriority
 )
-from backend.modules.feedback.services.sentiment_service import sentiment_service
+from modules.feedback.services.sentiment_service import sentiment_service
 
 logger = logging.getLogger(__name__)
 

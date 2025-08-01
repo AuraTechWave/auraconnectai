@@ -368,8 +368,8 @@ class RewardSearchParams(BaseModel):
     expiring_soon: Optional[int] = Field(None, ge=1, le=30)  # Days until expiry
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
-    sort_by: str = Field("created_at", regex="^(created_at|valid_until|redeemed_at|value)$")
-    sort_order: str = Field("desc", regex="^(asc|desc)$")
+    sort_by: str = Field("created_at", pattern="^(created_at|valid_until|redeemed_at|value)$")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$")
 
 
 class RewardSearchResponse(BaseModel):

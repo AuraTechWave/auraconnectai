@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.modules.staff.models.payroll_models import Payroll, Payslip
+from modules.staff.models.payroll_models import Payroll, Payslip
 from datetime import datetime
 
 

@@ -284,7 +284,7 @@ class AsyncTaskProcessor:
         
         from .sales_report_service import SalesReportService
         from ..schemas.analytics_schemas import SalesFilterRequest
-        from backend.core.database import get_db
+        from core.database import get_db
         
         db = next(get_db())
         try:
@@ -341,7 +341,7 @@ class AsyncTaskProcessor:
         """Handle trend calculation tasks"""
         
         from .trend_service import TrendService
-        from backend.core.database import get_db
+        from core.database import get_db
         
         db = next(get_db())
         try:
@@ -406,7 +406,7 @@ class AsyncTaskProcessor:
     def _handle_refresh_views(self, task_data: Dict[str, Any], task: AsyncTask) -> Dict[str, Any]:
         """Handle materialized view refresh"""
         
-        from backend.core.database import get_db
+        from core.database import get_db
         from sqlalchemy import text
         
         db = next(get_db())

@@ -10,8 +10,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from unittest.mock import Mock, patch, AsyncMock
 
-from backend.modules.analytics.services.pos_dashboard_service import POSDashboardService
-from backend.modules.analytics.schemas.pos_analytics_schemas import TimeRange
+from modules.analytics.services.pos_dashboard_service import POSDashboardService
+from modules.analytics.schemas.pos_analytics_schemas import TimeRange
 
 
 class TestPOSAnalyticsEdgeCases:
@@ -185,7 +185,7 @@ class TestPOSAnalyticsEdgeCases:
     ):
         """Test terminal health when all terminals are offline"""
         # Create offline terminals
-        from backend.modules.analytics.models.pos_analytics_models import POSTerminalHealth
+        from modules.analytics.models.pos_analytics_models import POSTerminalHealth
         
         for i in range(3):
             terminal = POSTerminalHealth(

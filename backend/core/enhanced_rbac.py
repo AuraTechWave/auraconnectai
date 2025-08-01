@@ -7,8 +7,8 @@ from enum import Enum
 import logging
 from datetime import datetime, timedelta
 
-from backend.core.rbac_models import RBACUser, RBACRole, RBACPermission
-from backend.core.auth import get_current_user
+from core.rbac_models import RBACUser, RBACRole, RBACPermission
+from core.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 

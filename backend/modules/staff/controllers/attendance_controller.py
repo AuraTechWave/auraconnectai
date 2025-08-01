@@ -1,4 +1,4 @@
-from backend.modules.staff.services.attendance_service import log_clock
+from modules.staff.services.attendance_service import log_clock
 
 
 async def log_attendance(data):

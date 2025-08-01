@@ -16,7 +16,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func, and_
 
-from backend.core.database import get_db
+from core.database import get_db
 from ..schemas.ai_assistant_schemas import (
     ChatMessage, ChatRequest, ChatResponse, ChatSession, QueryContext,
     AnalyticsQuery, QueryResult, QueryIntent, MessageRole, MessageType,

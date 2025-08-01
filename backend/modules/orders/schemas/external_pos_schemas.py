@@ -10,7 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from backend.modules.orders.enums.external_pos_enums import (
+from modules.orders.enums.external_pos_enums import (
     ExternalPOSProvider, ExternalPOSEventType, WebhookProcessingStatus,
     PaymentStatus, PaymentMethod, AuthenticationType
 )

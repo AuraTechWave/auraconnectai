@@ -3,8 +3,8 @@
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Float, Text, Boolean, JSON, Enum as SQLEnum)
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from enum import Enum
 import uuid
 

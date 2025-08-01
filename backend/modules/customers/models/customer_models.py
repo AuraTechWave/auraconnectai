@@ -1,11 +1,11 @@
 # backend/modules/customers/models/customer_models.py
 
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime, 
-                        Float, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint)
+                        Float, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint, Table)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from datetime import datetime
 from enum import Enum
 
@@ -275,15 +275,12 @@ class CustomerSegment(Base, TimestampMixin):
 
 
 # Association table for customer segments
-customer_segment_members = Base.metadata.tables.get('customer_segment_members') or \
-    Base.metadata.tables.setdefault('customer_segment_members', 
-        sqlalchemy.Table('customer_segment_members', Base.metadata,
-            Column('customer_id', Integer, ForeignKey('customers.id'), primary_key=True),
-            Column('segment_id', Integer, ForeignKey('customer_segments.id'), primary_key=True),
-            Column('added_at', DateTime, default=datetime.utcnow),
-            Column('expires_at', DateTime, nullable=True)
-        )
-    )
+customer_segment_members = Table('customer_segment_members', Base.metadata,
+    Column('customer_id', Integer, ForeignKey('customers.id'), primary_key=True),
+    Column('segment_id', Integer, ForeignKey('customer_segments.id'), primary_key=True),
+    Column('added_at', DateTime, default=datetime.utcnow),
+    Column('expires_at', DateTime, nullable=True)
+)
 
 
 class CustomerReward(Base, TimestampMixin):
