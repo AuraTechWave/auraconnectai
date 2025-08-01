@@ -2,8 +2,9 @@
 
 # Start the backend server
 echo "Starting backend server..."
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+source backend/venv/bin/activate
+export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 # Wait for backend to start
@@ -12,7 +13,7 @@ sleep 5
 
 # Start the frontend
 echo "Starting frontend..."
-cd ../customer-web
+cd customer-web
 npm start &
 FRONTEND_PID=$!
 

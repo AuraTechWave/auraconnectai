@@ -8,7 +8,19 @@
 
 ## Quick Start
 
-### Option 1: Run Both Backend and Frontend Together
+### Option 1: Easiest Method - Use the startup scripts
+
+```bash
+# From the project root directory
+
+# Terminal 1 - Backend
+./run-backend.sh
+
+# Terminal 2 - Frontend
+cd customer-web && npm start
+```
+
+### Option 2: Run Both Together
 
 ```bash
 # From the project root directory
@@ -17,7 +29,7 @@
 
 This will start both the backend (port 8000) and frontend (port 3000).
 
-### Option 2: Run Separately
+### Option 3: Run Manually
 
 #### Terminal 1 - Start Backend:
 ```bash
