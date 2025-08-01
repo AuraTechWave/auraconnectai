@@ -1,5 +1,22 @@
 # Orders Module
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Architecture Overview](#architecture-overview)
+4. [Quick Start](#quick-start)
+5. [API Endpoints](#api-endpoints)
+6. [Order States](#order-states)
+7. [Order Processing](#order-processing)
+8. [Integration Points](#integration-points)
+9. [Events](#events)
+10. [Error Handling](#error-handling)
+11. [Performance Optimization](#performance-optimization)
+12. [Configuration](#configuration)
+13. [Testing](#testing)
+14. [Related Documentation](#related-documentation)
+
 ## Overview
 
 The Orders module is the central hub for all order-related operations in AuraConnect. It handles order creation, processing, tracking, and fulfillment across multiple channels including dine-in, takeout, delivery, and online ordering.
@@ -137,6 +154,8 @@ Provides seamless integration with Menu, Inventory, and Payment services.
 Uses Redis pub/sub for live order status updates.
 
 ## API Endpoints
+
+> 📌 **See also**: [Complete Orders API Reference](./api-reference.md) for detailed endpoint documentation with request/response examples.
 
 ### Order Management
 

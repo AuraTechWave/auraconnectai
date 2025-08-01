@@ -1,5 +1,25 @@
 # Staff Module
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Architecture Overview](#architecture-overview)
+4. [Quick Start](#quick-start)
+5. [Core Components](#core-components)
+6. [API Endpoints](#api-endpoints)
+7. [Employee Roles & Permissions](#employee-roles-permissions)
+8. [Scheduling System](#scheduling-system)
+9. [Time Tracking Features](#time-tracking-features)
+10. [Integration Points](#integration-points)
+11. [Mobile App Features](#mobile-app-features)
+12. [Compliance Features](#compliance-features)
+13. [Performance Metrics](#performance-metrics)
+14. [Configuration](#configuration)
+15. [Testing](#testing)
+16. [Troubleshooting](#troubleshooting)
+17. [Related Documentation](#related-documentation)
+
 ## Overview
 
 The Staff module provides comprehensive employee management capabilities including scheduling, time tracking, role management, and performance monitoring. It integrates seamlessly with the Payroll module for accurate compensation processing.
@@ -194,6 +214,8 @@ class TimeTracker:
 ```
 
 ## API Endpoints
+
+> 📌 **See also**: [Staff Management in API Reference](../../api/README.md#staff-hr) for integration details.
 
 ### Employee Management
 
