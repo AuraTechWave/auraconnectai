@@ -3,12 +3,12 @@ import {
   Box,
   Container,
   Typography,
-  Grid,
   TextField,
   InputAdornment,
   CircularProgress,
   Alert,
 } from '@mui/material';
+import { Grid2 as Grid } from '../components/common/Grid2';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
@@ -25,13 +25,15 @@ export const MenuPage: React.FC = () => {
 
   // Fetch categories
   const {
-    data: categories = [],
+    data: categoriesData,
     isLoading: categoriesLoading,
     error: categoriesError,
   } = useQuery({
     queryKey: ['menu-categories'],
     queryFn: api.getCategories,
   });
+
+  const categories = categoriesData?.data || [];
 
   // Fetch menu items
   const {
@@ -48,7 +50,7 @@ export const MenuPage: React.FC = () => {
       }),
   });
 
-  const items = menuData?.items || [];
+  const items = menuData?.data || menuData?.items || [];
 
   // Fetch item details when modal opens
   const fetchItemDetails = async (item: MenuItem) => {
@@ -121,7 +123,7 @@ export const MenuPage: React.FC = () => {
           </Alert>
         ) : (
           <Grid container spacing={3}>
-            {items.map((item) => (
+            {items.map((item: MenuItem) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
                 <MenuItemCard item={item} onViewDetails={fetchItemDetails} />
               </Grid>

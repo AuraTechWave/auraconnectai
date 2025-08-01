@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Container, Typography, Link, Grid } from '@mui/material';
+import { Box, Container, Typography, Link } from '@mui/material';
+import { Grid2 as Grid } from '../common/Grid2';
 
 export const Footer: React.FC = () => {
   return (

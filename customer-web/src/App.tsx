@@ -8,12 +8,16 @@ import 'react-toastify/dist/ReactToastify.css';
 // Layout
 import { Layout } from './components/layout/Layout';
 import { PrivateRoute } from './components/auth/PrivateRoute';
+import DemoNotice from './components/DemoNotice';
 
 // Pages
 import { HomePage } from './pages/HomePage';
 import { MenuPage } from './pages/MenuPage';
 import { CartPage } from './pages/CartPage';
 import { ReservationPage } from './pages/ReservationPage';
+import { OrderHistoryPage } from './pages/OrderHistoryPage';
+import { OrderTrackingPage } from './pages/OrderTrackingPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 
@@ -56,13 +60,30 @@ function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/login" element={<LoginForm />} />
               <Route path="/register" element={<RegisterForm />} />
+              <Route path="/reservations/new" element={<ReservationPage />} />
               
               {/* Protected routes */}
               <Route
-                path="/reservations/new"
+                path="/orders"
                 element={
                   <PrivateRoute>
-                    <ReservationPage />
+                    <OrderHistoryPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/orders/:orderId"
+                element={
+                  <PrivateRoute>
+                    <OrderTrackingPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <PrivateRoute>
+                    <CheckoutPage />
                   </PrivateRoute>
                 }
               />

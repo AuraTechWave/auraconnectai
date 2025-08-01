@@ -58,8 +58,9 @@ export interface Modifier {
 
 // Order types
 export interface OrderItem {
+  id?: number;
   menu_item_id: number;
-  menu_item?: MenuItem;
+  menu_item: MenuItem;
   quantity: number;
   price: number;
   modifiers?: number[];
@@ -68,9 +69,11 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
-  order_number: string;
+  order_number?: string;
   customer_id: number;
-  status: OrderStatus;
+  status: string;
+  order_type?: string;
+  payment_status?: string;
   total_amount: number;
   items: OrderItem[];
   special_instructions?: string;

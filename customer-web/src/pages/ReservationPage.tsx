@@ -8,7 +8,6 @@ import {
   Paper,
   TextField,
   Button,
-  Grid,
   MenuItem,
   Alert,
   Stepper,
@@ -18,6 +17,7 @@ import {
   InputLabel,
   Select,
 } from '@mui/material';
+import { Grid2 as Grid } from '../components/common/Grid2';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';

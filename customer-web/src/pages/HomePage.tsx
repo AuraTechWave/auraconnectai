@@ -4,12 +4,12 @@ import {
   Box,
   Typography,
   Button,
-  Grid,
   Card,
   CardContent,
   CardMedia,
   Container,
 } from '@mui/material';
+import { Grid2 as Grid } from '../components/common/Grid2';
 import {
   Restaurant as RestaurantIcon,
   MenuBook as MenuBookIcon,

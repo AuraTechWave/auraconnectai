@@ -4,10 +4,10 @@ import {
   Card,
   CardContent,
   Typography,
-  Grid,
   Skeleton,
   Chip,
 } from '@mui/material';
+import { Grid2 as Grid } from '../common/Grid2';
 import { MenuCategory } from '../../types';
 
 interface MenuCategoriesProps {

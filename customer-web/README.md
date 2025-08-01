@@ -4,133 +4,153 @@ A modern, responsive web application for restaurant customers to browse menus, p
 
 ## Features
 
-- **Menu Browsing**: Browse restaurant menu with categories, search, and filters
-- **Online Ordering**: Add items to cart with modifiers and special instructions
-- **Reservations**: Make table reservations with date/time selection
-- **User Authentication**: Register and login for personalized experience
-- **Order History**: Track past orders and reorder favorites
+- **User Authentication**: Register and login with JWT-based authentication
+- **Menu Browsing**: Browse menu items by category with search functionality
+- **Shopping Cart**: Add items to cart, adjust quantities, and checkout
+- **Order Management**: Place orders, track order status, and view order history
+- **Table Reservations**: Make and manage table reservations
+- **Payment Processing**: Secure payment flow with demo payment integration
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## Tech Stack
 
 - **React 18** with TypeScript
-- **Material-UI (MUI)** for UI components
-- **React Router** for navigation
+- **Material-UI (MUI v5)** for UI components
+- **React Router v6** for navigation
 - **React Query** for server state management
 - **Zustand** for client state management
 - **React Hook Form** for form handling
 - **Axios** for API communication
+- **Jest & React Testing Library** for testing
 
-## Prerequisites
+## Getting Started
 
-- Node.js 16+ 
-- npm or yarn
-- Backend API running on http://localhost:8000
+### Prerequisites
 
-## Installation
+- Node.js 16+ and npm/yarn
+- Backend API running (optional - app works with mock data)
 
-1. Clone the repository:
+### Installation
+
 ```bash
-git clone https://github.com/AuraTechWave/auraconnectai.git
-cd auraconnectai/customer-web
-```
-
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
+
+# Start development server
+npm start
+
+# Run on custom port
+PORT=3001 npm start
 ```
 
-3. Create a `.env` file:
-```bash
-REACT_APP_API_URL=http://localhost:8000/api/v1
-```
+### Available Scripts
+
+- `npm start` - Start development server
+- `npm test` - Run tests
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
 
 ## Development
 
-Start the development server:
-```bash
-npm start
+### Mock Data Mode
+
+The app runs in mock data mode by default, allowing full functionality without the backend:
+
+```typescript
+// src/services/api.ts
+const USE_MOCK_DATA = true; // Toggle this to use real API
 ```
 
-The app will run on http://localhost:3000
+### Demo Credentials
 
-## Available Scripts
+When in mock mode, use these credentials:
+- Email: `demo@example.com`
+- Password: `demo123`
 
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run lint` - Runs ESLint to check code quality
+### Environment Variables
+
+Create a `.env` file in the root:
+
+```env
+REACT_APP_API_URL=http://localhost:8000/api/v1
+```
 
 ## Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── auth/           # Authentication components
-│   ├── menu/           # Menu browsing components
-│   ├── orders/         # Order management components
-│   ├── reservations/   # Reservation components
-│   ├── common/         # Shared components
-│   └── layout/         # Layout components
-├── pages/              # Page components
-├── services/           # API services
-├── store/              # State management (Zustand)
-├── hooks/              # Custom React hooks
-├── types/              # TypeScript type definitions
-└── utils/              # Utility functions
+├── components/       # Reusable UI components
+│   ├── auth/        # Authentication components
+│   ├── cart/        # Shopping cart components
+│   ├── common/      # Common/shared components
+│   ├── layout/      # Layout components
+│   ├── menu/        # Menu-related components
+│   └── payment/     # Payment components
+├── pages/           # Page components
+├── services/        # API services and mock data
+├── store/           # Zustand stores
+├── types/           # TypeScript type definitions
+└── App.tsx          # Main app component
 ```
-
-## Key Features Implementation
-
-### Menu Browsing
-- Category filtering
-- Search functionality
-- Dietary tags and allergen information
-- Dynamic pricing with modifiers
-
-### Shopping Cart
-- Persistent cart storage
-- Quantity management
-- Special instructions per item
-- Real-time total calculation
-
-### Reservations
-- Date and time selection
-- Party size configuration
-- Table preferences
-- Special requests
-
-### Authentication
-- JWT-based authentication
-- Secure password requirements
-- Profile management
-- Protected routes
 
 ## API Integration
 
-The app integrates with the AuraConnect backend API for:
-- Customer authentication
-- Menu data
-- Order management
-- Reservation system
-- User profiles
+The app integrates with the following API endpoints:
+
+### Customer Authentication
+- `POST /customers/auth/register` - Register new customer
+- `POST /customers/auth/login` - Customer login
+- `POST /customers/auth/logout` - Customer logout
+
+### Menu
+- `GET /menu/public/categories` - Get menu categories
+- `GET /menu/public/items` - Get menu items
+- `GET /menu/public/items/:id` - Get item details
+
+### Orders
+- `POST /orders` - Create order
+- `GET /orders/my-orders` - Get customer orders
+- `GET /orders/:id` - Get order details
+
+### Reservations
+- `POST /reservations` - Create reservation
+- `GET /reservations/my-reservations` - Get customer reservations
+- `PUT /reservations/:id` - Update reservation
+- `POST /reservations/:id/cancel` - Cancel reservation
+
+## Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm test -- --watchAll
+
+# Run tests with coverage
+npm test -- --coverage
+```
 
 ## Deployment
 
-Build the production version:
+Build the app for production:
+
 ```bash
 npm run build
 ```
 
-The build folder will contain optimized static files ready for deployment.
+The build folder will contain the optimized production build.
 
 ## Contributing
 
-1. Create a feature branch
+1. Create a feature branch from `main`
 2. Make your changes
-3. Run tests and linting
-4. Submit a pull request
+3. Write/update tests
+4. Ensure all tests pass
+5. Submit a pull request
 
 ## License
 
-This project is proprietary software owned by AuraTechWave.
+This project is part of the AuraConnect restaurant management system.

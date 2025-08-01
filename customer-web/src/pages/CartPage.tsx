@@ -12,9 +12,9 @@ import {
   Button,
   Divider,
   TextField,
-  Grid,
   Alert,
 } from '@mui/material';
+import { Grid2 as Grid } from '../components/common/Grid2';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
@@ -33,9 +33,9 @@ export const CartPage: React.FC = () => {
   const handleCheckout = () => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: '/checkout' } });
-    } else {
-      navigate('/checkout');
+      return;
     }
+    navigate('/checkout');
   };
 
   if (items.length === 0) {

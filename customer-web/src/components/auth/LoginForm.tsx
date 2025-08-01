@@ -10,8 +10,8 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Grid,
 } from '@mui/material';
+import { Grid2 as Grid } from '../common/Grid2';
 import { Email as EmailIcon, Lock as LockIcon } from '@mui/icons-material';
 import { useAuthStore } from '../../store/authStore';
 
