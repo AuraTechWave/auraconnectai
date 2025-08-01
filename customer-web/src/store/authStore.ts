@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Customer } from '../types';
 import api from '../services/api';
+import secureStorage from '../services/secureStorage';
 
 interface AuthState {
   customer: Customer | null;
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.login(email, password);
           const { access_token, customer } = response;
           
-          localStorage.setItem('customerToken', access_token);
+          secureStorage.setToken(access_token);
           set({
             customer,
             token: access_token,
@@ -56,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.register(data);
           const { access_token, customer } = response;
           
-          localStorage.setItem('customerToken', access_token);
+          secureStorage.setToken(access_token);
           set({
             customer,
             token: access_token,
@@ -78,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           // Ignore logout errors
         } finally {
-          localStorage.removeItem('customerToken');
+          secureStorage.clearAll();
           set({
             customer: null,
             token: null,
@@ -103,7 +104,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       checkAuth: async () => {
-        const token = localStorage.getItem('customerToken');
+        const token = secureStorage.getToken();
         if (!token) {
           set({ isAuthenticated: false });
           return;
@@ -117,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
           });
         } catch (error) {
-          localStorage.removeItem('customerToken');
+          secureStorage.clearAll();
           set({
             customer: null,
             token: null,
