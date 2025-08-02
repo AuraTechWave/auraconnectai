@@ -12,6 +12,7 @@ from modules.staff.routes.enhanced_payroll_routes import (
     router as enhanced_payroll_router
 )
 from modules.staff.routers.biometric_router import router as biometric_router
+from modules.staff.routers.scheduling_router import router as scheduling_router
 from modules.auth.routes.auth_routes import (
     router as auth_router
 )
@@ -167,6 +168,7 @@ app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API
 app.include_router(staff_router)
 app.include_router(payroll_router)  # Legacy payroll routes
 app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biometrics"])
+app.include_router(scheduling_router, prefix="/api/v1/scheduling", tags=["Staff Scheduling"])
 app.include_router(order_router)
 app.include_router(inventory_router)
 app.include_router(kitchen_router)

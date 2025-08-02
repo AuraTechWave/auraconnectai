@@ -20,6 +20,8 @@ class StaffMember(Base):
     pay_policies = relationship("StaffPayPolicy", back_populates="staff_member")
     attendance_logs = relationship("AttendanceLog", back_populates="staff_member")
     biometric_data = relationship("StaffBiometric", back_populates="staff_member", uselist=False)
+    scheduled_shifts = relationship("EnhancedShift", foreign_keys="EnhancedShift.staff_id", back_populates="staff_member")
+    availability = relationship("StaffAvailability", back_populates="staff_member", cascade="all, delete-orphan")
 
 
 class Role(Base):
