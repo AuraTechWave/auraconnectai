@@ -29,6 +29,7 @@ def upgrade():
     op.create_table('shift_templates',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('restaurant_id', sa.Integer(), nullable=False),
+        sa.Column('location_id', sa.Integer(), nullable=True),
         sa.Column('name', sa.String(), nullable=False),
         sa.Column('type', sa.Enum('morning', 'afternoon', 'evening', 'night', 'custom', name='shifttype'), nullable=False),
         sa.Column('start_time', sa.Time(), nullable=False),
@@ -45,11 +46,14 @@ def upgrade():
     )
     op.create_index('ix_shift_templates_id', 'shift_templates', ['id'])
     op.create_index('ix_shift_templates_restaurant_id', 'shift_templates', ['restaurant_id'])
+    op.create_index('ix_shift_templates_location_id', 'shift_templates', ['location_id'])
+    op.create_index('ix_shift_templates_is_active', 'shift_templates', ['is_active'])
     
     # Create scheduled_shifts table
     op.create_table('scheduled_shifts',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('restaurant_id', sa.Integer(), nullable=False),
+        sa.Column('location_id', sa.Integer(), nullable=True),
         sa.Column('staff_id', sa.Integer(), nullable=False),
         sa.Column('template_id', sa.Integer(), nullable=True),
         sa.Column('date', sa.Date(), nullable=False),
@@ -73,6 +77,9 @@ def upgrade():
     op.create_index('ix_scheduled_shifts_date', 'scheduled_shifts', ['date'])
     op.create_index('ix_scheduled_shifts_restaurant_id', 'scheduled_shifts', ['restaurant_id'])
     op.create_index('ix_scheduled_shifts_staff_id', 'scheduled_shifts', ['staff_id'])
+    op.create_index('ix_scheduled_shifts_status', 'scheduled_shifts', ['status'])
+    op.create_index('ix_scheduled_shifts_staff_date', 'scheduled_shifts', ['staff_id', 'date'])
+    op.create_index('ix_scheduled_shifts_restaurant_date', 'scheduled_shifts', ['restaurant_id', 'date'])
     
     # Create staff_availability table
     op.create_table('staff_availability',
@@ -167,10 +174,15 @@ def downgrade():
     op.drop_index('ix_time_off_requests_id', table_name='time_off_requests')
     op.drop_index('ix_staff_availability_staff_id', table_name='staff_availability')
     op.drop_index('ix_staff_availability_id', table_name='staff_availability')
+    op.drop_index('ix_scheduled_shifts_restaurant_date', table_name='scheduled_shifts')
+    op.drop_index('ix_scheduled_shifts_staff_date', table_name='scheduled_shifts')
+    op.drop_index('ix_scheduled_shifts_status', table_name='scheduled_shifts')
     op.drop_index('ix_scheduled_shifts_staff_id', table_name='scheduled_shifts')
     op.drop_index('ix_scheduled_shifts_restaurant_id', table_name='scheduled_shifts')
     op.drop_index('ix_scheduled_shifts_date', table_name='scheduled_shifts')
     op.drop_index('ix_scheduled_shifts_id', table_name='scheduled_shifts')
+    op.drop_index('ix_shift_templates_is_active', table_name='shift_templates')
+    op.drop_index('ix_shift_templates_location_id', table_name='shift_templates')
     op.drop_index('ix_shift_templates_restaurant_id', table_name='shift_templates')
     op.drop_index('ix_shift_templates_id', table_name='shift_templates')
     

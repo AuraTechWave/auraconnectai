@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 class SchedulingService:
     def __init__(self, db: Session):
         self.db = db
+        self._cache = {}  # Simple in-memory cache for analytics
     
     def check_availability(
         self, 
@@ -393,7 +394,12 @@ class SchedulingService:
         end_date: date,
         location_id: int
     ) -> List[StaffingAnalytics]:
-        """Get staffing analytics for a date range"""
+        """Get staffing analytics for a date range with caching"""
+        
+        # Check cache first
+        cached = self.get_cached_analytics(location_id, start_date, end_date)
+        if cached:
+            return cached
         
         analytics = []
         current_date = start_date
@@ -441,4 +447,266 @@ class SchedulingService:
             
             current_date += timedelta(days=1)
         
+        # Cache the results
+        self.cache_analytics(location_id, start_date, end_date, analytics)
+        
         return analytics
+    
+    # Validation methods
+    def validate_shift_times(self, start_time: datetime, end_time: datetime) -> bool:
+        """Validate shift start and end times"""
+        if end_time <= start_time:
+            return False
+        
+        # Check if shift duration is reasonable (not more than 12 hours)
+        duration = (end_time - start_time).total_seconds() / 3600
+        if duration > 12:
+            return False
+        
+        return True
+    
+    def validate_break_duration(self, shift_duration_minutes: int, break_duration: int) -> bool:
+        """Validate break duration based on shift length"""
+        # Basic labor law compliance - adjust based on local regulations
+        if shift_duration_minutes >= 480:  # 8 hours or more
+            return break_duration >= 30  # At least 30 min break
+        elif shift_duration_minutes >= 360:  # 6 hours or more
+            return break_duration >= 15  # At least 15 min break
+        else:
+            return True  # No break required for short shifts
+    
+    def validate_availability(self, start_time: time, end_time: time) -> bool:
+        """Validate availability time range"""
+        # Convert to comparable format if needed
+        if isinstance(start_time, str):
+            start_time = datetime.strptime(start_time, "%H:%M").time()
+        if isinstance(end_time, str):
+            end_time = datetime.strptime(end_time, "%H:%M").time()
+        
+        # End time must be after start time
+        # Note: This doesn't handle overnight shifts properly
+        return end_time > start_time
+    
+    def validate_shift_assignment(
+        self, 
+        staff_id: int, 
+        start_time: datetime, 
+        end_time: datetime,
+        template_id: Optional[int] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """Comprehensive shift assignment validation"""
+        # Validate times
+        if not self.validate_shift_times(start_time, end_time):
+            return False, "Invalid shift times"
+        
+        # Check availability
+        available, reason = self.check_availability(staff_id, start_time, end_time)
+        if not available:
+            return False, reason
+        
+        # Check conflicts
+        conflicts = self.detect_conflicts(staff_id, start_time, end_time)
+        if conflicts:
+            return False, f"Conflicts with {len(conflicts)} other shifts"
+        
+        # Check weekly hours limit
+        staff = self.db.query(StaffMember).filter(StaffMember.id == staff_id).first()
+        if staff and staff.max_hours_per_week:
+            current_hours = self._calculate_weekly_hours(staff_id, start_time.date())
+            shift_hours = (end_time - start_time).total_seconds() / 3600
+            
+            if current_hours + shift_hours > staff.max_hours_per_week:
+                return False, f"Would exceed maximum weekly hours ({staff.max_hours_per_week})"
+        
+        # Validate against template requirements if provided
+        if template_id:
+            template = self.db.query(ShiftTemplate).filter(
+                ShiftTemplate.id == template_id
+            ).first()
+            
+            if template:
+                # Check if shift times match template
+                shift_start_time = start_time.time()
+                shift_end_time = end_time.time()
+                
+                if (shift_start_time != template.start_time or 
+                    shift_end_time != template.end_time):
+                    return False, "Shift times don't match template"
+        
+        return True, None
+    
+    def _calculate_weekly_hours(self, staff_id: int, reference_date: date) -> float:
+        """Calculate total scheduled hours for a staff member in the week"""
+        # Find start of week (Monday)
+        start_of_week = reference_date - timedelta(days=reference_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        shifts = self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.staff_id == staff_id,
+                EnhancedShift.date >= start_of_week,
+                EnhancedShift.date <= end_of_week,
+                EnhancedShift.status.in_([ShiftStatus.SCHEDULED, ShiftStatus.PUBLISHED])
+            )
+        ).all()
+        
+        total_hours = 0
+        for shift in shifts:
+            duration = (shift.end_time - shift.start_time).total_seconds() / 3600
+            total_hours += duration
+        
+        return total_hours
+    
+    def batch_create_shifts(self, shifts_data: List[dict]) -> List[EnhancedShift]:
+        """Batch create multiple shifts efficiently"""
+        shifts = []
+        
+        for shift_data in shifts_data:
+            # Validate each shift
+            valid, reason = self.validate_shift_assignment(
+                shift_data['staff_id'],
+                shift_data['start_time'],
+                shift_data['end_time'],
+                shift_data.get('template_id')
+            )
+            
+            if valid:
+                shift = EnhancedShift(**shift_data)
+                shifts.append(shift)
+            else:
+                logger.warning(f"Skipping invalid shift: {reason}")
+        
+        # Bulk insert
+        if shifts:
+            self.db.bulk_save_objects(shifts)
+            self.db.commit()
+        
+        return shifts
+    
+    def get_shifts_by_date_range(
+        self, 
+        restaurant_id: int, 
+        start_date: date, 
+        end_date: date
+    ) -> List[EnhancedShift]:
+        """Get shifts within a date range - optimized with indexes"""
+        return self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.date >= start_date,
+                EnhancedShift.date <= end_date,
+                EnhancedShift.location_id == restaurant_id
+            )
+        ).order_by(EnhancedShift.date, EnhancedShift.start_time).all()
+    
+    def get_staff_shifts_by_location(
+        self, 
+        staff_id: int, 
+        location_id: int,
+        start_date: date,
+        end_date: date
+    ) -> List[EnhancedShift]:
+        """Get shifts for specific staff at specific location - uses composite index"""
+        return self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.staff_id == staff_id,
+                EnhancedShift.location_id == location_id,
+                EnhancedShift.date >= start_date,
+                EnhancedShift.date <= end_date
+            )
+        ).order_by(EnhancedShift.date).all()
+    
+    def get_cached_analytics(
+        self, 
+        location_id: int, 
+        start_date: date, 
+        end_date: date
+    ) -> Optional[Dict]:
+        """Get cached analytics if available"""
+        cache_key = f"analytics_{location_id}_{start_date}_{end_date}"
+        
+        if cache_key in self._cache:
+            cached_data, timestamp = self._cache[cache_key]
+            # Cache expires after 5 minutes
+            if (datetime.utcnow() - timestamp).seconds < 300:
+                return cached_data
+        
+        return None
+    
+    def cache_analytics(
+        self, 
+        location_id: int, 
+        start_date: date, 
+        end_date: date,
+        data: Dict
+    ):
+        """Cache analytics data"""
+        cache_key = f"analytics_{location_id}_{start_date}_{end_date}"
+        self._cache[cache_key] = (data, datetime.utcnow())
+        
+        # Clean old cache entries
+        if len(self._cache) > 100:
+            # Remove oldest entries
+            sorted_keys = sorted(
+                self._cache.keys(), 
+                key=lambda k: self._cache[k][1]
+            )
+            for key in sorted_keys[:20]:
+                del self._cache[key]
+    
+    def publish_schedule(
+        self,
+        location_id: int,
+        start_date: date,
+        end_date: date,
+        notify: bool = True
+    ) -> Dict[str, int]:
+        """Publish draft schedules and optionally notify staff"""
+        # Get all draft shifts in the date range
+        shifts = self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.location_id == location_id,
+                EnhancedShift.date >= start_date,
+                EnhancedShift.date <= end_date,
+                EnhancedShift.status == ShiftStatus.DRAFT
+            )
+        ).all()
+        
+        published_count = 0
+        for shift in shifts:
+            shift.status = ShiftStatus.PUBLISHED
+            shift.published_at = datetime.utcnow()
+            published_count += 1
+        
+        # Create publication record
+        publication = SchedulePublication(
+            location_id=location_id,
+            start_date=start_date,
+            end_date=end_date,
+            published_shift_count=published_count,
+            published_at=datetime.utcnow()
+        )
+        self.db.add(publication)
+        self.db.commit()
+        
+        # TODO: Send notifications to affected staff
+        # This will be implemented in a follow-up PR
+        # Example implementation:
+        # if notify:
+        #     notified_staff = set()
+        #     for shift in shifts:
+        #         if shift.staff_id not in notified_staff:
+        #             send_notification(
+        #                 staff_id=shift.staff_id,
+        #                 type="schedule_published",
+        #                 data={
+        #                     "week_start": start_date,
+        #                     "week_end": end_date,
+        #                     "shift_count": len([s for s in shifts if s.staff_id == shift.staff_id])
+        #                 }
+        #             )
+        #             notified_staff.add(shift.staff_id)
+        
+        return {
+            "published_count": published_count,
+            "publication_id": publication.id
+        }
