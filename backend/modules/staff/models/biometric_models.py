@@ -6,18 +6,24 @@ from datetime import datetime
 
 class StaffBiometric(Base):
     __tablename__ = "staff_biometrics"
+    __table_args__ = (
+        # Add indexes for performance
+        {'mysql_engine': 'InnoDB'}
+    )
     
     id = Column(Integer, primary_key=True, index=True)
-    staff_id = Column(Integer, ForeignKey("staff_members.id"), unique=True, nullable=False)
+    staff_id = Column(Integer, ForeignKey("staff_members.id"), unique=True, nullable=False, index=True)
     
     # Fingerprint data (encrypted)
-    fingerprint_template = Column(LargeBinary)  # Encrypted fingerprint template
-    fingerprint_hash = Column(String)  # Hash for quick comparison
+    fingerprint_template = Column(LargeBinary)  # Encrypted fingerprint template with salt
+    fingerprint_hash = Column(String, index=True)  # Salted hash for secure comparison
+    fingerprint_hash_prefix = Column(String(8), index=True)  # First 8 chars for faster lookup
     fingerprint_enrolled_at = Column(DateTime)
     
     # Face ID data (if needed)
-    face_template = Column(LargeBinary)  # Encrypted face embeddings
-    face_hash = Column(String)  # Hash for quick comparison
+    face_template = Column(LargeBinary)  # Encrypted face embeddings with salt
+    face_hash = Column(String, index=True)  # Salted hash for secure comparison
+    face_hash_prefix = Column(String(8), index=True)  # First 8 chars for faster lookup
     face_enrolled_at = Column(DateTime)
     
     # PIN data

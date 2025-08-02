@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from typing import Optional
@@ -227,7 +227,13 @@ def read_root():
 
 @app.get("/test-token")
 async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_error=False))):
-    """Test endpoint to debug token issues"""
+    """Test endpoint to debug token issues - DISABLED IN PRODUCTION"""
+    import os
+    
+    # Disable in production
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+    
     from core.auth import verify_token, SECRET_KEY
     
     if not authorization:

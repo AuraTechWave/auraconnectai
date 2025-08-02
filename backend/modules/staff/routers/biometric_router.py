@@ -1,29 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
-import hashlib
-import base64
 
 from core.database import get_db
 from core.auth import verify_access_token
 from ..models.staff_models import StaffMember
 from ..models.biometric_models import StaffBiometric
-from ..models.attendance_models import AttendanceLog
 from ..schemas.biometric_schemas import (
     FingerprintEnrollmentRequest, FingerprintEnrollmentResponse,
     FaceEnrollmentRequest, FaceEnrollmentResponse,
     BiometricCheckInRequest, BiometricCheckInResponse,
     PinSetupRequest, PinCheckInRequest
 )
-from ..enums.attendance_enums import CheckInMethod, AttendanceStatus
+from ..services.biometric_service import BiometricService
+from ..enums.attendance_enums import CheckInMethod
 
 router = APIRouter()
-
-
-def hash_biometric(biometric_data: str) -> str:
-    """Create a hash of biometric data for quick comparison"""
-    return hashlib.sha256(biometric_data.encode()).hexdigest()
 
 
 @router.post("/fingerprint/enroll", response_model=FingerprintEnrollmentResponse)
@@ -32,33 +26,26 @@ async def enroll_fingerprint(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Enroll a staff member's fingerprint"""
-    # Check if staff member exists
-    staff = db.query(StaffMember).filter(StaffMember.id == request.staff_id).first()
-    if not staff:
-        raise HTTPException(status_code=404, detail="Staff member not found")
+    """Enroll a staff member's fingerprint with enhanced security"""
+    service = BiometricService(db)
+    success, message = service.enroll_fingerprint(
+        request.staff_id,
+        request.fingerprint_data,
+        request.device_id
+    )
     
-    # Check for existing biometric record
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    # Get the enrollment timestamp
     biometric = db.query(StaffBiometric).filter(
         StaffBiometric.staff_id == request.staff_id
     ).first()
     
-    if not biometric:
-        biometric = StaffBiometric(staff_id=request.staff_id)
-        db.add(biometric)
-    
-    # Store encrypted fingerprint data
-    biometric.fingerprint_template = base64.b64decode(request.fingerprint_data)
-    biometric.fingerprint_hash = hash_biometric(request.fingerprint_data)
-    biometric.fingerprint_enrolled_at = datetime.utcnow()
-    biometric.is_fingerprint_enabled = True
-    
-    db.commit()
-    
     return FingerprintEnrollmentResponse(
         success=True,
-        message=f"Fingerprint enrolled successfully for {staff.name}",
-        enrolled_at=biometric.fingerprint_enrolled_at
+        message=message,
+        enrolled_at=biometric.fingerprint_enrolled_at if biometric else datetime.utcnow()
     )
 
 
@@ -68,33 +55,26 @@ async def enroll_face(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Enroll a staff member's face ID"""
-    # Check if staff member exists
-    staff = db.query(StaffMember).filter(StaffMember.id == request.staff_id).first()
-    if not staff:
-        raise HTTPException(status_code=404, detail="Staff member not found")
+    """Enroll a staff member's face ID with enhanced security"""
+    service = BiometricService(db)
+    success, message = service.enroll_face(
+        request.staff_id,
+        request.face_data,
+        request.device_id
+    )
     
-    # Check for existing biometric record
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    # Get the enrollment timestamp
     biometric = db.query(StaffBiometric).filter(
         StaffBiometric.staff_id == request.staff_id
     ).first()
     
-    if not biometric:
-        biometric = StaffBiometric(staff_id=request.staff_id)
-        db.add(biometric)
-    
-    # Store encrypted face data
-    biometric.face_template = base64.b64decode(request.face_data)
-    biometric.face_hash = hash_biometric(request.face_data)
-    biometric.face_enrolled_at = datetime.utcnow()
-    biometric.is_face_enabled = True
-    
-    db.commit()
-    
     return FaceEnrollmentResponse(
         success=True,
-        message=f"Face ID enrolled successfully for {staff.name}",
-        enrolled_at=biometric.face_enrolled_at
+        message=message,
+        enrolled_at=biometric.face_enrolled_at if biometric else datetime.utcnow()
     )
 
 
@@ -103,74 +83,51 @@ async def biometric_check_in(
     request: BiometricCheckInRequest,
     db: Session = Depends(get_db)
 ):
-    """Check in using biometric (fingerprint or face)"""
-    biometric = None
-    method = None
+    """Check in using biometric (fingerprint or face) with enhanced security"""
+    service = BiometricService(db)
     
-    # Try fingerprint first if provided
+    # Determine which biometric method to use
     if request.fingerprint_data:
-        fingerprint_hash = hash_biometric(request.fingerprint_data)
-        biometric = db.query(StaffBiometric).filter(
-            StaffBiometric.fingerprint_hash == fingerprint_hash,
-            StaffBiometric.is_fingerprint_enabled == True
-        ).first()
-        method = CheckInMethod.FINGERPRINT
-    
-    # Try face ID if fingerprint not provided or not found
-    if not biometric and request.face_data:
-        face_hash = hash_biometric(request.face_data)
-        biometric = db.query(StaffBiometric).filter(
-            StaffBiometric.face_hash == face_hash,
-            StaffBiometric.is_face_enabled == True
-        ).first()
-        method = CheckInMethod.FACE_ID
-    
-    if not biometric:
+        success, staff_id, message = service.verify_biometric(
+            request.fingerprint_data,
+            CheckInMethod.FINGERPRINT,
+            request.device_id,
+            request.location_lat,
+            request.location_lng
+        )
+        method = "fingerprint"
+    elif request.face_data:
+        success, staff_id, message = service.verify_biometric(
+            request.face_data,
+            CheckInMethod.FACE_ID,
+            request.device_id,
+            request.location_lat,
+            request.location_lng
+        )
+        method = "face"
+    else:
         return BiometricCheckInResponse(
             success=False,
-            message="Biometric not recognized",
-            method=str(method.value) if method else "unknown"
+            message="No biometric data provided",
+            method="unknown"
         )
     
-    # Get staff member
-    staff = biometric.staff_member
-    
-    # Check if already checked in
-    today_logs = db.query(AttendanceLog).filter(
-        AttendanceLog.staff_id == staff.id,
-        AttendanceLog.check_in >= datetime.utcnow().replace(hour=0, minute=0, second=0),
-        AttendanceLog.check_out.is_(None)
-    ).first()
-    
-    if today_logs:
-        # This is a check-out
-        today_logs.check_out = datetime.utcnow()
-        today_logs.status = AttendanceStatus.CHECKED_OUT
-        message = f"{staff.name} checked out successfully"
+    if success and staff_id:
+        staff = db.query(StaffMember).filter(StaffMember.id == staff_id).first()
+        return BiometricCheckInResponse(
+            success=True,
+            message=message,
+            staff_id=staff_id,
+            staff_name=staff.name if staff else None,
+            check_in_time=datetime.utcnow(),
+            method=method
+        )
     else:
-        # This is a check-in
-        new_log = AttendanceLog(
-            staff_id=staff.id,
-            check_in=datetime.utcnow(),
-            method=method,
-            status=AttendanceStatus.CHECKED_IN,
-            device_id=request.device_id,
-            location_lat=request.location_lat,
-            location_lng=request.location_lng
+        return BiometricCheckInResponse(
+            success=False,
+            message=message,
+            method=method
         )
-        db.add(new_log)
-        message = f"{staff.name} checked in successfully"
-    
-    db.commit()
-    
-    return BiometricCheckInResponse(
-        success=True,
-        message=message,
-        staff_id=staff.id,
-        staff_name=staff.name,
-        check_in_time=datetime.utcnow(),
-        method=str(method.value)
-    )
 
 
 @router.post("/fingerprint/check-in", response_model=BiometricCheckInResponse)
@@ -197,95 +154,50 @@ async def setup_pin(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Set up PIN for a staff member"""
-    # Check if staff member exists
-    staff = db.query(StaffMember).filter(StaffMember.id == request.staff_id).first()
-    if not staff:
-        raise HTTPException(status_code=404, detail="Staff member not found")
+    """Set up PIN for a staff member with enhanced security"""
+    service = BiometricService(db)
+    success, message = service.setup_pin(request.staff_id, request.pin)
     
-    # Get or create biometric record
-    biometric = db.query(StaffBiometric).filter(
-        StaffBiometric.staff_id == request.staff_id
-    ).first()
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
     
-    if not biometric:
-        biometric = StaffBiometric(staff_id=request.staff_id)
-        db.add(biometric)
-    
-    # Hash and store PIN
-    biometric.pin_hash = hashlib.sha256(request.pin.encode()).hexdigest()
-    biometric.pin_updated_at = datetime.utcnow()
-    biometric.is_pin_enabled = True
-    
-    db.commit()
-    
-    return {"success": True, "message": "PIN set successfully"}
+    return {"success": True, "message": message}
 
 
-@router.post("/pin/check-in", response_model=BiometricCheckInResponse)
+@router.post("/pin/check-in", 
+    response_model=BiometricCheckInResponse,
+    dependencies=[Depends(RateLimiter(times=5, seconds=60))]  # 5 attempts per minute
+)
 async def pin_check_in(
     request: PinCheckInRequest,
     db: Session = Depends(get_db)
 ):
-    """Check in using PIN"""
-    # Get staff biometric record
-    biometric = db.query(StaffBiometric).filter(
-        StaffBiometric.staff_id == request.staff_id,
-        StaffBiometric.is_pin_enabled == True
-    ).first()
-    
-    if not biometric:
-        return BiometricCheckInResponse(
-            success=False,
-            message="PIN not set up for this staff member",
-            method="pin"
-        )
-    
-    # Verify PIN
-    pin_hash = hashlib.sha256(request.pin.encode()).hexdigest()
-    if biometric.pin_hash != pin_hash:
-        return BiometricCheckInResponse(
-            success=False,
-            message="Invalid PIN",
-            method="pin"
-        )
-    
-    # Process check-in/out (similar to fingerprint)
-    staff = biometric.staff_member
-    
-    today_logs = db.query(AttendanceLog).filter(
-        AttendanceLog.staff_id == staff.id,
-        AttendanceLog.check_in >= datetime.utcnow().replace(hour=0, minute=0, second=0),
-        AttendanceLog.check_out.is_(None)
-    ).first()
-    
-    if today_logs:
-        today_logs.check_out = datetime.utcnow()
-        today_logs.status = AttendanceStatus.CHECKED_OUT
-        message = f"{staff.name} checked out successfully"
-    else:
-        new_log = AttendanceLog(
-            staff_id=staff.id,
-            check_in=datetime.utcnow(),
-            method=CheckInMethod.PIN,
-            status=AttendanceStatus.CHECKED_IN,
-            device_id=request.device_id,
-            location_lat=request.location_lat,
-            location_lng=request.location_lng
-        )
-        db.add(new_log)
-        message = f"{staff.name} checked in successfully"
-    
-    db.commit()
-    
-    return BiometricCheckInResponse(
-        success=True,
-        message=message,
-        staff_id=staff.id,
-        staff_name=staff.name,
-        check_in_time=datetime.utcnow(),
-        method="pin"
+    """Check in using PIN with enhanced security"""
+    service = BiometricService(db)
+    success, message = service.verify_pin(
+        request.staff_id,
+        request.pin,
+        request.device_id,
+        request.location_lat,
+        request.location_lng
     )
+    
+    if success:
+        staff = db.query(StaffMember).filter(StaffMember.id == request.staff_id).first()
+        return BiometricCheckInResponse(
+            success=True,
+            message=message,
+            staff_id=request.staff_id,
+            staff_name=staff.name if staff else None,
+            check_in_time=datetime.utcnow(),
+            method="pin"
+        )
+    else:
+        return BiometricCheckInResponse(
+            success=False,
+            message=message,
+            method="pin"
+        )
 
 
 @router.get("/biometric/status/{staff_id}")
@@ -314,3 +226,36 @@ async def get_biometric_status(
         "pin_set": biometric.is_pin_enabled,
         "pin_updated_at": biometric.pin_updated_at
     }
+
+
+@router.delete("/biometric/{staff_id}")
+async def delete_biometric_data(
+    staff_id: int,
+    data_type: str = "all",
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_access_token)
+):
+    """Delete biometric data for GDPR compliance"""
+    service = BiometricService(db)
+    success, message = service.delete_biometric_data(staff_id, data_type)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"success": True, "message": message}
+
+
+@router.get("/biometric/{staff_id}/export")
+async def export_biometric_data(
+    staff_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_access_token)
+):
+    """Export biometric data for GDPR data portability"""
+    service = BiometricService(db)
+    success, data = service.export_biometric_data(staff_id)
+    
+    if not success:
+        raise HTTPException(status_code=404, detail="No biometric data found")
+    
+    return data
