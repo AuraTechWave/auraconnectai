@@ -102,7 +102,10 @@ class Customer(Base, TimestampMixin):
     deleted_by = Column(Integer, nullable=True)
     
     # Relationships
-    addresses = relationship("CustomerAddress", back_populates="customer", cascade="all, delete-orphan")
+    addresses = relationship("CustomerAddress", 
+                           foreign_keys="CustomerAddress.customer_id",
+                           back_populates="customer", 
+                           cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="customer")
     payment_methods = relationship("CustomerPaymentMethod", back_populates="customer", cascade="all, delete-orphan")
     notifications = relationship("CustomerNotification", back_populates="customer", cascade="all, delete-orphan")
@@ -110,7 +113,12 @@ class Customer(Base, TimestampMixin):
     rewards = relationship("CustomerReward", back_populates="customer", cascade="all, delete-orphan")
     preferences = relationship("CustomerPreference", back_populates="customer", cascade="all, delete-orphan")
     reservations = relationship("Reservation", back_populates="customer", cascade="all, delete-orphan")
-    referred_customers = relationship("Customer", backref="referrer")
+    reviews = relationship("Review", back_populates="customer")
+    feedback = relationship("Feedback", back_populates="customer")
+    referred_customers = relationship("Customer", 
+                                    foreign_keys=[referred_by_customer_id],
+                                    remote_side=[id],
+                                    backref="referrer")
     
     # Indexes for performance
     __table_args__ = (
@@ -167,7 +175,9 @@ class CustomerAddress(Base, TimestampMixin):
     deleted_at = Column(DateTime, nullable=True)
     
     # Relationships
-    customer = relationship("Customer", back_populates="addresses")
+    customer = relationship("Customer", 
+                          foreign_keys=[customer_id],
+                          back_populates="addresses")
     
     def __repr__(self):
         return f"<CustomerAddress(id={self.id}, label='{self.label}', city='{self.city}')>"
@@ -206,7 +216,7 @@ class CustomerPaymentMethod(Base, TimestampMixin):
     
     # Relationships
     customer = relationship("Customer", back_populates="payment_methods")
-    billing_address = relationship("CustomerAddress")
+    billing_address = relationship("CustomerAddress", foreign_keys=[billing_address_id])
     
     def __repr__(self):
         return f"<CustomerPaymentMethod(id={self.id}, type='{self.type}', last4='{self.card_last4}')>"

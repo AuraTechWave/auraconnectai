@@ -208,15 +208,21 @@ def verify_token(token: str, token_type: str = "access", check_blacklist: bool =
         if payload.get("type") != token_type:
             return None
             
-        user_id: int = payload.get("sub")
+        # Parse user_id from string sub field
+        sub = payload.get("sub")
+        if sub is None:
+            return None
+            
+        try:
+            user_id = int(sub) if isinstance(sub, str) else sub
+        except (ValueError, TypeError):
+            return None
+            
         username: str = payload.get("username")
         roles: List[str] = payload.get("roles", [])
         tenant_ids: List[int] = payload.get("tenant_ids", [])
         session_id: str = payload.get("session_id")
         token_id: str = payload.get("jti")
-        
-        if user_id is None:
-            return None
         
         # For refresh tokens, verify session exists and is valid
         if token_type == "refresh" and session_id:
@@ -300,7 +306,7 @@ def create_user_session(
     
     # Create tokens
     token_data = {
-        "sub": user.id,
+        "sub": str(user.id),  # JWT standard requires sub to be a string
         "username": user.username,
         "roles": user.roles,
         "tenant_ids": user.tenant_ids

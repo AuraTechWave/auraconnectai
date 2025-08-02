@@ -1,6 +1,7 @@
 // frontend/components/sync/SyncStatusDashboard.tsx
 
 import React, { useState, useEffect } from 'react';
+import apiClient from '../../utils/authInterceptor';
 import {
   RefreshCw, AlertCircle, CheckCircle, Clock,
   Wifi, WifiOff, AlertTriangle, Activity
@@ -66,13 +67,8 @@ export const SyncStatusDashboard: React.FC = () => {
 
   const fetchSyncStatus = async () => {
     try {
-      const response = await fetch('/api/orders/sync/status', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setStatus(data);
+      const response = await apiClient.get('/api/orders/sync/status');
+      setStatus(response.data);
     } catch (error) {
       console.error('Failed to fetch sync status:', error);
     } finally {
@@ -82,13 +78,8 @@ export const SyncStatusDashboard: React.FC = () => {
 
   const fetchSyncMetrics = async () => {
     try {
-      const response = await fetch('/api/orders/sync/metrics', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setMetrics(data);
+      const response = await apiClient.get('/api/orders/sync/metrics');
+      setMetrics(response.data);
     } catch (error) {
       console.error('Failed to fetch sync metrics:', error);
     }
@@ -97,16 +88,9 @@ export const SyncStatusDashboard: React.FC = () => {
   const triggerManualSync = async () => {
     setSyncing(true);
     try {
-      const response = await fetch('/api/orders/sync/manual', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-      });
+      const response = await apiClient.post('/api/orders/sync/manual', {});
       
-      if (response.ok) {
+      if (response.status === 200) {
         // Refresh status after sync
         setTimeout(() => {
           fetchSyncStatus();

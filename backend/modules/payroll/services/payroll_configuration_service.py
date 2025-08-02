@@ -14,7 +14,7 @@ from sqlalchemy import and_, or_
 from ..models.payroll_configuration import (
     PayrollConfiguration, StaffPayPolicy, OvertimeRule, 
     TaxApproximationRule, RoleBasedPayRate, PayrollJobTracking,
-    PayrollConfigurationType
+    PayrollConfigurationType, PayrollJobStatus
 )
 from ...staff.models.staff_models import StaffMember
 
@@ -177,13 +177,11 @@ class PayrollConfigurationService:
         job_tracking = PayrollJobTracking(
             job_id=str(uuid.uuid4()),
             job_type=job_type,
-            staff_ids=job_params.get("staff_ids"),
-            pay_period_start=job_params.get("pay_period_start"),
-            pay_period_end=job_params.get("pay_period_end"),
+            status=PayrollJobStatus.PENDING,
+            started_at=datetime.utcnow(),
+            job_metadata=job_params,  # Store all job parameters in metadata
             tenant_id=tenant_id,
-            status="pending",
-            created_by=created_by,
-            tenant_id_filter=tenant_id
+            created_by_user_id=1 if created_by else None  # Would map from email to user ID in production
         )
         
         self.db.add(job_tracking)

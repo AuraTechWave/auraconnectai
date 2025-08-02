@@ -3,6 +3,10 @@ from .attendance_models import AttendanceLog
 from .shift_models import Shift
 from .payroll_models import Payroll, Payslip
 from .biometric_models import StaffBiometric
+from .scheduling_models import (
+    EnhancedShift, ShiftTemplate, StaffAvailability,
+    ShiftSwap, ShiftBreak, ShiftRequirement, SchedulePublication
+)
 
 __all__ = [
     "StaffMember",
@@ -11,5 +15,12 @@ __all__ = [
     "Shift",
     "Payroll",
     "Payslip",
-    "StaffBiometric"
+    "StaffBiometric",
+    "EnhancedShift",
+    "ShiftTemplate",
+    "StaffAvailability",
+    "ShiftSwap",
+    "ShiftBreak",
+    "ShiftRequirement",
+    "SchedulePublication"
 ]

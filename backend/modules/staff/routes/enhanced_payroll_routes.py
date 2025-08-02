@@ -103,10 +103,10 @@ async def run_payroll(
         job_id = job_tracking.job_id
         
         # Update job with total items and start status
-        job_tracking.total_items = len(staff_ids_to_process)
         config_service.update_job_progress(
             job_id=job_id,
-            status="processing"
+            status="processing",
+            result_data={"total_items": len(staff_ids_to_process)}
         )
         
         # Start background processing with persistent tracking

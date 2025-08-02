@@ -79,6 +79,8 @@ class Order(Base, TimestampMixin):
     )
     print_tickets = relationship("PrintTicket", back_populates="order")
     attachments = relationship("OrderAttachment", back_populates="order")
+    reviews = relationship("Review", back_populates="order")
+    feedback = relationship("Feedback", back_populates="order")
 
     def update_priority(self, new_priority: OrderPriority,
                         user_id: Optional[int] = None):

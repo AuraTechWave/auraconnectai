@@ -1,6 +1,6 @@
 # backend/modules/tax/models/__init__.py
 
-from .tax_models import TaxRule
+from .tax_models import SimpleTaxRule
 from .tax_jurisdiction_models import (
     TaxJurisdiction,
     TaxRate,
@@ -20,7 +20,7 @@ from .tax_compliance_models import (
 
 __all__ = [
     # Original models
-    "TaxRule",
+    "SimpleTaxRule",
     
     # Jurisdiction models
     "TaxJurisdiction",

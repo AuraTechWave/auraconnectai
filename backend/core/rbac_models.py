@@ -82,13 +82,16 @@ class RBACUser(Base):
         "RBACRole",
         secondary=user_roles,
         back_populates="users",
-        lazy="dynamic"
+        lazy="dynamic",
+        primaryjoin="RBACUser.id==user_roles.c.user_id",
+        secondaryjoin="RBACRole.id==user_roles.c.role_id"
     )
     
     # Direct permissions (override role permissions)
     direct_permissions = relationship(
         "UserPermission",
         back_populates="user",
+        foreign_keys="UserPermission.user_id",
         cascade="all, delete-orphan"
     )
     
@@ -123,23 +126,26 @@ class RBACUser(Base):
         return False
     
     # Password security relationships
-    password_reset_tokens = relationship(
-        "PasswordResetToken",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    # TODO: Uncomment when PasswordResetToken model is implemented
+    # password_reset_tokens = relationship(
+    #     "PasswordResetToken",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
     
-    password_history = relationship(
-        "PasswordHistory",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    # TODO: Uncomment when PasswordHistory model is implemented
+    # password_history = relationship(
+    #     "PasswordHistory",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
     
-    security_audit_logs = relationship(
-        "SecurityAuditLog",
-        back_populates="user",
-        cascade="all, delete-orphan"
-    )
+    # TODO: Uncomment when SecurityAuditLog model is implemented
+    # security_audit_logs = relationship(
+    #     "SecurityAuditLog",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
 
 
 class RBACRole(Base):
@@ -174,13 +180,17 @@ class RBACRole(Base):
     users = relationship(
         "RBACUser",
         secondary=user_roles,
-        back_populates="roles"
+        back_populates="roles",
+        primaryjoin="RBACRole.id==user_roles.c.role_id",
+        secondaryjoin="RBACUser.id==user_roles.c.user_id"
     )
     
     permissions = relationship(
         "RBACPermission",
         secondary=role_permissions,
-        back_populates="roles"
+        back_populates="roles",
+        primaryjoin="RBACRole.id==role_permissions.c.role_id",
+        secondaryjoin="RBACPermission.id==role_permissions.c.permission_id"
     )
     
     def is_applicable_to_tenant(self, tenant_id):
@@ -229,7 +239,9 @@ class RBACPermission(Base):
     roles = relationship(
         "RBACRole",
         secondary=role_permissions,
-        back_populates="permissions"
+        back_populates="permissions",
+        primaryjoin="RBACPermission.id==role_permissions.c.permission_id",
+        secondaryjoin="RBACRole.id==role_permissions.c.role_id"
     )
     
     def is_applicable_to_tenant(self, tenant_id):
@@ -265,7 +277,7 @@ class UserPermission(Base):
     reason = Column(Text, nullable=True)
     
     # Relationships
-    user = relationship("RBACUser", back_populates="direct_permissions")
+    user = relationship("RBACUser", foreign_keys=[user_id], back_populates="direct_permissions")
     granted_by_user = relationship("RBACUser", foreign_keys=[granted_by])
 
 

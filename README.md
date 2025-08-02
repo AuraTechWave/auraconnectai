@@ -70,7 +70,7 @@ graph TB
     end
     
     subgraph "Data Layer"
-        E[(PostgreSQL<br/>Multi-tenant | Partitioned | Replicated)]
+        E[(PostgreSQL<br/>Multi-tenant - Partitioned - Replicated)]
     end
     
     A1 --> B

@@ -3,7 +3,7 @@ from core.database import Base
 from core.mixins import TimestampMixin
 
 
-class TaxRule(Base, TimestampMixin):
+class SimpleTaxRule(Base, TimestampMixin):
     __tablename__ = "tax_rules"
 
     id = Column(Integer, primary_key=True, index=True)

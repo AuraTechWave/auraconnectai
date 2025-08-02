@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List
 from decimal import Decimal
-from ..models.tax_models import TaxRule
+from ..models.tax_models import SimpleTaxRule
 from ..schemas.tax_schemas import (
     TaxCalculationRequest, TaxCalculationResponse,
     TaxBreakdownItem, TaxCalculationItem
@@ -15,8 +15,8 @@ class TaxEngine:
     async def calculate_tax(
         self, request: TaxCalculationRequest
     ) -> TaxCalculationResponse:
-        tax_rules = self.db.query(TaxRule).filter(
-            TaxRule.location == request.location
+        tax_rules = self.db.query(SimpleTaxRule).filter(
+            SimpleTaxRule.location == request.location
         ).all()
 
         if not tax_rules:

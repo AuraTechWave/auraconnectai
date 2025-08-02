@@ -1,6 +1,7 @@
 // frontend/components/webhooks/ExternalPOSWebhookDashboard.tsx
 
 import React, { useState, useEffect } from 'react';
+import apiClient from '../../utils/authInterceptor';
 import {
   Webhook, Activity, AlertCircle, CheckCircle, Clock,
   RefreshCw, Settings, TrendingUp, AlertTriangle,
@@ -71,24 +72,17 @@ export const ExternalPOSWebhookDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const headers = {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      };
-
       // Fetch health status
-      const healthRes = await fetch('/api/webhooks/external-pos/monitoring/health', { headers });
-      const healthData = await healthRes.json();
-      setHealth(healthData);
+      const healthRes = await apiClient.get('/api/webhooks/external-pos/monitoring/health');
+      setHealth(healthRes.data);
 
       // Fetch statistics
-      const statsRes = await fetch('/api/webhooks/external-pos/monitoring/statistics', { headers });
-      const statsData = await statsRes.json();
-      setStatistics(statsData);
+      const statsRes = await apiClient.get('/api/webhooks/external-pos/monitoring/statistics');
+      setStatistics(statsRes.data);
 
       // Fetch recent events
-      const eventsRes = await fetch('/api/webhooks/external-pos/monitoring/events?limit=10', { headers });
-      const eventsData = await eventsRes.json();
-      setRecentEvents(eventsData);
+      const eventsRes = await apiClient.get('/api/webhooks/external-pos/monitoring/events?limit=10');
+      setRecentEvents(eventsRes.data);
 
       setLoading(false);
     } catch (error) {
@@ -100,15 +94,9 @@ export const ExternalPOSWebhookDashboard: React.FC = () => {
   const triggerRetry = async () => {
     setRefreshing(true);
     try {
-      const response = await fetch('/api/webhooks/external-pos/monitoring/retry-failed', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await apiClient.post('/api/webhooks/external-pos/monitoring/retry-failed');
 
-      if (response.ok) {
+      if (response.status === 200) {
         // Refresh data after retry
         setTimeout(fetchDashboardData, 2000);
       }

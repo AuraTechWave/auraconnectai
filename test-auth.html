@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Authentication</title>
+</head>
+<body>
+    <h1>AuraConnect Authentication Test</h1>
+    
+    <div id="status">Ready to test...</div>
+    
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testGetMe()">Test Get Me</button>
+    
+    <pre id="result"></pre>
+    
+    <script>
+        let accessToken = null;
+        
+        async function testLogin() {
+            const status = document.getElementById('status');
+            const result = document.getElementById('result');
+            
+            status.textContent = 'Testing login...';
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', 'admin');
+                formData.append('password', 'secret');
+                
+                const response = await fetch('http://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    accessToken = data.access_token;
+                    status.textContent = 'Login successful!';
+                    result.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    status.textContent = 'Login failed!';
+                    result.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+                result.textContent = error.stack;
+            }
+        }
+        
+        async function testGetMe() {
+            const status = document.getElementById('status');
+            const result = document.getElementById('result');
+            
+            if (!accessToken) {
+                status.textContent = 'Please login first!';
+                return;
+            }
+            
+            status.textContent = 'Testing /auth/me...';
+            
+            try {
+                const response = await fetch('http://localhost:8000/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    status.textContent = '/auth/me successful!';
+                    result.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    status.textContent = '/auth/me failed!';
+                    result.textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+                result.textContent = error.stack;
+            }
+        }
+    </script>
+</body>
+</html>

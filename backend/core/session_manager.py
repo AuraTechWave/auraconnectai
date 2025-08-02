@@ -38,30 +38,30 @@ class Session:
     def to_dict(self) -> dict:
         """Convert session to dictionary for Redis storage."""
         return {
-            "user_id": self.user_id,
+            "user_id": str(self.user_id),
             "username": self.username,
             "refresh_token": self.refresh_token,
             "created_at": self.created_at.isoformat(),
             "last_accessed": self.last_accessed.isoformat(),
             "expires_at": self.expires_at.isoformat(),
-            "user_agent": self.user_agent,
-            "ip_address": self.ip_address,
-            "is_active": self.is_active
+            "user_agent": self.user_agent or "",
+            "ip_address": self.ip_address or "",
+            "is_active": "1" if self.is_active else "0"
         }
     
     @classmethod
     def from_dict(cls, data: dict) -> 'Session':
         """Create session from dictionary."""
         return cls(
-            user_id=data["user_id"],
+            user_id=int(data["user_id"]),
             username=data["username"],
             refresh_token=data["refresh_token"],
             created_at=datetime.fromisoformat(data["created_at"]),
             last_accessed=datetime.fromisoformat(data["last_accessed"]),
             expires_at=datetime.fromisoformat(data["expires_at"]),
-            user_agent=data.get("user_agent"),
-            ip_address=data.get("ip_address"),
-            is_active=data.get("is_active", True)
+            user_agent=data.get("user_agent") or None,
+            ip_address=data.get("ip_address") or None,
+            is_active=data.get("is_active", "1") == "1"
         )
 
 

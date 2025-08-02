@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../utils/authInterceptor';
 
 const AdminSettings = () => {
   const [globalSyncEnabled, setGlobalSyncEnabled] = useState(true);
@@ -12,11 +13,8 @@ const AdminSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/settings/pos-sync');
-      if (!response.ok) {
-        throw new Error('Failed to fetch settings');
-      }
-      const settings = await response.json();
+      const response = await apiClient.get('/settings/pos-sync');
+      const settings = response.data;
       
       const global = settings.find(s => s.team_id === null);
       const teams = settings.filter(s => s.team_id !== null);
@@ -34,20 +32,12 @@ const AdminSettings = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/settings/pos-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: 1,
-          team_id: null,
-          enabled,
-          updated_by: 1
-        })
+      await apiClient.post('/settings/pos-sync', {
+        tenant_id: 1,
+        team_id: null,
+        enabled,
+        updated_by: 1
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update global setting');
-      }
       
       setGlobalSyncEnabled(enabled);
     } catch (error) {
@@ -61,20 +51,12 @@ const AdminSettings = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/settings/pos-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: 1,
-          team_id: teamId,
-          enabled,
-          updated_by: 1
-        })
+      await apiClient.post('/settings/pos-sync', {
+        tenant_id: 1,
+        team_id: teamId,
+        enabled,
+        updated_by: 1
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update team setting');
-      }
       
       setTeamSettings(prev => 
         prev.map(team => 

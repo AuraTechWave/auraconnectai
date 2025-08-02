@@ -25,3 +25,8 @@ site/
 
 # MkDocs build output
 site/
+
+# Authentication tokens
+.access_token
+.refresh_token
+.auth_response.json
