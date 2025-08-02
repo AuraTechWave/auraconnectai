@@ -376,5 +376,9 @@ class RecipeComplianceReport(BaseModel):
     # By category
     compliance_by_category: Dict[str, Dict[str, Any]]
     
+    # Performance info
+    cached: Optional[bool] = False
+    generated_at: Optional[datetime] = None
+    
     class Config:
         from_attributes = True

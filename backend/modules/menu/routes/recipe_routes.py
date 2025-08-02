@@ -242,15 +242,9 @@ async def get_recipe_cost_analysis(
 @router.post("/recalculate-costs")
 async def recalculate_all_costs(
     recipe_service: RecipeService = Depends(get_recipe_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("admin:recipes"))
 ):
     """Recalculate costs for all recipes (admin only)"""
-    # Additional permission check for admin
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can recalculate all recipe costs"
-        )
     
     result = recipe_service.recalculate_all_recipe_costs(current_user.id)
     return result
@@ -270,11 +264,16 @@ async def validate_recipe(
 # Recipe Compliance
 @router.get("/compliance/report", response_model=RecipeComplianceReport)
 async def get_compliance_report(
+    use_cache: bool = Query(True, description="Use cached data if available"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("menu:read"))
 ):
-    """Get compliance report showing menu items without recipes"""
-    return recipe_service.get_recipe_compliance_report()
+    """Get compliance report showing menu items without recipes
+    
+    Note: This report is cached for 10 minutes to improve performance.
+    Set use_cache=false to force regeneration.
+    """
+    return recipe_service.get_recipe_compliance_report(use_cache=use_cache)
 
 
 @router.get("/compliance/missing", response_model=List[MenuItemRecipeStatus])
@@ -315,9 +314,9 @@ async def get_recipe_history(
 async def bulk_update_recipes(
     bulk_data: BulkRecipeUpdate,
     recipe_service: RecipeService = Depends(get_recipe_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk update multiple recipes"""
+    """Bulk update multiple recipes (manager/admin only)"""
     updated_count = 0
     errors = []
     
@@ -343,9 +342,9 @@ async def bulk_activate_recipes(
     recipe_ids: List[int],
     active: bool = True,
     recipe_service: RecipeService = Depends(get_recipe_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk activate or deactivate recipes"""
+    """Bulk activate or deactivate recipes (manager/admin only)"""
     updated_count = 0
     errors = []
     
@@ -406,7 +405,7 @@ async def approve_recipe(
     recipe_id: int,
     notes: Optional[str] = None,
     recipe_service: RecipeService = Depends(get_recipe_service),
-    current_user: User = Depends(require_permission("menu:approve"))
+    current_user: User = Depends(require_permission("manager:recipes"))
 ):
     """Approve a recipe (manager/admin only)"""
     recipe = recipe_service.get_recipe_by_id(recipe_id)

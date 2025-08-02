@@ -2,9 +2,11 @@
 
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime
+from typing import List, Dict, Any, Optional, Tuple, Set
+from datetime import datetime, timedelta
 import json
+from functools import lru_cache
+import hashlib
 
 from ..models.recipe_models import (
     Recipe, RecipeIngredient, RecipeSubRecipe, 
@@ -27,6 +29,9 @@ from fastapi import HTTPException, status
 class RecipeService:
     def __init__(self, db: Session):
         self.db = db
+        self._cost_cache = {}  # Cache for cost calculations
+        self._compliance_cache = None  # Cache for compliance report
+        self._compliance_cache_time = None
 
     def create_recipe(self, recipe_data: RecipeCreate, user_id: int) -> Recipe:
         """Create a new recipe for a menu item"""
@@ -53,8 +58,17 @@ class RecipeService:
                 detail="Recipe already exists for this menu item"
             )
         
-        # Validate all ingredients exist
+        # Validate all ingredients exist and check for duplicates
         ingredient_ids = [ing.inventory_id for ing in recipe_data.ingredients]
+        
+        # Check for duplicate ingredients
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            duplicates = [id for id in ingredient_ids if ingredient_ids.count(id) > 1]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Duplicate ingredients found: {duplicates}"
+            )
+        
         inventory_items = self.db.query(Inventory).filter(
             Inventory.id.in_(ingredient_ids)
         ).all()
@@ -99,6 +113,14 @@ class RecipeService:
         
         # Add sub-recipes if any
         if recipe_data.sub_recipes:
+            # Check for duplicate sub-recipes
+            sub_recipe_ids = [sub.sub_recipe_id for sub in recipe_data.sub_recipes]
+            if len(sub_recipe_ids) != len(set(sub_recipe_ids)):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Duplicate sub-recipes found"
+                )
+            
             for sub_data in recipe_data.sub_recipes:
                 # Validate sub-recipe exists
                 sub_recipe = self.db.query(Recipe).filter(
@@ -109,6 +131,13 @@ class RecipeService:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=f"Sub-recipe {sub_data.sub_recipe_id} not found"
+                    )
+                
+                # Prevent circular references
+                if self._would_create_circular_reference(recipe.id, sub_data.sub_recipe_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Circular reference detected: sub-recipe {sub_data.sub_recipe_id} would create a loop"
                     )
                 
                 sub_recipe_link = RecipeSubRecipe(
@@ -217,8 +246,17 @@ class RecipeService:
                 detail="Recipe not found"
             )
         
-        # Validate all new ingredients exist
+        # Validate all new ingredients exist and check for duplicates
         ingredient_ids = [ing.inventory_id for ing in ingredients]
+        
+        # Check for duplicate ingredients
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            duplicates = [id for id in ingredient_ids if ingredient_ids.count(id) > 1]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Duplicate ingredients found: {duplicates}"
+            )
+        
         inventory_items = self.db.query(Inventory).filter(
             Inventory.id.in_(ingredient_ids)
         ).all()
@@ -354,8 +392,16 @@ class RecipeService:
         
         return recipes, total
 
-    def calculate_recipe_cost(self, recipe_id: int) -> RecipeCostAnalysis:
-        """Calculate detailed cost analysis for a recipe"""
+    def calculate_recipe_cost(self, recipe_id: int, use_cache: bool = True) -> RecipeCostAnalysis:
+        """Calculate detailed cost analysis for a recipe with caching"""
+        # Check cache first
+        cache_key = self._get_cache_key(recipe_id, "cost")
+        if use_cache and cache_key in self._cost_cache:
+            cached_data, cached_time = self._cost_cache[cache_key]
+            # Cache valid for 5 minutes
+            if datetime.utcnow() - cached_time < timedelta(minutes=5):
+                return cached_data
+        
         recipe = self.get_recipe_by_id(recipe_id)
         if not recipe:
             raise HTTPException(
@@ -440,7 +486,7 @@ class RecipeService:
         recipe.last_cost_update = datetime.utcnow()
         self.db.commit()
         
-        return RecipeCostAnalysis(
+        result = RecipeCostAnalysis(
             recipe_id=recipe.id,
             recipe_name=recipe.name,
             menu_item_id=menu_item.id,
@@ -456,6 +502,11 @@ class RecipeService:
             sub_recipe_costs=sub_recipe_costs,
             cost_optimization_suggestions=suggestions
         )
+        
+        # Cache the result
+        self._cost_cache[cache_key] = (result, datetime.utcnow())
+        
+        return result
 
     def validate_recipe(self, recipe_id: int) -> RecipeValidation:
         """Validate a recipe for completeness and accuracy"""
@@ -515,8 +566,14 @@ class RecipeService:
             instructions_complete=instructions_complete
         )
 
-    def get_recipe_compliance_report(self) -> RecipeComplianceReport:
-        """Get report on menu items without recipes"""
+    def get_recipe_compliance_report(self, use_cache: bool = True) -> RecipeComplianceReport:
+        """Get report on menu items without recipes with caching"""
+        # Check cache first
+        if use_cache and self._compliance_cache and self._compliance_cache_time:
+            # Cache valid for 10 minutes
+            if datetime.utcnow() - self._compliance_cache_time < timedelta(minutes=10):
+                return self._compliance_cache
+        
         # Get all active menu items
         menu_items = self.db.query(MenuItem).filter(
             MenuItem.is_active == True,
@@ -586,7 +643,7 @@ class RecipeService:
             else:
                 category["compliance_percentage"] = 0
         
-        return RecipeComplianceReport(
+        result = RecipeComplianceReport(
             total_menu_items=total_items,
             items_with_recipes=items_with_recipes,
             items_without_recipes=len(missing_recipes),
@@ -594,8 +651,16 @@ class RecipeService:
             missing_recipes=missing_recipes,
             draft_recipes=draft_recipes,
             inactive_recipes=inactive_recipes,
-            compliance_by_category=compliance_by_category
+            compliance_by_category=compliance_by_category,
+            cached=use_cache and self._compliance_cache is not None,
+            generated_at=self._compliance_cache_time if use_cache and self._compliance_cache else datetime.utcnow()
         )
+        
+        # Cache the result
+        self._compliance_cache = result
+        self._compliance_cache_time = datetime.utcnow()
+        
+        return result
 
     def clone_recipe(self, clone_request: RecipeCloneRequest, user_id: int) -> Recipe:
         """Clone a recipe to another menu item"""
@@ -738,7 +803,7 @@ class RecipeService:
         
         for recipe in recipes:
             try:
-                self.calculate_recipe_cost(recipe.id)
+                self.calculate_recipe_cost(recipe.id, use_cache=False)  # Force recalculation
                 updated_count += 1
             except Exception as e:
                 # Log error but continue
@@ -808,3 +873,48 @@ class RecipeService:
         )
         
         self.db.add(history)
+    
+    def _would_create_circular_reference(self, parent_id: int, potential_sub_id: int) -> bool:
+        """Check if adding a sub-recipe would create a circular reference"""
+        # Check if potential_sub_id is already a parent of parent_id
+        visited = set()
+        to_check = [potential_sub_id]
+        
+        while to_check:
+            current_id = to_check.pop()
+            if current_id in visited:
+                continue
+            
+            if current_id == parent_id:
+                return True  # Found circular reference
+            
+            visited.add(current_id)
+            
+            # Get all sub-recipes of current recipe
+            sub_recipes = self.db.query(RecipeSubRecipe).filter(
+                RecipeSubRecipe.parent_recipe_id == current_id
+            ).all()
+            
+            for sub in sub_recipes:
+                to_check.append(sub.sub_recipe_id)
+        
+        return False
+    
+    def _get_cache_key(self, recipe_id: int, operation: str) -> str:
+        """Generate cache key for recipe operations"""
+        return f"{operation}:{recipe_id}"
+    
+    def _invalidate_cost_cache(self, recipe_id: int):
+        """Invalidate cost cache for a recipe and its parents"""
+        # Remove direct cache
+        cache_key = self._get_cache_key(recipe_id, "cost")
+        if cache_key in self._cost_cache:
+            del self._cost_cache[cache_key]
+        
+        # Find and invalidate parent recipes
+        parent_links = self.db.query(RecipeSubRecipe).filter(
+            RecipeSubRecipe.sub_recipe_id == recipe_id
+        ).all()
+        
+        for link in parent_links:
+            self._invalidate_cost_cache(link.parent_recipe_id)

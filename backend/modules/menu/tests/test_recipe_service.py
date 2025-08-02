@@ -450,3 +450,192 @@ class TestRecipeService:
         assert len(history) >= 3  # Created, updated, ingredients changed
         assert history[0].change_type == "ingredients_changed"  # Most recent first
         assert history[-1].change_type == "created"  # Oldest last
+    
+    def test_duplicate_ingredients_prevention(self, recipe_service, sample_menu_item, sample_inventory_items):
+        """Test that duplicate ingredients are prevented"""
+        recipe_data = RecipeCreate(
+            menu_item_id=sample_menu_item.id,
+            name="Duplicate Test Recipe",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[0].id,
+                    quantity=1,
+                    unit=UnitType.PIECE
+                ),
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[0].id,  # Duplicate
+                    quantity=2,
+                    unit=UnitType.PIECE
+                )
+            ]
+        )
+        
+        with pytest.raises(HTTPException) as exc_info:
+            recipe_service.create_recipe(recipe_data, user_id=1)
+        
+        assert exc_info.value.status_code == 400
+        assert "Duplicate ingredients found" in str(exc_info.value.detail)
+    
+    def test_sub_recipe_cost_propagation(self, recipe_service, sample_category, sample_inventory_items, db_session):
+        """Test that sub-recipe costs propagate correctly"""
+        # Create sauce recipe (sub-recipe)
+        sauce_item = MenuItem(
+            name="House Sauce",
+            price=5.00,
+            category_id=sample_category.id,
+            is_active=True
+        )
+        db_session.add(sauce_item)
+        db_session.commit()
+        
+        sauce_recipe_data = RecipeCreate(
+            menu_item_id=sauce_item.id,
+            name="House Sauce Recipe",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[1].id,  # Olive oil
+                    quantity=0.1,
+                    unit=UnitType.LITER
+                ),
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[2].id,  # Salt
+                    quantity=0.01,
+                    unit=UnitType.KILOGRAM
+                )
+            ]
+        )
+        sauce_recipe = recipe_service.create_recipe(sauce_recipe_data, user_id=1)
+        
+        # Create main dish using sauce as sub-recipe
+        main_item = MenuItem(
+            name="Pasta with House Sauce",
+            price=18.00,
+            category_id=sample_category.id,
+            is_active=True
+        )
+        db_session.add(main_item)
+        db_session.commit()
+        
+        main_recipe_data = RecipeCreate(
+            menu_item_id=main_item.id,
+            name="Pasta Recipe",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[0].id,  # Using chicken as pasta for test
+                    quantity=0.2,
+                    unit=UnitType.KILOGRAM
+                )
+            ],
+            sub_recipes=[
+                RecipeSubRecipeCreate(
+                    sub_recipe_id=sauce_recipe.id,
+                    quantity=2.0,  # 2 portions of sauce
+                    unit="portion"
+                )
+            ]
+        )
+        main_recipe = recipe_service.create_recipe(main_recipe_data, user_id=1)
+        
+        # Calculate costs
+        cost_analysis = recipe_service.calculate_recipe_cost(main_recipe.id)
+        
+        # Verify sub-recipe cost is included
+        sauce_cost = 0.8 + 0.015  # 0.1L oil @ 8.00 + 0.01kg salt @ 1.50
+        expected_sub_recipe_cost = sauce_cost * 2  # 2 portions
+        
+        assert cost_analysis.total_sub_recipe_cost == pytest.approx(expected_sub_recipe_cost, rel=0.01)
+        assert len(cost_analysis.sub_recipe_costs) == 1
+        assert cost_analysis.sub_recipe_costs[0]["quantity"] == 2.0
+    
+    def test_circular_reference_prevention(self, recipe_service, sample_category, sample_inventory_items, db_session):
+        """Test that circular references in sub-recipes are prevented"""
+        # Create recipe A
+        item_a = MenuItem(
+            name="Recipe A",
+            price=10.00,
+            category_id=sample_category.id,
+            is_active=True
+        )
+        db_session.add(item_a)
+        db_session.commit()
+        
+        recipe_a_data = RecipeCreate(
+            menu_item_id=item_a.id,
+            name="Recipe A",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[0].id,
+                    quantity=1,
+                    unit=UnitType.PIECE
+                )
+            ]
+        )
+        recipe_a = recipe_service.create_recipe(recipe_a_data, user_id=1)
+        
+        # Create recipe B that uses A as sub-recipe
+        item_b = MenuItem(
+            name="Recipe B",
+            price=15.00,
+            category_id=sample_category.id,
+            is_active=True
+        )
+        db_session.add(item_b)
+        db_session.commit()
+        
+        recipe_b_data = RecipeCreate(
+            menu_item_id=item_b.id,
+            name="Recipe B",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[1].id,
+                    quantity=0.1,
+                    unit=UnitType.LITER
+                )
+            ],
+            sub_recipes=[
+                RecipeSubRecipeCreate(
+                    sub_recipe_id=recipe_a.id,
+                    quantity=1.0
+                )
+            ]
+        )
+        recipe_b = recipe_service.create_recipe(recipe_b_data, user_id=1)
+        
+        # Try to update recipe A to use recipe B as sub-recipe (circular)
+        # This would need to be done through a different method since we can't
+        # add sub-recipes to existing recipes in current implementation
+        # Let's test the _would_create_circular_reference method directly
+        
+        assert recipe_service._would_create_circular_reference(recipe_a.id, recipe_b.id) == True
+        assert recipe_service._would_create_circular_reference(recipe_b.id, recipe_a.id) == False
+    
+    def test_cost_caching(self, recipe_service, sample_menu_item, sample_inventory_items):
+        """Test that cost calculations are cached"""
+        recipe_data = RecipeCreate(
+            menu_item_id=sample_menu_item.id,
+            name="Cache Test Recipe",
+            ingredients=[
+                RecipeIngredientCreate(
+                    inventory_id=sample_inventory_items[0].id,
+                    quantity=1,
+                    unit=UnitType.PIECE
+                )
+            ]
+        )
+        recipe = recipe_service.create_recipe(recipe_data, user_id=1)
+        
+        # First calculation - not cached
+        cost1 = recipe_service.calculate_recipe_cost(recipe.id)
+        
+        # Second calculation - should be cached
+        cost2 = recipe_service.calculate_recipe_cost(recipe.id)
+        
+        assert cost1.total_cost == cost2.total_cost
+        
+        # Verify cache is used (check cache directly)
+        cache_key = recipe_service._get_cache_key(recipe.id, "cost")
+        assert cache_key in recipe_service._cost_cache
+        
+        # Force recalculation without cache
+        cost3 = recipe_service.calculate_recipe_cost(recipe.id, use_cache=False)
+        assert cost3.total_cost == cost1.total_cost
