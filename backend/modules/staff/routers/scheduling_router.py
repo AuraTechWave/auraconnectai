@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import List, Optional
 from datetime import datetime, date, timedelta
 
@@ -152,8 +152,12 @@ async def get_shifts(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Get shifts for a date range"""
-    query = db.query(EnhancedShift).filter(
+    """Get shifts for a date range with eager loading to prevent N+1 queries"""
+    query = db.query(EnhancedShift).options(
+        joinedload(EnhancedShift.staff_member).joinedload(StaffMember.role),
+        selectinload(EnhancedShift.breaks),
+        joinedload(EnhancedShift.template)
+    ).filter(
         EnhancedShift.date >= start_date,
         EnhancedShift.date <= end_date
     )
@@ -167,14 +171,32 @@ async def get_shifts(
     
     shifts = query.all()
     
-    # Enhance with staff and role names
+    # Transform to response format (no additional queries needed)
     result = []
     for shift in shifts:
-        staff = db.query(StaffMember).filter(StaffMember.id == shift.staff_id).first()
-        shift_dict = shift.__dict__.copy()
-        shift_dict["staff_name"] = staff.name if staff else None
-        shift_dict["role_name"] = staff.role.name if staff and staff.role else None
-        shift_dict["breaks"] = shift.breaks
+        shift_dict = {
+            "id": shift.id,
+            "staff_id": shift.staff_id,
+            "staff_name": shift.staff_member.name if shift.staff_member else None,
+            "role_id": shift.role_id,
+            "role_name": shift.role.name if shift.role else None,
+            "location_id": shift.location_id,
+            "date": shift.date,
+            "start_time": shift.start_time,
+            "end_time": shift.end_time,
+            "shift_type": shift.shift_type,
+            "status": shift.status,
+            "template_id": shift.template_id,
+            "hourly_rate": shift.hourly_rate,
+            "estimated_cost": shift.estimated_cost,
+            "actual_cost": shift.actual_cost,
+            "notes": shift.notes,
+            "color": shift.color,
+            "breaks": shift.breaks,
+            "created_at": shift.created_at,
+            "updated_at": shift.updated_at,
+            "published_at": shift.published_at
+        }
         result.append(ShiftResponse(**shift_dict))
     
     return result
@@ -348,8 +370,10 @@ async def request_shift_swap(
     current_user: dict = Depends(verify_access_token)
 ):
     """Request a shift swap"""
-    # Verify requester owns the from_shift
-    from_shift = db.query(EnhancedShift).filter(
+    # Verify requester owns the from_shift (with eager loading)
+    from_shift = db.query(EnhancedShift).options(
+        joinedload(EnhancedShift.staff_member)
+    ).filter(
         EnhancedShift.id == swap_request.from_shift_id
     ).first()
     
@@ -358,6 +382,17 @@ async def request_shift_swap(
     
     if from_shift.staff_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Can only swap your own shifts")
+    
+    # Validate the swap request
+    service = SchedulingService(db)
+    valid, reason = service.validate_swap_request(
+        swap_request.from_shift_id,
+        swap_request.to_shift_id,
+        swap_request.to_staff_id
+    )
+    
+    if not valid:
+        raise HTTPException(status_code=400, detail=reason)
     
     db_swap = ShiftSwap(
         requester_id=current_user["user_id"],

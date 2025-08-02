@@ -17,69 +17,76 @@ depends_on = None
 
 
 def upgrade():
-    # Create scheduling enums
+    # Create scheduling enums matching the code exactly
     op.execute("""
-        CREATE TYPE shifttype AS ENUM ('morning', 'afternoon', 'evening', 'night', 'custom');
-        CREATE TYPE shiftstatus AS ENUM ('scheduled', 'published', 'in_progress', 'completed', 'cancelled');
-        CREATE TYPE availabilitystatus AS ENUM ('available', 'unavailable', 'limited');
-        CREATE TYPE swaprequeststatus AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
+        CREATE TYPE shiftstatus AS ENUM ('draft', 'published', 'in_progress', 'completed', 'cancelled');
+        CREATE TYPE shifttype AS ENUM ('regular', 'overtime', 'holiday', 'training', 'meeting');
+        CREATE TYPE recurrencetype AS ENUM ('none', 'daily', 'weekly', 'biweekly', 'monthly');
+        CREATE TYPE availabilitystatus AS ENUM ('available', 'unavailable', 'preferred', 'limited');
+        CREATE TYPE swapstatus AS ENUM ('pending', 'approved', 'rejected', 'cancelled');
+        CREATE TYPE breaktype AS ENUM ('meal', 'rest', 'paid', 'unpaid');
     """)
     
     # Create shift_templates table
     op.create_table('shift_templates',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('restaurant_id', sa.Integer(), nullable=False),
-        sa.Column('location_id', sa.Integer(), nullable=True),
         sa.Column('name', sa.String(), nullable=False),
-        sa.Column('type', sa.Enum('morning', 'afternoon', 'evening', 'night', 'custom', name='shifttype'), nullable=False),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('role_id', sa.Integer(), nullable=True),
+        sa.Column('location_id', sa.Integer(), nullable=True),
         sa.Column('start_time', sa.Time(), nullable=False),
         sa.Column('end_time', sa.Time(), nullable=False),
-        sa.Column('break_duration', sa.Integer(), nullable=True),
-        sa.Column('min_staff', sa.Integer(), nullable=True),
+        sa.Column('recurrence_type', sa.Enum('none', 'daily', 'weekly', 'biweekly', 'monthly', name='recurrencetype'), nullable=True),
+        sa.Column('recurrence_days', sa.JSON(), nullable=True),
+        sa.Column('min_staff', sa.Integer(), nullable=True, default=1),
         sa.Column('max_staff', sa.Integer(), nullable=True),
-        sa.Column('color', sa.String(), nullable=True),
+        sa.Column('preferred_staff', sa.Integer(), nullable=True),
+        sa.Column('estimated_hourly_rate', sa.Float(), nullable=True),
         sa.Column('is_active', sa.Boolean(), nullable=True, default=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['restaurant_id'], ['restaurants.id'], ),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_shift_templates_id', 'shift_templates', ['id'])
-    op.create_index('ix_shift_templates_restaurant_id', 'shift_templates', ['restaurant_id'])
     op.create_index('ix_shift_templates_location_id', 'shift_templates', ['location_id'])
     op.create_index('ix_shift_templates_is_active', 'shift_templates', ['is_active'])
     
-    # Create scheduled_shifts table
-    op.create_table('scheduled_shifts',
+    # Create enhanced_shifts table (main shift table)
+    op.create_table('enhanced_shifts',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('restaurant_id', sa.Integer(), nullable=False),
-        sa.Column('location_id', sa.Integer(), nullable=True),
         sa.Column('staff_id', sa.Integer(), nullable=False),
-        sa.Column('template_id', sa.Integer(), nullable=True),
-        sa.Column('date', sa.Date(), nullable=False),
+        sa.Column('role_id', sa.Integer(), nullable=True),
+        sa.Column('location_id', sa.Integer(), nullable=False),
+        sa.Column('date', sa.DateTime(), nullable=False),
         sa.Column('start_time', sa.DateTime(), nullable=False),
         sa.Column('end_time', sa.DateTime(), nullable=False),
-        sa.Column('actual_start', sa.DateTime(), nullable=True),
-        sa.Column('actual_end', sa.DateTime(), nullable=True),
-        sa.Column('break_duration', sa.Integer(), nullable=True),
-        sa.Column('status', sa.Enum('scheduled', 'published', 'in_progress', 'completed', 'cancelled', name='shiftstatus'), nullable=False),
+        sa.Column('shift_type', sa.Enum('regular', 'overtime', 'holiday', 'training', 'meeting', name='shifttype'), nullable=True, default='regular'),
+        sa.Column('status', sa.Enum('draft', 'published', 'in_progress', 'completed', 'cancelled', name='shiftstatus'), nullable=True, default='draft'),
+        sa.Column('template_id', sa.Integer(), nullable=True),
+        sa.Column('hourly_rate', sa.Float(), nullable=True),
+        sa.Column('estimated_cost', sa.Float(), nullable=True),
+        sa.Column('actual_cost', sa.Float(), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_by', sa.Integer(), nullable=True),
+        sa.Column('color', sa.String(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
-        sa.ForeignKeyConstraint(['restaurant_id'], ['restaurants.id'], ),
+        sa.Column('created_by_id', sa.Integer(), nullable=True),
+        sa.Column('published_at', sa.DateTime(), nullable=True),
+        sa.CheckConstraint('end_time > start_time', name='check_shift_times'),
+        sa.ForeignKeyConstraint(['created_by_id'], ['staff_members.id'], ),
+        sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
         sa.ForeignKeyConstraint(['staff_id'], ['staff_members.id'], ),
         sa.ForeignKeyConstraint(['template_id'], ['shift_templates.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_scheduled_shifts_id', 'scheduled_shifts', ['id'])
-    op.create_index('ix_scheduled_shifts_date', 'scheduled_shifts', ['date'])
-    op.create_index('ix_scheduled_shifts_restaurant_id', 'scheduled_shifts', ['restaurant_id'])
-    op.create_index('ix_scheduled_shifts_staff_id', 'scheduled_shifts', ['staff_id'])
-    op.create_index('ix_scheduled_shifts_status', 'scheduled_shifts', ['status'])
-    op.create_index('ix_scheduled_shifts_staff_date', 'scheduled_shifts', ['staff_id', 'date'])
-    op.create_index('ix_scheduled_shifts_restaurant_date', 'scheduled_shifts', ['restaurant_id', 'date'])
+    op.create_index('ix_enhanced_shifts_id', 'enhanced_shifts', ['id'])
+    op.create_index('ix_enhanced_shifts_date', 'enhanced_shifts', ['date'])
+    op.create_index('ix_enhanced_shifts_location_id', 'enhanced_shifts', ['location_id'])
+    op.create_index('ix_enhanced_shifts_staff_id', 'enhanced_shifts', ['staff_id'])
+    op.create_index('ix_enhanced_shifts_status', 'enhanced_shifts', ['status'])
+    op.create_index('ix_enhanced_shifts_staff_date', 'enhanced_shifts', ['staff_id', 'date'])
+    op.create_index('ix_enhanced_shifts_location_date', 'enhanced_shifts', ['location_id', 'date'])
     
     # Create staff_availability table
     op.create_table('staff_availability',
@@ -121,27 +128,76 @@ def upgrade():
     op.create_index('ix_time_off_requests_staff_id', 'time_off_requests', ['staff_id'])
     op.create_index('ix_time_off_requests_start_date', 'time_off_requests', ['start_date'])
     
-    # Create shift_swap_requests table
-    op.create_table('shift_swap_requests',
+    # Create shift_swaps table
+    op.create_table('shift_swaps',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('shift_id', sa.Integer(), nullable=False),
         sa.Column('requester_id', sa.Integer(), nullable=False),
-        sa.Column('target_staff_id', sa.Integer(), nullable=True),
-        sa.Column('reason', sa.String(), nullable=True),
-        sa.Column('status', sa.Enum('pending', 'approved', 'rejected', 'cancelled', name='swaprequeststatus'), nullable=False),
-        sa.Column('approved_by', sa.Integer(), nullable=True),
+        sa.Column('from_shift_id', sa.Integer(), nullable=False),
+        sa.Column('to_shift_id', sa.Integer(), nullable=True),
+        sa.Column('to_staff_id', sa.Integer(), nullable=True),
+        sa.Column('status', sa.Enum('pending', 'approved', 'rejected', 'cancelled', name='swapstatus'), nullable=False, default='pending'),
+        sa.Column('reason', sa.Text(), nullable=True),
+        sa.Column('manager_notes', sa.Text(), nullable=True),
+        sa.Column('requested_at', sa.DateTime(), nullable=False),
+        sa.Column('approved_by_id', sa.Integer(), nullable=True),
         sa.Column('approved_at', sa.DateTime(), nullable=True),
-        sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['approved_by'], ['users.id'], ),
+        sa.Column('expires_at', sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(['approved_by_id'], ['staff_members.id'], ),
         sa.ForeignKeyConstraint(['requester_id'], ['staff_members.id'], ),
-        sa.ForeignKeyConstraint(['shift_id'], ['scheduled_shifts.id'], ),
-        sa.ForeignKeyConstraint(['target_staff_id'], ['staff_members.id'], ),
+        sa.ForeignKeyConstraint(['from_shift_id'], ['enhanced_shifts.id'], ),
+        sa.ForeignKeyConstraint(['to_shift_id'], ['enhanced_shifts.id'], ),
+        sa.ForeignKeyConstraint(['to_staff_id'], ['staff_members.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
-    op.create_index('ix_shift_swap_requests_id', 'shift_swap_requests', ['id'])
-    op.create_index('ix_shift_swap_requests_shift_id', 'shift_swap_requests', ['shift_id'])
+    op.create_index('ix_shift_swaps_from_shift_id', 'shift_swaps', ['from_shift_id'])
+    op.create_index('ix_shift_swaps_status', 'shift_swaps', ['status'])
+    
+    # Create shift_breaks table
+    op.create_table('shift_breaks',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('shift_id', sa.Integer(), nullable=False),
+        sa.Column('break_type', sa.Enum('meal', 'rest', 'paid', 'unpaid', name='breaktype'), nullable=False),
+        sa.Column('start_time', sa.DateTime(), nullable=False),
+        sa.Column('end_time', sa.DateTime(), nullable=False),
+        sa.Column('duration_minutes', sa.Integer(), nullable=True),
+        sa.Column('is_paid', sa.Boolean(), nullable=True, default=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(['shift_id'], ['enhanced_shifts.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_shift_breaks_shift_id', 'shift_breaks', ['shift_id'])
+    
+    # Create shift_requirements table
+    op.create_table('shift_requirements',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('template_id', sa.Integer(), nullable=False),
+        sa.Column('skill_id', sa.Integer(), nullable=True),
+        sa.Column('certification_id', sa.Integer(), nullable=True),
+        sa.Column('minimum_experience_months', sa.Integer(), nullable=True),
+        sa.Column('is_mandatory', sa.Boolean(), nullable=True, default=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.ForeignKeyConstraint(['template_id'], ['shift_templates.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_shift_requirements_template_id', 'shift_requirements', ['template_id'])
+    
+    # Create schedule_publications table
+    op.create_table('schedule_publications',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('location_id', sa.Integer(), nullable=False),
+        sa.Column('start_date', sa.Date(), nullable=False),
+        sa.Column('end_date', sa.Date(), nullable=False),
+        sa.Column('published_by_id', sa.Integer(), nullable=True),
+        sa.Column('published_at', sa.DateTime(), nullable=False),
+        sa.Column('published_shift_count', sa.Integer(), nullable=True),
+        sa.Column('notification_sent', sa.Boolean(), nullable=True, default=False),
+        sa.Column('notes', sa.Text(), nullable=True),
+        sa.ForeignKeyConstraint(['published_by_id'], ['staff_members.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index('ix_schedule_publications_location_id', 'schedule_publications', ['location_id'])
+    op.create_index('ix_schedule_publications_published_at', 'schedule_publications', ['published_at'])
     
     # Add scheduling-related columns to staff_members if they don't exist
     op.execute("""
@@ -167,37 +223,45 @@ def upgrade():
 
 def downgrade():
     # Drop indexes
-    op.drop_index('ix_shift_swap_requests_shift_id', table_name='shift_swap_requests')
-    op.drop_index('ix_shift_swap_requests_id', table_name='shift_swap_requests')
+    op.drop_index('ix_schedule_publications_published_at', table_name='schedule_publications')
+    op.drop_index('ix_schedule_publications_location_id', table_name='schedule_publications')
+    op.drop_index('ix_shift_requirements_template_id', table_name='shift_requirements')
+    op.drop_index('ix_shift_breaks_shift_id', table_name='shift_breaks')
+    op.drop_index('ix_shift_swaps_status', table_name='shift_swaps')
+    op.drop_index('ix_shift_swaps_from_shift_id', table_name='shift_swaps')
     op.drop_index('ix_time_off_requests_start_date', table_name='time_off_requests')
     op.drop_index('ix_time_off_requests_staff_id', table_name='time_off_requests')
     op.drop_index('ix_time_off_requests_id', table_name='time_off_requests')
     op.drop_index('ix_staff_availability_staff_id', table_name='staff_availability')
     op.drop_index('ix_staff_availability_id', table_name='staff_availability')
-    op.drop_index('ix_scheduled_shifts_restaurant_date', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_staff_date', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_status', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_staff_id', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_restaurant_id', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_date', table_name='scheduled_shifts')
-    op.drop_index('ix_scheduled_shifts_id', table_name='scheduled_shifts')
+    op.drop_index('ix_enhanced_shifts_location_date', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_staff_date', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_status', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_staff_id', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_location_id', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_date', table_name='enhanced_shifts')
+    op.drop_index('ix_enhanced_shifts_id', table_name='enhanced_shifts')
     op.drop_index('ix_shift_templates_is_active', table_name='shift_templates')
     op.drop_index('ix_shift_templates_location_id', table_name='shift_templates')
-    op.drop_index('ix_shift_templates_restaurant_id', table_name='shift_templates')
     op.drop_index('ix_shift_templates_id', table_name='shift_templates')
     
     # Drop tables
-    op.drop_table('shift_swap_requests')
+    op.drop_table('schedule_publications')
+    op.drop_table('shift_requirements')
+    op.drop_table('shift_breaks')
+    op.drop_table('shift_swaps')
     op.drop_table('time_off_requests')
     op.drop_table('staff_availability')
-    op.drop_table('scheduled_shifts')
+    op.drop_table('enhanced_shifts')
     op.drop_table('shift_templates')
     
     # Drop enums
-    op.execute('DROP TYPE IF EXISTS swaprequeststatus')
+    op.execute('DROP TYPE IF EXISTS breaktype')
+    op.execute('DROP TYPE IF EXISTS swapstatus')
     op.execute('DROP TYPE IF EXISTS availabilitystatus')
-    op.execute('DROP TYPE IF EXISTS shiftstatus')
+    op.execute('DROP TYPE IF EXISTS recurrencetype')
     op.execute('DROP TYPE IF EXISTS shifttype')
+    op.execute('DROP TYPE IF EXISTS shiftstatus')
     
     # Remove columns from staff_members
     op.execute("""

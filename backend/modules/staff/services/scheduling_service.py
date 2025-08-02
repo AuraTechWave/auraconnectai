@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from datetime import datetime, date, timedelta, time
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 import logging
 
 from ..models.scheduling_models import (
@@ -349,6 +349,81 @@ class SchedulingService:
         # For now, random order
         return available_staff
     
+    def validate_swap_request(
+        self,
+        from_shift_id: int,
+        to_shift_id: Optional[int] = None,
+        to_staff_id: Optional[int] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate a shift swap request"""
+        # Get from shift
+        from_shift = self.db.query(EnhancedShift).filter(
+            EnhancedShift.id == from_shift_id
+        ).first()
+        
+        if not from_shift:
+            return False, "Source shift not found"
+        
+        if from_shift.status == ShiftStatus.COMPLETED:
+            return False, "Cannot swap completed shifts"
+        
+        if from_shift.status == ShiftStatus.CANCELLED:
+            return False, "Cannot swap cancelled shifts"
+        
+        # If swapping with another shift
+        if to_shift_id:
+            to_shift = self.db.query(EnhancedShift).filter(
+                EnhancedShift.id == to_shift_id
+            ).first()
+            
+            if not to_shift:
+                return False, "Target shift not found"
+            
+            # Verify shifts are from same location and role
+            if from_shift.location_id != to_shift.location_id:
+                return False, "Shifts must be at the same location"
+            
+            if from_shift.role_id != to_shift.role_id:
+                return False, "Shifts must be for the same role"
+            
+            if to_shift.status == ShiftStatus.COMPLETED:
+                return False, "Cannot swap with completed shifts"
+        
+        # If assigning to specific staff
+        if to_staff_id:
+            to_staff = self.db.query(StaffMember).filter(
+                StaffMember.id == to_staff_id
+            ).first()
+            
+            if not to_staff:
+                return False, "Target staff member not found"
+            
+            # Check if target staff has required role
+            if from_shift.role_id and to_staff.role_id != from_shift.role_id:
+                return False, "Target staff member doesn't have required role"
+            
+            # Check availability
+            available, reason = self.check_availability(
+                to_staff_id,
+                from_shift.start_time,
+                from_shift.end_time
+            )
+            
+            if not available:
+                return False, f"Target staff not available: {reason}"
+            
+            # Check for conflicts
+            conflicts = self.detect_conflicts(
+                to_staff_id,
+                from_shift.start_time,
+                from_shift.end_time
+            )
+            
+            if conflicts:
+                return False, "Target staff has scheduling conflicts"
+        
+        return True, None
+    
     def approve_shift_swap(
         self,
         swap_id: int,
@@ -363,6 +438,16 @@ class SchedulingService:
         
         if swap.status != SwapStatus.PENDING:
             raise ValueError("Can only approve pending swap requests")
+        
+        # Validate the swap
+        valid, reason = self.validate_swap_request(
+            swap.from_shift_id,
+            swap.to_shift_id,
+            swap.to_staff_id
+        )
+        
+        if not valid:
+            raise ValueError(f"Invalid swap request: {reason}")
         
         # Update the shifts
         from_shift = swap.from_shift
@@ -659,7 +744,7 @@ class SchedulingService:
         start_date: date,
         end_date: date,
         notify: bool = True
-    ) -> Dict[str, int]:
+    ) -> Dict[str, Any]:
         """Publish draft schedules and optionally notify staff"""
         # Get all draft shifts in the date range
         shifts = self.db.query(EnhancedShift).filter(
