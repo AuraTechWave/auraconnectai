@@ -25,3 +25,13 @@ site/
 
 # MkDocs build output
 site/
+
+# Authentication tokens and sensitive files
+.access_token
+.refresh_token
+.auth_response.json
+*.token
+auth-tokens/
+tokens/
+*_token
+*_token.*

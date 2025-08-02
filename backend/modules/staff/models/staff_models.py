@@ -17,6 +17,9 @@ class StaffMember(Base):
 
     role = relationship("Role", back_populates="staff_members")
     employee_payments = relationship("EmployeePayment", back_populates="staff_member")
+    pay_policies = relationship("StaffPayPolicy", back_populates="staff_member")
+    attendance_logs = relationship("AttendanceLog", back_populates="staff_member")
+    biometric_data = relationship("StaffBiometric", back_populates="staff_member", uselist=False)
 
 
 class Role(Base):

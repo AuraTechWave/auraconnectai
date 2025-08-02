@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer
+from typing import Optional
 from core.exceptions import register_exception_handlers
 from app.startup import run_startup_checks
 from modules.staff.routes.staff_routes import router as staff_router
@@ -9,6 +11,7 @@ from modules.staff.routes.payroll_routes import (
 from modules.staff.routes.enhanced_payroll_routes import (
     router as enhanced_payroll_router
 )
+from modules.staff.routers.biometric_router import router as biometric_router
 from modules.auth.routes.auth_routes import (
     router as auth_router
 )
@@ -163,6 +166,7 @@ app.include_router(auth_router)
 app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API
 app.include_router(staff_router)
 app.include_router(payroll_router)  # Legacy payroll routes
+app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biometrics"])
 app.include_router(order_router)
 app.include_router(inventory_router)
 app.include_router(kitchen_router)
@@ -219,3 +223,51 @@ async def shutdown_event():
 @app.get("/")
 def read_root():
     return {"message": "AuraConnect backend is running"}
+
+
+@app.get("/test-token")
+async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_error=False))):
+    """Test endpoint to debug token issues - DISABLED IN PRODUCTION"""
+    import os
+    
+    # Disable in production
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    from core.auth import verify_token, SECRET_KEY
+    
+    if not authorization:
+        return {"error": "No authorization header"}
+    
+    token = authorization.credentials
+    
+    # Try to decode without verification first
+    try:
+        from jose import jwt
+        # Decode without verification to see the payload
+        payload_unverified = jwt.get_unverified_claims(token)
+        
+        # Now try with verification
+        try:
+            payload_verified = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            token_data = verify_token(token)
+            
+            return {
+                "status": "success",
+                "payload_unverified": payload_unverified,
+                "payload_verified": payload_verified,
+                "token_data": token_data.__dict__ if token_data else None,
+                "secret_key_preview": SECRET_KEY[:10] + "..."
+            }
+        except Exception as e:
+            return {
+                "status": "verification_failed",
+                "payload_unverified": payload_unverified,
+                "error": str(e),
+                "secret_key_preview": SECRET_KEY[:10] + "..."
+            }
+    except Exception as e:
+        return {
+            "status": "decode_failed",
+            "error": str(e)
+        }
