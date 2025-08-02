@@ -133,7 +133,7 @@ graph TB
 
 | Module | Description | Key Features | Status |
 |--------|-------------|--------------|--------|
-| **[Staff](docs/modules/staff/README.md)** | Employee management | Scheduling, Roles, Permissions, Time tracking | ✅ Production |
+| **[Staff](docs/modules/staff/README.md)** | Employee management | [Advanced Scheduling](backend/modules/staff/docs/SCHEDULING_USAGE.md), Roles, Permissions, Time tracking, [Biometric Auth](backend/modules/staff/docs/BIOMETRIC_API.md) | ✅ Production |
 | **[Payroll](docs/modules/payroll/README.md)** | Payroll processing | Multi-state tax, Direct deposit, Compliance | ✅ Production |
 | **[Tax](docs/modules/tax/README.md)** | Tax calculations | Federal/State/Local, Real-time updates, Reporting | ✅ Production |
 

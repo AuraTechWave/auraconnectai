@@ -9,6 +9,7 @@ from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability,
     ShiftSwap, ShiftBreak, SchedulePublication
 )
+from ..utils.permissions import SchedulingPermissions
 from ..models.staff_models import StaffMember
 from ..schemas.scheduling_schemas import (
     ShiftTemplateCreate, ShiftTemplateUpdate, ShiftTemplateResponse,
@@ -32,7 +33,15 @@ async def create_shift_template(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Create a new shift template"""
+    """Create a new shift template (Manager/Admin only)"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "create_template",
+        db,
+        location_id=template.location_id
+    )
+    
     db_template = ShiftTemplate(**template.dict())
     db.add(db_template)
     db.commit()
@@ -399,7 +408,14 @@ async def approve_shift_swap(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Approve or reject a shift swap"""
+    """Approve or reject a shift swap (Manager/Supervisor only)"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "approve_swap",
+        db
+    )
+    
     service = SchedulingService(db)
     
     if approval.status == SwapStatus.APPROVED:
@@ -430,7 +446,15 @@ async def generate_schedule(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Generate schedule from templates"""
+    """Generate schedule from templates (Manager/Admin only)"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "generate_schedule",
+        db,
+        location_id=request.location_id
+    )
+    
     service = SchedulingService(db)
     
     shifts = service.generate_schedule_from_templates(
@@ -461,7 +485,14 @@ async def publish_schedule(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_access_token)
 ):
-    """Publish schedule and notify staff"""
+    """Publish schedule and notify staff (Manager/Admin only)"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "publish_schedule",
+        db,
+        location_id=request.location_id if hasattr(request, 'location_id') else None
+    )
     # Get all draft shifts in date range
     shifts = db.query(EnhancedShift).filter(
         EnhancedShift.date >= request.start_date,
