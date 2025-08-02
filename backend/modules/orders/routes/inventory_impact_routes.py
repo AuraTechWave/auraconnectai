@@ -110,7 +110,13 @@ async def handle_partial_order_fulfillment(
     - Customer modifies order during preparation
     - Kitchen can only prepare partial quantities
     """
+    # Require manager role for partial fulfillment operations
     await check_permissions(current_user, "orders", "update")
+    if not any(role.name in ["manager", "admin"] for role in current_user.roles):
+        raise HTTPException(
+            status_code=403,
+            detail="Only managers and admins can perform partial fulfillment operations"
+        )
     
     # Verify order exists and is in appropriate status
     order = await get_order_by_id(db, order_id)
@@ -154,7 +160,13 @@ async def reverse_order_inventory_deduction(
     - Mistake in order processing
     - Customer returns items
     """
+    # Require manager role for inventory reversal operations
     await check_permissions(current_user, "orders", "update")
+    if not any(role.name in ["manager", "admin"] for role in current_user.roles):
+        raise HTTPException(
+            status_code=403,
+            detail="Only managers and admins can reverse inventory deductions"
+        )
     
     # Verify order exists
     order = await get_order_by_id(db, order_id)

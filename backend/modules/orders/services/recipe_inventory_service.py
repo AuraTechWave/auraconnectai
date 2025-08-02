@@ -135,6 +135,18 @@ class RecipeInventoryService:
                         "threshold": inventory_item.threshold,
                         "unit": inventory_item.unit
                     })
+                    
+                    # Send low stock notification if configured
+                    from ..config.inventory_config import get_inventory_config
+                    config = get_inventory_config()
+                    if config.SEND_LOW_STOCK_NOTIFICATIONS:
+                        # TODO: Integrate with notification service
+                        # await send_low_stock_notification(
+                        #     inventory_item=inventory_item,
+                        #     current_quantity=inventory_item.quantity,
+                        #     threshold=inventory_item.threshold
+                        # )
+                        pass
             
             self.db.commit()
             
@@ -159,7 +171,8 @@ class RecipeInventoryService:
         self,
         order_id: int,
         user_id: int,
-        reason: str = "Order cancellation"
+        reason: str = "Order cancellation",
+        force: bool = False
     ) -> Dict:
         """
         Reverse inventory deductions for a cancelled order
@@ -168,6 +181,7 @@ class RecipeInventoryService:
             order_id: Order ID to reverse deductions for
             user_id: User performing the reversal
             reason: Reason for reversal
+            force: Force reversal even if external systems are synced
         
         Returns:
             Dict with reversal results
@@ -175,6 +189,21 @@ class RecipeInventoryService:
         reversed_items = []
         
         try:
+            # Check if adjustments have been synced to external systems
+            if not force:
+                synced_adjustments = self.db.query(InventoryAdjustment).filter(
+                    and_(
+                        InventoryAdjustment.reference_type == "order",
+                        InventoryAdjustment.reference_id == str(order_id),
+                        InventoryAdjustment.metadata.op("->")("synced_to_external").astext == "true"
+                    )
+                ).first()
+                
+                if synced_adjustments:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Cannot reverse inventory deductions that have been synced to external systems. Contact administrator."
+                    )
             # Find all deductions for this order
             adjustments = self.db.query(InventoryAdjustment).filter(
                 and_(
@@ -298,12 +327,28 @@ class RecipeInventoryService:
         Returns:
             Dict mapping inventory_id to required quantity and metadata
         """
+        from sqlalchemy.orm import joinedload, selectinload
+        
         required_ingredients = {}
         items_without_recipes = []
         
+        # Bulk fetch all menu item IDs
+        menu_item_ids = [item.menu_item_id for item in order_items]
+        
+        # Prefetch all recipes with ingredients and sub-recipes in one query
+        recipes = self.db.query(Recipe).options(
+            selectinload(Recipe.ingredients).joinedload(RecipeIngredient.inventory_item),
+            selectinload(Recipe.sub_recipes).joinedload(RecipeSubRecipe.sub_recipe)
+        ).filter(
+            Recipe.menu_item_id.in_(menu_item_ids),
+            Recipe.deleted_at.is_(None)
+        ).all()
+        
+        # Create a mapping for quick lookup
+        recipe_map = {recipe.menu_item_id: recipe for recipe in recipes}
+        
         for order_item in order_items:
-            # Get recipe for menu item
-            recipe = self.recipe_service.get_recipe_by_menu_item(order_item.menu_item_id)
+            recipe = recipe_map.get(order_item.menu_item_id)
             
             if not recipe:
                 items_without_recipes.append({
