@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String, Enum, Float
+from sqlalchemy.orm import relationship
 from core.database import Base
+from ..enums.attendance_enums import CheckInMethod, AttendanceStatus
 
 
 class AttendanceLog(Base):
@@ -8,5 +10,10 @@ class AttendanceLog(Base):
     staff_id = Column(Integer, ForeignKey("staff_members.id"))
     check_in = Column(DateTime)
     check_out = Column(DateTime)
-    method = Column(String)  # manual, QR, faceID
-    status = Column(String)
+    method = Column(Enum(CheckInMethod))
+    status = Column(Enum(AttendanceStatus))
+    location_lat = Column(Float)
+    location_lng = Column(Float)
+    device_id = Column(String)
+    
+    staff_member = relationship("StaffMember", back_populates="attendance_logs")
