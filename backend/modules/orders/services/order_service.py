@@ -22,6 +22,8 @@ from ..schemas.order_schemas import (
 from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
 from .inventory_service import deduct_inventory
+from .recipe_inventory_service import RecipeInventoryService
+from ..config.inventory_config import get_inventory_config
 from .webhook_service import WebhookService
 from core.compliance import AuditLog
 
@@ -197,13 +199,36 @@ async def update_order_service(
             action="status_change"
         )
 
+        # Handle inventory deduction based on configuration
         if (order_update.status == OrderStatus.IN_PROGRESS and
                 current_status == OrderStatus.PENDING):
             try:
-                result = await deduct_inventory(db, order.order_items)
+                # Get inventory configuration
+                config = get_inventory_config()
+                use_recipe_deduction = config.USE_RECIPE_BASED_INVENTORY_DEDUCTION
+                
+                if use_recipe_deduction:
+                    # Use new recipe-based deduction
+                    recipe_inventory_service = RecipeInventoryService(db)
+                    result = await recipe_inventory_service.deduct_inventory_for_order(
+                        order_items=order.order_items,
+                        order_id=order.id,
+                        user_id=user_id,
+                        deduction_type="order_progress"
+                    )
+                else:
+                    # Use legacy MenuItemInventory-based deduction
+                    result = await deduct_inventory(db, order.order_items)
+                
                 if result.get("low_stock_alerts"):
-                    pass
+                    # Log low stock alerts
+                    logger.warning(
+                        f"Low stock alerts for order {order.id}: "
+                        f"{result.get('low_stock_alerts')}"
+                    )
             except HTTPException as e:
+                # If inventory deduction fails, we may want to handle it differently
+                # For now, we'll raise the exception to prevent order progression
                 raise e
         order.status = order_update.status.value
         status_changed = True
@@ -247,8 +272,53 @@ async def update_order_service(
 
         if order.status == OrderStatus.COMPLETED.value:
             event_type = WebhookEventType.ORDER_COMPLETED
+            
+            # Handle inventory deduction on completion if configured
+            config = get_inventory_config()
+            deduct_on_completion = config.DEDUCT_INVENTORY_ON_COMPLETION
+            
+            if deduct_on_completion:
+                try:
+                    recipe_inventory_service = RecipeInventoryService(db)
+                    result = await recipe_inventory_service.deduct_inventory_for_order(
+                        order_items=order.order_items,
+                        order_id=order.id,
+                        user_id=user_id,
+                        deduction_type="order_completion"
+                    )
+                    if result.get("low_stock_alerts"):
+                        logger.warning(
+                            f"Low stock alerts on order completion {order.id}: "
+                            f"{result.get('low_stock_alerts')}"
+                        )
+                except HTTPException as e:
+                    logger.error(
+                        f"Failed to deduct inventory on order completion {order.id}: {str(e)}"
+                    )
+                    # Don't fail the order completion, just log the error
+                    
         elif order.status == OrderStatus.CANCELLED.value:
             event_type = WebhookEventType.ORDER_CANCELLED
+            
+            # Handle inventory reversal for cancelled orders
+            config = get_inventory_config()
+            if config.AUTO_REVERSE_ON_CANCELLATION:
+                try:
+                    recipe_inventory_service = RecipeInventoryService(db)
+                    result = await recipe_inventory_service.reverse_inventory_deduction(
+                        order_id=order.id,
+                        user_id=user_id,
+                        reason="Order cancelled"
+                    )
+                    if result.get("reversed_items"):
+                        logger.info(
+                            f"Reversed inventory for cancelled order {order.id}: "
+                            f"{len(result.get('reversed_items', []))} items"
+                        )
+                except HTTPException as e:
+                    logger.error(
+                        f"Failed to reverse inventory for cancelled order {order.id}: {str(e)}"
+                    )
         else:
             event_type = WebhookEventType.ORDER_STATUS_CHANGED
 

@@ -35,6 +35,8 @@ class AdjustmentType(str, Enum):
     EXPIRED = "expired"
     DAMAGED = "damaged"
     RECOUNT = "recount"
+    CONSUMPTION = "consumption"  # Used when recipes consume ingredients
+    RETURN = "return"  # Used when reversing consumption
 
 
 class VendorStatus(str, Enum):
@@ -138,7 +140,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     
     # Quantity changes
     quantity_before = Column(Float, nullable=False)
-    quantity_adjusted = Column(Float, nullable=False)  # Can be positive or negative
+    quantity_change = Column(Float, nullable=False)  # Can be positive or negative
     quantity_after = Column(Float, nullable=False)
     unit = Column(String(20), nullable=False)
     
@@ -156,6 +158,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     reason = Column(String(500), nullable=False)
     notes = Column(Text, nullable=True)
     location = Column(String(100), nullable=True)
+    metadata = Column(JSON, nullable=True)  # Additional structured data
     
     # Approval workflow
     requires_approval = Column(Boolean, nullable=False, default=False)
@@ -164,6 +167,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     approval_notes = Column(Text, nullable=True)
     
     # Metadata
+    performed_by = Column(Integer, nullable=False)  # User who made the adjustment
     created_by = Column(Integer, nullable=False)  # User who made the adjustment
     is_active = Column(Boolean, nullable=False, default=True)
 
@@ -171,7 +175,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     inventory_item = relationship("Inventory", back_populates="adjustments")
 
     def __repr__(self):
-        return f"<InventoryAdjustment(id={self.id}, type='{self.adjustment_type}', quantity={self.quantity_adjusted})>"
+        return f"<InventoryAdjustment(id={self.id}, type='{self.adjustment_type}', quantity={self.quantity_change})>"
 
 
 class PurchaseOrder(Base, TimestampMixin):

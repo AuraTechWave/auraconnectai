@@ -28,6 +28,9 @@ from modules.orders.routes.order_routes import router as order_router
 from modules.orders.routes.inventory_routes import (
     router as inventory_router
 )
+from modules.orders.routes.inventory_impact_routes import (
+    router as inventory_impact_router
+)
 from modules.orders.routes.kitchen_routes import (
     router as kitchen_router
 )
@@ -171,6 +174,7 @@ app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biomet
 app.include_router(scheduling_router, prefix="/api/v1/staff", tags=["Staff Scheduling"])
 app.include_router(order_router)
 app.include_router(inventory_router)
+app.include_router(inventory_impact_router)
 app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
 app.include_router(pricing_router)
