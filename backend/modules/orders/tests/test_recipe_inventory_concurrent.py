@@ -2,6 +2,7 @@
 
 import pytest
 import asyncio
+import os
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from sqlalchemy.pool import StaticPool
@@ -18,6 +19,19 @@ from ..services.recipe_inventory_service import RecipeInventoryService
 from fastapi import HTTPException
 
 
+def is_postgres_available():
+    """Check if we're running against PostgreSQL."""
+    db_url = os.getenv("DATABASE_URL", "")
+    return "postgresql" in db_url.lower()
+
+
+# Skip these tests if not running on PostgreSQL for realistic concurrency testing
+pytestmark = pytest.mark.skipif(
+    not is_postgres_available(),
+    reason="Concurrent tests require PostgreSQL for realistic transaction isolation"
+)
+
+
 @pytest.mark.concurrent
 @pytest.mark.slow
 @pytest.mark.db
@@ -25,7 +39,7 @@ class TestConcurrentInventoryDeduction:
     """Test cases for concurrent inventory deduction scenarios."""
     
     @pytest.fixture
-    def db_engine(self):
+    def db_engine(self, request):
         """Create a test database engine with thread-safe connection pool."""
         engine = create_engine(
             "sqlite:///:memory:",

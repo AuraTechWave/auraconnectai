@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from .factories import (
+from tests.factories import (
     UserFactory, RoleFactory, OrderWithItemsFactory,
     RecipeWithIngredientsFactory, InventoryFactory,
     create_restaurant_setup, create_order_scenario

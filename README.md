@@ -267,6 +267,9 @@ pytest -m "not slow"
 # Run integration tests
 pytest -m integration
 
+# Run API endpoint tests
+pytest -m api
+
 # Run concurrent tests with output
 pytest -m concurrent -v -s
 

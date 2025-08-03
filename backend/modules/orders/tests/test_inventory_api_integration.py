@@ -98,9 +98,12 @@ def setup_test_data(db: Session):
     return {"inventory": inventory_items, "menu_items": menu_items}
 
 
+@pytest.mark.api
+@pytest.mark.integration
 class TestInventoryImpactAPI:
     """Test the inventory impact API endpoints."""
     
+    @pytest.mark.api
     def test_preview_order_inventory_impact(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test previewing inventory impact for an order."""
         # Create an order
@@ -139,6 +142,7 @@ class TestInventoryImpactAPI:
         assert flour_impact["new_quantity"] == 49.2
         assert flour_impact["sufficient_stock"] is True
     
+    @pytest.mark.api
     def test_preview_items_inventory_impact(self, client: TestClient, auth_headers, setup_test_data):
         """Test previewing impact for items without creating an order."""
         # Request body with items
@@ -165,6 +169,7 @@ class TestInventoryImpactAPI:
         # 3 pizzas (0.3kg each) + 2 pastas (0.2kg each) = 0.9 + 0.4 = 1.3kg
         assert flour_impact["required_quantity"] == 1.3
     
+    @pytest.mark.api
     def test_partial_fulfillment_endpoint(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test the partial fulfillment endpoint."""
         # Create and process an order first
@@ -204,6 +209,7 @@ class TestInventoryImpactAPI:
         flour_deduction = next(d for d in data["deducted_items"] if d["inventory_id"] == 1)
         assert flour_deduction["quantity_deducted"] == 0.6  # 0.3 * 2
     
+    @pytest.mark.api
     def test_reverse_deduction_endpoint(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test the inventory reversal endpoint."""
         # First, deduct some inventory by creating adjustments
@@ -248,6 +254,7 @@ class TestInventoryImpactAPI:
         db.refresh(flour)
         assert flour.quantity == 50.0
     
+    @pytest.mark.api
     def test_insufficient_stock_preview(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test preview when stock is insufficient."""
         # Set cheese very low
@@ -278,6 +285,7 @@ class TestInventoryImpactAPI:
         assert cheese_impact["required_quantity"] == 0.15
         assert cheese_impact["new_quantity"] == -0.05  # Would go negative
     
+    @pytest.mark.api
     def test_unauthorized_access(self, client: TestClient, setup_test_data):
         """Test that endpoints require authentication."""
         # Try without auth header
@@ -293,6 +301,7 @@ class TestInventoryImpactAPI:
         response = client.post("/inventory-impact/order/1/reverse-deduction", json={"reason": "test"})
         assert response.status_code == 401
     
+    @pytest.mark.api
     def test_non_manager_access_restriction(self, client: TestClient, db: Session):
         """Test that certain endpoints require manager role."""
         # Create regular staff user
@@ -339,6 +348,7 @@ class TestInventoryImpactAPI:
         assert response.status_code == 403
         assert "Only managers and admins" in response.json()["detail"]
     
+    @pytest.mark.api
     def test_low_stock_detection_in_preview(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test that low stock warnings are included in preview."""
         # Set flour close to threshold
@@ -365,6 +375,7 @@ class TestInventoryImpactAPI:
         assert flour_impact["new_quantity"] == 9.9  # Below threshold of 10
         assert flour_impact["will_be_low_stock"] is True
     
+    @pytest.mark.api
     def test_complex_order_modification_flow(self, client: TestClient, db: Session, auth_headers, setup_test_data):
         """Test a complex flow with order modifications."""
         # Create initial order
