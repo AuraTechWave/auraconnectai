@@ -12,6 +12,7 @@ from core.database import get_db
 from core.auth import get_current_user_optional
 from ..services.order_tracking_service import OrderTrackingService
 from ..models.order_tracking_models import CustomerOrderTracking
+from ..services.redis_websocket_manager import redis_ws_manager
 
 
 logger = logging.getLogger(__name__)

@@ -308,6 +308,11 @@ class OrderTrackingService:
         if not tracking:
             return
         
+        # Import notification services
+        from .push_notification_service import PushNotificationService
+        from .notification_retry_service import NotificationRetryService
+        from ..models.notification_config_models import NotificationChannelConfig
+        
         # Get notification templates
         templates = self.db.query(OrderTrackingTemplate).filter(
             and_(
@@ -328,11 +333,20 @@ class OrderTrackingService:
                 estimated_time=event.estimated_completion_time.strftime("%I:%M %p") if event.estimated_completion_time else "N/A"
             )
         
+        # Determine notification priority based on event type
+        priority_map = {
+            TrackingEventType.ORDER_READY: NotificationPriority.HIGH,
+            TrackingEventType.ORDER_DELIVERED: NotificationPriority.HIGH,
+            TrackingEventType.ORDER_CANCELLED: NotificationPriority.URGENT,
+            TrackingEventType.ORDER_DELAYED: NotificationPriority.HIGH
+        }
+        priority = priority_map.get(event.event_type, NotificationPriority.NORMAL)
+        
         # Send notifications based on preferences
         notification_msg = NotificationMessage(
             subject=f"Order #{order.id} Update",
             message=message,
-            priority=NotificationPriority.NORMAL,
+            priority=priority,
             metadata={
                 "order_id": order.id,
                 "event_id": event.id,
@@ -341,49 +355,107 @@ class OrderTrackingService:
         )
         
         notifications_sent = []
+        retry_service = NotificationRetryService(self.db)
         
         # Send email notification
         if tracking.enable_email and tracking.notification_email:
-            sent = await self.notification_adapter.send_to_user(
-                user_id=tracking.customer_id or 0,
-                message=notification_msg
-            )
-            notifications_sent.append(
-                self._create_notification_record(
-                    order.id, event.id, tracking.customer_id,
-                    NotificationChannel.EMAIL, tracking.notification_email,
-                    notification_msg, sent
+            # Get email channel config
+            email_config = self.db.query(NotificationChannelConfig).filter(
+                and_(
+                    NotificationChannelConfig.channel_type == "email",
+                    NotificationChannelConfig.is_enabled == True
                 )
-            )
+            ).first()
+            
+            if email_config:
+                try:
+                    sent = await self.notification_adapter.send_to_user(
+                        user_id=tracking.customer_id or 0,
+                        message=notification_msg
+                    )
+                    notification = self._create_notification_record(
+                        order.id, event.id, tracking.customer_id,
+                        NotificationChannel.EMAIL, tracking.notification_email,
+                        notification_msg, sent
+                    )
+                    notifications_sent.append(notification)
+                    
+                    if not sent:
+                        # Queue for retry
+                        await retry_service.queue_for_retry(
+                            notification, "Failed to send email", email_config
+                        )
+                except Exception as e:
+                    logger.error(f"Email notification failed: {e}")
         
         # Send push notification
         if tracking.enable_push and tracking.push_token:
-            sent = await self.notification_adapter.send_to_user(
-                user_id=tracking.customer_id or 0,
-                message=notification_msg
-            )
-            notifications_sent.append(
-                self._create_notification_record(
-                    order.id, event.id, tracking.customer_id,
-                    NotificationChannel.PUSH, tracking.push_token,
-                    notification_msg, sent
+            # Get push channel config
+            push_config = self.db.query(NotificationChannelConfig).filter(
+                and_(
+                    NotificationChannelConfig.channel_type == "push",
+                    NotificationChannelConfig.is_enabled == True
                 )
-            )
+            ).first()
+            
+            if push_config:
+                try:
+                    # Use actual push notification service
+                    push_service = PushNotificationService(push_config.config)
+                    sent = await push_service._send_fcm(
+                        token=tracking.push_token,
+                        title=notification_msg.subject,
+                        body=notification_msg.message,
+                        data=notification_msg.metadata
+                    )
+                    
+                    notification = self._create_notification_record(
+                        order.id, event.id, tracking.customer_id,
+                        NotificationChannel.PUSH, tracking.push_token,
+                        notification_msg, sent
+                    )
+                    notifications_sent.append(notification)
+                    
+                    if not sent:
+                        # Queue for retry
+                        await retry_service.queue_for_retry(
+                            notification, "Failed to send push notification", push_config
+                        )
+                except Exception as e:
+                    logger.error(f"Push notification failed: {e}")
         
         # Send SMS for high-priority events
         if (tracking.enable_sms and tracking.notification_phone and 
             event.event_type in [TrackingEventType.ORDER_READY, TrackingEventType.ORDER_DELIVERED]):
-            sent = await self.notification_adapter.send_to_user(
-                user_id=tracking.customer_id or 0,
-                message=notification_msg
-            )
-            notifications_sent.append(
-                self._create_notification_record(
-                    order.id, event.id, tracking.customer_id,
-                    NotificationChannel.SMS, tracking.notification_phone,
-                    notification_msg, sent
+            
+            # Get SMS channel config
+            sms_config = self.db.query(NotificationChannelConfig).filter(
+                and_(
+                    NotificationChannelConfig.channel_type == "sms",
+                    NotificationChannelConfig.is_enabled == True
                 )
-            )
+            ).first()
+            
+            if sms_config:
+                try:
+                    sent = await self.notification_adapter.send_to_user(
+                        user_id=tracking.customer_id or 0,
+                        message=notification_msg
+                    )
+                    notification = self._create_notification_record(
+                        order.id, event.id, tracking.customer_id,
+                        NotificationChannel.SMS, tracking.notification_phone,
+                        notification_msg, sent
+                    )
+                    notifications_sent.append(notification)
+                    
+                    if not sent:
+                        # Queue for retry
+                        await retry_service.queue_for_retry(
+                            notification, "Failed to send SMS", sms_config
+                        )
+                except Exception as e:
+                    logger.error(f"SMS notification failed: {e}")
         
         # Save all notification records
         for notification in notifications_sent:
