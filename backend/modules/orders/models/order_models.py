@@ -79,6 +79,11 @@ class Order(Base, TimestampMixin):
     )
     print_tickets = relationship("PrintTicket", back_populates="order")
     attachments = relationship("OrderAttachment", back_populates="order")
+    
+    # Order tracking relationships
+    tracking_events = relationship("OrderTrackingEvent", back_populates="order", order_by="OrderTrackingEvent.created_at")
+    customer_tracking = relationship("CustomerOrderTracking", back_populates="order", uselist=False)
+    notifications = relationship("OrderNotification", back_populates="order")
 
     def update_priority(self, new_priority: OrderPriority,
                         user_id: Optional[int] = None):
