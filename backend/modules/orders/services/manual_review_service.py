@@ -12,6 +12,7 @@ from ..models.manual_review_models import (
 from ..models.order_models import Order, OrderStatus
 from ..exceptions.inventory_exceptions import InventoryDeductionError
 from ..utils.inventory_logging import InventoryLogger
+from ..utils.audit_logger import AuditLogger, audit_action
 from core.notification_service import NotificationService
 
 
@@ -21,6 +22,7 @@ class ManualReviewService:
     def __init__(self, db: Session):
         self.db = db
         self.logger = InventoryLogger("manual_review")
+        self.audit_logger = AuditLogger("manual_review")
         self.notification_service = NotificationService(db)
     
     async def create_review_request(
@@ -193,10 +195,12 @@ class ManualReviewService:
             ).count()
         }
     
+    @audit_action("assign_review", "manual_review")
     async def assign_review(
         self,
         review_id: int,
-        assignee_id: int
+        assignee_id: int,
+        assigned_by: Optional[int] = None
     ) -> ManualReviewQueue:
         """Assign a review to a user"""
         review = self.db.query(ManualReviewQueue).filter(
@@ -206,13 +210,31 @@ class ManualReviewService:
         if not review:
             raise HTTPException(status_code=404, detail="Review not found")
         
+        old_assignee = review.assigned_to
         review.assigned_to = assignee_id
         review.assigned_at = datetime.utcnow()
         review.status = ReviewStatus.IN_REVIEW
         
         self.db.commit()
+        
+        # Audit log the assignment
+        self.audit_logger.log_action(
+            action="assign_review",
+            user_id=assigned_by or assignee_id,
+            resource_type="manual_review",
+            resource_id=review_id,
+            details={
+                "order_id": review.order_id,
+                "assignee_id": assignee_id,
+                "old_assignee_id": old_assignee,
+                "reason": review.reason.value,
+                "priority": review.priority
+            }
+        )
+        
         return review
     
+    @audit_action("resolve_review", "manual_review")
     async def resolve_review(
         self,
         review_id: int,
@@ -241,6 +263,10 @@ class ManualReviewService:
         if not review:
             raise HTTPException(status_code=404, detail="Review not found")
         
+        # Store old status for audit
+        old_status = review.status
+        old_order_status = review.order.status if review.order else None
+        
         review.reviewed_by = reviewer_id
         review.reviewed_at = datetime.utcnow()
         review.resolved_at = datetime.utcnow()
@@ -249,6 +275,7 @@ class ManualReviewService:
         review.review_notes = notes
         
         # Update order if requested
+        order_updated = False
         if mark_order_completed:
             order = review.order
             if order:
@@ -256,8 +283,32 @@ class ManualReviewService:
                 order.review_reason = None
                 if order.status not in [OrderStatus.COMPLETED, OrderStatus.CANCELLED]:
                     order.status = OrderStatus.COMPLETED
+                    order_updated = True
         
         self.db.commit()
+        
+        # Comprehensive audit logging
+        self.audit_logger.log_action(
+            action="resolve_review",
+            user_id=reviewer_id,
+            resource_type="manual_review",
+            resource_id=review_id,
+            details={
+                "order_id": review.order_id,
+                "reason": review.reason.value,
+                "old_status": old_status.value,
+                "new_status": review.status.value,
+                "resolution_action": resolution_action,
+                "notes_provided": notes is not None,
+                "order_updated": order_updated,
+                "old_order_status": old_order_status.value if old_order_status else None,
+                "new_order_status": review.order.status.value if review.order else None,
+                "review_duration_hours": (
+                    (review.resolved_at - review.created_at).total_seconds() / 3600
+                    if review.resolved_at and review.created_at else None
+                )
+            }
+        )
         
         # Log resolution
         self.logger.logger.info(
@@ -273,6 +324,7 @@ class ManualReviewService:
         
         return review
     
+    @audit_action("escalate_review", "manual_review")
     async def escalate_review(
         self,
         review_id: int,
@@ -287,12 +339,49 @@ class ManualReviewService:
         if not review:
             raise HTTPException(status_code=404, detail="Review not found")
         
+        # Store old values for audit
+        old_status = review.status
+        old_priority = review.priority
+        
         review.escalated = True
         review.escalation_reason = escalation_reason
         review.status = ReviewStatus.ESCALATED
         review.priority = max(review.priority, 8)  # Ensure high priority
         
         self.db.commit()
+        
+        # Audit log the escalation
+        self.audit_logger.log_action(
+            action="escalate_review",
+            user_id=escalated_by,
+            resource_type="manual_review",
+            resource_id=review_id,
+            details={
+                "order_id": review.order_id,
+                "reason": review.reason.value,
+                "escalation_reason": escalation_reason,
+                "old_status": old_status.value,
+                "new_status": review.status.value,
+                "old_priority": old_priority,
+                "new_priority": review.priority,
+                "time_before_escalation_hours": (
+                    (datetime.utcnow() - review.created_at).total_seconds() / 3600
+                    if review.created_at else None
+                )
+            }
+        )
+        
+        # Log security event for escalations
+        self.audit_logger.log_security_event(
+            event_type="review_escalated",
+            user_id=escalated_by,
+            details={
+                "review_id": review_id,
+                "order_id": review.order_id,
+                "escalation_reason": escalation_reason
+            },
+            severity="high"
+        )
         
         # Send escalation notification
         await self._notify_escalation(review, escalated_by)

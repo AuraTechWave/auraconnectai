@@ -72,17 +72,16 @@ def upgrade():
     op.create_index(op.f('ix_inventory_adjustment_attempts_order_id'), 'inventory_adjustment_attempts', ['order_id'], unique=False)
     
     # Add columns to orders table for manual review tracking
-    op.add_column('orders', sa.Column('requires_manual_review', sa.Boolean(), nullable=True))
+    # Add requires_manual_review with server default of false
+    op.add_column('orders', sa.Column(
+        'requires_manual_review', 
+        sa.Boolean(), 
+        nullable=False,
+        server_default=sa.false()
+    ))
+    
+    # Add review_reason as nullable
     op.add_column('orders', sa.Column('review_reason', sa.String(50), nullable=True))
-    
-    # Set default values for existing orders
-    op.execute("UPDATE orders SET requires_manual_review = FALSE WHERE requires_manual_review IS NULL")
-    
-    # Make requires_manual_review NOT NULL after setting defaults
-    op.alter_column('orders', 'requires_manual_review',
-                    existing_type=sa.Boolean(),
-                    nullable=False,
-                    server_default=sa.false())
 
 
 def downgrade():

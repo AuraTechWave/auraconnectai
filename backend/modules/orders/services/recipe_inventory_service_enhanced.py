@@ -20,6 +20,7 @@ from ..exceptions.inventory_exceptions import (
     InventoryIssueDetail
 )
 from ..utils.inventory_logging import InventoryLogger, log_inventory_operation
+from ..utils.database_retry import with_deadlock_retry
 from ..services.manual_review_service import ManualReviewService
 
 
@@ -224,9 +225,7 @@ class RecipeInventoryServiceEnhanced:
                 if any(item.inventory_id == inventory_id for item in insufficient_stock_items):
                     continue
                 
-                inventory_item = self.db.query(Inventory).filter(
-                    Inventory.id == inventory_id
-                ).with_for_update().first()  # Lock row for update
+                inventory_item = await self._get_inventory_with_lock(inventory_id)
                 
                 if not inventory_item:
                     continue
@@ -767,3 +766,76 @@ class RecipeInventoryServiceEnhanced:
                 status_code=500,
                 detail=f"Error generating inventory impact preview: {str(e)}"
             )
+    
+    @with_deadlock_retry(max_retries=3)
+    async def _get_inventory_with_lock(self, inventory_id: int) -> Optional[Inventory]:
+        """
+        Get inventory item with row-level lock for update
+        
+        This method includes retry logic for deadlock scenarios
+        """
+        return self.db.query(Inventory).filter(
+            Inventory.id == inventory_id
+        ).with_for_update().first()
+    
+    @with_deadlock_retry(max_retries=5, initial_delay=0.05)
+    async def _perform_deduction_transaction(
+        self,
+        inventory_updates: List[Dict],
+        order_id: int,
+        user_id: int,
+        deduction_type: str
+    ) -> List[InventoryAdjustment]:
+        """
+        Perform the actual inventory deduction in a transaction with retry logic
+        
+        Args:
+            inventory_updates: List of dicts with inventory_id, quantity_change, etc.
+            order_id: Order ID for reference
+            user_id: User performing the deduction
+            deduction_type: Type of deduction
+            
+        Returns:
+            List of created InventoryAdjustment records
+        """
+        adjustments = []
+        
+        try:
+            # Sort inventory IDs to prevent deadlocks
+            sorted_updates = sorted(inventory_updates, key=lambda x: x['inventory_id'])
+            
+            for update in sorted_updates:
+                inventory = self.db.query(Inventory).filter(
+                    Inventory.id == update['inventory_id']
+                ).with_for_update().first()
+                
+                if not inventory:
+                    continue
+                
+                # Perform deduction
+                old_quantity = inventory.quantity
+                inventory.quantity -= update['quantity_change']
+                
+                # Create adjustment record
+                adjustment = InventoryAdjustment(
+                    inventory_id=update['inventory_id'],
+                    adjustment_type=AdjustmentType.CONSUMPTION,
+                    quantity_before=old_quantity,
+                    quantity_change=-update['quantity_change'],
+                    quantity_after=inventory.quantity,
+                    unit=inventory.unit,
+                    reason=f"Order #{order_id} - {deduction_type}",
+                    reference_type="order",
+                    reference_id=str(order_id),
+                    performed_by=user_id,
+                    metadata=update.get('metadata', {})
+                )
+                self.db.add(adjustment)
+                adjustments.append(adjustment)
+            
+            self.db.commit()
+            return adjustments
+            
+        except Exception:
+            self.db.rollback()
+            raise
