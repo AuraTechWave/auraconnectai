@@ -217,9 +217,12 @@ def setup_restaurant_data(db: Session):
     }
 
 
+@pytest.mark.integration
+@pytest.mark.db
 class TestOrderInventoryIntegration:
     """Integration tests for the complete order-to-inventory flow."""
     
+    @pytest.mark.slow
     async def test_place_order_verify_ingredient_deduction(self, db: Session, setup_restaurant_data, test_user):
         """Test placing an order and verifying correct ingredient deduction."""
         # Get initial inventory quantities
@@ -376,6 +379,7 @@ class TestOrderInventoryIntegration:
         assert dough_reversal.quantity_change == 1  # Positive for return
         assert "Order cancelled" in dough_reversal.reason
     
+    @pytest.mark.slow
     async def test_multiple_items_shared_ingredients(self, db: Session, setup_restaurant_data, test_user):
         """Test order with multiple menu items that share ingredients."""
         # Create order with mixed items that share ingredients
@@ -610,6 +614,7 @@ class TestOrderInventoryIntegration:
         final_dough = db.query(Inventory).filter(Inventory.id == 1).first().quantity
         assert final_dough == initial_dough - 0.5  # Garlic bread uses 0.5 dough
     
+    @pytest.mark.slow
     async def test_complex_order_flow_with_modifications(self, db: Session, setup_restaurant_data, test_user):
         """Test a complex order flow with modifications and status changes."""
         # Create initial order
@@ -658,6 +663,8 @@ class TestOrderInventoryIntegration:
         db.refresh(order)
         assert order.status == OrderStatus.COMPLETED
     
+    @pytest.mark.slow
+    @pytest.mark.concurrent
     async def test_concurrent_orders_shared_inventory(self, db: Session, setup_restaurant_data, test_user):
         """Test handling of concurrent orders competing for limited shared inventory."""
         # Set dough inventory low - only enough for 3 pizzas

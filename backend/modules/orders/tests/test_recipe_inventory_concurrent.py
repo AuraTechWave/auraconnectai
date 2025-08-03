@@ -18,6 +18,9 @@ from ..services.recipe_inventory_service import RecipeInventoryService
 from fastapi import HTTPException
 
 
+@pytest.mark.concurrent
+@pytest.mark.slow
+@pytest.mark.db
 class TestConcurrentInventoryDeduction:
     """Test cases for concurrent inventory deduction scenarios."""
     
@@ -152,16 +155,16 @@ class TestConcurrentInventoryDeduction:
                 finally:
                     session.close()
         
-        # Process 3 concurrent orders (but only enough inventory for 2)
+        # Process 10 concurrent orders (but only enough inventory for 2)
         tasks = []
-        for i in range(1, 4):
+        for i in range(1, 11):
             tasks.append(process_order(i))
         
         await asyncio.gather(*tasks, return_exceptions=True)
         
         # Verify results
         assert len(results) == 2  # Only 2 orders should succeed
-        assert len(errors) == 1   # 1 order should fail due to insufficient stock
+        assert len(errors) == 8   # 8 orders should fail due to insufficient stock
         
         # Check that the error is about insufficient inventory
         assert "Insufficient inventory" in errors[0]["error"]
