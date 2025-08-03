@@ -163,11 +163,29 @@ class OrderTrackingTemplate(Base, TimestampMixin):
     channel = Column(SQLEnum(NotificationChannel), nullable=False, index=True)
     language = Column(String(5), nullable=False, default="en")
     
+    # Channel-specific templates
     subject_template = Column(String, nullable=True)  # For email
-    message_template = Column(Text, nullable=False)
+    message_template = Column(Text, nullable=False)  # Main message
+    
+    # Channel-specific variations
+    push_title_template = Column(String, nullable=True)  # Short title for push
+    push_body_template = Column(Text, nullable=True)  # Short body for push
+    sms_template = Column(Text, nullable=True)  # SMS-specific (160 char limit)
+    
+    # Rich content templates
+    html_template = Column(Text, nullable=True)  # HTML for email
+    push_image_url = Column(String, nullable=True)  # Image for rich push
+    push_action_url = Column(String, nullable=True)  # Deep link for push
     
     # Template variables available: {order_id}, {customer_name}, {estimated_time}, etc.
     available_variables = Column(JSONB, nullable=True)
+    
+    # Channel-specific settings
+    channel_settings = Column(JSONB, nullable=True, default={})
+    # Examples:
+    # Email: {"reply_to": "support@restaurant.com", "category": "order_update"}
+    # Push: {"sound": "order_ready.mp3", "badge": 1, "priority": "high"}
+    # SMS: {"sender_id": "RESTAURANT", "type": "transactional"}
     
     is_active = Column(Boolean, default=True)
     priority = Column(Integer, default=0)  # Higher priority templates are used first

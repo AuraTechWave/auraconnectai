@@ -10,6 +10,8 @@ from fastapi import WebSocket
 import uuid
 
 from core.config import settings
+from core.redis_config import get_redis_client, get_redis_pubsub
+from .notification_metrics import NotificationMetrics
 
 
 logger = logging.getLogger(__name__)
@@ -52,23 +54,23 @@ class RedisWebSocketManager:
     async def initialize(self):
         """Initialize Redis connection and pub/sub"""
         try:
-            self.redis_client = await redis.from_url(
-                self.redis_url,
-                encoding="utf-8",
-                decode_responses=True
-            )
+            # Use centralized Redis client that supports cluster/sentinel
+            self.redis_client = await get_redis_client()
             
             # Test connection
             await self.redis_client.ping()
             
             # Create pub/sub instance
-            self.pubsub = self.redis_client.pubsub()
+            self.pubsub = await get_redis_pubsub()
             
             # Subscribe to broadcast channel
             await self.pubsub.subscribe("order_tracking:broadcast")
             
             # Start subscription handler
             self._subscription_task = asyncio.create_task(self._handle_subscriptions())
+            
+            # Initialize metrics
+            self.metrics = NotificationMetrics()
             
             logger.info(f"Redis WebSocket manager initialized with server ID: {self.server_id}")
             
@@ -140,6 +142,13 @@ class RedisWebSocketManager:
         # Store connection info in Redis
         await self._store_connection_info(order_id, session_id, user_id)
         
+        # Update metrics
+        self.metrics.record_websocket_connection(self.server_id, "connect")
+        self.metrics.set_active_websocket_connections(
+            self.server_id, 
+            sum(len(conns) for conns in self.local_connections["order"].values())
+        )
+        
         logger.info(f"WebSocket connected: order={order_id}, session={session_id}, user={user_id}")
         return True
     
@@ -174,6 +183,13 @@ class RedisWebSocketManager:
         
         # Remove connection info from Redis
         await self._remove_connection_info(order_id, session_id)
+        
+        # Update metrics
+        self.metrics.record_websocket_connection(self.server_id, "disconnect")
+        self.metrics.set_active_websocket_connections(
+            self.server_id, 
+            sum(len(conns) for conns in self.local_connections["order"].values())
+        )
         
         logger.info(f"WebSocket disconnected: order={order_id}, session={session_id}")
     
