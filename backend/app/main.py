@@ -73,6 +73,9 @@ from modules.menu.routes.inventory_routes import (
 from modules.menu.routes.versioning_routes import (
     router as menu_versioning_router
 )
+from modules.menu.routes.recipe_routes import (
+    router as recipe_router
+)
 from modules.inventory.routes.inventory_routes import (
     router as inventory_management_router
 )
@@ -127,6 +130,7 @@ app = FastAPI(
     * **POS Integration** - Connect with major POS systems (Square, Toast, Clover)
     * **Menu Management** - Complete CRUD for menu items, categories, and modifiers
     * **Menu Versioning** - Complete version control and audit trail for menu changes
+    * **Recipe Management** - Bill of Materials (BOM) tracking with cost calculations
     * **Inventory Management** - Real-time inventory tracking with low-stock alerts
     * **Vendor Management** - Comprehensive vendor and purchase order management
     * **Analytics & Reporting** - Comprehensive business intelligence
@@ -199,6 +203,7 @@ app.include_router(webhook_router)
 app.include_router(menu_router)
 app.include_router(menu_inventory_router)
 app.include_router(menu_versioning_router)
+app.include_router(recipe_router, prefix="/api/v1/menu", tags=["Recipe Management"])
 app.include_router(inventory_management_router)
 app.include_router(vendor_management_router)
 app.include_router(analytics_router)
