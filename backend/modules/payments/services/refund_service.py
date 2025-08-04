@@ -20,6 +20,7 @@ from ..models.refund_models import (
 from ..services.payment_service import payment_service
 from ...orders.models.order_models import Order, OrderStatus, OrderItem
 from ...notifications.services.notification_service import notification_service
+from ...orders.utils.audit_logger import AuditLogger
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,9 @@ class RefundService:
     """
     Comprehensive refund processing service
     """
+    
+    def __init__(self):
+        self.audit_logger = AuditLogger("refunds")
     
     async def create_refund_request(
         self,
@@ -41,7 +45,9 @@ class RefundService:
         refund_items: Optional[List[Dict[str, Any]]] = None,
         evidence_urls: Optional[List[str]] = None,
         priority: str = "normal",
-        auto_process: bool = True
+        auto_process: bool = True,
+        batch_id: Optional[str] = None,
+        batch_notes: Optional[str] = None
     ) -> RefundRequest:
         """
         Create a refund request with validation and policy checks
@@ -108,7 +114,9 @@ class RefundService:
                 customer_phone=customer_info.get('phone', order.customer_phone) if customer_info else order.customer_phone,
                 refund_items=refund_items or [],
                 evidence_urls=evidence_urls or [],
-                priority=priority
+                priority=priority,
+                batch_id=batch_id,
+                batch_notes=batch_notes
             )
             
             # Check for automatic approval
@@ -128,6 +136,28 @@ class RefundService:
                 actor_id=customer_info.get('user_id') if customer_info else None,
                 actor_type="customer",
                 reason=f"Refund request created: {reason_code.value}"
+            )
+            
+            # Enhanced audit logging
+            user_id = customer_info.get('user_id') if customer_info else 0
+            self.audit_logger.log_action(
+                action="create_refund_request",
+                user_id=user_id,
+                resource_type="refund_request",
+                resource_id=request.id,
+                details={
+                    "request_number": request.request_number,
+                    "order_id": order_id,
+                    "payment_id": payment_id,
+                    "requested_amount": float(requested_amount),
+                    "reason_code": reason_code.value,
+                    "category": request.category.value,
+                    "customer_name": request.customer_name,
+                    "priority": priority,
+                    "auto_approved": request.approval_status == RefundApprovalStatus.AUTO_APPROVED,
+                    "batch_id": batch_id,
+                    "items_count": len(refund_items) if refund_items else 0
+                }
             )
             
             await db.commit()
@@ -296,6 +326,25 @@ class RefundService:
                 reason=notes or "Refund request approved"
             )
             
+            # Enhanced audit logging
+            self.audit_logger.log_action(
+                action="approve_refund_request",
+                user_id=approver_id,
+                resource_type="refund_request",
+                resource_id=request_id,
+                details={
+                    "request_number": request.request_number,
+                    "order_id": request.order_id,
+                    "payment_id": request.payment_id,
+                    "customer_name": request.customer_name,
+                    "requested_amount": float(request.requested_amount),
+                    "reason_code": request.reason_code.value,
+                    "approval_notes": notes,
+                    "process_immediately": process_immediately,
+                    "batch_id": request.batch_id
+                }
+            )
+            
             await db.commit()
             
             # Process if requested
@@ -342,6 +391,24 @@ class RefundService:
                 actor_id=rejector_id,
                 actor_type="user",
                 reason=f"Refund rejected: {reason}"
+            )
+            
+            # Enhanced audit logging
+            self.audit_logger.log_action(
+                action="reject_refund_request",
+                user_id=rejector_id,
+                resource_type="refund_request",
+                resource_id=request_id,
+                details={
+                    "request_number": request.request_number,
+                    "order_id": request.order_id,
+                    "payment_id": request.payment_id,
+                    "customer_name": request.customer_name,
+                    "requested_amount": float(request.requested_amount),
+                    "reason_code": request.reason_code.value,
+                    "rejection_reason": reason,
+                    "batch_id": request.batch_id
+                }
             )
             
             await db.commit()

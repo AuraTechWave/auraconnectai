@@ -150,6 +150,10 @@ class RefundRequest(Base, TimestampMixin):
     tags = Column(JSONB, default=[])
     notes = Column(Text)
     
+    # Batch processing support
+    batch_id = Column(String(50), nullable=True, index=True)
+    batch_notes = Column(Text, nullable=True)
+    
     # Relationships
     order = relationship("Order", backref="refund_requests")
     payment = relationship("Payment", backref="refund_requests")
