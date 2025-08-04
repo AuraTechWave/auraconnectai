@@ -632,10 +632,10 @@ pytest tests/integration/
 ## Related Documentation
 
 - [Menu Module](../menu/README.md)
-- [Inventory Module](../inventory/README.md)
-- [Analytics Module](../analytics/README.md)
+- Inventory Module *(Coming Soon)*
+- Analytics Module *(Coming Soon)*
 - [API Reference](../../api/README.md)
-- [Cost Management Guide](../../guides/cost-management.md)
+- Cost Management Guide *(Coming Soon)*
 
 ## Support
 

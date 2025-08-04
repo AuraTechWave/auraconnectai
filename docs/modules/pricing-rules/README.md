@@ -710,8 +710,8 @@ summer_special = {
 
 - [Menu Module](../menu/README.md)
 - [Order Processing](../orders/README.md)
-- [Promotions Module](../promotions/README.md)
-- [Analytics Module](../analytics/README.md)
+- Promotions Module *(Coming Soon)*
+- Analytics Module *(Coming Soon)*
 - [API Reference](../../api/README.md)
 
 ## Support

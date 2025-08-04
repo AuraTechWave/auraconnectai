@@ -561,9 +561,9 @@ pytest tests/integration/
 ## Related Documentation
 
 - [Orders Module](../orders/README.md)
-- [Reservations Guide](../../guides/reservations.md)
-- [POS Integration](../pos/README.md)
-- [Analytics Module](../analytics/README.md)
+- Reservations Guide *(Coming Soon)*
+- POS Integration *(Coming Soon)*
+- Analytics Module *(Coming Soon)*
 - [API Reference](../../api/README.md)
 
 ## Support

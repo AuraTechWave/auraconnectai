@@ -566,10 +566,10 @@ split_bill_completion_rate 0.85
 ## Related Documentation
 
 - [Order Processing](../orders/README.md)
-- [Payroll Integration](../payroll/README.md)
-- [Analytics & Reporting](../analytics/README.md)
+- [Payroll Integration](../payroll/production-checklist.md)
+- Analytics & Reporting *(Coming Soon)*
 - [API Reference](../../api/README.md)
-- [Security Guide](../../guides/security.md)
+- Security Guide *(Coming Soon)*
 
 ## Support
 
