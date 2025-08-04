@@ -110,6 +110,10 @@ class Customer(Base, TimestampMixin):
     rewards = relationship("CustomerReward", back_populates="customer", cascade="all, delete-orphan")
     preferences = relationship("CustomerPreference", back_populates="customer", cascade="all, delete-orphan")
     reservations = relationship("Reservation", back_populates="customer", cascade="all, delete-orphan")
+    
+    # Order tracking relationships
+    order_trackings = relationship("CustomerOrderTracking", back_populates="customer")
+    order_notifications = relationship("OrderNotification", back_populates="customer")
     referred_customers = relationship("Customer", backref="referrer")
     
     # Indexes for performance
