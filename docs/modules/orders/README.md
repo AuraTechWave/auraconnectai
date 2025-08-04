@@ -1,5 +1,23 @@
 # Orders Module
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Key Features](#key-features)
+3. [Architecture Overview](#architecture-overview)
+4. [Quick Start](#quick-start)
+5. [API Endpoints](#api-endpoints)
+6. [Order States](#order-states)
+7. [Order Processing](#order-processing)
+8. [Integration Points](#integration-points)
+9. [Events](#events)
+10. [Order Tracking & Notifications](#order-tracking-notifications)
+11. [Error Handling](#error-handling)
+12. [Performance Optimization](#performance-optimization)
+13. [Configuration](#configuration)
+14. [Testing](#testing)
+15. [Related Documentation](#related-documentation)
+
 ## Overview
 
 The Orders module is the central hub for all order-related operations in AuraConnect. It handles order creation, processing, tracking, and fulfillment across multiple channels including dine-in, takeout, delivery, and online ordering.
@@ -10,7 +28,7 @@ The Orders module is the central hub for all order-related operations in AuraCon
 - 🌍 **Real-time Synchronization**: Live updates across all connected devices
 - 🍳 **Kitchen Integration**: Direct communication with kitchen display systems
 - 💳 **Payment Processing**: Integrated payment handling with multiple providers
-- 📨 **Order Tracking**: Real-time status updates and notifications
+- 📨 **Order Tracking**: Real-time status updates with push notifications
 - 📈 **Analytics Integration**: Comprehensive order analytics and reporting
 - 🔄 **POS Synchronization**: Bidirectional sync with major POS systems
 - 📋 **Special Instructions**: Support for customer preferences and modifications
@@ -138,6 +156,8 @@ Uses Redis pub/sub for live order status updates.
 
 ## API Endpoints
 
+> 📌 **See also**: [Complete Orders API Reference](./api-reference.md) for detailed endpoint documentation with request/response examples.
+
 ### Order Management
 
 | Endpoint | Method | Description |
@@ -164,6 +184,16 @@ Uses Redis pub/sub for live order status updates.
 | `/api/v1/kitchen/orders` | GET | Get kitchen queue |
 | `/api/v1/kitchen/orders/{id}/prepare` | POST | Mark order as preparing |
 | `/api/v1/kitchen/orders/{id}/ready` | POST | Mark order as ready |
+
+### Order Tracking
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/orders/{id}/track` | GET | Get tracking info |
+| `/api/v1/orders/track/{code}` | GET | Track by code (no auth) |
+| `/api/v1/orders/{id}/notifications` | GET | Get notification history |
+| `/api/v1/orders/{id}/subscribe` | POST | Subscribe to updates |
+| `/api/v1/orders/{id}/eta` | GET | Get estimated time |
 
 [View Complete API Reference](./api-reference.md)
 
@@ -234,6 +264,126 @@ The Orders module publishes the following events:
 | `order.ready` | Order ready for pickup | Order ID, preparation time |
 | `order.completed` | Order fulfilled | Order ID, completion time |
 | `order.cancelled` | Order cancelled | Order ID, reason |
+| `order.updated` | Order details updated | Order ID, changes |
+| `order.tracking.viewed` | Tracking page accessed | Order ID, viewer info |
+
+## Order Tracking & Notifications
+
+### Real-time Tracking Features
+
+- **Unique Tracking Codes**: Each order gets a shareable tracking code
+- **Anonymous Access**: Customers can track without login using the code
+- **Live Status Updates**: WebSocket connections for real-time updates
+- **Location Tracking**: For delivery orders with driver location
+- **ETA Calculation**: Dynamic time estimates based on kitchen load
+
+### Notification Channels
+
+```python
+# Notification configuration
+notification_config = {
+    "channels": {
+        "email": {
+            "enabled": True,
+            "templates": {
+                "order_confirmed": "order-confirmed.html",
+                "order_ready": "order-ready.html",
+                "order_delivered": "order-delivered.html"
+            }
+        },
+        "sms": {
+            "enabled": True,
+            "provider": "twilio",
+            "from_number": "+1234567890"
+        },
+        "push": {
+            "enabled": True,
+            "providers": ["firebase", "apns"],
+            "priority": "high"
+        },
+        "whatsapp": {
+            "enabled": True,
+            "business_number": "+1234567890"
+        }
+    }
+}
+```
+
+### WebSocket Integration
+
+```javascript
+// Customer connects to track order
+const ws = new WebSocket(`wss://api.restaurant.com/ws/orders/${orderId}/track`);
+
+ws.onmessage = (event) => {
+    const update = JSON.parse(event.data);
+    switch(update.type) {
+        case 'status_changed':
+            updateOrderStatus(update.status);
+            break;
+        case 'location_update':
+            updateDriverLocation(update.location);
+            break;
+        case 'eta_changed':
+            updateEstimatedTime(update.eta);
+            break;
+    }
+};
+```
+
+### Tracking Page Features
+
+```python
+# Tracking page data
+tracking_info = {
+    "order_id": "ORD-123456",
+    "tracking_code": "TRK-ABC123",
+    "status": "preparing",
+    "status_history": [
+        {"status": "confirmed", "timestamp": "2024-01-20T10:30:00Z"},
+        {"status": "preparing", "timestamp": "2024-01-20T10:35:00Z"}
+    ],
+    "estimated_ready_time": "2024-01-20T11:00:00Z",
+    "items": [
+        {"name": "Margherita Pizza", "quantity": 1},
+        {"name": "Caesar Salad", "quantity": 2}
+    ],
+    "restaurant": {
+        "name": "Pizza Palace",
+        "phone": "(555) 123-4567",
+        "address": "123 Main St"
+    },
+    "delivery_info": {
+        "driver": {"name": "John D.", "phone": "(555) 987-6543"},
+        "current_location": {"lat": 40.7128, "lng": -74.0060},
+        "estimated_arrival": "2024-01-20T11:30:00Z"
+    }
+}
+```
+
+### Push Notification Examples
+
+```json
+{
+    "order_confirmed": {
+        "title": "Order Confirmed! 🎉",
+        "body": "Your order #12345 has been confirmed and will be ready in ~30 minutes",
+        "icon": "/icon-192.png",
+        "badge": "/badge-72.png",
+        "data": {
+            "order_id": "12345",
+            "tracking_url": "/track/TRK-ABC123"
+        }
+    },
+    "order_ready": {
+        "title": "Your order is ready! 🍕",
+        "body": "Order #12345 is ready for pickup",
+        "actions": [
+            {"action": "view", "title": "View Order"},
+            {"action": "directions", "title": "Get Directions"}
+        ]
+    }
+}
 
 ## Configuration
 

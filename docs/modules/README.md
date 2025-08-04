@@ -10,8 +10,10 @@ This directory contains comprehensive documentation for all AuraConnect modules.
 
 | Module | Description | Documentation |
 |--------|-------------|--------------|
-| **[Orders](./orders/README.md)** | Order management, processing, and tracking | [View Docs](./orders/README.md) |
+| **[Orders](./orders/README.md)** | Order management, processing, and real-time tracking | [View Docs](./orders/README.md) |
 | **[Menu](./menu/README.md)** | Menu management, categories, and modifiers | [View Docs](./menu/README.md) |
+| **[Table Management](./table-management/README.md)** | Table layout designer and reservation system | [View Docs](./table-management/README.md) |
+| **[Recipe Management](./recipe-management/README.md)** | Bill of materials and cost tracking | [View Docs](./recipe-management/README.md) |
 | **Inventory** | Stock tracking and supplier management | *(Coming Soon)* |
 | **[POS Integration](../feature_docs/pos_integration/README.md)** | Point of Sale system adapters | [View Docs](../feature_docs/pos_integration/README.md) |
 
@@ -19,9 +21,11 @@ This directory contains comprehensive documentation for all AuraConnect modules.
 
 | Module | Description | Documentation |
 |--------|-------------|--------------|
-| **[Staff](./staff/README.md)** | Employee management and scheduling | [View Docs](./staff/README.md) |
+| **[Staff](./staff/README.md)** | Employee management, scheduling, and biometric auth | [View Docs](./staff/README.md) |
+| **[Payments](./payments/README.md)** | Multi-gateway payments, split bills, and refunds | [View Docs](./payments/README.md) |
 | **[Payroll](../feature_docs/payroll/README.md)** | Payroll processing and compliance | [View Docs](../feature_docs/payroll/README.md) |
 | **[Tax](../feature_docs/tax/README.md)** | Tax calculations and reporting | [View Docs](../feature_docs/tax/README.md) |
+| **[Pricing Rules](./pricing-rules/README.md)** | Dynamic pricing and promotion engine | [View Docs](./pricing-rules/README.md) |
 | **Auth** | Authentication and authorization | *(Integrated)* |
 
 ### 🎯 Customer Experience
