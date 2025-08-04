@@ -8,7 +8,8 @@ from decimal import Decimal
 from typing import Dict, Any, Optional, List
 import enum
 
-from core.database import Base, TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 class SplitMethod(str, enum.Enum):
@@ -96,7 +97,7 @@ class BillSplit(Base, TimestampMixin):
     
     # Metadata
     notes = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True, default={})
+    split_metadata = Column(JSONB, nullable=True, default={})
     
     # Relationships
     order = relationship("Order", backref="bill_splits")
@@ -204,7 +205,7 @@ class SplitParticipant(Base, TimestampMixin):
     
     # Metadata
     notes = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True, default={})
+    split_metadata = Column(JSONB, nullable=True, default={})
     
     # Relationships
     bill_split = relationship("BillSplit", back_populates="participants")

@@ -102,7 +102,7 @@ class Payment(Base, TimestampMixin):
     failure_message = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, nullable=True, default={})
+    payment_metadata = Column(JSONB, nullable=True, default={})
     
     # Idempotency
     idempotency_key = Column(String(255), nullable=True, unique=True)
@@ -158,7 +158,7 @@ class Refund(Base, TimestampMixin):
     failure_message = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, nullable=True, default={})
+    payment_metadata = Column(JSONB, nullable=True, default={})
     
     # Who initiated the refund
     initiated_by = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -279,7 +279,7 @@ class CustomerPaymentMethod(Base, TimestampMixin):
     is_default = Column(Boolean, nullable=False, default=False)
     
     # Metadata
-    metadata = Column(JSONB, nullable=True, default={})
+    payment_metadata = Column(JSONB, nullable=True, default={})
     
     # Relations
     customer = relationship("Customer", back_populates="payment_methods")

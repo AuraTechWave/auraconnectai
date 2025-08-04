@@ -7,8 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field, validator
 
 from core.database import get_db
-from core.auth import get_current_user, require_permissions
-from core.models import User
+from core.auth import get_current_user, require_permission, User
 from ..services.split_bill_service import split_bill_service
 from ..services.tip_service import tip_service
 from ..services.payment_service import payment_service

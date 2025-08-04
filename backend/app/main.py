@@ -93,6 +93,7 @@ from modules.ai_recommendations.routers import (
 )
 from modules.customers.routers.customer_router import router as customer_router
 from app.api.v1.endpoints.reservations import router as reservation_router
+from modules.payments.api import payment_router
 from core.menu_versioning_triggers import init_versioning_triggers
 from modules.orders.tasks.sync_tasks import (
     start_sync_scheduler,
@@ -199,6 +200,7 @@ app.include_router(pos_analytics_router)
 app.include_router(ai_recommendations_router)
 app.include_router(customer_router)
 app.include_router(reservation_router, prefix="/api/v1/reservations", tags=["reservations"])
+app.include_router(payment_router, prefix="/api/v1/payments", tags=["Payments"])
 
 # Initialize menu versioning triggers
 init_versioning_triggers()

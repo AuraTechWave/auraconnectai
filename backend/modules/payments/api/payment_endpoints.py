@@ -8,8 +8,8 @@ from decimal import Decimal
 import logging
 
 from core.database import get_db
-from core.deps import get_current_user
-from core.permissions import Permission, require_permissions
+from core.auth import get_current_user
+from core.auth import require_permission
 from ..models.payment_models import (
     Payment, Refund, CustomerPaymentMethod,
     PaymentGateway, PaymentStatus
