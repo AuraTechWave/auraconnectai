@@ -1,0 +1,137 @@
+# backend/modules/payments/monitoring/alertmanager.yml
+# AlertManager configuration for payment system alerts
+
+global:
+  resolve_timeout: 5m
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree
+route:
+  group_by: ['alertname', 'severity', 'gateway']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  
+  routes:
+    # Critical alerts - page immediately
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+      continue: true
+      
+    # Payment team alerts
+    - match:
+        team: payments
+      receiver: 'payments-team'
+      routes:
+        # SLO breaches get special handling
+        - match:
+            slo: true
+          receiver: 'payments-slo-breach'
+          repeat_interval: 15m
+          
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
+      repeat_interval: 4h
+      
+    # Info alerts
+    - match:
+        severity: info
+      receiver: 'slack-info'
+      repeat_interval: 12h
+
+# Receivers
+receivers:
+  - name: 'default'
+    slack_configs:
+      - channel: '#alerts'
+        title: 'Payment System Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        client: 'Payment System'
+        client_url: 'https://payments.company.com'
+        severity: 'critical'
+        details:
+          firing: '{{ template "pagerduty.default.firing" . }}'
+          resolved: '{{ template "pagerduty.default.resolved" . }}'
+
+  - name: 'payments-team'
+    slack_configs:
+      - channel: '#payments-alerts'
+        username: 'Payment Bot'
+        icon_emoji: ':credit_card:'
+        title: '{{ .GroupLabels.alertname }}'
+        text: |
+          *Summary:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+          *Description:* {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+          *Gateway:* {{ .GroupLabels.gateway }}
+          *Severity:* {{ .GroupLabels.severity }}
+        actions:
+          - type: button
+            text: 'View Dashboard'
+            url: 'https://grafana.company.com/d/payments'
+          - type: button
+            text: 'Runbook'
+            url: '{{ (index .Alerts 0).Annotations.runbook_url }}'
+    email_configs:
+      - to: 'payments-oncall@company.com'
+        headers:
+          Subject: '[{{ .GroupLabels.severity | toUpper }}] {{ .GroupLabels.alertname }}'
+
+  - name: 'payments-slo-breach'
+    slack_configs:
+      - channel: '#payments-slo'
+        username: 'SLO Bot'
+        icon_emoji: ':warning:'
+        color: 'danger'
+        title: 'SLO Breach: {{ .GroupLabels.alertname }}'
+        text: |
+          *Impact:* {{ (index .Alerts 0).Annotations.impact }}
+          *Action:* {{ (index .Alerts 0).Annotations.action }}
+          *Current Value:* {{ (index .Alerts 0).Annotations.description }}
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SLO_KEY}'
+        severity: 'warning'
+
+  - name: 'slack-warnings'
+    slack_configs:
+      - channel: '#payments-warnings'
+        username: 'Payment Bot'
+        color: 'warning'
+        title: '⚠️ {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+  - name: 'slack-info'
+    slack_configs:
+      - channel: '#payments-info'
+        username: 'Payment Bot'
+        color: 'good'
+        title: 'ℹ️ {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts when critical alerts are firing
+  - source_matchers:
+      - severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['alertname', 'gateway']
+    
+  # Inhibit gateway-specific alerts when gateway is unavailable
+  - source_matchers:
+      - alertname="PaymentGatewayUnavailable"
+    target_matchers:
+      - alertname=~"Gateway.*"
+    equal: ['gateway']

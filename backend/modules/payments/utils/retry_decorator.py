@@ -76,33 +76,148 @@ class RetryConfig:
         return max(delay, 0)
 
 
-def is_retryable_error(error: Exception, config: RetryConfig) -> bool:
-    """Check if an error is retryable"""
-    # Check if it's a retryable exception type
-    if isinstance(error, config.retryable_exceptions):
-        return True
+class ErrorClassification:
+    """Error classification for retry decisions"""
     
-    # Check HTTP status codes
-    if hasattr(error, 'response') and hasattr(error.response, 'status_code'):
-        if error.response.status_code in config.retryable_status_codes:
-            return True
+    # Transient errors - should retry
+    TRANSIENT_ERRORS = {
+        # Network errors
+        ConnectionError: "Network connection failed",
+        TimeoutError: "Request timed out",
+        asyncio.TimeoutError: "Async operation timed out",
+        
+        # HTTP errors
+        httpx.ConnectError: "Failed to connect to server",
+        httpx.ConnectTimeout: "Connection timeout",
+        httpx.ReadTimeout: "Read timeout",
+        httpx.WriteTimeout: "Write timeout",
+        httpx.PoolTimeout: "Connection pool timeout",
+    }
     
-    # Check Stripe-specific errors
-    if hasattr(error, '__class__') and error.__class__.__module__.startswith('stripe'):
-        # Always retry connection and rate limit errors
-        if isinstance(error, (stripe.error.APIConnectionError, stripe.error.RateLimitError)):
+    # Permanent errors - should not retry
+    PERMANENT_ERRORS = {
+        ValueError: "Invalid input value",
+        TypeError: "Invalid type",
+        KeyError: "Missing required key",
+        AttributeError: "Invalid attribute access",
+    }
+    
+    # HTTP status codes
+    TRANSIENT_STATUS_CODES = (
+        408,  # Request Timeout
+        429,  # Too Many Requests
+        500,  # Internal Server Error
+        502,  # Bad Gateway
+        503,  # Service Unavailable
+        504,  # Gateway Timeout
+    )
+    
+    PERMANENT_STATUS_CODES = (
+        400,  # Bad Request
+        401,  # Unauthorized
+        403,  # Forbidden
+        404,  # Not Found
+        405,  # Method Not Allowed
+        409,  # Conflict
+        410,  # Gone
+        422,  # Unprocessable Entity
+    )
+    
+    @classmethod
+    def classify_error(cls, error: Exception) -> Tuple[bool, str]:
+        """
+        Classify an error as transient or permanent
+        
+        Returns:
+            Tuple of (is_transient, reason)
+        """
+        # Check explicit transient errors
+        for error_type, reason in cls.TRANSIENT_ERRORS.items():
+            if isinstance(error, error_type):
+                return True, reason
+        
+        # Check explicit permanent errors
+        for error_type, reason in cls.PERMANENT_ERRORS.items():
+            if isinstance(error, error_type):
+                return False, reason
+        
+        # Check HTTP status codes
+        status_code = cls._extract_status_code(error)
+        if status_code:
+            if status_code in cls.TRANSIENT_STATUS_CODES:
+                return True, f"HTTP {status_code} - Transient error"
+            elif status_code in cls.PERMANENT_STATUS_CODES:
+                return False, f"HTTP {status_code} - Permanent error"
+        
+        # Check gateway-specific errors
+        if cls._is_gateway_transient_error(error):
+            return True, "Gateway transient error"
+        
+        # Default to permanent (don't retry unknown errors)
+        return False, "Unknown error type"
+    
+    @staticmethod
+    def _extract_status_code(error: Exception) -> Optional[int]:
+        """Extract HTTP status code from various error types"""
+        # httpx errors
+        if hasattr(error, 'response') and hasattr(error.response, 'status_code'):
+            return error.response.status_code
+        
+        # Stripe errors
+        if hasattr(error, 'http_status'):
+            return error.http_status
+        
+        # Generic HTTP errors
+        if hasattr(error, 'status_code'):
+            return error.status_code
+        
+        return None
+    
+    @staticmethod
+    def _is_gateway_transient_error(error: Exception) -> bool:
+        """Check if error is a transient gateway error"""
+        error_class = error.__class__
+        error_module = error_class.__module__ if hasattr(error_class, '__module__') else ''
+        
+        # Stripe transient errors
+        if error_module.startswith('stripe'):
+            try:
+                import stripe.error
+                if isinstance(error, (
+                    stripe.error.APIConnectionError,
+                    stripe.error.RateLimitError,
+                    stripe.error.StripeError
+                )):
+                    # Check if it's a server error
+                    if hasattr(error, 'http_status') and error.http_status >= 500:
+                        return True
+                    # Rate limit and connection errors are always transient
+                    if isinstance(error, (stripe.error.APIConnectionError, stripe.error.RateLimitError)):
+                        return True
+            except ImportError:
+                pass
+        
+        # Square errors (using httpx)
+        if isinstance(error, httpx.HTTPStatusError):
+            return error.response.status_code >= 500
+        
+        # PayPal errors
+        if 'paypal' in str(error).lower() and 'timeout' in str(error).lower():
             return True
         
-        # Check HTTP status for other Stripe errors
-        if hasattr(error, 'http_status') and error.http_status in config.retryable_status_codes:
-            return True
+        return False
+
+
+def is_retryable_error(error: Exception, config: RetryConfig) -> bool:
+    """Check if an error is retryable based on classification"""
+    is_transient, reason = ErrorClassification.classify_error(error)
     
-    # Check Square errors (they use httpx)
-    if isinstance(error, httpx.HTTPStatusError):
-        if error.response.status_code in config.retryable_status_codes:
-            return True
-    
-    return False
+    if is_transient:
+        logger.debug(f"Error classified as transient: {reason}")
+        return True
+    else:
+        logger.debug(f"Error classified as permanent: {reason}")
+        return False
 
 
 def retry_async(config: Optional[RetryConfig] = None):
