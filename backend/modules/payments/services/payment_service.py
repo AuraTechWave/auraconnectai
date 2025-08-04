@@ -152,6 +152,13 @@ class PaymentService:
                 metadata=metadata or {}
             )
             
+            # Set split bill references if provided in metadata
+            if metadata:
+                if 'split_id' in metadata:
+                    payment.split_id = metadata['split_id']
+                if 'participant_id' in metadata:
+                    payment.participant_id = metadata['participant_id']
+            
             db.add(payment)
             await db.flush()  # Get payment ID
             

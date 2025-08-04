@@ -107,6 +107,10 @@ class Payment(Base, TimestampMixin):
     # Idempotency
     idempotency_key = Column(String(255), nullable=True, unique=True)
     
+    # Split bill references
+    split_id = Column(Integer, ForeignKey("bill_splits.id"), nullable=True, index=True)
+    participant_id = Column(Integer, ForeignKey("split_participants.id"), nullable=True)
+    
     # Relations
     order = relationship("Order", back_populates="payments")
     customer = relationship("Customer", back_populates="payments")

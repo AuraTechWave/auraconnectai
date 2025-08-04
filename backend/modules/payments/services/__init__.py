@@ -24,6 +24,8 @@ from .payment_metrics import (
     track_payment_processing,
     update_payment_metrics
 )
+from .split_bill_service import SplitBillService, split_bill_service
+from .tip_service import TipService, tip_service
 
 __all__ = [
     # Payment Service
@@ -51,5 +53,13 @@ __all__ = [
     'PaymentMetrics',
     'track_gateway_request',
     'track_payment_processing',
-    'update_payment_metrics'
+    'update_payment_metrics',
+    
+    # Split Bill Service
+    'SplitBillService',
+    'split_bill_service',
+    
+    # Tip Service
+    'TipService',
+    'tip_service'
 ]
