@@ -18,6 +18,16 @@ from ..models.payment_models import PaymentGateway
 router = APIRouter(prefix="/splits", tags=["Split Bills"])
 
 
+# Additional request models
+class PaginationParams(BaseModel):
+    page: int = Field(1, ge=1)
+    page_size: int = Field(20, ge=1, le=100)
+    
+    @property
+    def offset(self) -> int:
+        return (self.page - 1) * self.page_size
+
+
 # Request/Response Models
 
 class ParticipantRequest(BaseModel):
@@ -145,6 +155,14 @@ class SplitDetailResponse(SplitResponse):
     
     class Config:
         orm_mode = True
+
+
+class PaginatedSplitsResponse(BaseModel):
+    items: List[SplitResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int
 
 
 # Endpoints
@@ -558,3 +576,256 @@ async def process_tip_distribution(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process tip distribution: {str(e)}")
+
+
+# Additional endpoints for pagination and resending
+
+@router.get("/", response_model=PaginatedSplitsResponse)
+async def list_splits(
+    status: Optional[SplitStatus] = Query(None),
+    organizer: bool = Query(False, description="Only show splits I organized"),
+    participant: bool = Query(False, description="Only show splits I'm participating in"),
+    pagination: PaginationParams = Depends(),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get paginated list of splits for current user"""
+    
+    from sqlalchemy import or_, func
+    
+    # Build base query
+    query = select(BillSplit)
+    count_query = select(func.count(BillSplit.id))
+    
+    # Apply filters
+    conditions = []
+    
+    if organizer:
+        if hasattr(current_user, 'customer_id') and current_user.customer_id:
+            conditions.append(BillSplit.organizer_id == current_user.customer_id)
+    
+    if participant:
+        if hasattr(current_user, 'customer_id') and current_user.customer_id:
+            # Subquery to find splits where user is a participant
+            participant_splits = select(SplitParticipant.split_id).where(
+                SplitParticipant.customer_id == current_user.customer_id
+            ).scalar_subquery()
+            conditions.append(BillSplit.id.in_(participant_splits))
+    
+    if not organizer and not participant:
+        # Default: show all splits user is involved in
+        if hasattr(current_user, 'customer_id') and current_user.customer_id:
+            participant_splits = select(SplitParticipant.split_id).where(
+                SplitParticipant.customer_id == current_user.customer_id
+            ).scalar_subquery()
+            conditions.append(
+                or_(
+                    BillSplit.organizer_id == current_user.customer_id,
+                    BillSplit.id.in_(participant_splits)
+                )
+            )
+    
+    if status:
+        conditions.append(BillSplit.status == status)
+    
+    # Apply conditions
+    if conditions:
+        query = query.where(and_(*conditions))
+        count_query = count_query.where(and_(*conditions))
+    
+    # Get total count
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Apply pagination
+    query = query.order_by(BillSplit.created_at.desc())
+    query = query.offset(pagination.offset).limit(pagination.page_size)
+    
+    # Execute query
+    result = await db.execute(query)
+    splits = result.scalars().all()
+    
+    # Prepare response
+    items = []
+    for split in splits:
+        # Get participant count
+        participant_result = await db.execute(
+            select(func.count(SplitParticipant.id))
+            .where(SplitParticipant.split_id == split.id)
+        )
+        participants_count = participant_result.scalar() or 0
+        
+        # Get paid count
+        paid_result = await db.execute(
+            select(func.count(SplitParticipant.id))
+            .where(
+                and_(
+                    SplitParticipant.split_id == split.id,
+                    SplitParticipant.status == ParticipantStatus.PAID
+                )
+            )
+        )
+        paid_count = paid_result.scalar() or 0
+        
+        items.append(SplitResponse(
+            id=split.id,
+            split_id=split.split_id,
+            order_id=split.order_id,
+            split_method=split.split_method,
+            status=split.status,
+            subtotal=float(split.subtotal),
+            tax_amount=float(split.tax_amount),
+            service_charge=float(split.service_charge),
+            tip_amount=float(split.tip_amount),
+            total_amount=float(split.total_amount),
+            organizer_name=split.organizer_name,
+            participants_count=participants_count,
+            paid_count=paid_count,
+            expires_at=split.expires_at.isoformat() if split.expires_at else None,
+            created_at=split.created_at.isoformat()
+        ))
+    
+    return PaginatedSplitsResponse(
+        items=items,
+        total=total,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        pages=(total + pagination.page_size - 1) // pagination.page_size
+    )
+
+
+@router.post("/{split_id}/resend-invitation/{participant_id}")
+async def resend_participant_invitation(
+    split_id: int,
+    participant_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Resend invitation to a specific participant"""
+    
+    # Get split
+    split = await split_bill_service.get_split(db, split_id, include_participants=True)
+    if not split:
+        raise HTTPException(status_code=404, detail="Split not found")
+    
+    # Check permissions - only organizer can resend
+    is_organizer = (
+        split.organizer_id == current_user.customer_id if hasattr(current_user, 'customer_id') else False
+    )
+    
+    if not (is_organizer or current_user.is_staff):
+        raise HTTPException(status_code=403, detail="Only organizer can resend invitations")
+    
+    # Find participant
+    participant = next((p for p in split.participants if p.id == participant_id), None)
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    
+    if not participant.email:
+        raise HTTPException(status_code=400, detail="Participant has no email address")
+    
+    try:
+        # Queue invitation
+        from ..services.split_bill_notification_queue import split_bill_notification_queue
+        
+        job_id = await split_bill_notification_queue.queue_participant_invitation(
+            participant_data={
+                'id': participant.id,
+                'name': participant.name,
+                'email': participant.email,
+                'total_amount': float(participant.total_amount),
+                'share_amount': float(participant.share_amount),
+                'tip_amount': float(participant.tip_amount),
+                'access_token': participant.access_token
+            },
+            split_data={
+                'id': split.id,
+                'organizer_name': split.organizer_name,
+                'total_amount': float(split.total_amount)
+            }
+        )
+        
+        # Update invite sent time
+        participant.invite_sent_at = datetime.utcnow()
+        await db.commit()
+        
+        return {
+            "success": True,
+            "message": "Invitation resent successfully",
+            "job_id": job_id
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to resend invitation: {str(e)}")
+
+
+@router.post("/{split_id}/resend-all-invitations")
+async def resend_all_invitations(
+    split_id: int,
+    pending_only: bool = Query(True, description="Only resend to pending participants"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Resend invitations to all (or pending) participants"""
+    
+    # Get split
+    split = await split_bill_service.get_split(db, split_id, include_participants=True)
+    if not split:
+        raise HTTPException(status_code=404, detail="Split not found")
+    
+    # Check permissions
+    is_organizer = (
+        split.organizer_id == current_user.customer_id if hasattr(current_user, 'customer_id') else False
+    )
+    
+    if not (is_organizer or current_user.is_staff):
+        raise HTTPException(status_code=403, detail="Only organizer can resend invitations")
+    
+    try:
+        from ..services.split_bill_notification_queue import split_bill_notification_queue
+        
+        # Filter participants
+        participants_to_notify = []
+        for participant in split.participants:
+            if participant.email and participant.notify_via_email:
+                if not pending_only or participant.status == ParticipantStatus.PENDING:
+                    participants_to_notify.append({
+                        'id': participant.id,
+                        'name': participant.name,
+                        'email': participant.email,
+                        'total_amount': float(participant.total_amount),
+                        'share_amount': float(participant.share_amount),
+                        'tip_amount': float(participant.tip_amount),
+                        'access_token': participant.access_token,
+                        'notify_via_email': participant.notify_via_email
+                    })
+                    participant.invite_sent_at = datetime.utcnow()
+        
+        if not participants_to_notify:
+            return {
+                "success": True,
+                "message": "No participants to notify",
+                "count": 0
+            }
+        
+        # Queue bulk invitations
+        job_ids = await split_bill_notification_queue.queue_bulk_invitations(
+            participants_to_notify,
+            {
+                'id': split.id,
+                'organizer_name': split.organizer_name,
+                'total_amount': float(split.total_amount)
+            }
+        )
+        
+        await db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Resent invitations to {len(participants_to_notify)} participants",
+            "count": len(participants_to_notify),
+            "job_ids": job_ids
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to resend invitations: {str(e)}")

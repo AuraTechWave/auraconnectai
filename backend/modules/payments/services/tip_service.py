@@ -14,6 +14,7 @@ from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order
 from ...staff.models.staff_models import Staff, StaffRole
 from ...payroll.models.payroll_models import TipRecord
+from ..monitoring.split_bill_metrics import SplitBillMetrics, track_tip_distribution
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +150,7 @@ class TipService:
             logger.error(f"Failed to create tip distribution: {e}")
             raise
     
+    @track_tip_distribution
     async def process_tip_distribution(
         self,
         db: AsyncSession,

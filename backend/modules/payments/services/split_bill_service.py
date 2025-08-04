@@ -19,6 +19,8 @@ from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order, OrderItem
 from ...customers.models.customer_models import Customer
 from ...notifications.services.notification_service import notification_service
+from .split_bill_notification_queue import split_bill_notification_queue
+from ..monitoring.split_bill_metrics import SplitBillMetrics, track_split_creation
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class SplitBillService:
     Service for managing bill splits and participant shares
     """
     
+    @track_split_creation
     async def create_split(
         self,
         db: AsyncSession,
@@ -365,6 +368,14 @@ class SplitBillService:
                 participant.declined_at = datetime.utcnow()
                 participant.decline_reason = decline_reason
             
+            # Record metric
+            split = await db.get(BillSplit, participant.split_id)
+            if split:
+                SplitBillMetrics.record_participant_status_change(
+                    status=status.value,
+                    split_method=split.split_method.value
+                )
+            
             # Check if all required participants have responded
             await self._check_split_activation(db, participant.split_id)
             
@@ -424,11 +435,25 @@ class SplitBillService:
         """Record a payment from a participant"""
         
         try:
-            participant = await db.get(SplitParticipant, participant_id)
+            # Use row-level locking to prevent concurrent payment race conditions
+            result = await db.execute(
+                select(SplitParticipant)
+                .where(SplitParticipant.id == participant_id)
+                .with_for_update()  # Lock the row for update
+            )
+            participant = result.scalar_one_or_none()
+            
             if not participant:
                 raise ValueError(f"Participant {participant_id} not found")
             
-            split = await db.get(BillSplit, participant.split_id)
+            # Also lock the split to ensure consistent status updates
+            result = await db.execute(
+                select(BillSplit)
+                .where(BillSplit.id == participant.split_id)
+                .with_for_update()
+            )
+            split = result.scalar_one_or_none()
+            
             if not split:
                 raise ValueError("Split not found")
             
@@ -439,6 +464,36 @@ class SplitBillService:
             
             if participant.paid_amount >= participant.total_amount:
                 participant.status = ParticipantStatus.PAID
+                
+                # Record payment metric and duration
+                SplitBillMetrics.record_split_payment(
+                    status='completed',
+                    split_method=split.split_method.value
+                )
+                
+                # Calculate payment duration
+                if split.created_at and participant.paid_at:
+                    duration = (participant.paid_at - split.created_at).total_seconds()
+                    SplitBillMetrics.record_payment_duration(
+                        split_method=split.split_method.value,
+                        duration_seconds=duration
+                    )
+            
+            # Check for existing allocation to prevent duplicates
+            existing = await db.execute(
+                select(PaymentAllocation)
+                .where(
+                    and_(
+                        PaymentAllocation.payment_id == payment.id,
+                        PaymentAllocation.split_id == split.id,
+                        PaymentAllocation.participant_id == participant_id
+                    )
+                )
+                .with_for_update()
+            )
+            
+            if existing.scalar_one_or_none():
+                raise ValueError("Payment allocation already exists")
             
             # Create allocation record
             allocation = PaymentAllocation(
@@ -528,6 +583,9 @@ class SplitBillService:
             if reason:
                 split.metadata['cancellation_reason'] = reason
             
+            # Record cancellation metric
+            SplitBillMetrics.record_split_cancelled(split.split_method.value)
+            
             # Cancel all pending participants
             result = await db.execute(
                 select(SplitParticipant).where(
@@ -592,23 +650,33 @@ class SplitBillService:
     async def _send_participant_invitations(self, db: AsyncSession, split: BillSplit):
         """Send invitations to all participants"""
         
+        # Prepare participant data for queue
+        participants_data = []
         for participant in split.participants:
             if participant.notify_via_email and participant.email:
-                await notification_service.send_email(
-                    to_email=participant.email,
-                    subject=f"You've been invited to split a bill",
-                    template="split_bill_invitation",
-                    context={
-                        'participant_name': participant.name,
-                        'organizer_name': split.organizer_name,
-                        'total_amount': str(participant.total_amount),
-                        'share_amount': str(participant.share_amount),
-                        'tip_amount': str(participant.tip_amount),
-                        'access_link': f"/split/{participant.access_token}"
-                    }
-                )
+                participants_data.append({
+                    'id': participant.id,
+                    'name': participant.name,
+                    'email': participant.email,
+                    'total_amount': float(participant.total_amount),
+                    'share_amount': float(participant.share_amount),
+                    'tip_amount': float(participant.tip_amount),
+                    'access_token': participant.access_token,
+                    'notify_via_email': participant.notify_via_email
+                })
+                participant.invite_sent_at = datetime.utcnow()
+        
+        # Queue bulk invitations
+        if participants_data:
+            split_data = {
+                'id': split.id,
+                'organizer_name': split.organizer_name,
+                'total_amount': float(split.total_amount)
+            }
             
-            participant.invite_sent_at = datetime.utcnow()
+            await split_bill_notification_queue.queue_bulk_invitations(
+                participants_data, split_data
+            )
     
     async def _notify_status_change(self, db: AsyncSession, participant: SplitParticipant):
         """Notify organizer of participant status change"""
@@ -619,16 +687,12 @@ class SplitBillService:
         
         status_text = "accepted" if participant.status == ParticipantStatus.ACCEPTED else "declined"
         
-        await notification_service.send_email(
-            to_email=split.organizer_email,
-            subject=f"{participant.name} has {status_text} the bill split",
-            template="split_status_update",
-            context={
-                'organizer_name': split.organizer_name,
-                'participant_name': participant.name,
-                'status': status_text,
-                'reason': participant.decline_reason
-            }
+        # Queue status update notification
+        await split_bill_notification_queue.queue_status_update(
+            organizer_email=split.organizer_email,
+            participant_name=participant.name,
+            status=status_text,
+            reason=participant.decline_reason
         )
     
     async def _notify_payment_received(
@@ -643,46 +707,48 @@ class SplitBillService:
         if not split or not split.organizer_email:
             return
         
-        await notification_service.send_email(
-            to_email=split.organizer_email,
-            subject=f"Payment received from {participant.name}",
-            template="split_payment_received",
-            context={
-                'organizer_name': split.organizer_name,
-                'participant_name': participant.name,
-                'amount': str(amount),
-                'remaining': str(participant.remaining_amount)
-            }
+        # Queue payment received notification
+        await split_bill_notification_queue.queue_payment_received(
+            organizer_data={
+                'name': split.organizer_name,
+                'email': split.organizer_email
+            },
+            participant_data={
+                'name': participant.name,
+                'remaining_amount': float(participant.remaining_amount)
+            },
+            amount=float(amount)
         )
     
     async def _notify_split_cancelled(self, db: AsyncSession, split: BillSplit):
         """Notify all participants of cancellation"""
         
+        participants_data = []
         for participant in split.participants:
             if participant.notify_via_email and participant.email:
-                await notification_service.send_email(
-                    to_email=participant.email,
-                    subject="Bill split has been cancelled",
-                    template="split_cancelled",
-                    context={
-                        'participant_name': participant.name,
-                        'organizer_name': split.organizer_name
-                    }
-                )
+                participants_data.append({
+                    'name': participant.name,
+                    'email': participant.email,
+                    'notify_via_email': participant.notify_via_email
+                })
+        
+        if participants_data:
+            await split_bill_notification_queue.queue_split_cancelled(
+                participants_data,
+                split.organizer_name
+            )
     
     async def _send_payment_reminder(self, participant: SplitParticipant):
         """Send payment reminder to participant"""
         
         if participant.notify_via_email and participant.email:
-            await notification_service.send_email(
-                to_email=participant.email,
-                subject="Reminder: Payment pending for bill split",
-                template="split_payment_reminder",
-                context={
-                    'participant_name': participant.name,
-                    'amount_due': str(participant.remaining_amount),
-                    'access_link': f"/split/{participant.access_token}"
-                }
+            await split_bill_notification_queue.queue_payment_reminder(
+                participant_data={
+                    'name': participant.name,
+                    'email': participant.email
+                },
+                amount_due=float(participant.remaining_amount),
+                access_link=f"/split/{participant.access_token}"
             )
 
 
