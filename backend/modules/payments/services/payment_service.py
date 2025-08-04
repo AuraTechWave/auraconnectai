@@ -20,6 +20,7 @@ from ..gateways import (
     CustomerRequest, PaymentMethodRequest
 )
 from ...orders.models.order_models import Order, OrderStatus
+from .payment_metrics import PaymentMetrics, track_payment_processing
 
 
 logger = logging.getLogger(__name__)
@@ -190,11 +191,33 @@ class PaymentService:
             if not response.success:
                 payment.failure_code = response.error_code
                 payment.failure_message = response.error_message
+                
+                # Record failure metric
+                PaymentMetrics.record_payment_failed(gateway, response.error_code)
+            else:
+                # Record success metric
+                PaymentMetrics.record_payment_created(gateway, response.status)
+                
+                if response.status == PaymentStatus.COMPLETED:
+                    PaymentMetrics.record_payment_completed(
+                        gateway=gateway,
+                        payment_method=response.payment_method.value if response.payment_method else 'unknown',
+                        amount=float(amount),
+                        currency=currency,
+                        fee=float(response.fee_amount) if response.fee_amount else None
+                    )
             
             # Handle payment methods that require action (3DS, PayPal redirect)
             if response.requires_action:
-                payment.metadata['requires_action'] = True
-                payment.metadata['action_url'] = response.action_url
+                from .payment_action_service import payment_action_service
+                
+                # Use payment action service to handle this properly
+                action_details = await payment_action_service.handle_requires_action(
+                    db=db,
+                    payment=payment,
+                    action_url=response.action_url,
+                    action_type='3d_secure' if gateway == PaymentGateway.STRIPE else 'redirect'
+                )
             
             await db.commit()
             
@@ -401,6 +424,20 @@ class PaymentService:
             if not response.success:
                 refund.failure_code = response.error_code
                 refund.failure_message = response.error_message
+                
+                # Record failure metric
+                PaymentMetrics.record_refund_failed(payment.gateway, response.error_code)
+            else:
+                # Record refund metrics
+                PaymentMetrics.record_refund_created(
+                    gateway=payment.gateway,
+                    amount=float(amount),
+                    original_amount=float(payment.amount),
+                    currency=payment.currency
+                )
+                
+                if response.status == RefundStatus.COMPLETED:
+                    PaymentMetrics.record_refund_completed(payment.gateway)
             
             # Update payment status
             if response.status == RefundStatus.COMPLETED:

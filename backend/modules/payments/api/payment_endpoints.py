@@ -474,23 +474,41 @@ async def handle_webhook(
         headers = dict(request.headers)
         body = await request.body()
         
-        # Process webhook
-        result = await webhook_service.process_webhook(
-            db=db,
+        # Import webhook queue service
+        from ..services.webhook_queue_service import webhook_queue_service
+        
+        # Queue webhook for background processing
+        job_id = await webhook_queue_service.queue_webhook(
             gateway=gateway,
             headers=headers,
-            body=body
+            body=body,
+            priority=3  # High priority for payment webhooks
         )
         
-        return PaymentWebhookResponse(**result)
+        # Return immediately with accepted status
+        return PaymentWebhookResponse(
+            status="accepted",
+            message=f"Webhook queued for processing: {job_id}"
+        )
         
     except Exception as e:
-        logger.error(f"Webhook processing error for {gateway}: {e}")
-        # Return success to prevent retries for bad webhooks
-        return PaymentWebhookResponse(
-            status="error",
-            message=str(e)
-        )
+        logger.error(f"Webhook queueing error for {gateway}: {e}")
+        
+        # Fallback to inline processing if queueing fails
+        try:
+            result = await webhook_service.process_webhook(
+                db=db,
+                gateway=gateway,
+                headers=headers,
+                body=body
+            )
+            return PaymentWebhookResponse(**result)
+        except:
+            # Return success to prevent retries for bad webhooks
+            return PaymentWebhookResponse(
+                status="error",
+                message=str(e)
+            )
 
 
 @router.post("/{payment_id}/sync")

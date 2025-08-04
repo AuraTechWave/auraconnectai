@@ -13,6 +13,7 @@ from .base import (
     PaymentMethodRequest, PaymentMethodResponse
 )
 from ..models.payment_models import PaymentStatus, PaymentMethod, RefundStatus
+from ..utils import payment_retry
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class StripeGateway(PaymentGatewayInterface):
         # Store webhook secret
         self.webhook_secret = config.get('webhook_secret')
     
+    @payment_retry(max_attempts=3)
     async def create_payment(self, request: PaymentRequest) -> PaymentResponse:
         """Create a payment with Stripe"""
         try:
@@ -149,6 +151,7 @@ class StripeGateway(PaymentGatewayInterface):
                 error_message=str(e)
             )
     
+    @payment_retry(max_attempts=3)
     async def capture_payment(self, payment_id: str, amount: Optional[Decimal] = None) -> PaymentResponse:
         """Capture a previously authorized payment"""
         try:
@@ -232,6 +235,7 @@ class StripeGateway(PaymentGatewayInterface):
                 error_message=str(e)
             )
     
+    @payment_retry(max_attempts=3)
     async def create_refund(self, request: RefundRequest) -> RefundResponse:
         """Create a refund in Stripe"""
         try:

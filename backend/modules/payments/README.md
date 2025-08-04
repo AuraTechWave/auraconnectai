@@ -9,9 +9,13 @@ This module provides a unified payment processing system that supports multiple 
 - **Payment Processing**: Create, capture, and cancel payments
 - **Refund Management**: Full and partial refunds with reason tracking
 - **Saved Payment Methods**: Store customer payment methods for future use
-- **Webhook Handling**: Automatic processing of gateway webhooks
+- **Webhook Handling**: Automatic processing of gateway webhooks with queue support
 - **Idempotency**: Built-in idempotency support for safe retries
 - **PCI Compliance**: Secure handling of payment data
+- **Retry Logic**: Automatic retry for transient gateway errors
+- **Action Handling**: Support for 3D Secure and payment redirects
+- **Observability**: Prometheus metrics for monitoring
+- **Queue Processing**: Asynchronous webhook processing with Arq
 
 ## Architecture
 
@@ -321,6 +325,51 @@ Common error codes:
 - `card_declined`: Card was declined
 - `insufficient_funds`: Not enough funds
 - `gateway_error`: Gateway communication error
+
+## Production Improvements
+
+### 1. Webhook Queue Processing
+Webhooks are now processed asynchronously using Arq (Redis-based queue):
+
+```bash
+# Run the webhook worker
+python -m workers.payment_webhook_worker
+```
+
+This prevents blocking HTTP responses and handles retries automatically.
+
+### 2. Payment Action Handling
+The system now properly handles payments requiring user action (3D Secure, PayPal redirects):
+
+- Actions are tracked in the database
+- Expired actions are automatically cancelled
+- User-friendly instructions provided for each gateway
+
+### 3. Retry Logic
+All gateway operations now include automatic retry for transient errors:
+
+- Network timeouts
+- 5xx HTTP errors
+- Rate limiting (429 errors)
+- Exponential backoff with jitter
+
+### 4. Observability
+Prometheus metrics are available at `/metrics`:
+
+- Payment success/failure rates by gateway
+- Gateway API latency
+- Refund statistics
+- Active payment actions
+- Webhook processing metrics
+
+### 5. Enhanced Testing
+Comprehensive test coverage including:
+
+- Unit tests for all services
+- Integration tests for payment flows
+- Concurrent operation tests
+- Race condition handling
+- Security validation tests
 
 ## Testing
 
