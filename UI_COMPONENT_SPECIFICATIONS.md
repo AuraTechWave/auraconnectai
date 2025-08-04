@@ -19,6 +19,14 @@
 
 ## 🎨 Design System Foundation
 
+### Design-Development Sync
+> **Source of Truth**: This design system serves as the source of truth for development. 
+> - **Figma**: Initial designs and mockups
+> - **Tailwind Config**: Production implementation (`tailwind.config.js`)
+> - **Component Library**: Living documentation with Storybook
+> 
+> Any design updates should flow: Figma → Tailwind Config → Component Library → Production
+
 ### Color Palette
 ```css
 /* Core Colors */
@@ -65,7 +73,8 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 
 ### Spacing System
 ```css
-/* Spacing Scale */
+/* Spacing Scale (Padding & Margin) */
+--space-0: 0;         /* 0px */
 --space-1: 0.25rem;   /* 4px */
 --space-2: 0.5rem;    /* 8px */
 --space-3: 0.75rem;   /* 12px */
@@ -76,6 +85,14 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 --space-10: 2.5rem;   /* 40px */
 --space-12: 3rem;     /* 48px */
 --space-16: 4rem;     /* 64px */
+--space-20: 5rem;     /* 80px */
+--space-24: 6rem;     /* 96px */
+
+/* Common Padding Patterns */
+.p-card: var(--space-6);        /* Card padding: 24px */
+.p-section: var(--space-8);     /* Section padding: 32px */
+.p-input: var(--space-3) var(--space-4); /* Input padding: 12px 16px */
+.p-button: var(--space-2) var(--space-4); /* Button padding: 8px 16px */
 ```
 
 ### Border Radius
@@ -1300,11 +1317,28 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 - Body text: 14px (text-sm), normal weight
 - Helper text: 12px (text-xs), text-secondary
 
-### Responsive Breakpoints
-- Mobile: < 640px
-- Tablet: 640px - 1024px
-- Desktop: > 1024px
-- Wide: > 1440px
+### Responsive Breakpoints & Device Categories
+```css
+/* Breakpoint System */
+--breakpoint-xs: 320px;   /* Small phones */
+--breakpoint-sm: 640px;   /* Large phones */
+--breakpoint-md: 768px;   /* Tablets (portrait) */
+--breakpoint-lg: 1024px;  /* Tablets (landscape) / Small laptops */
+--breakpoint-xl: 1280px;  /* Desktop monitors */
+--breakpoint-2xl: 1536px; /* Large desktop monitors */
+
+/* Device Category Mappings */
+/* Mobile Phones: 320px - 639px (xs to sm) */
+/* Tablets: 640px - 1023px (sm to lg) */
+/* Laptops/Desktop: 1024px - 1535px (lg to 2xl) */
+/* Large Displays: 1536px+ (2xl+) */
+
+/* Tailwind Breakpoint Usage */
+@media (min-width: 640px) { /* sm: tablets and up */ }
+@media (min-width: 768px) { /* md: larger tablets and up */ }
+@media (min-width: 1024px) { /* lg: desktops and up */ }
+@media (min-width: 1280px) { /* xl: large desktops and up */ }
+```
 
 ### Animation Guidelines
 - Transitions: 200ms ease-out for most interactions

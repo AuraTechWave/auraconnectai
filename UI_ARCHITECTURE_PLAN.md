@@ -12,6 +12,12 @@
 9. [State Management](#state-management)
 10. [API Integration Patterns](#api-integration-patterns)
 
+## 📚 Related Documentation
+- [UI Component Specifications](UI_COMPONENT_SPECIFICATIONS.md) - Detailed component library
+- [Navigation Structure](NAV_STRUCTURE.md) - Role-based navigation patterns
+- [Routing & Access Control](ROUTING_ACCESS_CONTROL.md) - Route protection and permissions
+- [Frontend Deployment & CI/CD](FRONTEND_DEPLOYMENT_CICD.md) - Deployment strategy and testing
+
 ---
 
 ## 🛠️ Frontend Framework & Tech Stack
