@@ -12,7 +12,19 @@ from .payment_models import (
     CustomerPaymentMethod
 )
 
+from .split_bill_models import (
+    SplitMethod,
+    SplitStatus,
+    ParticipantStatus,
+    TipMethod,
+    BillSplit,
+    SplitParticipant,
+    PaymentAllocation,
+    TipDistribution
+)
+
 __all__ = [
+    # Payment models
     'PaymentGateway',
     'PaymentStatus',
     'PaymentMethod',
@@ -21,5 +33,15 @@ __all__ = [
     'Refund',
     'PaymentWebhook',
     'PaymentGatewayConfig',
-    'CustomerPaymentMethod'
+    'CustomerPaymentMethod',
+    
+    # Split bill models
+    'SplitMethod',
+    'SplitStatus',
+    'ParticipantStatus',
+    'TipMethod',
+    'BillSplit',
+    'SplitParticipant',
+    'PaymentAllocation',
+    'TipDistribution'
 ]
