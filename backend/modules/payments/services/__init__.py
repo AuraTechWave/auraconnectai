@@ -26,6 +26,7 @@ from .payment_metrics import (
 )
 from .split_bill_service import SplitBillService, split_bill_service
 from .tip_service import TipService, tip_service
+from .refund_service import RefundService, refund_service
 
 __all__ = [
     # Payment Service
@@ -61,5 +62,9 @@ __all__ = [
     
     # Tip Service
     'TipService',
-    'tip_service'
+    'tip_service',
+    
+    # Refund Service
+    'RefundService',
+    'refund_service'
 ]
