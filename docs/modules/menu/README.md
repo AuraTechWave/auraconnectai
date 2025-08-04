@@ -147,6 +147,8 @@ Manages customization options, add-ons, and variations.
 
 ## API Endpoints
 
+> 📌 **See also**: [Menu Management in API Reference](../../api/README.md#restaurant-operations) for complete API documentation.
+
 ### Menu Categories
 
 | Endpoint | Method | Description |

@@ -5,6 +5,10 @@
   
   **A comprehensive, AI-powered restaurant management system built with modern microservices architecture**
   
+  [![Documentation](https://img.shields.io/badge/docs-MkDocs-blue?style=for-the-badge)](https://docs.auraconnect.com)
+  [![CI/CD](https://img.shields.io/github/actions/workflow/status/AuraTechWave/auraconnectai/ci.yml?style=for-the-badge&label=CI/CD)](https://github.com/AuraTechWave/auraconnectai/actions)
+  [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
+  
   [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
   [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
   [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org)
