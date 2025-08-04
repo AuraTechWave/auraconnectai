@@ -8,9 +8,9 @@ from typing import List
 from contextlib import closing
 import logging
 
-from backend.core.database import get_db
-from backend.modules.orders.services.sync_service import OrderSyncService
-from backend.core.config import settings
+from core.database import get_db
+from modules.orders.services.sync_service import OrderSyncService
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

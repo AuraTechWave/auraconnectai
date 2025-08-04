@@ -231,7 +231,7 @@ class AuditExportRequest(BaseModel):
     
     format: str = Field(
         "csv",
-        regex="^(csv|json|pdf)$",
+        pattern="^(csv|json|pdf)$",
         description="Export format"
     )
     filters: AuditLogFilter = Field(

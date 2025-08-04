@@ -14,7 +14,7 @@ from .menu_sync_models import (
 )
 from .menu_sync_service import MenuSyncService
 from .menu_sync_schemas import StartSyncRequest
-from backend.core.database import get_db
+from core.database import get_db
 
 
 logger = logging.getLogger(__name__)

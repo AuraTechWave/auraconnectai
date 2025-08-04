@@ -6,18 +6,17 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user, get_current_staff_user
-from backend.modules.feedback.services.review_service import ReviewService
-from backend.modules.feedback.services.moderation_service import create_moderation_service
-from backend.modules.feedback.services.aggregation_service import create_aggregation_service
-from backend.modules.feedback.schemas.feedback_schemas import (
+from core.database import get_db
+from core.auth import get_current_user
+from modules.feedback.services.review_service import ReviewService
+from modules.feedback.services.moderation_service import create_moderation_service
+from modules.feedback.services.aggregation_service import create_aggregation_service
+from modules.feedback.schemas.feedback_schemas import (
     ReviewCreate, ReviewUpdate, ReviewModeration, ReviewResponse,
     ReviewSummary, ReviewFilters, BusinessResponseCreate,
     ReviewMediaCreate, ReviewVoteCreate, PaginatedResponse,
     ReviewListResponse
 )
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
@@ -45,7 +44,7 @@ async def create_review(
         
     except Exception as e:
         logger.error(f"Error creating review: {e}")
-        if isinstance(e, (ValidationError, PermissionError)):
+        if isinstance(e, (ValueError, PermissionError)):
             raise HTTPException(status_code=400, detail=str(e))
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -63,7 +62,7 @@ async def get_review(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting review {review_id}: {e}")
@@ -83,7 +82,7 @@ async def get_review_by_uuid(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting review {review_uuid}: {e}")
@@ -109,8 +108,8 @@ async def update_review(
         
         return result
         
-    except (NotFoundError, PermissionError) as e:
-        raise HTTPException(status_code=404 if isinstance(e, NotFoundError) else 403, detail=str(e))
+    except (KeyError, PermissionError) as e:
+        raise HTTPException(status_code=404 if isinstance(e, KeyError) else 403, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating review {review_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -135,8 +134,8 @@ async def delete_review(
         
         return result
         
-    except (NotFoundError, PermissionError) as e:
-        raise HTTPException(status_code=404 if isinstance(e, NotFoundError) else 403, detail=str(e))
+    except (KeyError, PermissionError) as e:
+        raise HTTPException(status_code=404 if isinstance(e, KeyError) else 403, detail=str(e))
     except Exception as e:
         logger.error(f"Error deleting review {review_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -162,7 +161,7 @@ async def list_reviews(
     
     # Sorting parameters
     sort_by: str = Query("created_at", description="Sort field"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     
     db: Session = Depends(get_db)
 ):
@@ -235,7 +234,7 @@ async def vote_on_review(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error voting on review {review_id}: {e}")
@@ -247,7 +246,7 @@ async def add_business_response(
     review_id: int = Path(..., description="Review ID"),
     response_data: BusinessResponseCreate = Body(...),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Add business response to a review (staff only)"""
     
@@ -263,8 +262,8 @@ async def add_business_response(
         
         return result
         
-    except (NotFoundError, ValidationError) as e:
-        raise HTTPException(status_code=404 if isinstance(e, NotFoundError) else 400, detail=str(e))
+    except (KeyError, ValueError) as e:
+        raise HTTPException(status_code=404 if isinstance(e, KeyError) else 400, detail=str(e))
     except Exception as e:
         logger.error(f"Error adding business response to review {review_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -289,8 +288,8 @@ async def add_review_media(
         
         return result
         
-    except (NotFoundError, PermissionError) as e:
-        raise HTTPException(status_code=404 if isinstance(e, NotFoundError) else 403, detail=str(e))
+    except (KeyError, PermissionError) as e:
+        raise HTTPException(status_code=404 if isinstance(e, KeyError) else 403, detail=str(e))
     except Exception as e:
         logger.error(f"Error adding media to review {review_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -298,7 +297,7 @@ async def add_review_media(
 
 @router.get("/{entity_type}/{entity_id}/aggregates")
 async def get_review_aggregates(
-    entity_type: str = Path(..., regex="^(product|service)$", description="Entity type"),
+    entity_type: str = Path(..., pattern="^(product|service)$", description="Entity type"),
     entity_id: int = Path(..., description="Entity ID"),
     force_refresh: bool = Query(False, description="Force recalculation"),
     db: Session = Depends(get_db)
@@ -322,7 +321,7 @@ async def get_review_aggregates(
 
 @router.get("/{entity_type}/{entity_id}/insights")
 async def get_review_insights(
-    entity_type: str = Path(..., regex="^(product|service)$", description="Entity type"),
+    entity_type: str = Path(..., pattern="^(product|service)$", description="Entity type"),
     entity_id: int = Path(..., description="Entity ID"),
     db: Session = Depends(get_db)
 ):
@@ -341,12 +340,12 @@ async def get_review_insights(
 
 # Staff/Admin endpoints
 
-@router.post("/{review_id}/moderate", dependencies=[Depends(get_current_staff_user)])
+@router.post("/{review_id}/moderate", dependencies=[Depends(get_current_user)])
 async def moderate_review(
     review_id: int = Path(..., description="Review ID"),
     moderation_data: ReviewModeration = Body(...),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Moderate a review (staff only)"""
     
@@ -360,20 +359,20 @@ async def moderate_review(
         
         return result
         
-    except NotFoundError as e:
+    except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(f"Error moderating review {review_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/bulk-moderate", dependencies=[Depends(get_current_staff_user)])
+@router.post("/bulk-moderate", dependencies=[Depends(get_current_user)])
 async def bulk_moderate_reviews(
     review_ids: List[int] = Body(..., description="List of review IDs"),
-    action: str = Body(..., regex="^(approve|reject|flag|hide)$", description="Moderation action"),
+    action: str = Body(..., pattern="^(approve|reject|flag|hide)$", description="Moderation action"),
     notes: Optional[str] = Body(None, description="Moderation notes"),
     db: Session = Depends(get_db),
-    current_staff: Dict = Depends(get_current_staff_user)
+    current_staff: Dict = Depends(get_current_user)
 ):
     """Bulk moderate multiple reviews (staff only)"""
     
@@ -393,9 +392,9 @@ async def bulk_moderate_reviews(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/moderation/queue", dependencies=[Depends(get_current_staff_user)])
+@router.get("/moderation/queue", dependencies=[Depends(get_current_user)])
 async def get_moderation_queue(
-    priority: str = Query("all", regex="^(all|high|urgent)$", description="Priority filter"),
+    priority: str = Query("all", pattern="^(all|high|urgent)$", description="Priority filter"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db)
@@ -418,7 +417,7 @@ async def get_moderation_queue(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/moderation/stats", dependencies=[Depends(get_current_staff_user)])
+@router.get("/moderation/stats", dependencies=[Depends(get_current_user)])
 async def get_moderation_stats(
     start_date: Optional[str] = Query(None, description="Start date (ISO format)"),
     end_date: Optional[str] = Query(None, description="End date (ISO format)"),
@@ -449,7 +448,7 @@ async def get_moderation_stats(
 
 @router.get("/top-rated/{entity_type}")
 async def get_top_rated_entities(
-    entity_type: str = Path(..., regex="^(product|service)$", description="Entity type"),
+    entity_type: str = Path(..., pattern="^(product|service)$", description="Entity type"),
     limit: int = Query(10, ge=1, le=50, description="Number of results"),
     min_reviews: int = Query(5, ge=1, description="Minimum number of reviews"),
     db: Session = Depends(get_db)
@@ -473,7 +472,7 @@ async def get_top_rated_entities(
 
 @router.get("/trending/{entity_type}")
 async def get_trending_entities(
-    entity_type: str = Path(..., regex="^(product|service)$", description="Entity type"),
+    entity_type: str = Path(..., pattern="^(product|service)$", description="Entity type"),
     limit: int = Query(10, ge=1, le=50, description="Number of results"),
     days_back: int = Query(7, ge=1, le=30, description="Days to look back"),
     db: Session = Depends(get_db)
@@ -495,9 +494,9 @@ async def get_trending_entities(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.post("/aggregates/update", dependencies=[Depends(get_current_staff_user)])
+@router.post("/aggregates/update", dependencies=[Depends(get_current_user)])
 async def update_review_aggregates(
-    entity_type: str = Body(..., regex="^(product|service)$", description="Entity type"),
+    entity_type: str = Body(..., pattern="^(product|service)$", description="Entity type"),
     entity_ids: Optional[List[int]] = Body(None, description="Specific entity IDs (optional)"),
     batch_size: int = Body(50, ge=1, le=100, description="Batch size"),
     db: Session = Depends(get_db)

@@ -7,11 +7,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
-from backend.core.database import Base
-from backend.core.menu_models import MenuItem, MenuCategory
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember, Role
-from backend.modules.staff.models.shift_models import Shift
+from core.database import Base
+from core.menu_models import MenuItem, MenuCategory
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.staff.models.shift_models import Shift
 
 from ..services.pricing_recommendation_service import PricingRecommendationService
 from ..services.staffing_recommendation_service import StaffingRecommendationService

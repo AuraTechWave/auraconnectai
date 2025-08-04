@@ -9,12 +9,12 @@ import math
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 
-from backend.core.cache import cache_service
-from backend.modules.analytics.utils.performance_monitor import PerformanceMonitor
-from backend.modules.analytics.services.ai_insights_service import AIInsightsService
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.core.menu_models import MenuItem, MenuCategory
-from backend.modules.analytics.schemas.ai_insights_schemas import InsightRequest, InsightType
+from core.cache import cache_service
+from modules.analytics.utils.performance_monitor import PerformanceMonitor
+from modules.analytics.services.ai_insights_service import AIInsightsService
+from modules.orders.models.order_models import Order, OrderItem
+from core.menu_models import MenuItem, MenuCategory
+from modules.analytics.schemas.ai_insights_schemas import InsightRequest, InsightType
 
 from ..schemas.pricing_schemas import (
     MenuItemPricingContext, PricingRecommendation, BulkPricingRequest,

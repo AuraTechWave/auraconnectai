@@ -10,13 +10,13 @@ from typing import List
 from datetime import datetime
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.config import settings
-from backend.modules.staff.models import StaffMember
-from backend.modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.tasks.sync_tasks import order_sync_scheduler
+from core.database import get_db
+from core.auth import get_current_user
+from core.config import settings
+from modules.staff.models.staff_models import StaffMember
+from modules.orders.models.sync_models import OrderSyncStatus, SyncStatus
+from modules.orders.models.order_models import Order
+from modules.orders.tasks.sync_tasks import order_sync_scheduler
 from .schemas import POSSyncRequest, POSSyncResponse
 from .helpers import process_sync_batch
 

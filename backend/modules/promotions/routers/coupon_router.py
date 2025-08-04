@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.modules.auth.dependencies import get_current_user, require_admin
-from backend.modules.customers.models.customer_models import Customer
+from core.database import get_db
+from modules.auth.dependencies import get_current_user, require_admin
+from modules.customers.models.customer_models import Customer
 
 from ..schemas.promotion_schemas import (
     CouponCreate, CouponBulkCreate, Coupon as CouponSchema,

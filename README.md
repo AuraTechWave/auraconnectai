@@ -137,7 +137,7 @@ graph TB
 
 | Module | Description | Key Features | Status |
 |--------|-------------|--------------|--------|
-| **[Staff](docs/modules/staff/README.md)** | Employee management | Scheduling, Roles, Permissions, Time tracking | ✅ Production |
+| **[Staff](docs/modules/staff/README.md)** | Employee management | [Advanced Scheduling](backend/modules/staff/docs/SCHEDULING_USAGE.md), Roles, Permissions, Time tracking, [Biometric Auth](backend/modules/staff/docs/BIOMETRIC_API.md) | ✅ Production |
 | **[Payroll](docs/modules/payroll/README.md)** | Payroll processing | Multi-state tax, Direct deposit, Compliance | ✅ Production |
 | **[Tax](docs/modules/tax/README.md)** | Tax calculations | Federal/State/Local, Real-time updates, Reporting | ✅ Production |
 
@@ -239,6 +239,22 @@ Authorization: Bearer <token>
 
 ## 🧪 Testing
 
+AuraConnect has comprehensive test coverage including unit tests, integration tests, and performance tests.
+
+### Test Categories
+
+Tests are organized with pytest markers for efficient test execution:
+
+- **`@pytest.mark.unit`** - Fast unit tests
+- **`@pytest.mark.integration`** - Integration tests requiring full stack
+- **`@pytest.mark.slow`** - Long-running tests
+- **`@pytest.mark.concurrent`** - Concurrency and threading tests
+- **`@pytest.mark.api`** - API endpoint tests
+- **`@pytest.mark.db`** - Database-dependent tests
+- **`@pytest.mark.stress`** - Load and stress tests
+
+### Running Tests
+
 ```bash
 # Run all tests
 pytest
@@ -249,11 +265,58 @@ pytest --cov=modules --cov-report=html
 # Run specific module tests
 pytest backend/modules/orders/tests/ -v
 
-# Run integration tests
-pytest backend/tests/integration/ -v
+# Run only fast tests (exclude slow tests)
+pytest -m "not slow"
 
-# Run performance tests
+# Run integration tests
+pytest -m integration
+
+# Run API endpoint tests
+pytest -m api
+
+# Run concurrent tests with output
+pytest -m concurrent -v -s
+
+# Run specific test file
+pytest backend/modules/orders/tests/test_inventory_deduction_integration.py -v
+```
+
+### Integration Test Suite
+
+The platform includes comprehensive integration tests for critical workflows:
+
+- **Inventory Deduction Tests** ([Documentation](backend/modules/orders/tests/README_INTEGRATION_TESTS.md))
+  - Order placement with automatic ingredient deduction
+  - Order cancellation with inventory rollback
+  - Shared ingredients across multiple menu items
+  - Partial fulfillment scenarios
+  - Concurrent order handling
+  - Race condition prevention
+
+### Test Data Factories
+
+Tests use factory patterns to avoid hardcoded data:
+
+```python
+# Example using test factories
+from modules.orders.tests.factories import (
+    create_restaurant_setup,
+    create_order_scenario
+)
+
+# Generate complete test environment
+setup = create_restaurant_setup(num_menu_items=5)
+order = create_order_scenario(num_items=3)
+```
+
+### Performance Testing
+
+```bash
+# Run performance benchmarks
 pytest backend/tests/performance/ -v --benchmark
+
+# Stress test with concurrent operations
+pytest -m stress -v
 ```
 
 ## 🚢 Deployment

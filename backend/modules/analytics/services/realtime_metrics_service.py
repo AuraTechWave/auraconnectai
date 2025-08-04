@@ -12,11 +12,11 @@ from sqlalchemy import func, text, and_, or_
 import redis
 from contextlib import asynccontextmanager
 
-from backend.core.database import get_db
-from backend.core.config import settings
+from core.database import get_db
+from core.config import settings
 from ..models.analytics_models import SalesAnalyticsSnapshot, AggregationPeriod, SalesMetric
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
 
 logger = logging.getLogger(__name__)
 

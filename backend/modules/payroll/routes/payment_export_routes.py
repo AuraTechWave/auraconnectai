@@ -10,8 +10,8 @@ from typing import List, Optional
 from datetime import date, datetime, timedelta
 import uuid
 
-from ....core.database import get_db
-from ....core.auth import require_payroll_write, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_write, get_current_user, User
 from ..models.payroll_models import EmployeePayment
 from ..models.payroll_configuration import PayrollJobTracking
 from ..schemas.payroll_schemas import (

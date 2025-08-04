@@ -6,15 +6,15 @@ from decimal import Decimal
 import asyncio
 from sqlalchemy.orm import Session
 
-from backend.modules.analytics.services.sales_report_service import SalesReportService
-from backend.modules.analytics.services.export_service import ExportService
-from backend.modules.analytics.services.trend_service import TrendService
-from backend.modules.analytics.schemas.analytics_schemas import (
+from modules.analytics.services.sales_report_service import SalesReportService
+from modules.analytics.services.export_service import ExportService
+from modules.analytics.services.trend_service import TrendService
+from modules.analytics.schemas.analytics_schemas import (
     SalesFilterRequest, SalesReportRequest
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.modules.analytics.models.analytics_models import SalesAnalyticsSnapshot
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
+from modules.analytics.models.analytics_models import SalesAnalyticsSnapshot
 
 
 class TestLargeDatasets:

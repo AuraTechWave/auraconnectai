@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.pricing_controller import (
     calculate_pricing, apply_dynamic_pricing
 )

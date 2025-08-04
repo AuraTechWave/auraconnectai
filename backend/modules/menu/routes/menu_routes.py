@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from math import ceil
 
-from backend.core.database import get_db
-from backend.core.menu_service import MenuService
-from backend.core.menu_schemas import (
+from core.database import get_db
+from core.menu_service import MenuService
+from core.menu_schemas import (
     MenuCategory, MenuCategoryCreate, MenuCategoryUpdate, MenuCategoryWithItems,
     MenuItem, MenuItemCreate, MenuItemUpdate, MenuItemWithDetails,
     ModifierGroup, ModifierGroupCreate, ModifierGroupUpdate, ModifierGroupWithModifiers,
@@ -17,8 +17,7 @@ from backend.core.menu_schemas import (
     MenuSearchParams, BulkMenuItemUpdate, BulkCategoryUpdate,
     MenuItemResponse, MenuCategoryResponse, PaginatedResponse
 )
-from backend.core.rbac_auth import require_permission
-from backend.core.rbac_models import RBACUser
+from core.auth import require_permission, User
 
 
 router = APIRouter(prefix="/menu", tags=["Menu Management"])
@@ -34,7 +33,7 @@ def get_menu_service(db: Session = Depends(get_db)) -> MenuService:
 async def create_category(
     category_data: MenuCategoryCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create"))
 ):
     """Create a new menu category"""
     return menu_service.create_category(category_data, current_user.id)
@@ -44,7 +43,7 @@ async def create_category(
 async def get_categories(
     active_only: bool = Query(True, description="Filter by active categories only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get all menu categories"""
     return menu_service.get_categories(active_only)
@@ -54,7 +53,7 @@ async def get_categories(
 async def get_category_by_id(
     category_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get a category by ID with its items"""
     category = menu_service.get_category_by_id(category_id)
@@ -71,7 +70,7 @@ async def update_category(
     category_id: int,
     category_data: MenuCategoryUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Update a menu category"""
     return menu_service.update_category(category_id, category_data, current_user.id)
@@ -81,7 +80,7 @@ async def update_category(
 async def delete_category(
     category_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Delete a menu category"""
     menu_service.delete_category(category_id, current_user.id)
@@ -91,7 +90,7 @@ async def delete_category(
 async def bulk_update_categories(
     bulk_data: BulkCategoryUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Bulk update menu categories"""
     updated_categories = []
@@ -109,7 +108,7 @@ async def bulk_update_categories(
 async def create_menu_item(
     item_data: MenuItemCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create"))
 ):
     """Create a new menu item"""
     return menu_service.create_menu_item(item_data, current_user.id)
@@ -127,10 +126,10 @@ async def get_menu_items(
     allergens: Optional[List[str]] = Query(None, description="Exclude allergens"),
     limit: int = Query(50, ge=1, le=500, description="Items per page"),
     offset: int = Query(0, ge=0, description="Items to skip"),
-    sort_by: str = Query("display_order", regex=r'^(name|price|created_at|display_order)$'),
-    sort_order: str = Query("asc", regex=r'^(asc|desc)$'),
+    sort_by: str = Query("display_order", pattern=r'^(name|price|created_at|display_order)$'),
+    sort_order: str = Query("asc", pattern=r'^(asc|desc)$'),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get menu items with search and pagination"""
     params = MenuSearchParams(
@@ -165,7 +164,7 @@ async def get_menu_items(
 async def get_menu_item_by_id(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get a menu item by ID with details"""
     item = menu_service.get_menu_item_by_id(item_id)
@@ -182,7 +181,7 @@ async def update_menu_item(
     item_id: int,
     item_data: MenuItemUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Update a menu item"""
     return menu_service.update_menu_item(item_id, item_data, current_user.id)
@@ -192,7 +191,7 @@ async def update_menu_item(
 async def delete_menu_item(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Delete a menu item"""
     menu_service.delete_menu_item(item_id, current_user.id)
@@ -202,7 +201,7 @@ async def delete_menu_item(
 async def bulk_update_menu_items(
     bulk_data: BulkMenuItemUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Bulk update menu items"""
     return menu_service.bulk_update_items(bulk_data.item_ids, bulk_data.updates, current_user.id)
@@ -213,7 +212,7 @@ async def bulk_update_menu_items(
 async def create_modifier_group(
     group_data: ModifierGroupCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create"))
 ):
     """Create a new modifier group"""
     return menu_service.create_modifier_group(group_data, current_user.id)
@@ -223,7 +222,7 @@ async def create_modifier_group(
 async def get_modifier_groups(
     active_only: bool = Query(True, description="Filter by active groups only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get all modifier groups"""
     return menu_service.get_modifier_groups(active_only)
@@ -233,7 +232,7 @@ async def get_modifier_groups(
 async def get_modifier_group_by_id(
     group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get a modifier group by ID with its modifiers"""
     group = menu_service.get_modifier_group_by_id(group_id)
@@ -250,7 +249,7 @@ async def update_modifier_group(
     group_id: int,
     group_data: ModifierGroupUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Update a modifier group"""
     return menu_service.update_modifier_group(group_id, group_data, current_user.id)
@@ -260,7 +259,7 @@ async def update_modifier_group(
 async def delete_modifier_group(
     group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Delete a modifier group"""
     menu_service.delete_modifier_group(group_id, current_user.id)
@@ -271,7 +270,7 @@ async def delete_modifier_group(
 async def create_modifier(
     modifier_data: ModifierCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create"))
 ):
     """Create a new modifier"""
     return menu_service.create_modifier(modifier_data, current_user.id)
@@ -282,7 +281,7 @@ async def get_modifiers_by_group(
     group_id: int,
     active_only: bool = Query(True, description="Filter by active modifiers only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get modifiers by group ID"""
     return menu_service.get_modifiers_by_group(group_id, active_only)
@@ -292,7 +291,7 @@ async def get_modifiers_by_group(
 async def get_modifier_by_id(
     modifier_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get a modifier by ID"""
     modifier = menu_service.get_modifier_by_id(modifier_id)
@@ -309,7 +308,7 @@ async def update_modifier(
     modifier_id: int,
     modifier_data: ModifierUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Update a modifier"""
     return menu_service.update_modifier(modifier_id, modifier_data, current_user.id)
@@ -319,7 +318,7 @@ async def update_modifier(
 async def delete_modifier(
     modifier_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Delete a modifier"""
     menu_service.delete_modifier(modifier_id, current_user.id)
@@ -331,7 +330,7 @@ async def add_modifier_to_item(
     item_id: int,
     link_data: MenuItemModifierCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Add a modifier group to a menu item"""
     # Ensure the item_id matches
@@ -343,7 +342,7 @@ async def add_modifier_to_item(
 async def get_item_modifiers(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get all modifier groups for a menu item"""
     return menu_service.get_item_modifiers(item_id)
@@ -354,7 +353,7 @@ async def remove_modifier_from_item(
     item_id: int,
     modifier_group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Remove a modifier group from a menu item"""
     menu_service.remove_modifier_from_item(item_id, modifier_group_id, current_user.id)
@@ -366,7 +365,7 @@ async def add_inventory_to_item(
     item_id: int,
     link_data: MenuItemInventoryCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Link an inventory item to a menu item"""
     # Ensure the item_id matches
@@ -378,7 +377,7 @@ async def add_inventory_to_item(
 @router.get("/stats")
 async def get_menu_stats(
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read"))
 ):
     """Get menu statistics"""
     return menu_service.get_menu_stats()
@@ -449,7 +448,7 @@ async def bulk_update_menu_items(
     item_ids: List[int],
     updates: dict,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Bulk update multiple menu items and create version if significant changes"""
     
@@ -470,7 +469,7 @@ async def bulk_activate_menu_items(
     item_ids: List[int],
     active: bool = True,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Bulk activate or deactivate multiple menu items"""
     
@@ -491,7 +490,7 @@ async def bulk_activate_menu_items(
 async def bulk_update_prices(
     price_updates: List[dict],  # [{"item_id": 1, "price": 10.99}, ...]
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update"))
 ):
     """Bulk update item prices - always creates a version due to criticality"""
     
@@ -512,7 +511,7 @@ async def bulk_update_prices(
 async def bulk_delete_menu_items(
     item_ids: List[int],
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: RBACUser = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Bulk soft-delete multiple menu items"""
     

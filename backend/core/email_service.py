@@ -9,8 +9,8 @@ import os
 import smtplib
 import logging
 from datetime import datetime
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText as MimeText
+from email.mime.multipart import MIMEMultipart as MimeMultipart
 from typing import Optional, Dict, Any
 from jinja2 import Template
 

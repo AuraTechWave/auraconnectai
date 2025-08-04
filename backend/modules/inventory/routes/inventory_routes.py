@@ -6,9 +6,9 @@ from typing import List, Optional
 from math import ceil
 from datetime import date, datetime
 
-from backend.core.database import get_db
-from backend.core.inventory_service import InventoryService
-from backend.core.inventory_schemas import (
+from core.database import get_db
+from core.inventory_service import InventoryService
+from core.inventory_schemas import (
     Inventory, InventoryCreate, InventoryUpdate, InventoryWithDetails,
     InventoryAlert, InventoryAlertCreate, InventoryAlertWithItem,
     InventoryAdjustment, InventoryAdjustmentCreate, InventoryAdjustmentWithItem,
@@ -19,8 +19,7 @@ from backend.core.inventory_schemas import (
     BulkAdjustmentRequest, BulkInventoryUpdate,
     AdjustmentType, AlertPriority, AlertStatus
 )
-from backend.core.rbac_auth import require_permission
-from backend.core.rbac_models import RBACUser
+from core.auth import require_permission, User
 
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
@@ -36,7 +35,7 @@ def get_inventory_service(db: Session = Depends(get_db)) -> InventoryService:
 async def create_inventory_item(
     item_data: InventoryCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:create"))
+    current_user: User = Depends(require_permission("inventory:create"))
 ):
     """Create a new inventory item"""
     return inventory_service.create_inventory_item(item_data.dict(), current_user.id)
@@ -51,10 +50,10 @@ async def get_inventory_items(
     active_only: Optional[bool] = Query(True, description="Show only active items"),
     limit: int = Query(50, ge=1, le=500, description="Items per page"),
     offset: int = Query(0, ge=0, description="Items to skip"),
-    sort_by: str = Query("item_name", regex=r'^(item_name|quantity|threshold|category|created_at)$'),
-    sort_order: str = Query("asc", regex=r'^(asc|desc)$'),
+    sort_by: str = Query("item_name", pattern=r'^(item_name|quantity|threshold|category|created_at)$'),
+    sort_order: str = Query("asc", pattern=r'^(asc|desc)$'),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory items with filtering and pagination"""
     items, total = inventory_service.get_inventory_items(
@@ -82,7 +81,7 @@ async def get_inventory_items(
 @router.get("/low-stock", response_model=List[Inventory])
 async def get_low_stock_items(
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get items that are below their reorder threshold"""
     return inventory_service.get_low_stock_items()
@@ -91,7 +90,7 @@ async def get_low_stock_items(
 @router.get("/dashboard", response_model=InventoryDashboardStats)
 async def get_dashboard_stats(
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory dashboard statistics"""
     return inventory_service.get_inventory_dashboard_stats()
@@ -101,7 +100,7 @@ async def get_dashboard_stats(
 async def get_inventory_item(
     inventory_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory item by ID with details"""
     item = inventory_service.get_inventory_by_id(inventory_id)
@@ -118,7 +117,7 @@ async def update_inventory_item(
     inventory_id: int,
     item_data: InventoryUpdate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Update inventory item"""
     return inventory_service.update_inventory_item(
@@ -132,7 +131,7 @@ async def update_inventory_item(
 async def delete_inventory_item(
     inventory_id: int,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:delete"))
+    current_user: User = Depends(require_permission("inventory:delete"))
 ):
     """Soft delete inventory item"""
     item = inventory_service.get_inventory_by_id(inventory_id)
@@ -152,7 +151,7 @@ async def adjust_inventory_quantity(
     inventory_id: int,
     adjustment_data: InventoryAdjustmentCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Adjust inventory quantity with audit trail"""
     return inventory_service.adjust_inventory_quantity(
@@ -174,7 +173,7 @@ async def get_inventory_adjustments(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get adjustment history for inventory item"""
     adjustments = inventory_service.db.query(inventory_service.db.query(
@@ -191,7 +190,7 @@ async def get_inventory_adjustments(
 async def bulk_adjust_inventory(
     bulk_request: BulkAdjustmentRequest,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Perform bulk inventory adjustments"""
     adjustments = []
@@ -227,7 +226,7 @@ async def get_inventory_alerts(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory alerts with filtering"""
     query = inventory_service.db.query(InventoryAlert).filter(
@@ -265,7 +264,7 @@ async def get_inventory_alerts(
 async def get_active_alerts(
     priority: Optional[AlertPriority] = Query(None, description="Filter by priority"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get active inventory alerts"""
     return inventory_service.get_active_alerts(priority)
@@ -276,7 +275,7 @@ async def acknowledge_alert(
     alert_id: int,
     notes: Optional[str] = Query(None, description="Acknowledgment notes"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Acknowledge an inventory alert"""
     return inventory_service.acknowledge_alert(alert_id, current_user.id, notes)
@@ -287,7 +286,7 @@ async def resolve_alert(
     alert_id: int,
     notes: Optional[str] = Query(None, description="Resolution notes"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Resolve an inventory alert"""
     return inventory_service.resolve_alert(alert_id, current_user.id, notes)
@@ -297,7 +296,7 @@ async def resolve_alert(
 async def check_all_alerts(
     background_tasks: BackgroundTasks,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Manually trigger alert checking for all inventory items"""
     def check_alerts_task():
@@ -315,7 +314,7 @@ async def record_inventory_usage(
     inventory_id: int,
     usage_data: InventoryUsageLogCreate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Record inventory usage"""
     return inventory_service.record_usage(
@@ -338,7 +337,7 @@ async def get_inventory_usage(
     limit: int = Query(50, ge=1, le=500),
     offset: int = Query(0, ge=0),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get usage history for inventory item"""
     query = inventory_service.db.query(InventoryUsageLog).filter(
@@ -359,7 +358,7 @@ async def get_inventory_analytics(
     start_date: Optional[date] = Query(None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(None, description="End date (YYYY-MM-DD)"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get analytics for inventory item"""
     return inventory_service.get_usage_analytics(
@@ -374,7 +373,7 @@ async def get_inventory_analytics(
 async def bulk_update_inventory(
     bulk_data: BulkInventoryUpdate,
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:update"))
+    current_user: User = Depends(require_permission("inventory:update"))
 ):
     """Bulk update inventory items"""
     updated_items = []
@@ -398,7 +397,7 @@ async def bulk_update_inventory(
 @router.get("/categories/", response_model=List[str])
 async def get_inventory_categories(
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get list of inventory categories"""
     categories = inventory_service.db.query(
@@ -418,7 +417,7 @@ async def get_low_stock_report(
     category: Optional[str] = Query(None, description="Filter by category"),
     vendor_id: Optional[int] = Query(None, description="Filter by vendor"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get detailed low stock report"""
     items = inventory_service.get_low_stock_items()
@@ -437,7 +436,7 @@ async def get_usage_summary_report(
     end_date: Optional[date] = Query(None, description="End date"),
     category: Optional[str] = Query(None, description="Filter by category"),
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get usage summary report"""
     query = inventory_service.db.query(InventoryUsageLog)
@@ -477,7 +476,7 @@ async def get_usage_summary_report(
 @router.get("/health")
 async def inventory_health_check(
     inventory_service: InventoryService = Depends(get_inventory_service),
-    current_user: RBACUser = Depends(require_permission("inventory:read"))
+    current_user: User = Depends(require_permission("inventory:read"))
 ):
     """Get inventory system health status"""
     stats = inventory_service.get_inventory_dashboard_stats()

@@ -64,8 +64,8 @@ class MenuItemBase(BaseModel):
     sku: Optional[str] = Field(None, max_length=50)
     is_active: bool = True
     is_available: bool = True
-    availability_start_time: Optional[str] = Field(None, regex=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
-    availability_end_time: Optional[str] = Field(None, regex=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
+    availability_start_time: Optional[str] = Field(None, pattern=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
+    availability_end_time: Optional[str] = Field(None, pattern=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
     calories: Optional[int] = Field(None, ge=0)
     allergens: Optional[List[str]] = []
     dietary_tags: Optional[List[str]] = []
@@ -88,8 +88,8 @@ class MenuItemUpdate(BaseModel):
     sku: Optional[str] = Field(None, max_length=50)
     is_active: Optional[bool] = None
     is_available: Optional[bool] = None
-    availability_start_time: Optional[str] = Field(None, regex=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
-    availability_end_time: Optional[str] = Field(None, regex=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
+    availability_start_time: Optional[str] = Field(None, pattern=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
+    availability_end_time: Optional[str] = Field(None, pattern=r'^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$')
     calories: Optional[int] = Field(None, ge=0)
     allergens: Optional[List[str]] = None
     dietary_tags: Optional[List[str]] = None
@@ -347,8 +347,8 @@ class MenuSearchParams(BaseModel):
     allergens: Optional[List[str]] = None
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
-    sort_by: Optional[str] = Field(default="display_order", regex=r'^(name|price|created_at|display_order)$')
-    sort_order: Optional[str] = Field(default="asc", regex=r'^(asc|desc)$')
+    sort_by: Optional[str] = Field(default="display_order", pattern=r'^(name|price|created_at|display_order)$')
+    sort_order: Optional[str] = Field(default="asc", pattern=r'^(asc|desc)$')
 
 
 class InventorySearchParams(BaseModel):
@@ -358,8 +358,8 @@ class InventorySearchParams(BaseModel):
     vendor_id: Optional[int] = None
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
-    sort_by: Optional[str] = Field(default="item_name", regex=r'^(item_name|quantity|threshold|created_at)$')
-    sort_order: Optional[str] = Field(default="asc", regex=r'^(asc|desc)$')
+    sort_by: Optional[str] = Field(default="item_name", pattern=r'^(item_name|quantity|threshold|created_at)$')
+    sort_order: Optional[str] = Field(default="asc", pattern=r'^(asc|desc)$')
 
 
 # Response schemas

@@ -10,8 +10,8 @@ import time
 import logging
 from datetime import datetime, timedelta
 
-from backend.core.database import get_db
-from backend.modules.promotions.services.cache_service import cache_service
+from core.database import get_db
+from modules.promotions.services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer()
@@ -266,7 +266,7 @@ def validate_promotion_access(
     current_user = None  # Would depend on your auth system
 ):
     """Validate user has access to promotion"""
-    from backend.modules.promotions.models.promotion_models import Promotion
+    from modules.promotions.models.promotion_models import Promotion
     
     promotion = db.query(Promotion).filter(Promotion.id == promotion_id).first()
     if not promotion:

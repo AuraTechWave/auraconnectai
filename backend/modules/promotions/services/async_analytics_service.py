@@ -12,8 +12,8 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-from backend.core.config import settings
-from backend.modules.promotions.services.cache_service import cache_service
+from core.config import settings
+from modules.promotions.services.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 

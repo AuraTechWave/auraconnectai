@@ -6,9 +6,9 @@ from typing import List, Optional
 from datetime import datetime
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.rbac_models import RBACUser
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
 from ..models.customer_models import Customer
 from ..schemas.customer_schemas import (
     Customer as CustomerSchema,
@@ -37,7 +37,7 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 
 
 # Helper function to check permissions
-def check_customer_permission(user: RBACUser, action: str, tenant_id: Optional[int] = None, resource_id: Optional[int] = None):
+def check_customer_permission(user: User, action: str, tenant_id: Optional[int] = None, resource_id: Optional[int] = None):
     """Check if user has customer-related permissions with tenant and resource scope"""
     # Get user's active tenant if not specified
     if tenant_id is None:
@@ -68,7 +68,7 @@ def check_customer_permission(user: RBACUser, action: str, tenant_id: Optional[i
 async def create_customer(
     customer_data: CustomerCreate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new customer"""
     check_customer_permission(current_user, "write")
@@ -88,7 +88,7 @@ async def create_customer(
 async def get_customer(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get customer by ID"""
     check_customer_permission(current_user, "read")
@@ -106,7 +106,7 @@ async def get_customer(
 async def get_customer_profile(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get complete customer profile with related data"""
     check_customer_permission(current_user, "read")
@@ -137,7 +137,7 @@ async def update_customer(
     customer_id: int,
     update_data: CustomerUpdate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Update customer information"""
     check_customer_permission(current_user, "write")
@@ -158,7 +158,7 @@ async def update_customer_status(
     customer_id: int,
     status_update: CustomerStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Update customer status"""
     check_customer_permission(current_user, "write")
@@ -179,7 +179,7 @@ async def update_customer_tier(
     customer_id: int,
     tier_update: CustomerTierUpdate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Update customer loyalty tier"""
     check_customer_permission(current_user, "write")
@@ -215,10 +215,10 @@ async def search_customers(
     tags: Optional[List[str]] = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    sort_by: str = Query("created_at", regex="^(created_at|updated_at|last_order_date|total_spent|total_orders)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_by: str = Query("created_at", pattern="^(created_at|updated_at|last_order_date|total_spent|total_orders)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Search and filter customers"""
     check_customer_permission(current_user, "read")
@@ -269,7 +269,7 @@ async def search_customers(
 async def get_customer_analytics(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get customer analytics and insights"""
     check_customer_permission(current_user, "read")
@@ -291,7 +291,7 @@ async def add_customer_address(
     customer_id: int,
     address_data: CustomerAddressCreate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Add a new address for customer"""
     check_customer_permission(current_user, "write")
@@ -312,7 +312,7 @@ async def update_customer_address(
     address_id: int,
     update_data: CustomerAddressUpdate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Update customer address"""
     check_customer_permission(current_user, "write")
@@ -332,7 +332,7 @@ async def update_customer_address(
 async def delete_customer_address(
     address_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Delete customer address"""
     check_customer_permission(current_user, "write")
@@ -354,7 +354,7 @@ async def set_customer_preference(
     customer_id: int,
     preference_data: CustomerPreferenceCreate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Set or update customer preference"""
     check_customer_permission(current_user, "write")
@@ -375,7 +375,7 @@ async def get_customer_preferences(
     customer_id: int,
     category: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get customer preferences"""
     check_customer_permission(current_user, "read")
@@ -396,7 +396,7 @@ async def add_loyalty_points(
     points: int,
     reason: str,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Add loyalty points to customer"""
     check_customer_permission(current_user, "write")
@@ -418,7 +418,7 @@ async def redeem_loyalty_points(
     points: int,
     reward_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Redeem loyalty points"""
     check_customer_permission(current_user, "write")
@@ -444,7 +444,7 @@ async def get_customer_orders(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get customer's order history"""
     check_customer_permission(current_user, "read")
@@ -484,7 +484,7 @@ async def get_customer_favorite_items(
     limit: int = Query(10, ge=1, le=50),
     min_orders: int = Query(2, ge=1),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get customer's favorite menu items"""
     check_customer_permission(current_user, "read")

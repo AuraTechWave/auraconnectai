@@ -8,11 +8,11 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 from sqlalchemy import text, func, and_
 
-from backend.core.database import get_db
+from core.database import get_db
 from ..models.analytics_models import (
     SalesAnalyticsSnapshot, SalesMetric, AlertRule, AggregationPeriod
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
+from modules.orders.models.order_models import Order, OrderItem
 
 logger = logging.getLogger(__name__)
 

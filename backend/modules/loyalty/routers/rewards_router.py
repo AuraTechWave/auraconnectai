@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.core.rbac_models import RBACUser
-from backend.core.rate_limiting import rate_limit
-from backend.core.enhanced_rbac import (
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
+from core.rate_limiting import rate_limit
+from core.enhanced_rbac import (
     require_permission, ResourceType, ActionType, CommonPerms,
     require_any_permission, owner_or_permission
 )
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/loyalty/rewards", tags=["loyalty-rewards"])
 
 
 # Legacy permission check function (deprecated - use decorators instead)
-def check_rewards_permission(user: RBACUser, action: str, tenant_id: Optional[int] = None):
+def check_rewards_permission(user: User, action: str, tenant_id: Optional[int] = None):
     """Check if user has rewards-related permissions (DEPRECATED)"""
     if tenant_id is None:
         tenant_id = user.default_tenant_id
@@ -51,7 +51,7 @@ def check_rewards_permission(user: RBACUser, action: str, tenant_id: Optional[in
 async def create_reward_template(
     template_data: RewardTemplateCreate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Create a new reward template"""
     
@@ -74,7 +74,7 @@ async def list_reward_templates(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """List reward templates"""
     
@@ -99,7 +99,7 @@ async def list_reward_templates(
 async def get_reward_template(
     template_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get a specific reward template"""
     check_rewards_permission(current_user, "read")
@@ -116,7 +116,7 @@ async def update_reward_template(
     template_id: int,
     update_data: RewardTemplateUpdate,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Update a reward template"""
     check_rewards_permission(current_user, "write")
@@ -141,7 +141,7 @@ async def update_reward_template(
 async def delete_reward_template(
     template_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Deactivate a reward template"""
     check_rewards_permission(current_user, "write")
@@ -164,7 +164,7 @@ async def get_customer_rewards(
     status: Optional[str] = Query(None),
     valid_only: bool = Query(True),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get all rewards for a customer"""
     check_rewards_permission(current_user, "read")
@@ -218,7 +218,7 @@ async def search_rewards(
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Search rewards with advanced filtering"""
     check_rewards_permission(current_user, "read")
@@ -297,7 +297,7 @@ async def search_rewards(
 async def redeem_reward(
     redemption_request: RewardRedemptionRequest,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Redeem a reward against an order"""
     check_rewards_permission(current_user, "redeem")
@@ -322,7 +322,7 @@ async def redeem_reward(
 async def issue_reward_manually(
     issuance_data: ManualRewardIssuance,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Manually issue a reward to a customer"""
     check_rewards_permission(current_user, "issue")
@@ -350,7 +350,7 @@ async def issue_rewards_bulk(
     bulk_issuance: BulkRewardIssuance,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Issue rewards to multiple customers"""
     check_rewards_permission(current_user, "issue")
@@ -406,7 +406,7 @@ async def issue_rewards_bulk(
 async def process_order_completion(
     order_data: OrderCompletionReward,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Process rewards and points for order completion"""
     check_rewards_permission(current_user, "process")
@@ -429,7 +429,7 @@ async def get_template_analytics(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get analytics for a specific reward template"""
     check_rewards_permission(current_user, "read")
@@ -459,12 +459,12 @@ async def get_template_analytics(
 async def get_customer_loyalty_stats(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Get loyalty statistics for a customer"""
     check_rewards_permission(current_user, "read")
     
-    from backend.modules.customers.models.customer_models import Customer
+    from modules.customers.models.customer_models import Customer
     
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
@@ -528,7 +528,7 @@ async def get_customer_loyalty_stats(
 @router.post("/maintenance/expire-rewards")
 async def expire_old_rewards(
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Expire rewards that have passed their expiration date"""
     check_rewards_permission(current_user, "admin")
@@ -548,7 +548,7 @@ async def expire_old_rewards(
 async def run_automated_campaigns(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: RBACUser = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Run automated reward campaigns"""
     check_rewards_permission(current_user, "admin")

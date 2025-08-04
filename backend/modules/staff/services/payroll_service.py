@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
-from backend.modules.staff.models.payroll_models import Payroll
-from backend.modules.staff.services.payroll_engine import PayrollEngine
-from backend.modules.staff.services.payslip_service import PayslipService
-from backend.modules.staff.schemas.payroll_schemas import PayrollResponse
+from modules.staff.models.payroll_models import Payroll
+from modules.staff.services.payroll_engine import PayrollEngine
+from modules.staff.services.payslip_service import PayslipService
+from modules.staff.schemas.payroll_schemas import PayrollResponse
 from datetime import datetime
 
 

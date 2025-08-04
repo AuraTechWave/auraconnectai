@@ -9,7 +9,7 @@ Implements scheduled and on-demand sync tasks using APScheduler.
 import logging
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, Any
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -17,10 +17,10 @@ from sqlalchemy.orm import Session
 import sqlalchemy.exc
 import httpx
 
-from backend.core.database import get_db
-from backend.modules.orders.services.sync_service import OrderSyncService
-from backend.modules.orders.models.sync_models import SyncConfiguration
-from backend.core.config import settings
+from core.database import get_db
+from modules.orders.services.sync_service import OrderSyncService
+from modules.orders.models.sync_models import SyncConfiguration
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class OrderSyncScheduler:
             cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
             
             # Delete old sync logs
-            from backend.modules.orders.models.sync_models import SyncLog, SyncBatch
+            from modules.orders.models.sync_models import SyncLog, SyncBatch
             
             deleted_logs = db.query(SyncLog).filter(
                 SyncLog.started_at < cutoff_date

@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 from decimal import Decimal
 import logging
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.payment_reconciliation_controller import (
     create_reconciliation, get_reconciliation_by_id, update_reconciliation,
     list_reconciliations, reconcile_payments, resolve_discrepancy,

@@ -11,16 +11,17 @@ from typing import List, Optional, Dict, Any
 from datetime import date
 from decimal import Decimal
 import logging
+import time
 from sqlalchemy.orm import Session
 
 from ..schemas.batch_processing_schemas import (
     EmployeePayrollResult,
     CalculationOptions
 )
-from .payroll_service import PayrollService
-from ....staff.models.staff import Staff
-from ....staff.models.timesheet import Timesheet
-from ..models.employee_payment import EmployeePayment
+# from .payroll_service import PayrollService  # TODO: Fix this import
+from modules.staff.models.staff_models import StaffMember as Staff
+# from ....staff.models.timesheet import Timesheet  # TODO: Fix this import
+from ..models.payroll_models import EmployeePayment
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class BatchPayrollService:
             db: Database session
         """
         self.db = db
-        self.payroll_service = PayrollService(db)
+        # self.payroll_service = PayrollService(db)  # TODO: Fix this when PayrollService is available
     
     async def process_batch(
         self,
@@ -124,30 +125,17 @@ class BatchPayrollService:
                         processing_time=time.time() - start_time
                     )
             
-            # Calculate payroll
-            payment = await self.payroll_service.calculate_employee_payroll(
-                employee_id=employee.id,
-                pay_period_start=pay_period_start,
-                pay_period_end=pay_period_end,
-                include_bonuses=options.include_bonuses,
-                include_commissions=options.include_commissions,
-                include_overtime=options.include_overtime,
-                include_deductions=options.include_deductions
-            )
-            
-            # Save payment record
-            self.db.add(payment)
-            self.db.commit()
-            
+            # TODO: Implement payroll calculation when PayrollService is available
+            # For now, return a placeholder result
             return EmployeePayrollResult(
                 employee_id=employee.id,
                 employee_name=f"{employee.first_name} {employee.last_name}",
-                success=True,
-                gross_amount=payment.gross_amount,
-                net_amount=payment.net_amount,
-                total_deductions=payment.total_deductions,
-                payment_id=payment.id,
-                error_message=None,
+                success=False,
+                gross_amount=Decimal('0'),
+                net_amount=Decimal('0'),
+                total_deductions=Decimal('0'),
+                payment_id=None,
+                error_message="PayrollService not implemented yet",
                 processing_time=time.time() - start_time
             )
             

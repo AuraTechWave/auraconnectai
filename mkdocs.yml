@@ -56,15 +56,20 @@ nav:
   - Getting Started:
     - guides/getting-started.md
     - Developer Personas: guides/developer-personas.md
+    - Customer Web App: guides/customer-web-app.md
       
   - Core Modules:
     - modules/README.md
     - Restaurant Operations:
       - Orders: modules/orders/README.md
       - Menu: modules/menu/README.md
+      - Table Management: modules/table-management/README.md
+      - Recipe Management: modules/recipe-management/README.md
     - Staff & Finance:
       - Staff Management: modules/staff/README.md
       - Payroll Production Checklist: modules/payroll/production-checklist.md
+      - Payments: modules/payments/README.md
+      - Pricing Rules: modules/pricing-rules/README.md
       
   - Architecture:
     - architecture/README.md

@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from backend.modules.orders.controllers.order_controller import (
+from modules.orders.controllers.order_controller import (
     update_order, get_order_by_id, list_orders
 )
-from backend.modules.orders.schemas.order_schemas import OrderUpdate, OrderOut
-from backend.modules.orders.enums.order_enums import OrderStatus
+from modules.orders.schemas.order_schemas import OrderUpdate, OrderOut
+from modules.orders.enums.order_enums import OrderStatus
 from datetime import datetime
 
 

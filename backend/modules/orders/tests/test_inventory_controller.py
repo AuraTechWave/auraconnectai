@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from backend.modules.orders.controllers.inventory_controller import (
+from modules.orders.controllers.inventory_controller import (
     get_inventory_by_id, check_low_stock, list_inventory,
     update_inventory
 )
-from backend.modules.orders.schemas.inventory_schemas import (
+from modules.orders.schemas.inventory_schemas import (
     InventoryOut, InventoryUpdate
 )
 from datetime import datetime

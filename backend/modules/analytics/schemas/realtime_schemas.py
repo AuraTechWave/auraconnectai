@@ -1,7 +1,7 @@
 # backend/modules/analytics/schemas/realtime_schemas.py
 
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Any, Union
+from typing import Optional, List, Dict, Any, Union, Literal
 from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
@@ -221,7 +221,7 @@ class WebSocketMessage(BaseModel):
 
 class SubscriptionMessage(BaseModel):
     """WebSocket subscription message"""
-    type: str = Field("subscribe", const=True)
+    type: Literal["subscribe"] = "subscribe"
     data: Dict[str, Any] = Field(
         ..., 
         description="Subscription data including subscription_type and parameters"
@@ -241,7 +241,7 @@ class SubscriptionMessage(BaseModel):
 
 class UnsubscriptionMessage(BaseModel):
     """WebSocket unsubscription message"""
-    type: str = Field("unsubscribe", const=True)
+    type: Literal["unsubscribe"] = "unsubscribe"
     data: Dict[str, Any] = Field(
         ...,
         description="Unsubscription data including subscription_type"
@@ -250,13 +250,13 @@ class UnsubscriptionMessage(BaseModel):
 
 class HeartbeatMessage(BaseModel):
     """WebSocket heartbeat message"""
-    type: str = Field("heartbeat", const=True)
+    type: Literal["heartbeat"] = "heartbeat"
     data: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ErrorMessage(BaseModel):
     """WebSocket error message"""
-    type: str = Field("error", const=True)
+    type: Literal["error"] = "error"
     data: Dict[str, str] = Field(..., description="Error information")
     
     @validator('data')

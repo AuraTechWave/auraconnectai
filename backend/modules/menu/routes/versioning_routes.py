@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from backend.core.database import get_db
-from backend.core.menu_versioning_service import MenuVersioningService
-from backend.core.menu_versioning_schemas import (
+from core.database import get_db
+from core.menu_versioning_service import MenuVersioningService
+from core.menu_versioning_schemas import (
     MenuVersion, MenuVersionWithDetails, CreateVersionRequest, 
     PublishVersionRequest, RollbackVersionRequest, VersionComparisonRequest,
     MenuVersionComparison, PaginatedMenuVersions, PaginatedAuditLogs,
@@ -15,8 +15,7 @@ from backend.core.menu_versioning_schemas import (
     VersionImportRequest, MenuVersionScheduleCreate, MenuVersionSchedule,
     VersionType, ChangeType
 )
-from backend.modules.auth.utils.dependencies import get_current_user, require_permission
-from backend.modules.auth.models.auth_models import User
+from core.auth import get_current_user, require_permission, User
 
 router = APIRouter(prefix="/menu/versions", tags=["Menu Versioning"])
 
@@ -174,7 +173,7 @@ async def get_version_stats(
 ):
     """Get statistics about menu versions"""
     from sqlalchemy import func, desc
-    from backend.core.menu_versioning_models import MenuVersion, MenuAuditLog
+    from core.menu_versioning_models import MenuVersion, MenuAuditLog
     
     # Get basic counts
     total_versions = db.query(MenuVersion).filter(MenuVersion.deleted_at == None).count()

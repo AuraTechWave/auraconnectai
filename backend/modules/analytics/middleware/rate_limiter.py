@@ -16,8 +16,8 @@ import asyncio
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
-from backend.modules.analytics.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
-from backend.modules.analytics.exceptions import RateLimitError
+from modules.analytics.constants import RATE_LIMIT_REQUESTS_PER_MINUTE
+from modules.analytics.exceptions import RateLimitError
 
 logger = logging.getLogger(__name__)
 

@@ -5,16 +5,16 @@ from unittest.mock import Mock, patch
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from backend.core.menu_versioning_service import MenuVersioningService
-from backend.core.menu_versioning_models import (
+from core.menu_versioning_service import MenuVersioningService
+from core.menu_versioning_models import (
     MenuVersion, MenuCategoryVersion, MenuItemVersion, 
     ModifierGroupVersion, MenuAuditLog, VersionType, ChangeType
 )
-from backend.core.menu_versioning_schemas import (
+from core.menu_versioning_schemas import (
     CreateVersionRequest, PublishVersionRequest, RollbackVersionRequest,
     VersionComparisonRequest
 )
-from backend.core.menu_models import MenuCategory, MenuItem, ModifierGroup
+from core.menu_models import MenuCategory, MenuItem, ModifierGroup
 
 
 class TestMenuVersioningService:
@@ -340,7 +340,7 @@ class TestMenuVersioningServiceIntegration:
         """Test bulk change validation"""
         service = MenuVersioningService(mock_db)
         
-        from backend.core.menu_versioning_schemas import BulkChangeRequest
+        from core.menu_versioning_schemas import BulkChangeRequest
         
         request = BulkChangeRequest(
             entity_type="invalid_type",

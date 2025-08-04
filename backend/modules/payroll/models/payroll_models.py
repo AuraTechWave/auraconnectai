@@ -3,9 +3,9 @@ from sqlalchemy import (
     Boolean, Text, Enum, UniqueConstraint, Index
 )
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
-from backend.modules.payroll.enums import (
+from core.database import Base
+from core.mixins import TimestampMixin
+from modules.payroll.enums import (
     PaymentStatus, PayFrequency, TaxType, PaymentMethod
 )
 

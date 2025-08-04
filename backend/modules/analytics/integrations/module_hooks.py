@@ -437,7 +437,7 @@ def force_dashboard_refresh_sync():
 Example usage from other modules:
 
 # In orders module, when an order is completed:
-from backend.modules.analytics.integrations.module_hooks import order_completed_sync
+from modules.analytics.integrations.module_hooks import order_completed_sync
 
 def complete_order(order):
     # ... order completion logic ...
@@ -452,7 +452,7 @@ def complete_order(order):
     )
 
 # In staff module, when staff performs an action:
-from backend.modules.analytics.integrations.module_hooks import staff_action_sync
+from modules.analytics.integrations.module_hooks import staff_action_sync
 
 def process_order(staff_id, order_id):
     # ... processing logic ...
@@ -465,7 +465,7 @@ def process_order(staff_id, order_id):
     )
 
 # In any module, to trigger a system event:
-from backend.modules.analytics.integrations.module_hooks import system_event_hook
+from modules.analytics.integrations.module_hooks import system_event_hook
 
 async def handle_critical_error():
     await system_event_hook(
@@ -476,7 +476,7 @@ async def handle_critical_error():
     )
 
 # To check analytics system health:
-from backend.modules.analytics.integrations.module_hooks import get_analytics_status
+from modules.analytics.integrations.module_hooks import get_analytics_status
 
 def health_check():
     analytics_status = get_analytics_status()

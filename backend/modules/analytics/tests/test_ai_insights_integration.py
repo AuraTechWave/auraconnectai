@@ -6,11 +6,11 @@ from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.core.database import Base
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.modules.customers.models.customer_models import Customer
-from backend.modules.menu.models.menu_models import Product, Category
+from core.database import Base
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
+from modules.customers.models.customer_models import Customer
+from modules.menu.models.menu_models import Product, Category
 
 from ..services.ai_insights_service import AIInsightsService
 from ..schemas.ai_insights_schemas import (

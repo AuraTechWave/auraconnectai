@@ -17,14 +17,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 import httpx
 
-from backend.core.database import get_db
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.models.sync_models import (
+from core.database import get_db
+from modules.orders.models.order_models import Order, OrderItem
+from modules.orders.models.sync_models import (
     OrderSyncStatus, SyncStatus, SyncDirection,
     SyncBatch, SyncLog, SyncConfiguration, SyncConflict
 )
-from backend.modules.orders.schemas.order_schemas import OrderCreate, OrderUpdate
-from backend.core.config import settings
+from modules.orders.schemas.order_schemas import OrderCreate, OrderUpdate
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

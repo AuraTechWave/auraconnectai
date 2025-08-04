@@ -13,9 +13,9 @@ from ..models.rewards_models import (
     RewardTemplate, CustomerReward, RewardCampaign, RewardRedemption,
     LoyaltyPointsTransaction, RewardType, RewardStatus, TriggerType
 )
-from backend.modules.customers.models.customer_models import Customer, CustomerTier
-from backend.modules.orders.models.order_models import Order
-from backend.modules.customers.models.loyalty_config import LoyaltyService
+from modules.customers.models.customer_models import Customer, CustomerTier
+from modules.orders.models.order_models import Order
+from modules.customers.models.loyalty_config import LoyaltyService
 
 
 logger = logging.getLogger(__name__)
@@ -405,7 +405,7 @@ class RewardsEngine:
         self.db.add(transaction)
         
         # Check tier upgrade
-        from backend.modules.customers.services.customer_service import CustomerService
+        from modules.customers.services.customer_service import CustomerService
         customer_service = CustomerService(self.db)
         customer_service._check_tier_upgrade(customer)
     

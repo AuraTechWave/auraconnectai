@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import logging
 
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.menu.models import MenuItem
+from modules.orders.models.order_models import Order, OrderItem
+from core.menu_models import MenuItem
 from ..models.customer_models import Customer
 from ..schemas.customer_schemas import OrderSummary, MenuItemSummary
 

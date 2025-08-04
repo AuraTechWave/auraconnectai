@@ -8,7 +8,7 @@ import hashlib
 import logging
 from functools import wraps
 
-from backend.core.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +350,7 @@ class PromotionCacheService:
         
         try:
             # Warm up active promotions
-            from backend.modules.promotions.services.promotion_service import PromotionService
+            from modules.promotions.services.promotion_service import PromotionService
             promotion_service = PromotionService(db_session)
             
             active_promotions = promotion_service.get_active_promotions()

@@ -5,16 +5,15 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 import uuid
 
-from backend.modules.feedback.services.review_service import ReviewService
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.services.review_service import ReviewService
+from modules.feedback.models.feedback_models import (
     Review, ReviewVote, BusinessResponse, ReviewMedia, ReviewStatus,
     ReviewType, SentimentScore, ReviewSource
 )
-from backend.modules.feedback.schemas.feedback_schemas import (
+from modules.feedback.schemas.feedback_schemas import (
     ReviewCreate, ReviewUpdate, ReviewModeration, ReviewVoteCreate,
     BusinessResponseCreate, ReviewMediaCreate, ReviewFilters
 )
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 
 class TestReviewService:
@@ -47,7 +46,7 @@ class TestReviewService:
         # Try to create another review for the same product by the same customer
         review_create = ReviewCreate(**sample_review_data)
         
-        with pytest.raises(ValidationError, match="already reviewed"):
+        with pytest.raises(ValueError, match="already reviewed"):
             review_service.create_review(review_create)
     
     def test_get_review_success(self, review_service: ReviewService, sample_review):
@@ -61,7 +60,7 @@ class TestReviewService:
     
     def test_get_review_not_found(self, review_service: ReviewService):
         """Test review retrieval with invalid ID"""
-        with pytest.raises(NotFoundError):
+        with pytest.raises(KeyError):
             review_service.get_review(99999)
     
     def test_get_review_by_uuid(self, review_service: ReviewService, sample_review):
@@ -211,7 +210,7 @@ class TestReviewService:
             responder_name="Staff"
         )
         
-        with pytest.raises(ValidationError, match="already exists"):
+        with pytest.raises(ValueError, match="already exists"):
             review_service.add_business_response(sample_review.id, response_data)
     
     def test_add_review_media_success(self, review_service: ReviewService, sample_review):
@@ -388,7 +387,7 @@ class TestReviewService:
         review_create = ReviewCreate(**invalid_data)
         
         # Should raise validation error during schema validation
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             ReviewCreate(**invalid_data)
     
     def test_review_rating_validation(self, review_service: ReviewService, sample_review_data):
@@ -497,7 +496,7 @@ class TestReviewServiceEdgeCases:
         assert result1.id is not None
         
         # Attempt to create duplicate should fail
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValueError):
             review_service.create_review(review_create)
     
     def test_large_content_handling(self, review_service: ReviewService, sample_review_data):

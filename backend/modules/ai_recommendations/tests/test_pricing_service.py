@@ -6,8 +6,8 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.orm import Session
 
-from backend.core.menu_models import MenuItem, MenuCategory
-from backend.modules.orders.models.order_models import Order, OrderItem
+from core.menu_models import MenuItem, MenuCategory
+from modules.orders.models.order_models import Order, OrderItem
 
 from ..schemas.pricing_schemas import (
     BulkPricingRequest, PricingStrategy, PriceOptimizationGoal,

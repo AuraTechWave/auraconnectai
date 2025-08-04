@@ -2,8 +2,8 @@ from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Text, Boolean, Enum)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from ..enums.webhook_enums import (WebhookEventType, WebhookStatus,
                                    WebhookDeliveryStatus)
 

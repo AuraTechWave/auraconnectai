@@ -6,8 +6,8 @@ from datetime import datetime
 import logging
 
 from .rewards_engine import RewardsEngine
-from backend.modules.orders.models.order_models import Order
-from backend.modules.customers.models.customer_models import Customer
+from modules.orders.models.order_models import Order
+from modules.customers.models.customer_models import Customer
 
 
 logger = logging.getLogger(__name__)

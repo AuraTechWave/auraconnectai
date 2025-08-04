@@ -6,12 +6,12 @@ Overtime rules management endpoints.
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 
-from ....core.database import get_db
-from ....core.auth import require_payroll_write, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_write, get_current_user, User
 from ..services.payroll_configuration_service import PayrollConfigurationService
 from ..models.payroll_configuration import OvertimeRule
 from ..schemas.payroll_schemas import OvertimeRuleResponse, OvertimeRuleCreate

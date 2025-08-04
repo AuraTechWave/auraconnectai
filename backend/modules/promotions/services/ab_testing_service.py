@@ -13,7 +13,7 @@ from ..models.promotion_models import (
 )
 from ..schemas.promotion_schemas import PromotionCreate
 from ..services.promotion_service import PromotionService
-from backend.modules.customers.models.customer_models import Customer
+from modules.customers.models.customer_models import Customer
 
 logger = logging.getLogger(__name__)
 

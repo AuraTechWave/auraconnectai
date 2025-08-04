@@ -9,9 +9,9 @@ from ..adapters.adapter_factory import AdapterFactory
 from ..enums.pos_enums import POSVendor, POSSyncStatus, POSSyncType
 from ..schemas.pos_schemas import SyncResponse, POSOrderTransformResult
 from ...orders.models.order_models import Order, OrderItem
-from backend.modules.settings.models.pos_sync_models import POSSyncSetting
+from modules.settings.models.pos_sync_models import POSSyncSetting
 from ...orders.enums.order_enums import OrderStatus
-from ...orders.models.inventory_models import MenuItemInventory
+from core.menu_models import MenuItemInventory
 
 logger = logging.getLogger(__name__)
 

@@ -10,8 +10,8 @@ from sqlalchemy.orm import Session
 import secrets
 import logging
 
-from backend.core.database import get_db
-from backend.core.config import settings
+from core.database import get_db
+from core.config import settings
 from ..models.customer_models import Customer
 from ..services.customer_service import CustomerService
 

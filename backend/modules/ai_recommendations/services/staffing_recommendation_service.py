@@ -9,13 +9,13 @@ from collections import defaultdict
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc, case
 
-from backend.core.cache import cache_service
-from backend.modules.analytics.utils.performance_monitor import PerformanceMonitor
-from backend.modules.analytics.services.ai_insights_service import AIInsightsService
-from backend.modules.orders.models.order_models import Order
-from backend.modules.staff.models.staff_models import StaffMember, Role
-from backend.modules.staff.models.shift_models import Shift
-from backend.modules.analytics.schemas.ai_insights_schemas import InsightRequest, InsightType
+from core.cache import cache_service
+from modules.analytics.utils.performance_monitor import PerformanceMonitor
+from modules.analytics.services.ai_insights_service import AIInsightsService
+from modules.orders.models.order_models import Order
+from modules.staff.models.staff_models import StaffMember, Role
+from modules.staff.models.shift_models import Shift
+from modules.analytics.schemas.ai_insights_schemas import InsightRequest, InsightType
 
 from ..schemas.staffing_schemas import (
     StaffRole, ShiftType, DayOfWeek, StaffingLevel, DemandForecast,

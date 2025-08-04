@@ -18,7 +18,7 @@ from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 
 from ....app.main import app
-from ....core.database import get_db
+from core.database import get_db
 from ..models.payroll_models import TaxRule, EmployeePayment
 from ..enums.payroll_enums import TaxRuleType, TaxRuleStatus, PaymentStatus
 

@@ -282,10 +282,19 @@ graph TD
 
 ## Scheduling System
 
+### Advanced Scheduling Features
+
+- **AI-Powered Optimization**: Automatically generate optimal schedules
+- **Skill-Based Assignment**: Match staff skills to shift requirements
+- **Availability Management**: Track and respect employee preferences
+- **Labor Cost Forecasting**: Predict costs based on schedules
+- **Shift Swapping**: Employee-initiated swap requests with approval
+- **Template Scheduling**: Reusable schedule patterns
+
 ### Schedule Generation Algorithm
 
 ```python
-# Scheduling constraints
+# Enhanced scheduling constraints
 constraints = {
     "min_staff": {
         "monday": {"09:00": 3, "12:00": 5, "18:00": 7},
@@ -297,14 +306,24 @@ constraints = {
     "required_skills": {
         "kitchen": ["food_handler_cert"],
         "bar": ["alcohol_service_cert"]
+    },
+    "preferences": {
+        "respect_availability": True,
+        "balance_hours": True,
+        "minimize_overtime": True
+    },
+    "labor_budget": {
+        "target_percentage": 28.0,
+        "max_percentage": 32.0
     }
 }
 
-# Generate optimal schedule
+# Generate optimal schedule with AI assistance
 schedule = schedule_engine.generate(
     location_id=1,
     week_start=date(2024, 1, 22),
-    constraints=constraints
+    constraints=constraints,
+    optimization_goals=["cost", "coverage", "satisfaction"]
 )
 ```
 
@@ -338,7 +357,7 @@ schedule = schedule_engine.generate(
 1. **Web Portal**: Browser-based clock in/out
 2. **Mobile App**: GPS-verified mobile clocking
 3. **Kiosk**: Shared terminal with PIN/badge
-4. **Biometric**: Fingerprint or facial recognition
+4. **Biometric**: Fingerprint or facial recognition (Face ID supported)
 
 ### Geofencing
 
@@ -357,22 +376,76 @@ geofence_config = {
 }
 ```
 
+## Biometric Authentication
+
+### Supported Methods
+
+1. **Fingerprint Recognition**
+   - Secure SHA-256 hashing with salt
+   - Template-based matching
+   - Multi-finger enrollment support
+
+2. **Face ID**
+   - 3D facial recognition
+   - Liveness detection
+   - Works in various lighting conditions
+
+3. **PIN Backup**
+   - 4-6 digit PIN as fallback
+   - Rate-limited (5 attempts per minute)
+   - Automatic lockout protection
+
+### Security Features
+
+```python
+# Biometric data security
+biometric_security = {
+    "encryption": "SHA-256 with salt",
+    "hash_rounds": 10000,
+    "storage": "Hashed templates only",
+    "gdpr_compliant": True,
+    "retention_days": 90,
+    "audit_logging": True
+}
+```
+
+### GDPR Compliance
+
+- Right to deletion
+- Data export capability
+- Consent management
+- Retention policies
+- Audit trail
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/staff/biometric/enroll/fingerprint` | POST | Enroll fingerprint |
+| `/api/v1/staff/biometric/enroll/face` | POST | Enroll Face ID |
+| `/api/v1/staff/biometric/check-in` | POST | Biometric clock in |
+| `/api/v1/staff/biometric/pin/set` | POST | Set backup PIN |
+| `/api/v1/staff/biometric/{id}` | DELETE | Remove biometric data |
+
 ## Integration Points
 
 ### Payroll Service
 - Submit approved time entries
 - Calculate overtime and breaks
 - Track paid time off
+- Process tip distributions
 
 ### Auth Service
 - User account creation
 - Role assignment
 - Permission validation
+- Biometric enrollment
 
 ### Notification Service
 - Schedule updates
 - Shift reminders
 - Time-off approvals
+- Clock-in confirmations
 
 ## Events
 
@@ -383,6 +456,8 @@ geofence_config = {
 | `staff.shift.swapped` | Shift swap approved | Swap details |
 | `staff.time.clocked_in` | Employee clocked in | Entry details |
 | `staff.time.clocked_out` | Employee clocked out | Hours worked |
+| `staff.biometric.enrolled` | Biometric data enrolled | Employee ID, method |
+| `staff.biometric.check_in` | Biometric check-in | Employee ID, location |
 
 ## Database Schema
 
@@ -395,6 +470,8 @@ geofence_config = {
 - `time_entries` - Clock in/out records
 - `time_off_requests` - PTO requests
 - `employee_documents` - Certifications, etc.
+- `staff_biometrics` - Encrypted biometric data
+- `attendance_logs` - Detailed attendance records
 
 View Complete Schema (Coming Soon)
 

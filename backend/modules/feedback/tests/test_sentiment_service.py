@@ -4,10 +4,10 @@ import pytest
 from unittest.mock import Mock, patch
 import asyncio
 
-from backend.modules.feedback.services.sentiment_service import (
+from modules.feedback.services.sentiment_service import (
     SentimentAnalysisService, SentimentResult, sentiment_service
 )
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, SentimentScore, ReviewType, FeedbackType, FeedbackPriority
 )
 
@@ -369,7 +369,7 @@ class TestSentimentServiceIntegration:
     
     def test_sentiment_service_singleton(self):
         """Test that sentiment_service is properly configured as singleton"""
-        from backend.modules.feedback.services.sentiment_service import sentiment_service
+        from modules.feedback.services.sentiment_service import sentiment_service
         
         assert sentiment_service is not None
         assert isinstance(sentiment_service, SentimentAnalysisService)

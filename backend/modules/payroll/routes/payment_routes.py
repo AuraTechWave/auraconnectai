@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 
-from ....core.database import get_db
-from ....core.auth import require_payroll_write, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_write, get_current_user, User
 from ..models.payroll_models import EmployeePayment
 from ..schemas.payroll_schemas import PaymentStatusUpdate
 from ..schemas.error_schemas import ErrorResponse, PayrollErrorCodes

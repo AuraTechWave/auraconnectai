@@ -7,8 +7,8 @@ from datetime import datetime, date, timedelta
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_staff_user
+from core.database import get_db
+from core.auth import get_current_user, User
 from ..services.websocket_manager import websocket_manager, WebSocketManager
 from ..services.realtime_metrics_service import realtime_metrics_service, DashboardSnapshot
 from ..services.permissions_service import (
@@ -383,7 +383,7 @@ async def health_check():
 @router.post("/events/order-completed")
 async def handle_order_completed_event(
     order_data: Dict[str, Any],
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Handle order completed event for real-time metrics update
@@ -419,7 +419,7 @@ async def handle_order_completed_event(
 @router.post("/events/staff-action")
 async def handle_staff_action_event(
     action_data: Dict[str, Any],
-    current_user: dict = Depends(get_current_staff_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Handle staff action event for real-time metrics update

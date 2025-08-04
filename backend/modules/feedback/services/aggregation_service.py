@@ -9,10 +9,10 @@ from sqlalchemy import and_, func, desc, text
 from dataclasses import dataclass
 import json
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, ReviewAggregate, ReviewStatus, SentimentScore, ReviewType
 )
-from backend.modules.feedback.services.sentiment_service import sentiment_service
+from modules.feedback.services.sentiment_service import sentiment_service
 
 logger = logging.getLogger(__name__)
 

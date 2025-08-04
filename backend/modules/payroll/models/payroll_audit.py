@@ -11,8 +11,8 @@ from sqlalchemy import (
     Column, Integer, String, DateTime, Text, JSON,
     Index, Enum as SQLEnum
 )
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from ..schemas.audit_schemas import AuditEventType
 
 
@@ -51,7 +51,7 @@ class PayrollAuditLog(Base, TimestampMixin):
     new_values = Column(JSON, nullable=True)
     
     # Additional context
-    metadata = Column(JSON, nullable=True)
+    audit_metadata = Column(JSON, nullable=True)
     session_id = Column(String(100), nullable=True, index=True)
     request_id = Column(String(100), nullable=True, index=True)
     
@@ -90,7 +90,7 @@ class PayrollAuditArchive(Base):
     action = Column(Text, nullable=False)
     old_values = Column(JSON, nullable=True)
     new_values = Column(JSON, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    archive_metadata = Column(JSON, nullable=True)
     tenant_id = Column(Integer, nullable=True, index=True)
     
     # Archive metadata

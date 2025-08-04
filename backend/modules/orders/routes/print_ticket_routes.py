@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.print_ticket_controller import (
     create_print_ticket, get_current_print_queue, update_ticket_status,
     retry_failed_print_jobs

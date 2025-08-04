@@ -1,7 +1,7 @@
 # backend/modules/analytics/services/sales_report_service.py
 
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Union
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from sqlalchemy.orm import Session
@@ -17,9 +17,9 @@ from ..schemas.analytics_schemas import (
     StaffPerformanceResponse, ProductPerformanceResponse, PaginatedSalesResponse,
     SalesReportRequest, ReportExecutionResponse, DashboardMetricsResponse
 )
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.staff.models.staff_models import StaffMember
-from backend.core.exceptions import ValidationError, NotFoundError
+from modules.orders.models.order_models import Order, OrderItem
+from modules.staff.models.staff_models import StaffMember
+# Custom exceptions replaced with standard Python exceptions
 
 logger = logging.getLogger(__name__)
 

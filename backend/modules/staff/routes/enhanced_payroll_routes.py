@@ -15,8 +15,8 @@ from typing import Optional, List
 import uuid
 from datetime import datetime, date
 
-from ....core.database import get_db
-from ....core.auth import (
+from core.database import get_db
+from core.auth import (
     require_payroll_access, require_payroll_write, require_staff_access,
     get_current_user, User
 )
@@ -27,7 +27,7 @@ from ..schemas.enhanced_payroll_schemas import (
     PayrollQueryFilters, PaginationParams, PayrollBatchStatus,
     PayrollExportRequest, PayrollExportResponse
 )
-from ...payroll.services.payroll_tax_engine import PayrollTaxEngine
+from modules.payroll.services.payroll_tax_engine import PayrollTaxEngine
 from ...payroll.services.payroll_configuration_service import PayrollConfigurationService
 from ...payroll.models.payroll_models import TaxRule
 from .payroll_background_tasks import process_payroll_batch_persistent

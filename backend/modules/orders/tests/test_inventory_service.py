@@ -1,11 +1,11 @@
 import pytest
 from fastapi import HTTPException
-from backend.modules.orders.services.inventory_service import (
+from modules.orders.services.inventory_service import (
     get_inventory_by_id, deduct_inventory, check_low_stock,
     get_inventory_service
 )
-from backend.modules.orders.models.inventory_models import Inventory
-from backend.modules.orders.models.order_models import OrderItem
+from core.inventory_models import Inventory
+from modules.orders.models.order_models import OrderItem
 from datetime import datetime
 
 

@@ -13,14 +13,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from unittest.mock import Mock, patch, AsyncMock
 
-from backend.app.main import app
-from backend.core.database import get_db
-from backend.modules.orders.models.order_models import Order
-from backend.modules.orders.models.sync_models import (
+from app.main import app
+from core.database import get_db
+from modules.orders.models.order_models import Order
+from modules.orders.models.sync_models import (
     OrderSyncStatus, SyncStatus, SyncConflict, SyncConfiguration
 )
-from backend.modules.orders.tasks.sync_tasks import OrderSyncScheduler
-from backend.modules.staff.models import StaffMember
+from modules.orders.tasks.sync_tasks import OrderSyncScheduler
+from modules.staff.models.staff_models import StaffMember
 
 
 class TestConflictResolutionIntegration:

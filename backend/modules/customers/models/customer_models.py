@@ -1,11 +1,11 @@
 # backend/modules/customers/models/customer_models.py
 
 from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime, 
-                        Float, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint)
+                        Float, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint, Table)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from datetime import datetime
 from enum import Enum
 
@@ -109,6 +109,11 @@ class Customer(Base, TimestampMixin):
     segments = relationship("CustomerSegment", secondary="customer_segment_members", back_populates="customers")
     rewards = relationship("CustomerReward", back_populates="customer", cascade="all, delete-orphan")
     preferences = relationship("CustomerPreference", back_populates="customer", cascade="all, delete-orphan")
+    reservations = relationship("Reservation", back_populates="customer", cascade="all, delete-orphan")
+    
+    # Order tracking relationships
+    order_trackings = relationship("CustomerOrderTracking", back_populates="customer")
+    order_notifications = relationship("OrderNotification", back_populates="customer")
     referred_customers = relationship("Customer", backref="referrer")
     
     # Indexes for performance
@@ -232,7 +237,7 @@ class CustomerNotification(Base, TimestampMixin):
     failure_reason = Column(Text, nullable=True)
     
     # Metadata
-    metadata = Column(JSONB, nullable=True)  # Additional data like order_id, promotion_id
+    notification_metadata = Column(JSONB, nullable=True)  # Additional data like order_id, promotion_id
     
     # Relationships
     customer = relationship("Customer", back_populates="notifications")
@@ -274,15 +279,12 @@ class CustomerSegment(Base, TimestampMixin):
 
 
 # Association table for customer segments
-customer_segment_members = Base.metadata.tables.get('customer_segment_members') or \
-    Base.metadata.tables.setdefault('customer_segment_members', 
-        sqlalchemy.Table('customer_segment_members', Base.metadata,
-            Column('customer_id', Integer, ForeignKey('customers.id'), primary_key=True),
-            Column('segment_id', Integer, ForeignKey('customer_segments.id'), primary_key=True),
-            Column('added_at', DateTime, default=datetime.utcnow),
-            Column('expires_at', DateTime, nullable=True)
-        )
-    )
+customer_segment_members = Table('customer_segment_members', Base.metadata,
+    Column('customer_id', Integer, ForeignKey('customers.id'), primary_key=True),
+    Column('segment_id', Integer, ForeignKey('customer_segments.id'), primary_key=True),
+    Column('added_at', DateTime, default=datetime.utcnow),
+    Column('expires_at', DateTime, nullable=True)
+)
 
 
 class CustomerReward(Base, TimestampMixin):

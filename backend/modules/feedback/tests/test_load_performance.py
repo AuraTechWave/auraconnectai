@@ -9,9 +9,9 @@ from typing import List, Dict, Any
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.modules.feedback.services.analytics_service import FeedbackAnalyticsService
-from backend.modules.feedback.services.aggregation_service import ReviewAggregationService
-from backend.modules.feedback.services.sentiment_service import SentimentAnalysisService
+from modules.feedback.services.analytics_service import FeedbackAnalyticsService
+from modules.feedback.services.aggregation_service import ReviewAggregationService
+from modules.feedback.services.sentiment_service import SentimentAnalysisService
 
 
 class TestLoadPerformance:

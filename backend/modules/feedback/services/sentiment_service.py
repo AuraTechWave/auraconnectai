@@ -9,10 +9,10 @@ import asyncio
 import aiohttp
 import json
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, SentimentScore
 )
-from backend.core.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

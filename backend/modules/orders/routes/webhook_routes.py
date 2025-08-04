@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, Request, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.webhook_controller import (
     create_webhook_configuration, get_webhook_configuration,
     list_webhook_configurations, update_webhook_configuration,

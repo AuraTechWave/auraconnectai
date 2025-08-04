@@ -2,8 +2,8 @@ from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
                         Numeric, Text, Table, Enum, Boolean, Index)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 from ..enums.order_enums import OrderPriority
 from typing import Optional
 from datetime import datetime
@@ -79,6 +79,11 @@ class Order(Base, TimestampMixin):
     )
     print_tickets = relationship("PrintTicket", back_populates="order")
     attachments = relationship("OrderAttachment", back_populates="order")
+    
+    # Order tracking relationships
+    tracking_events = relationship("OrderTrackingEvent", back_populates="order", order_by="OrderTrackingEvent.created_at")
+    customer_tracking = relationship("CustomerOrderTracking", back_populates="order", uselist=False)
+    notifications = relationship("OrderNotification", back_populates="order")
 
     def update_priority(self, new_priority: OrderPriority,
                         user_id: Optional[int] = None):

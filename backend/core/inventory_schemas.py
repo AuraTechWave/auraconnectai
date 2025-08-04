@@ -427,8 +427,8 @@ class InventorySearchParams(BaseModel):
     active_only: Optional[bool] = True
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
-    sort_by: Optional[str] = Field(default="item_name", regex=r'^(item_name|quantity|threshold|category|created_at)$')
-    sort_order: Optional[str] = Field(default="asc", regex=r'^(asc|desc)$')
+    sort_by: Optional[str] = Field(default="item_name", pattern=r'^(item_name|quantity|threshold|category|created_at)$')
+    sort_order: Optional[str] = Field(default="asc", pattern=r'^(asc|desc)$')
 
 
 class AlertSearchParams(BaseModel):
@@ -460,7 +460,7 @@ class UsageReportParams(BaseModel):
     inventory_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    group_by: Optional[str] = Field(default="day", regex=r'^(day|week|month)$')
+    group_by: Optional[str] = Field(default="day", pattern=r'^(day|week|month)$')
 
 
 # Bulk operation schemas

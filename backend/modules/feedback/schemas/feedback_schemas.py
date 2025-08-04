@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     ReviewType, ReviewStatus, FeedbackType, FeedbackStatus, 
     FeedbackPriority, SentimentScore, ReviewSource
 )
@@ -146,7 +146,7 @@ class BusinessResponseResponse(BaseModel):
 # Review Media schemas
 class ReviewMediaCreate(BaseModel):
     """Schema for review media creation"""
-    media_type: str = Field(..., regex="^(image|video)$")
+    media_type: str = Field(..., pattern="^(image|video)$")
     file_path: str
     file_name: str
     file_size: Optional[int] = None
@@ -461,7 +461,7 @@ class ReviewInvitationCreate(BaseModel):
     order_id: Optional[int] = None
     product_id: Optional[int] = None
     template_id: Optional[int] = None
-    delivery_method: str = Field(..., regex="^(email|sms|push)$")
+    delivery_method: str = Field(..., pattern="^(email|sms|push)$")
     expires_at: Optional[datetime] = None
     metadata: Optional[Dict[str, Any]] = None
 

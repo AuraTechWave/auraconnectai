@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 import httpx
-from backend.core.config import settings
+from core.config import settings
 from ..models.webhook_models import WebhookConfiguration, WebhookDeliveryLog
 from ..models.order_models import Order
 from ..schemas.webhook_schemas import (

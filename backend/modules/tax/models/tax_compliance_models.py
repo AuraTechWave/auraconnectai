@@ -9,8 +9,8 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from datetime import date, datetime
 import enum
-from backend.core.database import Base
-from backend.core.mixins import TimestampMixin, TenantMixin
+from core.database import Base
+from core.mixins import TimestampMixin, TenantMixin
 
 
 class FilingStatus(str, enum.Enum):
@@ -217,7 +217,7 @@ class TaxAuditLog(Base, TimestampMixin, TenantMixin):
     # Additional context
     reason = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
-    metadata = Column(JSONB, nullable=True)
+    audit_metadata = Column(JSONB, nullable=True)
     
     # Relationships
     filing = relationship("TaxFiling", back_populates="audit_logs")

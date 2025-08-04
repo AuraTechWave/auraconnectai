@@ -14,7 +14,7 @@ from ..schemas.promotion_schemas import (
     PromotionCreate, PromotionUpdate, PromotionSearchParams, PromotionSearchResponse,
     PromotionSummary, ABTestConfig
 )
-from backend.modules.customers.models.customer_models import Customer
+from modules.customers.models.customer_models import Customer
 
 logger = logging.getLogger(__name__)
 

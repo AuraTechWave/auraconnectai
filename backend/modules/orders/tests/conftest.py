@@ -1,17 +1,18 @@
 import pytest
 import pytest_asyncio
+import asyncio
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from backend.core.database import Base, get_db
-from backend.app.main import app
-from backend.modules.orders.models.order_models import Order, OrderItem
-from backend.modules.orders.models.inventory_models import (
-    Inventory, MenuItemInventory
-)
-from backend.modules.orders.enums.order_enums import OrderStatus
-from backend.modules.staff.models.staff_models import StaffMember, Role  # noqa
+from core.database import Base, get_db, get_test_db
+from app.main import app
+from modules.orders.models.order_models import Order, OrderItem
+from core.inventory_models import Inventory
+from core.menu_models import MenuItemInventory
+from modules.orders.enums.order_enums import OrderStatus
+from modules.staff.models.staff_models import StaffMember, Role  # noqa
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(
@@ -144,3 +145,23 @@ def sample_inventory_with_mapping(db_session):
     db_session.commit()
     db_session.refresh(mapping)
     return inventory, mapping
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an event loop for async tests."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest.fixture
+def anyio_backend():
+    """Configure async backend."""
+    return "asyncio"
+
+
+@pytest.fixture(scope="function") 
+def db(db_session):
+    """Alias for db_session for compatibility."""
+    return db_session

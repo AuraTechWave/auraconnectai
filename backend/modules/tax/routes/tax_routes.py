@@ -8,7 +8,7 @@ from .tax_compliance_routes import router as compliance_router
 # Original simple calculation endpoint
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from backend.core.database import get_db
+from core.database import get_db
 from ..controllers.tax_controller import calculate_tax_preview
 from ..schemas.tax_schemas import TaxCalculationRequest, TaxCalculationResponse
 

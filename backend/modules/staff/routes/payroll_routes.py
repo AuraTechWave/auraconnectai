@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from backend.core.database import get_db
-from backend.modules.staff.controllers.payroll_controller import (
+from core.database import get_db
+from modules.staff.controllers.payroll_controller import (
     process_payroll, get_payroll_history
 )
-from backend.modules.staff.schemas.payroll_schemas import (
+from modules.staff.schemas.payroll_schemas import (
     PayrollRequest, PayrollResponse
 )
 

@@ -14,16 +14,16 @@ from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from backend.app.main import app
-from backend.core.database import get_db
-from backend.modules.orders.models.external_pos_models import (
+from app.main import app
+from core.database import get_db
+from modules.orders.models.external_pos_models import (
     ExternalPOSProvider, ExternalPOSWebhookEvent, ExternalPOSPaymentUpdate
 )
-from backend.modules.orders.enums.external_pos_enums import (
+from modules.orders.enums.external_pos_enums import (
     AuthenticationType, WebhookProcessingStatus, PaymentStatus
 )
-from backend.modules.orders.services.webhook_auth_service import WebhookAuthService
-from backend.modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
+from modules.orders.services.webhook_auth_service import WebhookAuthService
+from modules.orders.services.external_pos_webhook_service import ExternalPOSWebhookService
 
 
 class TestWebhookAuthentication:
@@ -372,7 +372,7 @@ class TestWebhookRetryScheduler:
     @pytest.mark.asyncio
     async def test_retry_scheduler_start_stop(self):
         """Test starting and stopping retry scheduler"""
-        from backend.modules.orders.tasks.webhook_retry_task import WebhookRetryScheduler
+        from modules.orders.tasks.webhook_retry_task import WebhookRetryScheduler
         
         scheduler = WebhookRetryScheduler()
         

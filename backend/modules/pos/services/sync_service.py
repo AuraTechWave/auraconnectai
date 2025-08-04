@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.modules.settings.models.pos_sync_models import POSSyncSetting
+from modules.settings.models.pos_sync_models import POSSyncSetting
 from typing import Optional
 import logging
 

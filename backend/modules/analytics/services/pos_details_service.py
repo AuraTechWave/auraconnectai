@@ -11,8 +11,8 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 import logging
 
-from backend.core.cache import cache_service
-from backend.modules.analytics.schemas.pos_analytics_schemas import (
+from core.cache import cache_service
+from modules.analytics.schemas.pos_analytics_schemas import (
     POSProviderDetailsResponse, POSTerminalDetailsResponse,
     POSComparisonResponse, POSSyncMetrics, POSWebhookMetrics,
     POSErrorAnalysis, POSPerformanceMetrics

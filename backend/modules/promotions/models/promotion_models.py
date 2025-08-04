@@ -9,8 +9,8 @@ from enum import Enum
 import uuid
 from datetime import datetime
 
-from backend.core.database import Base
-from backend.core.models import TimestampMixin
+from core.database import Base
+from core.models import TimestampMixin
 
 
 class PromotionType(str, Enum):
@@ -414,7 +414,7 @@ class PromotionRule(Base, TimestampMixin):
 
 
 # Update Customer model to include referral relationships
-from backend.modules.customers.models.customer_models import Customer
+from modules.customers.models.customer_models import Customer
 
 # Add referral relationships to Customer model
 Customer.referrals_made = relationship(

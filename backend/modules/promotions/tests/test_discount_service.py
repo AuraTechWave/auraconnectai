@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime, timedelta
 
-from backend.modules.promotions.models.promotion_models import (
+from modules.promotions.models.promotion_models import (
     PromotionType, DiscountType, PromotionStatus
 )
 
@@ -321,7 +321,7 @@ class TestDiscountCalculationService:
     
     def test_calculate_tiered_discount(self, discount_service, db_session):
         """Test calculating tiered discount based on order amount"""
-        from backend.modules.promotions.models.promotion_models import Promotion
+        from modules.promotions.models.promotion_models import Promotion
         
         # Create a tiered promotion
         promotion = Promotion(

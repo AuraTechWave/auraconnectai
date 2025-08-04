@@ -12,10 +12,10 @@ from typing import Optional
 from datetime import datetime
 import logging
 
-from backend.core.database import get_db
-from backend.core.auth import get_current_user
-from backend.modules.staff.models import StaffMember
-from backend.core.rbac import require_permissions, Permission
+from core.database import get_db
+from core.auth import get_current_user
+from core.auth import User
+from core.auth import require_permission
 
 from ...schemas.pos_analytics_schemas import (
     POSDashboardRequest, POSDashboardResponse, TimeRange
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 async def get_pos_analytics_dashboard(
     request: POSDashboardRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get comprehensive POS analytics dashboard data.
@@ -42,8 +42,7 @@ async def get_pos_analytics_dashboard(
     Requires: analytics.view permission
     """
     # Check permissions
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSDashboardService(db)
         
@@ -83,7 +82,7 @@ async def get_terminal_health_summary(
     provider_id: Optional[int] = Query(None, description="Filter by provider"),
     health_status: Optional[str] = Query(None, description="Filter by health status"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Get summary of terminal health status.
@@ -92,8 +91,7 @@ async def get_terminal_health_summary(
     
     Requires: analytics.view permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_VIEW])
-    
+
     try:
         service = POSDashboardService(db)
         
@@ -116,7 +114,7 @@ async def get_terminal_health_summary(
 async def refresh_pos_analytics_data(
     provider_id: Optional[int] = Query(None, description="Specific provider to refresh"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: User = Depends(require_permission("analytics:read"))
 ):
     """
     Manually trigger refresh of POS analytics data.
@@ -125,8 +123,7 @@ async def refresh_pos_analytics_data(
     
     Requires: analytics.manage permission
     """
-    await require_permissions(current_user, [Permission.ANALYTICS_MANAGE])
-    
+
     try:
         service = POSDashboardService(db)
         

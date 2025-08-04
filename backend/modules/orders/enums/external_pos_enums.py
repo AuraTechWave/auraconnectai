@@ -147,7 +147,7 @@ PROVIDER_EVENT_MAPPING = {
         StripeEventType.PAYMENT_INTENT_SUCCEEDED: ExternalPOSEventType.PAYMENT_COMPLETED,
         StripeEventType.PAYMENT_INTENT_PAYMENT_FAILED: ExternalPOSEventType.PAYMENT_FAILED,
         StripeEventType.PAYMENT_INTENT_CREATED: ExternalPOSEventType.PAYMENT_PENDING,
-        StripeEventType.PAYMENT_INTENT_CANCELED: ExternalPOSEventType.PAYMENT_CANCELLED,
+        StripeEventType.PAYMENT_INTENT_CANCELED: ExternalPOSEventType.ORDER_CANCELLED,
     },
     ExternalPOSProvider.TOAST: {
         ToastEventType.PAYMENT_COMPLETED: ExternalPOSEventType.PAYMENT_COMPLETED,

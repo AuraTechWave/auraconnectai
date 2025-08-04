@@ -8,16 +8,15 @@ import uuid
 import logging
 import asyncio
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, ReviewMedia, ReviewVote, BusinessResponse, ReviewAggregate,
     ReviewTemplate, ReviewInvitation, ReviewStatus, ReviewType, SentimentScore
 )
-from backend.modules.feedback.schemas.feedback_schemas import (
+from modules.feedback.schemas.feedback_schemas import (
     ReviewCreate, ReviewUpdate, ReviewModeration, ReviewResponse,
     ReviewSummary, ReviewFilters, BusinessResponseCreate,
     ReviewMediaCreate, ReviewVoteCreate, PaginatedResponse
 )
-from backend.core.exceptions import ValidationError, NotFoundError, PermissionError
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class ReviewService:
             # Check for existing review
             existing_review = self._check_duplicate_review(review_data)
             if existing_review:
-                raise ValidationError("Customer has already reviewed this item")
+                raise ValueError("Customer has already reviewed this item")
             
             # Create review instance
             review = Review(
@@ -103,7 +102,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         return self._format_review_response(review)
     
@@ -112,7 +111,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.uuid == review_uuid).first()
         if not review:
-            raise NotFoundError(f"Review {review_uuid} not found")
+            raise KeyError(f"Review {review_uuid} not found")
         
         return self._format_review_response(review)
     
@@ -126,7 +125,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         # Check permissions
         if customer_id and review.customer_id != customer_id:
@@ -175,7 +174,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         old_status = review.status
         
@@ -209,7 +208,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         # Check permissions
         if customer_id and review.customer_id != customer_id:
@@ -373,7 +372,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         # Check for existing vote
         existing_vote = self.db.query(ReviewVote).filter(
@@ -438,7 +437,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         # Check if business response already exists
         existing_response = self.db.query(BusinessResponse).filter(
@@ -446,7 +445,7 @@ class ReviewService:
         ).first()
         
         if existing_response:
-            raise ValidationError("Business response already exists for this review")
+            raise ValueError("Business response already exists for this review")
         
         # Create business response
         response = BusinessResponse(
@@ -487,7 +486,7 @@ class ReviewService:
         
         review = self.db.query(Review).filter(Review.id == review_id).first()
         if not review:
-            raise NotFoundError(f"Review {review_id} not found")
+            raise KeyError(f"Review {review_id} not found")
         
         # Check permissions
         if customer_id and review.customer_id != customer_id:
@@ -617,7 +616,7 @@ class ReviewService:
     
     def _schedule_sentiment_analysis(self, review_id: int) -> None:
         """Schedule sentiment analysis for a review"""
-        from backend.modules.feedback.services.background_tasks import background_processor
+        from modules.feedback.services.background_tasks import background_processor
         
         # Schedule background processing for the review
         try:
@@ -633,7 +632,7 @@ class ReviewService:
     def _fallback_sentiment_analysis(self, review_id: int) -> None:
         """Fallback synchronous sentiment analysis"""
         try:
-            from backend.modules.feedback.services.sentiment_service import sentiment_service
+            from modules.feedback.services.sentiment_service import sentiment_service
             
             review = self.db.query(Review).filter(Review.id == review_id).first()
             if review:
@@ -648,7 +647,7 @@ class ReviewService:
 
     def _update_review_aggregates(self, review: Review) -> None:
         """Update review aggregates for the reviewed entity"""
-        from backend.modules.feedback.services.background_tasks import background_processor
+        from modules.feedback.services.background_tasks import background_processor
         
         try:
             if review.product_id:

@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import uuid
 
-from backend.modules.feedback.models.feedback_models import (
+from modules.feedback.models.feedback_models import (
     Review, Feedback, ReviewMedia, ReviewVote, BusinessResponse, 
     FeedbackResponse, ReviewAggregate, ReviewTemplate, ReviewInvitation,
     FeedbackCategory, ReviewStatus, FeedbackStatus, ReviewType, 

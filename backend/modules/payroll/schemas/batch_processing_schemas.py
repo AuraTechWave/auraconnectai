@@ -68,7 +68,7 @@ class BatchPayrollRequest(BaseModel):
     )
     priority: str = Field(
         "normal",
-        regex="^(low|normal|high|urgent)$",
+        pattern="^(low|normal|high|urgent)$",
         description="Processing priority"
     )
     

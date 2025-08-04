@@ -4,8 +4,8 @@ import pytest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from backend.modules.promotions.schemas.promotion_schemas import PromotionCreate, PromotionUpdate
-from backend.modules.promotions.models.promotion_models import (
+from modules.promotions.schemas.promotion_schemas import PromotionCreate, PromotionUpdate
+from modules.promotions.models.promotion_models import (
     PromotionStatus, PromotionType, DiscountType
 )
 
@@ -221,7 +221,7 @@ class TestPromotionService:
     def test_get_promotion_statistics(self, promotion_service, sample_promotion, db_session):
         """Test getting promotion statistics"""
         # Add some usage data
-        from backend.modules.promotions.models.promotion_models import PromotionUsage
+        from modules.promotions.models.promotion_models import PromotionUsage
         
         usage1 = PromotionUsage(
             promotion_id=sample_promotion.id,

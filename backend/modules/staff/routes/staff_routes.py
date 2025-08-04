@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.modules.staff.controllers.staff_controller import (
+from modules.staff.controllers.staff_controller import (
     get_all_staff,
     create_staff,
 )

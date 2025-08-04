@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from datetime import date, timedelta
 
-from ......core.database import get_db
-from ......core.auth import require_payroll_access, get_current_user, User
+from core.database import get_db
+from core.auth import require_payroll_access, get_current_user, User
 from ....models.payroll_audit import PayrollAuditLog
 from ....schemas.audit_schemas import AuditSummaryResponse
 from ....exceptions import DatabaseError, PayrollValidationError
@@ -25,7 +25,7 @@ router = APIRouter()
 async def get_audit_summary(
     start_date: date = Query(..., description="Start date for summary"),
     end_date: date = Query(..., description="End date for summary"),
-    group_by: str = Query("event_type", regex="^(event_type|user|entity_type|day)$"),
+    group_by: str = Query("event_type", pattern="^(event_type|user|entity_type|day)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_payroll_access)
 ):
