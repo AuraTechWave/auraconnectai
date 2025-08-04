@@ -156,11 +156,8 @@ Uses Redis pub/sub for live order status updates.
 
 ## API Endpoints
 
-<<<<<<< HEAD
 > 📌 **See also**: [Complete Orders API Reference](./api-reference.md) for detailed endpoint documentation with request/response examples.
 
-=======
->>>>>>> main
 ### Order Management
 
 | Endpoint | Method | Description |

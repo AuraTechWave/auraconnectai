@@ -173,8 +173,6 @@ plugins:
       version_selector: true
       css_dir: css
       javascript_dir: js
-  - mermaid2:
-      version: 10.6.0
 
 extra:
   version:
