@@ -111,9 +111,59 @@ class RefundStatisticsResponse(BaseModel):
     by_reason: Dict[str, Dict[str, Any]]
 
 
+class BulkRefundRequest(BaseModel):
+    refund_requests: List[CreateRefundRequest]
+    batch_notes: Optional[str] = None
+    auto_approve: bool = False
+    
+    @validator('refund_requests')
+    def validate_batch_size(cls, v):
+        if len(v) == 0:
+            raise ValueError("At least one refund request is required")
+        if len(v) > 50:
+            raise ValueError("Maximum 50 refund requests per batch")
+        return v
+
+
+class BulkRefundResponse(BaseModel):
+    batch_id: str
+    total_requests: int
+    successful: int
+    failed: int
+    results: List[Dict[str, Any]]
+    errors: List[Dict[str, str]] = []
+
+
+class BulkApprovalRequest(BaseModel):
+    request_ids: List[int]
+    notes: Optional[str] = None
+    process_immediately: bool = False
+    
+    @validator('request_ids')
+    def validate_request_ids(cls, v):
+        if len(v) == 0:
+            raise ValueError("At least one request ID is required")
+        if len(v) > 100:
+            raise ValueError("Maximum 100 requests per batch approval")
+        return list(set(v))  # Remove duplicates
+
+
+class BulkProcessingRequest(BaseModel):
+    request_ids: List[int]
+    
+    @validator('request_ids')
+    def validate_request_ids(cls, v):
+        if len(v) == 0:
+            raise ValueError("At least one request ID is required")
+        if len(v) > 50:
+            raise ValueError("Maximum 50 requests per batch processing")
+        return list(set(v))  # Remove duplicates
+
+
 # Endpoints
 
 @router.post("/request", response_model=RefundRequestResponse)
+@require_permission("refunds.create")
 async def create_refund_request(
     request: CreateRefundRequest,
     current_user: User = Depends(get_current_user),
@@ -152,6 +202,7 @@ async def create_refund_request(
 
 
 @router.get("/requests", response_model=Dict[str, Any])
+@require_permission("refunds.view")
 async def list_refund_requests(
     status: Optional[RefundApprovalStatus] = None,
     category: Optional[RefundCategory] = None,
@@ -208,6 +259,7 @@ async def list_refund_requests(
 
 
 @router.get("/requests/{request_id}", response_model=RefundRequestResponse)
+@require_permission("refunds.view")
 async def get_refund_request(
     request_id: int,
     current_user: User = Depends(get_current_user),
@@ -414,6 +466,7 @@ async def create_refund_policy(
 
 
 @router.get("/policies/{restaurant_id}")
+@require_permission("refunds.view")
 async def get_refund_policy(
     restaurant_id: int,
     current_user: User = Depends(get_current_user),
@@ -444,6 +497,7 @@ async def get_refund_policy(
 
 
 @router.post("/upload-evidence/{request_id}")
+@require_permission("refunds.manage")
 async def upload_refund_evidence(
     request_id: int,
     files: List[UploadFile] = File(...),
@@ -478,4 +532,261 @@ async def upload_refund_evidence(
         "success": True,
         "evidence_count": len(evidence_urls),
         "message": "Evidence uploaded successfully"
+    }
+
+
+# Bulk Processing Endpoints
+
+@router.post("/bulk/create", response_model=BulkRefundResponse)
+@require_permission("refunds.create")
+async def create_bulk_refund_requests(
+    bulk_request: BulkRefundRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create multiple refund requests in batch"""
+    
+    import uuid
+    import asyncio
+    from datetime import datetime
+    
+    batch_id = str(uuid.uuid4())[:8]
+    results = []
+    errors = []
+    successful = 0
+    
+    # Customer info for all requests
+    customer_info = {
+        'user_id': current_user.id,
+        'name': current_user.full_name,
+        'email': current_user.email,
+        'phone': getattr(current_user, 'phone', None)
+    }
+    
+    # Process each refund request
+    for i, request in enumerate(bulk_request.refund_requests):
+        try:
+            refund_request = await refund_service.create_refund_request(
+                db=db,
+                order_id=request.order_id,
+                payment_id=request.payment_id,
+                requested_amount=request.requested_amount,
+                reason_code=request.reason_code,
+                reason_details=request.reason_details,
+                customer_info=customer_info,
+                refund_items=[item.dict() for item in request.refund_items] if request.refund_items else None,
+                evidence_urls=request.evidence_urls,
+                priority=request.priority,
+                batch_id=batch_id,
+                batch_notes=bulk_request.batch_notes
+            )
+            
+            # Auto-approve if requested and allowed
+            if bulk_request.auto_approve and hasattr(current_user, 'can_approve_refunds'):
+                if current_user.can_approve_refunds:
+                    await refund_service.approve_refund_request(
+                        db=db,
+                        request_id=refund_request.id,
+                        approver_id=current_user.id,
+                        notes=f"Auto-approved in batch {batch_id}",
+                        process_immediately=False
+                    )
+            
+            results.append({
+                "index": i,
+                "request_id": refund_request.id,
+                "request_number": refund_request.request_number,
+                "order_id": request.order_id,
+                "amount": float(request.requested_amount),
+                "status": "created"
+            })
+            successful += 1
+            
+        except Exception as e:
+            errors.append({
+                "index": i,
+                "order_id": request.order_id,
+                "error": str(e)
+            })
+    
+    return BulkRefundResponse(
+        batch_id=batch_id,
+        total_requests=len(bulk_request.refund_requests),
+        successful=successful,
+        failed=len(errors),
+        results=results,
+        errors=errors
+    )
+
+
+@router.post("/bulk/approve", response_model=BulkRefundResponse)
+@require_permission("refunds.approve")
+async def bulk_approve_refund_requests(
+    bulk_approval: BulkApprovalRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Approve multiple refund requests in batch"""
+    
+    import uuid
+    
+    batch_id = str(uuid.uuid4())[:8]
+    results = []
+    errors = []
+    successful = 0
+    
+    for request_id in bulk_approval.request_ids:
+        try:
+            request = await refund_service.approve_refund_request(
+                db=db,
+                request_id=request_id,
+                approver_id=current_user.id,
+                notes=bulk_approval.notes or f"Bulk approved in batch {batch_id}",
+                process_immediately=bulk_approval.process_immediately
+            )
+            
+            results.append({
+                "request_id": request_id,
+                "status": "approved",
+                "approval_status": request.approval_status.value,
+                "processed": bulk_approval.process_immediately
+            })
+            successful += 1
+            
+        except Exception as e:
+            errors.append({
+                "request_id": request_id,
+                "error": str(e)
+            })
+    
+    return BulkRefundResponse(
+        batch_id=batch_id,
+        total_requests=len(bulk_approval.request_ids),
+        successful=successful,
+        failed=len(errors),
+        results=results,
+        errors=errors
+    )
+
+
+@router.post("/bulk/process", response_model=BulkRefundResponse)
+@require_permission("refunds.process")
+async def bulk_process_refund_requests(
+    bulk_processing: BulkProcessingRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Process multiple approved refund requests in batch"""
+    
+    import uuid
+    
+    batch_id = str(uuid.uuid4())[:8]
+    results = []
+    errors = []
+    successful = 0
+    
+    for request_id in bulk_processing.request_ids:
+        try:
+            request, refund = await refund_service.process_refund_request(
+                db, request_id
+            )
+            
+            results.append({
+                "request_id": request_id,
+                "refund_id": refund.id,
+                "refund_reference": refund.refund_id,
+                "amount": float(refund.amount),
+                "status": "processed"
+            })
+            successful += 1
+            
+        except Exception as e:
+            errors.append({
+                "request_id": request_id,
+                "error": str(e)
+            })
+    
+    return BulkRefundResponse(
+        batch_id=batch_id,
+        total_requests=len(bulk_processing.request_ids),
+        successful=successful,
+        failed=len(errors),
+        results=results,
+        errors=errors
+    )
+
+
+@router.post("/bulk/reject")
+@require_permission("refunds.approve")
+async def bulk_reject_refund_requests(
+    request_ids: List[int] = Body(..., embed=True),
+    rejection_reason: str = Body(..., min_length=10, max_length=500),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Reject multiple refund requests in batch"""
+    
+    if len(request_ids) == 0:
+        raise HTTPException(status_code=400, detail="At least one request ID is required")
+    if len(request_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 requests per batch rejection")
+    
+    import uuid
+    
+    batch_id = str(uuid.uuid4())[:8]
+    results = []
+    errors = []
+    successful = 0
+    
+    # Remove duplicates
+    request_ids = list(set(request_ids))
+    
+    for request_id in request_ids:
+        try:
+            request = await refund_service.reject_refund_request(
+                db=db,
+                request_id=request_id,
+                rejector_id=current_user.id,
+                reason=f"{rejection_reason} (Bulk rejected in batch {batch_id})"
+            )
+            
+            results.append({
+                "request_id": request_id,
+                "status": "rejected",
+                "approval_status": request.approval_status.value
+            })
+            successful += 1
+            
+        except Exception as e:
+            errors.append({
+                "request_id": request_id,
+                "error": str(e)
+            })
+    
+    return {
+        "batch_id": batch_id,
+        "total_requests": len(request_ids),
+        "successful": successful,
+        "failed": len(errors),
+        "results": results,
+        "errors": errors
+    }
+
+
+@router.get("/bulk/status/{batch_id}")
+@require_permission("refunds.view")
+async def get_bulk_operation_status(
+    batch_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the status of a bulk operation"""
+    
+    # In a production system, you would store batch operation metadata
+    # For now, return basic information based on batch_id
+    
+    return {
+        "batch_id": batch_id,
+        "status": "completed",
+        "message": "Batch operation completed. Check individual request statuses for details."
     }

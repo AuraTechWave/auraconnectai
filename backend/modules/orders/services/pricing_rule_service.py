@@ -22,6 +22,7 @@ from ..schemas.pricing_rule_schemas import (
     DebugTraceEntry, ConflictInfo
 )
 from ..metrics.pricing_rule_metrics import pricing_metrics_collector
+from ..utils.audit_logger import AuditLogger, audit_action
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class PricingRuleService:
         self.debug_mode = False
         self.debug_traces: List[DebugTraceEntry] = []
         self.metrics_collector = defaultdict(int)
+        self.audit_logger = AuditLogger("pricing_rules")
     
     async def evaluate_rules_for_order(
         self,
@@ -585,6 +587,287 @@ class PricingRuleService:
                 message=message,
                 data=data or {}
             ))
+    
+    # Audit logging methods
+    
+    async def create_pricing_rule_with_audit(
+        self,
+        db: AsyncSession,
+        rule_data: Dict[str, Any],
+        user_id: int,
+        ip_address: Optional[str] = None
+    ) -> PricingRule:
+        """Create a pricing rule with audit logging"""
+        
+        try:
+            # Create the rule (this would be implemented in the actual service)
+            rule = PricingRule(**rule_data)
+            db.add(rule)
+            await db.flush()
+            
+            # Audit log the creation
+            self.audit_logger.log_action(
+                action="create_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule.id,
+                details={
+                    "rule_name": rule.name,
+                    "rule_type": rule.rule_type.value,
+                    "restaurant_id": rule.restaurant_id,
+                    "discount_value": float(rule.discount_value) if rule.discount_value else None,
+                    "priority": rule.priority.value,
+                    "stackable": rule.stackable,
+                    "conditions": rule.conditions
+                },
+                ip_address=ip_address
+            )
+            
+            await db.commit()
+            return rule
+            
+        except Exception as e:
+            await db.rollback()
+            self.audit_logger.log_action(
+                action="create_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=None,
+                details={"error": str(e), "rule_data": rule_data},
+                result="failure",
+                ip_address=ip_address
+            )
+            raise
+    
+    async def update_pricing_rule_with_audit(
+        self,
+        db: AsyncSession,
+        rule_id: int,
+        update_data: Dict[str, Any],
+        user_id: int,
+        ip_address: Optional[str] = None
+    ) -> PricingRule:
+        """Update a pricing rule with audit logging"""
+        
+        try:
+            # Get the existing rule
+            rule = await db.get(PricingRule, rule_id)
+            if not rule:
+                raise ValueError(f"Pricing rule {rule_id} not found")
+            
+            # Capture old values for audit
+            old_values = {
+                "name": rule.name,
+                "rule_type": rule.rule_type.value,
+                "discount_value": float(rule.discount_value) if rule.discount_value else None,
+                "priority": rule.priority.value,
+                "stackable": rule.stackable,
+                "conditions": rule.conditions,
+                "status": rule.status.value
+            }
+            
+            # Apply updates
+            for field, value in update_data.items():
+                if hasattr(rule, field):
+                    setattr(rule, field, value)
+            
+            rule.updated_at = datetime.utcnow()
+            
+            # Capture new values
+            new_values = {
+                "name": rule.name,
+                "rule_type": rule.rule_type.value,
+                "discount_value": float(rule.discount_value) if rule.discount_value else None,
+                "priority": rule.priority.value,
+                "stackable": rule.stackable,
+                "conditions": rule.conditions,
+                "status": rule.status.value
+            }
+            
+            # Find changed fields
+            changed_fields = {}
+            for field in old_values:
+                if old_values[field] != new_values[field]:
+                    changed_fields[field] = {
+                        "old": old_values[field],
+                        "new": new_values[field]
+                    }
+            
+            # Audit log the update
+            self.audit_logger.log_action(
+                action="update_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={
+                    "rule_name": rule.name,
+                    "changed_fields": changed_fields,
+                    "update_data": update_data
+                },
+                ip_address=ip_address
+            )
+            
+            await db.commit()
+            return rule
+            
+        except Exception as e:
+            await db.rollback()
+            self.audit_logger.log_action(
+                action="update_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={"error": str(e), "update_data": update_data},
+                result="failure",
+                ip_address=ip_address
+            )
+            raise
+    
+    async def delete_pricing_rule_with_audit(
+        self,
+        db: AsyncSession,
+        rule_id: int,
+        user_id: int,
+        reason: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ):
+        """Delete a pricing rule with audit logging"""
+        
+        try:
+            # Get the rule for audit details
+            rule = await db.get(PricingRule, rule_id)
+            if not rule:
+                raise ValueError(f"Pricing rule {rule_id} not found")
+            
+            rule_details = {
+                "rule_name": rule.name,
+                "rule_type": rule.rule_type.value,
+                "restaurant_id": rule.restaurant_id,
+                "discount_value": float(rule.discount_value) if rule.discount_value else None,
+                "deletion_reason": reason
+            }
+            
+            # Delete the rule
+            await db.delete(rule)
+            
+            # Audit log the deletion
+            self.audit_logger.log_action(
+                action="delete_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details=rule_details,
+                ip_address=ip_address
+            )
+            
+            await db.commit()
+            
+        except Exception as e:
+            await db.rollback()
+            self.audit_logger.log_action(
+                action="delete_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={"error": str(e), "reason": reason},
+                result="failure",
+                ip_address=ip_address
+            )
+            raise
+    
+    async def activate_rule_with_audit(
+        self,
+        db: AsyncSession,
+        rule_id: int,
+        user_id: int,
+        ip_address: Optional[str] = None
+    ):
+        """Activate a pricing rule with audit logging"""
+        
+        try:
+            rule = await db.get(PricingRule, rule_id)
+            if not rule:
+                raise ValueError(f"Pricing rule {rule_id} not found")
+            
+            old_status = rule.status
+            rule.status = RuleStatus.ACTIVE
+            rule.updated_at = datetime.utcnow()
+            
+            self.audit_logger.log_action(
+                action="activate_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={
+                    "rule_name": rule.name,
+                    "old_status": old_status.value,
+                    "new_status": "ACTIVE"
+                },
+                ip_address=ip_address
+            )
+            
+            await db.commit()
+            
+        except Exception as e:
+            await db.rollback()
+            self.audit_logger.log_action(
+                action="activate_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={"error": str(e)},
+                result="failure",
+                ip_address=ip_address
+            )
+            raise
+    
+    async def deactivate_rule_with_audit(
+        self,
+        db: AsyncSession,
+        rule_id: int,
+        user_id: int,
+        reason: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ):
+        """Deactivate a pricing rule with audit logging"""
+        
+        try:
+            rule = await db.get(PricingRule, rule_id)
+            if not rule:
+                raise ValueError(f"Pricing rule {rule_id} not found")
+            
+            old_status = rule.status
+            rule.status = RuleStatus.INACTIVE
+            rule.updated_at = datetime.utcnow()
+            
+            self.audit_logger.log_action(
+                action="deactivate_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={
+                    "rule_name": rule.name,
+                    "old_status": old_status.value,
+                    "new_status": "INACTIVE",
+                    "reason": reason
+                },
+                ip_address=ip_address
+            )
+            
+            await db.commit()
+            
+        except Exception as e:
+            await db.rollback()
+            self.audit_logger.log_action(
+                action="deactivate_pricing_rule",
+                user_id=user_id,
+                resource_type="pricing_rule",
+                resource_id=rule_id,
+                details={"error": str(e), "reason": reason},
+                result="failure",
+                ip_address=ip_address
+            )
+            raise
 
 
 # Create singleton instance
