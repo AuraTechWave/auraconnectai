@@ -1,0 +1,207 @@
+# backend/modules/payments/monitoring/prometheus_alerts.yml
+# Prometheus alerting rules for payment system
+
+groups:
+  - name: payment_system_alerts
+    interval: 30s
+    rules:
+      # Payment failure rate alert
+      - alert: HighPaymentFailureRate
+        expr: |
+          (
+            sum(rate(payment_failed_total[5m])) /
+            sum(rate(payment_created_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "High payment failure rate detected"
+          description: "Payment failure rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%)"
+          runbook_url: "https://wiki.company.com/runbooks/payment-failures"
+
+      # Gateway-specific failure rate
+      - alert: GatewayHighFailureRate
+        expr: |
+          (
+            sum by (gateway) (rate(payment_failed_total[5m])) /
+            sum by (gateway) (rate(payment_created_total[5m]))
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          team: payments
+        annotations:
+          summary: "High failure rate for {{ $labels.gateway }} gateway"
+          description: "{{ $labels.gateway }} failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      # Gateway latency alert
+      - alert: HighGatewayLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (gateway, le) (
+              rate(gateway_request_duration_seconds_bucket[5m])
+            )
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: payments
+        annotations:
+          summary: "High latency for {{ $labels.gateway }} gateway"
+          description: "95th percentile latency is {{ $value }}s (threshold: 5s)"
+
+      # Gateway unavailable
+      - alert: PaymentGatewayUnavailable
+        expr: payment_gateway_available == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment gateway {{ $labels.gateway }} is unavailable"
+          description: "{{ $labels.gateway }} has been unavailable for 2 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/gateway-unavailable"
+
+      # Webhook processing backlog
+      - alert: WebhookProcessingBacklog
+        expr: |
+          sum(webhook_received_total - webhook_processed_total) > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: payments
+        annotations:
+          summary: "Large webhook processing backlog"
+          description: "{{ $value }} webhooks pending processing (threshold: 100)"
+
+      # Webhook failure rate
+      - alert: HighWebhookFailureRate
+        expr: |
+          (
+            sum(rate(webhook_failed_total[5m])) /
+            sum(rate(webhook_received_total[5m]))
+          ) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          team: payments
+        annotations:
+          summary: "High webhook failure rate"
+          description: "Webhook failure rate is {{ $value | humanizePercentage }} (threshold: 10%)"
+
+      # Refund failure rate
+      - alert: HighRefundFailureRate
+        expr: |
+          (
+            sum(rate(refund_failed_total[5m])) /
+            sum(rate(refund_created_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: payments
+        annotations:
+          summary: "High refund failure rate"
+          description: "Refund failure rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Payment actions requiring attention
+      - alert: ManyPaymentActionsRequired
+        expr: |
+          sum(active_payment_actions) > 50
+        for: 5m
+        labels:
+          severity: info
+          team: payments
+        annotations:
+          summary: "Many payments requiring user action"
+          description: "{{ $value }} payments are waiting for user action"
+
+      # Payment amount anomaly detection
+      - alert: UnusuallyHighPaymentAmount
+        expr: |
+          payment_amount_total > 1000000
+        labels:
+          severity: info
+          team: payments
+        annotations:
+          summary: "Unusually high payment amount detected"
+          description: "Payment of {{ $value | humanizeDuration }} detected for {{ $labels.gateway }}"
+
+      # Webhook worker health
+      - alert: WebhookWorkerDown
+        expr: |
+          up{job="payment_webhook_worker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment webhook worker is down"
+          description: "Webhook worker has been down for 2 minutes"
+          runbook_url: "https://wiki.company.com/runbooks/webhook-worker"
+
+      # Redis connection issues
+      - alert: PaymentRedisConnectionFailure
+        expr: |
+          redis_connected_clients{service="payments"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: payments
+        annotations:
+          summary: "Payment system cannot connect to Redis"
+          description: "No active Redis connections for payment system"
+
+      # Processing fee anomaly
+      - alert: HighProcessingFees
+        expr: |
+          (
+            sum(rate(fee_amount_total[1h])) /
+            sum(rate(payment_amount_total[1h]))
+          ) > 0.035
+        for: 10m
+        labels:
+          severity: info
+          team: payments
+        annotations:
+          summary: "Processing fees above expected threshold"
+          description: "Average fee rate is {{ $value | humanizePercentage }} (expected: < 3.5%)"
+
+  - name: payment_slo_alerts
+    interval: 1m
+    rules:
+      # Payment success rate SLO
+      - alert: PaymentSuccessRateSLOBreach
+        expr: |
+          (
+            sum(rate(payment_completed_total[30m])) /
+            sum(rate(payment_created_total[30m]))
+          ) < 0.95
+        for: 5m
+        labels:
+          severity: page
+          team: payments
+          slo: true
+        annotations:
+          summary: "Payment success rate SLO breach"
+          description: "Payment success rate is {{ $value | humanizePercentage }} over 30m (SLO: 95%)"
+          impact: "Customers may be unable to complete purchases"
+          action: "Check gateway status and recent deployments"
+
+      # Payment latency SLO
+      - alert: PaymentLatencySLOBreach
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(payment_processing_duration_seconds_bucket[5m]))
+          ) > 10
+        for: 5m
+        labels:
+          severity: page
+          team: payments
+          slo: true
+        annotations:
+          summary: "Payment latency SLO breach"
+          description: "99th percentile payment latency is {{ $value }}s (SLO: < 10s)"
+          impact: "Poor checkout experience for customers"
