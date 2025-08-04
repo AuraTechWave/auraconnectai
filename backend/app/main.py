@@ -40,6 +40,9 @@ from modules.orders.routes.print_ticket_routes import (
 from modules.orders.routes.pricing_routes import (
     router as pricing_router
 )
+from modules.orders.routes.pricing_rule_routes import (
+    router as pricing_rule_router
+)
 from modules.orders.routers.sync import (
     sync_router as order_sync_router
 )
@@ -102,6 +105,10 @@ from modules.orders.tasks.sync_tasks import (
 from modules.orders.tasks.webhook_retry_task import (
     start_webhook_retry_scheduler,
     stop_webhook_retry_scheduler
+)
+from modules.orders.tasks.pricing_rule_tasks import (
+    start_pricing_rule_worker,
+    stop_pricing_rule_worker
 )
 
 # FastAPI app with enhanced OpenAPI documentation
@@ -179,6 +186,7 @@ app.include_router(inventory_impact_router)
 app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
 app.include_router(pricing_router)
+app.include_router(pricing_rule_router, prefix="/api/v1/orders", tags=["Pricing Rules"])
 app.include_router(order_sync_router)
 app.include_router(order_pos_sync_router)
 app.include_router(external_pos_webhook_router)
@@ -217,6 +225,8 @@ async def startup_event():
     await start_sync_scheduler()
     # Start webhook retry scheduler
     await start_webhook_retry_scheduler()
+    # Start pricing rule worker
+    await start_pricing_rule_worker()
 
 
 @app.on_event("shutdown")
@@ -226,6 +236,8 @@ async def shutdown_event():
     await stop_sync_scheduler()
     # Stop webhook retry scheduler
     await stop_webhook_retry_scheduler()
+    # Stop pricing rule worker
+    await stop_pricing_rule_worker()
 
 
 @app.get("/")
