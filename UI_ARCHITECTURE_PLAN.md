@@ -40,8 +40,8 @@ React Hook Form + Zod schemas
 Conform for form handling
 
 // Charts & Analytics
-Recharts or Chart.js
-D3.js for custom visualizations
+Recharts (primary choice for standard charts)
+D3.js for advanced/custom visualizations only
 
 // Date/Time
 date-fns or Day.js
@@ -757,7 +757,12 @@ export const useCreateOrder = () => {
 
 ## 🚀 Implementation Roadmap
 
-### **Phase 1: Foundation (Weeks 1-2)**
+### Priority Legend
+- 🔴 **MVP Critical**: Must-have for initial release
+- 🟡 **Post-MVP**: Important but can be added after launch
+- 🟢 **Nice-to-Have**: Enhanced features for future versions
+
+### **Phase 1: Foundation (Weeks 1-2)** 🔴 MVP Critical
 - [ ] Set up Next.js project with TypeScript
 - [ ] Configure Tailwind CSS and component library
 - [ ] Implement authentication system
@@ -765,29 +770,29 @@ export const useCreateOrder = () => {
 - [ ] Set up state management (Zustand)
 - [ ] Configure API client and React Query
 
-### **Phase 2: Core Modules (Weeks 3-6)**
-- [ ] Orders management dashboard
-- [ ] Staff directory and basic scheduling
-- [ ] Inventory tracking interface
-- [ ] Basic analytics dashboard
-- [ ] Customer management
-- [ ] Settings and configuration
+### **Phase 2: Core Modules (Weeks 3-6)** 🔴 MVP Critical
+- [ ] Orders management dashboard 🔴
+- [ ] Staff directory and basic scheduling 🔴
+- [ ] Inventory tracking interface 🔴
+- [ ] Basic analytics dashboard 🟡
+- [ ] Customer management 🟡
+- [ ] Settings and configuration 🔴
 
-### **Phase 3: Advanced Features (Weeks 7-10)**
-- [ ] Real-time WebSocket integration
-- [ ] Kitchen display system
-- [ ] Advanced scheduling with drag-drop
-- [ ] Bulk operations interfaces
-- [ ] AI insights integration
-- [ ] Mobile responsiveness
+### **Phase 3: Advanced Features (Weeks 7-10)** 🟡 Post-MVP
+- [ ] Real-time WebSocket integration 🔴
+- [ ] Kitchen display system 🔴
+- [ ] Advanced scheduling with drag-drop 🟡
+- [ ] Bulk operations interfaces 🟡
+- [ ] AI insights integration 🟢
+- [ ] Mobile responsiveness 🔴
 
-### **Phase 4: Specialized Interfaces (Weeks 11-12)**
-- [ ] POS terminal interface
-- [ ] Advanced analytics and reporting
-- [ ] Audit trail viewers
-- [ ] Advanced payment management
-- [ ] Performance optimization
-- [ ] Testing and QA
+### **Phase 4: Specialized Interfaces (Weeks 11-12)** 🟢 Nice-to-Have
+- [ ] POS terminal interface 🟡
+- [ ] Advanced analytics and reporting 🟢
+- [ ] Audit trail viewers 🟢
+- [ ] Advanced payment management 🟡
+- [ ] Performance optimization 🔴
+- [ ] Testing and QA 🔴
 
 ---
 

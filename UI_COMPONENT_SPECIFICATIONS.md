@@ -1,5 +1,7 @@
 # 🎨 AuraConnect UI Component Specifications
 
+> **Note**: Component preview images referenced throughout this document (e.g., `docs/assets/components/*-preview.png`) are placeholders. These can be replaced with actual screenshots or design mockups as components are implemented.
+
 ## 📋 Table of Contents
 1. [Design System Foundation](#design-system-foundation)
 2. [Layout Components](#layout-components)
@@ -9,8 +11,9 @@
 6. [Data Display Components](#data-display-components)
 7. [Feedback Components](#feedback-components)
 8. [Chart Components](#chart-components)
-9. [Mobile-Specific Components](#mobile-specific-components)
-10. [Page Templates](#page-templates)
+9. [Utility Components](#utility-components)
+10. [Mobile-Specific Components](#mobile-specific-components)
+11. [Page Templates](#page-templates)
 
 ---
 
@@ -163,8 +166,12 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 
 ## 🧭 Navigation Components
 
+> **Note**: For detailed navigation structure per user role, see [NAV_STRUCTURE.md](NAV_STRUCTURE.md)
+
 ### 1. Sidebar
 **Description**: Fixed sidebar navigation with collapsible menu items.
+
+![Sidebar Preview](docs/assets/components/sidebar-preview.png)
 
 ```tsx
 // Structure
@@ -294,6 +301,8 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 ### 2. Stats Card
 **Description**: Displays key metrics with icon, value, and trend.
 
+![StatsCard Preview](docs/assets/components/statcard-preview.png)
+
 ```tsx
 // Structure
 <StatsCard
@@ -362,6 +371,8 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 
 ### 1. Input Field
 **Description**: Text input with label, helper text, and validation states.
+
+![FormField Preview](docs/assets/components/formfield-preview.png)
 
 ```tsx
 // Structure
@@ -495,6 +506,8 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 
 ### 1. Data Table
 **Description**: Responsive table with sorting, filtering, and pagination.
+
+![DataTable Preview](docs/assets/components/datatable-preview.png)
 
 ```tsx
 // Structure
@@ -648,6 +661,8 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 ### 2. Alert
 **Description**: Contextual feedback messages.
 
+![Alert Preview](docs/assets/components/alert-preview.png)
+
 ```tsx
 // Structure
 <Alert
@@ -726,29 +741,7 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 .modal-footer: "px-6 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end space-x-3"
 ```
 
-### 5. Tooltip
-**Description**: Contextual information on hover.
-
-```tsx
-// Structure
-<Tooltip
-  content="Helpful information"
-  position="top|right|bottom|left"
->
-  <IconButton icon={InfoIcon} />
-</Tooltip>
-
-// Tailwind Classes
-.tooltip-trigger: "relative inline-flex"
-.tooltip: "absolute z-50 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg pointer-events-none opacity-0 transition-opacity"
-.tooltip-visible: "opacity-100"
-.tooltip-top: "bottom-full left-1/2 -translate-x-1/2 mb-2"
-.tooltip-right: "left-full top-1/2 -translate-y-1/2 ml-2"
-.tooltip-bottom: "top-full left-1/2 -translate-x-1/2 mt-2"
-.tooltip-left: "right-full top-1/2 -translate-y-1/2 mr-2"
-```
-
-### 6. Loading States
+### 5. Loading States
 **Description**: Various loading indicators.
 
 ```tsx
@@ -781,8 +774,14 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 
 ## 📈 Chart Components
 
+**Chart Library Recommendation:**
+- **Standard Charts**: Use Recharts for common visualizations (line, bar, pie, area)
+- **Custom/Complex**: Use D3.js for specialized visualizations requiring fine control
+
 ### 1. Line Chart
 **Description**: Time-series data visualization.
+
+![LineChart Preview](docs/assets/components/linechart-preview.png)
 
 ```tsx
 // Structure
@@ -862,6 +861,126 @@ font-family: 'Inter', 'Roboto', -apple-system, system-ui, sans-serif;
 .stats-widget-value: "text-2xl font-bold text-text-primary"
 .stats-widget-change: "text-sm font-medium"
 .sparkline-container: "h-12 w-full"
+```
+
+---
+
+## 🔧 Utility Components
+
+### 1. Tooltip
+**Description**: Contextual information on hover or focus.
+
+![Tooltip Preview](docs/assets/components/tooltip-preview.png)
+
+```tsx
+// Structure
+<Tooltip
+  content="Helpful information"
+  position="top|right|bottom|left"
+  delay={500}
+  theme="dark|light"
+>
+  <IconButton icon={InfoIcon} />
+</Tooltip>
+
+// Tailwind Classes
+.tooltip-trigger: "relative inline-flex"
+.tooltip: "absolute z-50 px-3 py-2 text-sm rounded-md shadow-lg pointer-events-none opacity-0 transition-opacity"
+.tooltip-dark: "bg-gray-900 text-white"
+.tooltip-light: "bg-surface text-text-primary border border-neutral-200"
+.tooltip-visible: "opacity-100"
+.tooltip-top: "bottom-full left-1/2 -translate-x-1/2 mb-2"
+.tooltip-arrow: "absolute w-2 h-2 bg-inherit transform rotate-45"
+```
+
+### 2. Pagination
+**Description**: Navigate through pages of content.
+
+![Pagination Preview](docs/assets/components/pagination-preview.png)
+
+```tsx
+// Structure
+<Pagination
+  currentPage={currentPage}
+  totalPages={totalPages}
+  onPageChange={handlePageChange}
+  showFirstLast
+  maxPageButtons={7}
+/>
+
+// Tailwind Classes
+.pagination: "flex items-center space-x-1"
+.page-button: "min-w-[40px] h-10 px-3 flex items-center justify-center rounded-md border border-neutral-200 hover:bg-neutral-50 transition-colors"
+.page-button-active: "bg-primary text-white border-primary hover:bg-primary/90"
+.page-button-disabled: "opacity-50 cursor-not-allowed hover:bg-transparent"
+.page-ellipsis: "px-2 text-text-secondary"
+```
+
+### 3. Tag/Chip
+**Description**: Small labeled elements for categories or filters.
+
+![Tag Preview](docs/assets/components/tag-preview.png)
+
+```tsx
+// Structure
+<Tag
+  label="Vegetarian"
+  variant="solid|outlined|soft"
+  color="primary|success|warning|error|info|neutral"
+  size="sm|md|lg"
+  icon={LeafIcon}
+  onRemove={handleRemove}
+  onClick={handleClick}
+/>
+
+// Tailwind Classes
+.tag: "inline-flex items-center font-medium rounded-full transition-all"
+
+// Sizes
+.tag-sm: "text-xs px-2 py-0.5"
+.tag-md: "text-sm px-3 py-1"
+.tag-lg: "text-base px-4 py-1.5"
+
+// Solid Variant
+.tag-solid-primary: "bg-primary text-white"
+.tag-solid-success: "bg-success text-white"
+.tag-solid-warning: "bg-warning text-white"
+.tag-solid-error: "bg-error text-white"
+
+// Outlined Variant
+.tag-outlined-primary: "border border-primary text-primary hover:bg-primary/5"
+.tag-outlined-success: "border border-success text-success hover:bg-success/5"
+
+// Soft Variant
+.tag-soft-primary: "bg-primary/10 text-primary hover:bg-primary/20"
+.tag-soft-success: "bg-success/10 text-success hover:bg-success/20"
+
+// Remove Button
+.tag-remove: "ml-1.5 -mr-1 p-0.5 rounded-full hover:bg-black/10"
+```
+
+### 4. Dropdown Menu
+**Description**: Contextual overlay menu.
+
+![Dropdown Preview](docs/assets/components/dropdown-preview.png)
+
+```tsx
+// Structure
+<Dropdown
+  trigger={<Button>Options</Button>}
+  align="start|center|end"
+>
+  <DropdownItem icon={EditIcon}>Edit</DropdownItem>
+  <DropdownItem icon={DuplicateIcon}>Duplicate</DropdownItem>
+  <DropdownDivider />
+  <DropdownItem icon={DeleteIcon} destructive>Delete</DropdownItem>
+</Dropdown>
+
+// Tailwind Classes
+.dropdown-menu: "absolute mt-2 min-w-[200px] bg-surface rounded-md shadow-lg border border-neutral-200 py-1 z-50"
+.dropdown-item: "flex items-center px-4 py-2 text-sm text-text-primary hover:bg-neutral-50 cursor-pointer"
+.dropdown-item-destructive: "text-error hover:bg-error/5"
+.dropdown-divider: "my-1 border-t border-neutral-200"
 ```
 
 ---
