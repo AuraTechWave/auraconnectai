@@ -2,13 +2,13 @@
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any, Callable, Tuple
 from datetime import datetime, timedelta
 import logging
 import json
 
 from ..models.promotion_models import (
-    Promotion, PromotionStatus, PromotionRule, RuleConditionType
+    Promotion, PromotionStatus, PromotionRule
 )
 from ..services.promotion_service import PromotionService
 from modules.customers.models.customer_models import Customer

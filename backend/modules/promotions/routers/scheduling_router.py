@@ -7,7 +7,7 @@ from datetime import datetime
 import asyncio
 
 from core.database import get_db
-from modules.auth.dependencies import get_current_user, require_admin
+from core.auth import get_current_user, require_admin
 
 from ..services.scheduling_service import PromotionSchedulingService
 from ..schemas.promotion_schemas import PromotionCreate

@@ -7,7 +7,7 @@ from datetime import datetime
 from functools import wraps
 from sqlalchemy.orm import Session
 
-from core.models import User
+from core.auth import User
 
 
 class AuditLogger:

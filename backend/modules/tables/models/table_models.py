@@ -5,7 +5,8 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
 
-from core.database import Base, TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 class TableStatus(str, Enum):

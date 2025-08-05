@@ -8,7 +8,8 @@ from unittest.mock import patch, MagicMock
 from core.database import get_test_db
 from core.models import User
 from core.inventory_models import Inventory, InventoryAdjustment, AdjustmentType
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ..schemas.order_schemas import OrderUpdate
 from ..services.order_service import update_order_service
 from ..services.recipe_inventory_service import RecipeInventoryService

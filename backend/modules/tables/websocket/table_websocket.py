@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..services.table_state_service import table_state_service
 from ..models.table_models import TableStatus
-from core.database import get_db_context
+from core.database_utils import get_db_context
 
 logger = logging.getLogger(__name__)
 

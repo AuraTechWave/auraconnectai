@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from core.database import get_db
-from modules.auth.dependencies import get_current_user, require_admin
+from core.auth import get_current_user, require_admin
 
 from ..services.ab_testing_service import ABTestingService
 from ..schemas.promotion_schemas import PromotionCreate

@@ -46,7 +46,7 @@ class BiometricCheckInResponse(BaseModel):
 
 class PinSetupRequest(BaseModel):
     staff_id: int
-    pin: str = Field(..., min_length=4, max_length=6, regex="^[0-9]+$")
+    pin: str = Field(..., min_length=4, max_length=6, pattern="^[0-9]+$")
     
 
 class PinCheckInRequest(BaseModel):

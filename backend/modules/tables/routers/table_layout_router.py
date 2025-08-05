@@ -1,13 +1,12 @@
 # backend/modules/tables/routers/table_layout_router.py
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 
 from core.database import get_db
-from core.auth import get_current_user, require_permission
-from core.schemas import User
+from core.auth import get_current_user, require_permission, User
 from ..schemas.table_schemas import (
     FloorCreate, FloorUpdate, FloorResponse,
     TableCreate, TableUpdate, TableResponse,

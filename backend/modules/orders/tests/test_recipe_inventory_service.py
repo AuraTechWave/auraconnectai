@@ -7,7 +7,8 @@ from typing import List
 
 from core.database import get_test_db
 from core.inventory_models import Inventory, InventoryAdjustment, AdjustmentType
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ...menu.models.recipe_models import Recipe, RecipeIngredient, RecipeSubRecipe, RecipeStatus
 from ...menu.models.menu_models import MenuItem, MenuItemStatus
 from ..services.recipe_inventory_service import RecipeInventoryService

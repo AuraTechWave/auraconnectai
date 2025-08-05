@@ -16,7 +16,7 @@ from ..schemas.table_schemas import (
     TableSessionCreate, TableSessionUpdate, TableStatusUpdate,
     BulkTableStatusUpdate, TableReservationCreate
 )
-from core.exceptions import BusinessLogicError, ResourceNotFoundError
+from core.exceptions import ConflictError as BusinessLogicError, NotFoundError as ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class TableStateService:
                         TableReservation.reservation_date < datetime_from,
                         func.datetime(
                             TableReservation.reservation_date,
-                            '+' || TableReservation.duration_minutes || ' minutes'
+                            func.concat('+', TableReservation.duration_minutes, ' minutes')
                         ) > datetime_from
                     )
                 )

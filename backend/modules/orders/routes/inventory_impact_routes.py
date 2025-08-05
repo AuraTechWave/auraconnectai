@@ -5,13 +5,11 @@ from sqlalchemy.orm import Session
 from typing import List, Dict
 
 from core.database import get_db
-from core.auth import get_current_user
-from core.models import User
-from core.rbac import check_permissions
+from core.auth import get_current_user, User
 
 from ..services.recipe_inventory_service import RecipeInventoryService
 from ..services.order_service import get_order_by_id
-from ..schemas.order_schemas import OrderItemCreate
+from ..schemas.order_item_schemas import OrderItemCreate
 
 
 router = APIRouter(prefix="/inventory-impact", tags=["Inventory Impact"])

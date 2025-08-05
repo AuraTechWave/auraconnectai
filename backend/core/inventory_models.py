@@ -158,7 +158,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     reason = Column(String(500), nullable=False)
     notes = Column(Text, nullable=True)
     location = Column(String(100), nullable=True)
-    metadata = Column(JSON, nullable=True)  # Additional structured data
+    adjustment_metadata = Column(JSON, nullable=True)  # Additional structured data
     
     # Approval workflow
     requires_approval = Column(Boolean, nullable=False, default=False)

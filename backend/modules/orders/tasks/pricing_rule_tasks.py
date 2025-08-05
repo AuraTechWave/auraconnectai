@@ -7,7 +7,7 @@ from typing import Dict, List
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.database import get_async_db
+from core.database_utils import get_db_context as get_async_db
 from ..models.pricing_rule_models import PricingRule, RuleStatus, PricingRuleMetrics
 from ..metrics.pricing_rule_metrics import pricing_metrics_collector
 

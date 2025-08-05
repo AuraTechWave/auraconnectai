@@ -9,7 +9,7 @@ import secrets
 import logging
 
 from ..models.customer_models import (
-    Customer, CustomerAddress, CustomerPaymentMethod, CustomerNotification,
+    Customer, CustomerAddress, CustomerNotification,
     CustomerReward, CustomerPreference, CustomerSegment, CustomerStatus, CustomerTier
 )
 from ..schemas.customer_schemas import (

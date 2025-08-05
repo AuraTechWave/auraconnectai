@@ -7,8 +7,7 @@ from datetime import datetime, timedelta
 import json
 
 from core.database import get_db
-from core.auth import get_current_user, require_permission
-from core.schemas import User
+from core.auth import get_current_user, require_permission, User
 from ..schemas.table_schemas import (
     TableSessionCreate, TableSessionUpdate, TableSessionResponse,
     TableStatusUpdate, BulkTableStatusUpdate,

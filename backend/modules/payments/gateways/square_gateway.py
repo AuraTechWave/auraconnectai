@@ -8,7 +8,7 @@ import uuid
 import json
 import hmac
 import hashlib
-from square import Client
+from square import Square as Client
 from square.models import (
     CreatePaymentRequest, CreatePaymentResponse,
     CreateRefundRequest, CreateCustomerRequest,

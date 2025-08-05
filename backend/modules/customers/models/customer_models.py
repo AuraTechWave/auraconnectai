@@ -177,45 +177,6 @@ class CustomerAddress(Base, TimestampMixin):
         return f"<CustomerAddress(id={self.id}, label='{self.label}', city='{self.city}')>"
 
 
-class CustomerPaymentMethod(Base, TimestampMixin):
-    """Customer saved payment methods"""
-    __tablename__ = "customer_payment_methods"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
-    
-    # Payment Method Information
-    type = Column(String(50), nullable=False)  # card, paypal, apple_pay, etc.
-    label = Column(String(100), nullable=True)  # User-friendly name
-    
-    # Card Information (encrypted/tokenized)
-    card_token = Column(String(255), nullable=True)  # Payment processor token
-    card_last4 = Column(String(4), nullable=True)
-    card_brand = Column(String(50), nullable=True)  # visa, mastercard, etc.
-    card_exp_month = Column(Integer, nullable=True)
-    card_exp_year = Column(Integer, nullable=True)
-    
-    # Digital Wallet
-    wallet_id = Column(String(255), nullable=True)
-    
-    # Billing Address
-    billing_address_id = Column(Integer, ForeignKey("customer_addresses.id"), nullable=True)
-    
-    # Status
-    is_default = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
-    
-    # Soft Delete
-    deleted_at = Column(DateTime, nullable=True)
-    
-    # Relationships
-    customer = relationship("Customer", back_populates="payment_methods")
-    billing_address = relationship("CustomerAddress")
-    
-    def __repr__(self):
-        return f"<CustomerPaymentMethod(id={self.id}, type='{self.type}', last4='{self.card_last4}')>"
-
-
 class CustomerNotification(Base, TimestampMixin):
     """Customer notification history"""
     __tablename__ = "customer_notifications"

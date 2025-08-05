@@ -10,7 +10,8 @@ from core.database import get_test_db
 from core.auth import create_access_token
 from core.models import User, Role
 from core.inventory_models import Inventory, InventoryAdjustment
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ...menu.models.menu_models import MenuItem, Category
 from ...menu.models.recipe_models import Recipe, RecipeIngredient
 

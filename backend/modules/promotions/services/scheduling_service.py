@@ -9,7 +9,7 @@ import asyncio
 from croniter import croniter
 
 from ..models.promotion_models import (
-    Promotion, PromotionStatus, PromotionRule, RuleConditionType
+    Promotion, PromotionStatus, PromotionRule
 )
 from ..schemas.promotion_schemas import PromotionCreate, PromotionUpdate
 from ..services.promotion_service import PromotionService

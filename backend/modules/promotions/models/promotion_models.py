@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 from core.database import Base
-from core.models import TimestampMixin
+from core.mixins import TimestampMixin
 
 
 class PromotionType(str, Enum):
