@@ -39,6 +39,22 @@ class AdjustmentType(str, Enum):
     RETURN = "return"  # Used when reversing consumption
 
 
+class WasteReason(str, Enum):
+    """Predefined waste reasons for better tracking"""
+    EXPIRED = "expired"
+    DAMAGED = "damaged"
+    SPILLAGE = "spillage"
+    OVERCOOKING = "overcooking"
+    CONTAMINATED = "contaminated"
+    PREPARATION_LOSS = "preparation_loss"
+    CUSTOMER_RETURN = "customer_return"
+    QUALITY_ISSUE = "quality_issue"
+    EQUIPMENT_FAILURE = "equipment_failure"
+    TEMPERATURE_ABUSE = "temperature_abuse"
+    INVENTORY_ERROR = "inventory_error"
+    OTHER = "other"
+
+
 class VendorStatus(str, Enum):
     """Vendor status enumeration"""
     ACTIVE = "active"
@@ -158,7 +174,7 @@ class InventoryAdjustment(Base, TimestampMixin):
     reason = Column(String(500), nullable=False)
     notes = Column(Text, nullable=True)
     location = Column(String(100), nullable=True)
-    metadata = Column(JSON, nullable=True)  # Additional structured data
+    adjustment_metadata = Column(JSON, nullable=True)  # Additional structured data
     
     # Approval workflow
     requires_approval = Column(Boolean, nullable=False, default=False)

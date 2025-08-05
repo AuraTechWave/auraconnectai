@@ -17,7 +17,7 @@ from ..schemas.table_schemas import (
     FloorCreate, FloorUpdate, TableCreate, TableUpdate,
     BulkTableCreate, BulkTableUpdate, TableLayoutCreate, TableLayoutUpdate
 )
-from core.exceptions import BusinessLogicError, ResourceNotFoundError
+from core.exceptions import ConflictError as BusinessLogicError, NotFoundError as ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 

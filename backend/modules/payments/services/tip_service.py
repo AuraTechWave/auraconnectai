@@ -13,7 +13,8 @@ from ..models.split_bill_models import TipDistribution, TipMethod
 from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order
 from ...staff.models.staff_models import Staff, StaffRole
-from ...payroll.models.payroll_models import TipRecord
+# TODO: TipRecord model needs to be created in payroll module
+# from ...payroll.models.payroll_models import TipRecord
 from ..monitoring.split_bill_metrics import SplitBillMetrics, track_tip_distribution
 
 logger = logging.getLogger(__name__)
@@ -345,18 +346,20 @@ class TipService:
         """Create a tip record for payroll processing"""
         
         # Check if TipRecord exists in payroll module
-        try:
-            tip_record = TipRecord(
-                staff_id=staff_id,
-                amount=amount,
-                date=date,
-                distribution_id=distribution_id,
-                status='pending'
-            )
-            db.add(tip_record)
-        except Exception as e:
-            # Log but don't fail if payroll module doesn't have TipRecord
-            logger.warning(f"Could not create tip record: {e}")
+        # TODO: Uncomment when TipRecord is created in payroll module
+        # try:
+        #     tip_record = TipRecord(
+        #         staff_id=staff_id,
+        #         amount=amount,
+        #         date=date,
+        #         distribution_id=distribution_id,
+        #         status='pending'
+        #     )
+        #     db.add(tip_record)
+        # except Exception as e:
+        #     # Log but don't fail if payroll module doesn't have TipRecord
+        #     logger.warning(f"Could not create tip record: {e}")
+        logger.warning("TipRecord not implemented yet - skipping tip record creation")
     
     async def get_staff_tips_summary(
         self,

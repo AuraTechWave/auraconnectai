@@ -532,7 +532,7 @@ async def get_tip_suggestions(
 
 
 @router.post("/{split_id}/tips/distribute")
-@require_permissions("manage_tips")
+@require_permission("manage_tips")
 async def process_tip_distribution(
     split_id: int,
     request: ProcessTipDistributionRequest,

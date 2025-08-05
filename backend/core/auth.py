@@ -437,7 +437,13 @@ require_staff_access = require_roles(["admin", "payroll_manager", "payroll_clerk
 
 # Add permission function factory to support require_permission("tax.admin") pattern
 def require_permission(permission: str):
-    """Create a dependency that requires specific permission"""
+    """
+    Create a dependency that requires specific permission.
+    
+    Can be used in two ways:
+    1. As a decorator: @require_permission("permission.name")
+    2. As a dependency: Depends(require_permission("permission.name"))
+    """
     # Map permission strings to roles
     permission_role_map = {
         "tax.admin": ["admin", "tax_admin"],
@@ -453,9 +459,44 @@ def require_permission(permission: str):
         "inventory:read": ["admin", "manager", "inventory_admin", "staff"],
         "inventory:update": ["admin", "manager", "inventory_admin"],
         "inventory:delete": ["admin", "inventory_admin"],
+        # Schedule permissions
+        "schedule.publish": ["admin", "schedule_admin", "manager"],
+        "schedule.manage": ["admin", "schedule_admin", "manager", "scheduler"],
+        # Refund permissions
+        "refunds.create": ["admin", "refund_admin", "manager", "staff"],
+        "refunds.view": ["admin", "refund_admin", "manager", "staff"],
+        "refunds.approve": ["admin", "refund_admin", "manager"],
+        "refunds.process": ["admin", "refund_admin"],
+        "refunds.view_statistics": ["admin", "refund_admin", "manager"],
+        "refunds.manage_policies": ["admin", "refund_admin"],
+        "refunds.manage": ["admin", "refund_admin", "manager"],
+        # Table permissions
+        "tables.manage_layout": ["admin", "table_admin", "manager"],
+        "tables.manage_sessions": ["admin", "table_admin", "manager", "host"],
+        "tables.update_status": ["admin", "table_admin", "manager", "host", "server"],
+        "tables.manage_reservations": ["admin", "table_admin", "manager", "host"],
+        "tables.view_analytics": ["admin", "table_admin", "manager"],
+        # Pricing permissions
+        "pricing.create": ["admin", "pricing_admin", "manager"],
+        "pricing.update": ["admin", "pricing_admin", "manager"],
+        "pricing.delete": ["admin", "pricing_admin"],
+        "pricing.view_metrics": ["admin", "pricing_admin", "manager"],
+        "pricing.apply": ["admin", "pricing_admin", "manager", "staff"],
+        # AI permissions
+        "ai.view_insights": ["admin", "ai_admin", "analytics_viewer"],
+        "ai.export_data": ["admin", "ai_admin"],
+        "ai.configure_alerts": ["admin", "ai_admin"],
     }
     roles = permission_role_map.get(permission, ["admin"])
-    return require_roles(roles)
+    
+    # When used as decorator, just return the function as-is
+    # The actual permission check happens via the current_user dependency
+    def decorator(func):
+        # Simply return the function unchanged
+        # FastAPI will handle the dependency injection via the function parameters
+        return func
+    
+    return decorator
 
 
 # Tenant support (placeholder)

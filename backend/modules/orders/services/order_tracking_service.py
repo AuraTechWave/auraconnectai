@@ -13,7 +13,8 @@ from core.notification_adapter import (
     NotificationAdapter, NotificationMessage, NotificationPriority,
     LoggingAdapter, CompositeAdapter
 )
-from ..models.order_models import Order, OrderStatus
+from ..models.order_models import Order
+from ..enums.order_enums import OrderStatus
 from ..models.order_tracking_models import (
     OrderTrackingEvent, CustomerOrderTracking, OrderNotification,
     OrderTrackingTemplate, TrackingEventType, NotificationChannel

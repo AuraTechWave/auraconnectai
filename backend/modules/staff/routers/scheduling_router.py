@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 
 from core.database import get_db
-from core.auth import verify_access_token
+from core.auth import get_current_user
 from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability,
     ShiftSwap, ShiftBreak, SchedulePublication
@@ -31,7 +31,7 @@ router = APIRouter()
 async def create_shift_template(
     template: ShiftTemplateCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new shift template (Manager/Admin only)"""
     # Check permission
@@ -55,7 +55,7 @@ async def get_shift_templates(
     role_id: Optional[int] = None,
     is_active: Optional[bool] = True,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get all shift templates"""
     query = db.query(ShiftTemplate)
@@ -75,7 +75,7 @@ async def update_shift_template(
     template_id: int,
     template: ShiftTemplateUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a shift template"""
     db_template = db.query(ShiftTemplate).filter(ShiftTemplate.id == template_id).first()
@@ -95,7 +95,7 @@ async def update_shift_template(
 async def create_shift(
     shift: ShiftCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new shift"""
     # Check for conflicts
@@ -150,7 +150,7 @@ async def get_shifts(
     location_id: Optional[int] = None,
     status: Optional[ShiftStatus] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get shifts for a date range with eager loading to prevent N+1 queries"""
     query = db.query(EnhancedShift).options(
@@ -207,7 +207,7 @@ async def update_shift(
     shift_id: int,
     shift: ShiftUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Update a shift"""
     db_shift = db.query(EnhancedShift).filter(EnhancedShift.id == shift_id).first()
@@ -254,7 +254,7 @@ async def update_shift(
 async def delete_shift(
     shift_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete or cancel a shift"""
     db_shift = db.query(EnhancedShift).filter(EnhancedShift.id == shift_id).first()
@@ -278,7 +278,7 @@ async def add_shift_break(
     shift_id: int,
     break_data: ShiftBreakCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Add a break to a shift"""
     shift = db.query(EnhancedShift).filter(EnhancedShift.id == shift_id).first()
@@ -311,7 +311,7 @@ async def add_shift_break(
 async def set_availability(
     availability: AvailabilityCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Set staff availability"""
     db_availability = StaffAvailability(**availability.dict())
@@ -333,7 +333,7 @@ async def get_availability(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get staff availability"""
     query = db.query(StaffAvailability)
@@ -367,7 +367,7 @@ async def get_availability(
 async def request_shift_swap(
     swap_request: ShiftSwapRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Request a shift swap"""
     # Verify requester owns the from_shift (with eager loading)
@@ -441,7 +441,7 @@ async def approve_shift_swap(
     swap_id: int,
     approval: ShiftSwapApproval,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Approve or reject a shift swap (Manager/Supervisor only)"""
     # Check permission
@@ -479,7 +479,7 @@ async def approve_shift_swap(
 async def generate_schedule(
     request: ScheduleGenerationRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Generate schedule from templates (Manager/Admin only)"""
     # Check permission
@@ -518,7 +518,7 @@ async def generate_schedule(
 async def publish_schedule(
     request: SchedulePublishRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Publish schedule and notify staff (Manager/Admin only)"""
     # Check permission
@@ -582,7 +582,7 @@ async def get_staffing_analytics(
     end_date: date = Query(...),
     location_id: int = Query(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get staffing analytics for a date range"""
     service = SchedulingService(db)
@@ -596,7 +596,7 @@ async def check_schedule_conflicts(
     end_time: datetime,
     exclude_shift_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Check for scheduling conflicts"""
     service = SchedulingService(db)
@@ -608,7 +608,7 @@ async def get_staff_schedule_summary(
     staff_id: int,
     week_start: date = Query(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get weekly schedule summary for a staff member"""
     week_end = week_start + timedelta(days=6)

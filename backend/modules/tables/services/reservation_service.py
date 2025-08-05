@@ -1,6 +1,6 @@
 # backend/modules/tables/services/reservation_service.py
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, func
@@ -17,8 +17,10 @@ from ..models.table_models import (
 from ..schemas.table_schemas import (
     TableReservationCreate, TableReservationUpdate
 )
-from core.exceptions import BusinessLogicError, ResourceNotFoundError
-from core.notifications import notification_service
+from core.exceptions import ConflictError as BusinessLogicError, NotFoundError as ResourceNotFoundError
+from core.notification_service import NotificationService
+# TODO: Create proper instance when service is initialized
+# notification_service = NotificationService()
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 import logging
 
 from core.database import get_db
-from core.auth import get_current_user, get_optional_current_user
+from core.auth import get_current_user, get_current_user_optional
 from modules.feedback.services.feedback_service import FeedbackService
 from modules.feedback.services.moderation_service import create_moderation_service
 from modules.feedback.schemas.feedback_schemas import (
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/feedback", tags=["Feedback"])
 async def create_feedback(
     feedback_data: FeedbackCreate,
     db: Session = Depends(get_db),
-    current_user: Optional[Dict] = Depends(get_optional_current_user)
+    current_user: Optional[Dict] = Depends(get_current_user_optional)
 ):
     """Create new feedback (anonymous or authenticated)"""
     
@@ -59,7 +59,7 @@ async def create_feedback(
 async def get_feedback(
     feedback_id: int = Path(..., description="Feedback ID"),
     db: Session = Depends(get_db),
-    current_user: Optional[Dict] = Depends(get_optional_current_user),
+    current_user: Optional[Dict] = Depends(get_current_user_optional),
     current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """Get specific feedback by ID"""
@@ -88,7 +88,7 @@ async def get_feedback(
 async def get_feedback_by_uuid(
     feedback_uuid: str = Path(..., description="Feedback UUID"),
     db: Session = Depends(get_db),
-    current_user: Optional[Dict] = Depends(get_optional_current_user),
+    current_user: Optional[Dict] = Depends(get_current_user_optional),
     current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """Get feedback by UUID"""
@@ -159,7 +159,7 @@ async def list_feedback(
     sort_order: str = Query("desc", pattern="^(asc|desc)$", description="Sort order"),
     
     db: Session = Depends(get_db),
-    current_user: Optional[Dict] = Depends(get_optional_current_user),
+    current_user: Optional[Dict] = Depends(get_current_user_optional),
     current_staff: Optional[Dict] = Depends(get_current_user)
 ):
     """List feedback with filtering and pagination"""

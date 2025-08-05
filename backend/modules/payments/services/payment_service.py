@@ -19,7 +19,8 @@ from ..gateways import (
     PaymentRequest, PaymentResponse, RefundRequest, RefundResponse,
     CustomerRequest, PaymentMethodRequest
 )
-from ...orders.models.order_models import Order, OrderStatus
+from ...orders.models.order_models import Order
+from ...orders.enums.order_enums import OrderStatus
 from .payment_metrics import PaymentMetrics, track_payment_processing
 
 

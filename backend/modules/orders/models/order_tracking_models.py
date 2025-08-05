@@ -57,7 +57,7 @@ class OrderTrackingEvent(Base, TimestampMixin):
     location_accuracy = Column(Float, nullable=True)  # meters
     
     # Additional event metadata
-    metadata = Column(JSONB, nullable=True, default={})
+    event_metadata = Column(JSONB, nullable=True, default={})
     
     # Who triggered the event
     triggered_by_type = Column(String, nullable=False, default="system")  # system, staff, customer, api
@@ -141,7 +141,7 @@ class OrderNotification(Base, TimestampMixin):
     external_id = Column(String, nullable=True)  # e.g., Firebase message ID, SendGrid ID
     
     # Additional data
-    metadata = Column(JSONB, nullable=True, default={})
+    event_metadata = Column(JSONB, nullable=True, default={})
     
     # Relations
     order = relationship("Order", back_populates="notifications")

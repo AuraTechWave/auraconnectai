@@ -10,7 +10,8 @@ import time
 
 from core.inventory_models import Inventory, InventoryAdjustment, AdjustmentType
 from core.notification_service import NotificationService
-from ..models.order_models import OrderItem, OrderStatus
+from ..models.order_models import OrderItem
+from ..enums.order_enums import OrderStatus
 from ..models.manual_review_models import ReviewReason
 from ...menu.models.recipe_models import Recipe, RecipeIngredient, RecipeSubRecipe
 from ...menu.services.recipe_service import RecipeService

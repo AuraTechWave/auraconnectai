@@ -12,7 +12,8 @@ from .base import (
     PaymentMethodResponse
 )
 from .stripe_gateway import StripeGateway
-from .square_gateway import SquareGateway
+# from .square_gateway import SquareGateway  # TODO: Fix Square SDK imports
+SquareGateway = None  # Temporary placeholder
 from .paypal_gateway import PayPalGateway
 
 __all__ = [

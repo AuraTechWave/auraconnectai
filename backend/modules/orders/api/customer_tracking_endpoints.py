@@ -6,7 +6,8 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 from core.database import get_db
-from core.auth import get_current_customer, get_current_user_optional
+from core.auth import get_current_user_optional
+from modules.customers.auth.customer_auth import get_current_customer
 from ..services.order_tracking_service import OrderTrackingService
 from ..models.order_tracking_models import TrackingEventType, NotificationChannel
 from ..schemas.tracking_schemas import (
@@ -350,7 +351,8 @@ async def register_push_token(
     
     # Update all active order trackings for this customer
     from ..models.order_tracking_models import CustomerOrderTracking
-    from ..models.order_models import Order, OrderStatus
+    from ..models.order_models import Order
+    from ..enums.order_enums import OrderStatus
     
     active_statuses = [
         OrderStatus.PENDING,

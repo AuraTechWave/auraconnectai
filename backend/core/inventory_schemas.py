@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from enum import Enum
 
-from .inventory_models import AlertStatus, AlertPriority, AdjustmentType, VendorStatus
+from .inventory_models import AlertStatus, AlertPriority, AdjustmentType, VendorStatus, WasteReason
 
 
 # Vendor schemas
@@ -206,6 +206,16 @@ class InventoryAdjustmentBase(BaseModel):
     expiration_date: Optional[datetime] = None
     notes: Optional[str] = None
     location: Optional[str] = Field(None, max_length=100)
+    
+    @validator('quantity_adjusted')
+    def validate_quantity_adjusted(cls, v, values):
+        if 'adjustment_type' in values:
+            adj_type = values['adjustment_type']
+            # For waste, expired, damaged - quantity must be positive (we're removing from inventory)
+            if adj_type in [AdjustmentType.WASTE, AdjustmentType.EXPIRED, AdjustmentType.DAMAGED]:
+                if v <= 0:
+                    raise ValueError(f'Quantity for {adj_type} must be positive (amount being removed)')
+        return v
 
 
 class InventoryAdjustmentCreate(InventoryAdjustmentBase):
@@ -233,6 +243,54 @@ class InventoryAdjustment(InventoryAdjustmentBase):
 
 class InventoryAdjustmentWithItem(InventoryAdjustment):
     inventory_item: Inventory
+
+
+# Waste tracking specific schemas
+class WasteEventCreate(BaseModel):
+    """Schema for creating a waste event with enhanced validation"""
+    inventory_id: int
+    quantity: float = Field(..., gt=0, description="Quantity wasted (must be positive)")
+    waste_reason: WasteReason = Field(..., description="Predefined waste reason")
+    custom_reason: Optional[str] = Field(None, min_length=10, max_length=500, 
+                                         description="Additional details if waste_reason is OTHER")
+    batch_number: Optional[str] = Field(None, max_length=100)
+    expiration_date: Optional[datetime] = None
+    location: Optional[str] = Field(None, max_length=100)
+    temperature_at_waste: Optional[float] = Field(None, description="Temperature when waste occurred (°F)")
+    witnessed_by: Optional[str] = Field(None, max_length=100, description="Staff member who witnessed the waste")
+    
+    @validator('custom_reason')
+    def validate_custom_reason(cls, v, values):
+        if 'waste_reason' in values and values['waste_reason'] == WasteReason.OTHER:
+            if not v or len(v.strip()) < 10:
+                raise ValueError('Custom reason is required when waste_reason is OTHER (min 10 characters)')
+        return v
+    
+    @validator('quantity')
+    def validate_positive_quantity(cls, v):
+        if v <= 0:
+            raise ValueError('Waste quantity must be greater than zero')
+        return v
+
+
+class WasteEventResponse(BaseModel):
+    """Response schema for waste events"""
+    id: int
+    inventory_id: int
+    inventory_name: str
+    quantity_wasted: float
+    unit: str
+    waste_reason: WasteReason
+    custom_reason: Optional[str]
+    total_cost: float
+    created_by: int
+    created_by_name: str
+    created_at: datetime
+    location: Optional[str]
+    witnessed_by: Optional[str]
+    
+    class Config:
+        from_attributes = True
 
 
 # Usage tracking schemas

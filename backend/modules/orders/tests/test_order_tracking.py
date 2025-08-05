@@ -12,7 +12,8 @@ from ..models.order_tracking_models import (
     OrderTrackingEvent, CustomerOrderTracking, OrderNotification,
     TrackingEventType, NotificationChannel
 )
-from ..models.order_models import Order, OrderStatus
+from ..models.order_models import Order
+from ..enums.order_enums import OrderStatus
 from ...customers.models.customer_models import Customer
 from tests.factories import OrderFactory, CustomerFactory
 

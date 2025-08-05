@@ -12,7 +12,8 @@ import threading
 
 from core.database import get_test_db, Base
 from core.inventory_models import Inventory, InventoryAdjustment
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ...menu.models.recipe_models import Recipe, RecipeIngredient
 from ...menu.models.menu_models import MenuItem
 from ..services.recipe_inventory_service import RecipeInventoryService

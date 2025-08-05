@@ -8,7 +8,9 @@ from arq import create_pool
 from arq.connections import RedisSettings
 
 from core.config import settings
-from ...notifications.services.notification_service import notification_service
+from core.notification_service import NotificationService
+# TODO: Create proper instance when service is initialized
+# notification_service = NotificationService()
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,7 @@ class SplitBillNotificationQueue:
     """
     
     def __init__(self):
-        self.redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+        self.redis_settings = RedisSettings.from_dsn(settings.redis_url) if settings.redis_url else None
     
     async def queue_participant_invitation(
         self,

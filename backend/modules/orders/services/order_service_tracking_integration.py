@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 import logging
 
-from ..models.order_models import Order, OrderStatus
+from ..models.order_models import Order
+from ..enums.order_enums import OrderStatus
 from ..services.order_tracking_service import OrderTrackingService
 from ..models.order_tracking_models import TrackingEventType
 

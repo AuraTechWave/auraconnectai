@@ -7,7 +7,8 @@ from datetime import datetime
 
 from core.database import get_test_db
 from core.inventory_models import Inventory, InventoryAdjustment
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ..models.manual_review_models import ManualReviewQueue, ReviewReason, ReviewStatus
 from ...menu.models.menu_models import MenuItem
 from ...menu.models.recipe_models import Recipe, RecipeIngredient

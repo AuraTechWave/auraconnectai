@@ -6,8 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from core.database import get_db
-from core.auth import get_current_user, require_role
-from core.models import User
+from core.auth import get_current_user, require_roles, User
 from ..services.manual_review_service import ManualReviewService
 from ..models.manual_review_models import ReviewReason, ReviewStatus
 from ..schemas.manual_review_schemas import (
@@ -28,7 +27,7 @@ async def get_pending_reviews(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     priority_threshold: Optional[int] = Query(None, ge=0, le=10),
-    current_user: User = Depends(require_role(["manager", "admin"])),
+    current_user: User = Depends(require_roles(["manager", "admin"])),
     db: Session = Depends(get_db)
 ):
     """
@@ -57,7 +56,7 @@ async def get_pending_reviews(
 async def get_review_statistics(
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
-    current_user: User = Depends(require_role(["manager", "admin"])),
+    current_user: User = Depends(require_roles(["manager", "admin"])),
     db: Session = Depends(get_db)
 ):
     """
@@ -78,7 +77,7 @@ async def get_review_statistics(
 @router.get("/{review_id}", response_model=ManualReviewResponse)
 async def get_review_details(
     review_id: int,
-    current_user: User = Depends(require_role(["staff", "manager", "admin"])),
+    current_user: User = Depends(require_roles(["staff", "manager", "admin"])),
     db: Session = Depends(get_db)
 ):
     """Get details of a specific review"""
@@ -98,7 +97,7 @@ async def get_review_details(
 async def assign_review(
     review_id: int,
     request: AssignReviewRequest,
-    current_user: User = Depends(require_role(["manager", "admin"])),
+    current_user: User = Depends(require_roles(["manager", "admin"])),
     db: Session = Depends(get_db)
 ):
     """
@@ -133,7 +132,7 @@ async def assign_review(
 async def resolve_review(
     review_id: int,
     request: ResolveReviewRequest,
-    current_user: User = Depends(require_role(["manager", "admin"])),
+    current_user: User = Depends(require_roles(["manager", "admin"])),
     db: Session = Depends(get_db)
 ):
     """
@@ -173,7 +172,7 @@ async def resolve_review(
 async def escalate_review(
     review_id: int,
     request: EscalateReviewRequest,
-    current_user: User = Depends(require_role(["staff", "manager"])),
+    current_user: User = Depends(require_roles(["staff", "manager"])),
     db: Session = Depends(get_db)
 ):
     """

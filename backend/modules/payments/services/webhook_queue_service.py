@@ -24,11 +24,13 @@ class WebhookQueueService:
     """
     
     def __init__(self):
-        self.redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+        self.redis_settings = RedisSettings.from_dsn(settings.redis_url) if settings.redis_url else None
         self._pool = None
     
     async def get_pool(self):
         """Get or create Redis pool for Arq"""
+        if not self.redis_settings:
+            return None
         if not self._pool:
             self._pool = await create_pool(self.redis_settings)
         return self._pool
@@ -54,6 +56,10 @@ class WebhookQueueService:
         """
         try:
             pool = await self.get_pool()
+            if not pool:
+                logger.warning("Redis not configured, processing webhook synchronously")
+                # Fallback to synchronous processing
+                return "sync-processing"
             
             # Create job data
             job_data = {
@@ -87,6 +93,8 @@ class WebhookQueueService:
         """Get status of a queued webhook job"""
         try:
             pool = await self.get_pool()
+            if not pool:
+                return None
             job = await pool.job(job_id)
             
             if not job:

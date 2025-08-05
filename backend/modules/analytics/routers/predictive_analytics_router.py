@@ -15,7 +15,7 @@ import logging
 
 from core.database import get_db
 from core.auth import get_current_user
-from modules.auth.models import User
+from core.auth import User
 from modules.analytics.schemas.predictive_analytics_schemas import (
     DemandForecastRequest, DemandForecast,
     StockOptimizationRequest, StockOptimizationResult,
@@ -29,8 +29,7 @@ from modules.analytics.schemas.predictive_analytics_schemas import (
 from modules.analytics.services.demand_prediction_service import DemandPredictionService
 from modules.analytics.services.stock_optimization_service import StockOptimizationService
 from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
-from modules.analytics.services.permissions_service import require_analytics_permission
-from modules.analytics.permissions import AnalyticsPermission
+from modules.analytics.services.permissions_service import require_analytics_permission, AnalyticsPermission
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ router = APIRouter(
 async def forecast_demand(
     request: DemandForecastRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Generate demand forecast for a product or category.
@@ -71,7 +70,7 @@ async def forecast_demand(
 async def optimize_stock_levels(
     request: StockOptimizationRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.MANAGE_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
 ):
     """
     Optimize stock levels for products.
@@ -98,7 +97,7 @@ async def create_batch_predictions(
     request: BatchPredictionRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Create batch predictions for multiple entities.
@@ -142,7 +141,7 @@ async def get_forecast_accuracy_report(
     end_date: date = Query(..., description="End date for accuracy report"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Get forecast accuracy report for a time period.
@@ -174,7 +173,7 @@ async def compare_forecast_to_actuals(
     predictions: List[Dict[str, Any]] = None,
     actuals: List[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Compare forecast predictions to actual values.
@@ -211,7 +210,7 @@ async def get_prediction_alerts(
     severity: Optional[str] = Query(None, description="Filter by severity"),
     active_only: bool = Query(True, description="Show only active alerts"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Get active prediction alerts.
@@ -258,7 +257,7 @@ async def analyze_trends(
     entity_id: int,
     lookback_days: int = Query(90, description="Days to analyze"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Analyze trends for a specific entity.
@@ -294,7 +293,7 @@ async def get_predictive_insights(
     limit: int = Query(10, description="Maximum insights to return"),
     min_impact_score: float = Query(5.0, description="Minimum impact score"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Get actionable predictive insights.
@@ -343,7 +342,7 @@ async def train_prediction_models(
     request: ModelTrainingRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.MANAGE_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
 ):
     """
     Train or retrain prediction models.
@@ -377,7 +376,7 @@ async def train_prediction_models(
 async def export_predictions(
     request: PredictionExportRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_DATA))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS))
 ):
     """
     Export predictions to file.
@@ -407,7 +406,7 @@ async def get_model_performance_metrics(
     model_type: Optional[str] = Query(None, description="Filter by model type"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PREDICTIONS))
+    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
 ):
     """
     Get performance metrics for prediction models.

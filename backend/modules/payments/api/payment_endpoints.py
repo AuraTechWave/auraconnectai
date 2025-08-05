@@ -21,7 +21,7 @@ from ..schemas.payment_schemas import (
     PaymentMethodCreate, PaymentMethodResponse,
     PaymentGatewayConfig, PaymentWebhookResponse
 )
-from ...auth.models.user_models import User
+from core.auth import User
 from ...orders.models.order_models import Order
 
 

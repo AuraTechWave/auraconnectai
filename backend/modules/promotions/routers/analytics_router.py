@@ -8,7 +8,7 @@ from datetime import datetime
 import io
 
 from core.database import get_db
-from modules.auth.dependencies import get_current_user, require_admin
+from core.auth import get_current_user, require_admin
 
 from ..services.analytics_service import PromotionAnalyticsService
 from ..services.reporting_service import PromotionReportingService

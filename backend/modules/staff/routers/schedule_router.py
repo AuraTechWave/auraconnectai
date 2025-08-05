@@ -6,8 +6,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.auth import get_current_user, require_permission
-from core.schemas import User
+from core.auth import get_current_user, require_permission, User
 from ..schemas.schedule_schemas import (
     SchedulePreviewResponse, SchedulePublishRequest,
     ScheduleCreateRequest, ScheduleUpdateRequest,

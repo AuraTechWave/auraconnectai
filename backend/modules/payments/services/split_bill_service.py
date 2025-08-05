@@ -18,7 +18,9 @@ from ..models.split_bill_models import (
 from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order, OrderItem
 from ...customers.models.customer_models import Customer
-from ...notifications.services.notification_service import notification_service
+from core.notification_service import NotificationService
+# TODO: Create proper instance when service is initialized
+# notification_service = NotificationService()
 from .split_bill_notification_queue import split_bill_notification_queue
 from ..monitoring.split_bill_metrics import SplitBillMetrics, track_split_creation
 

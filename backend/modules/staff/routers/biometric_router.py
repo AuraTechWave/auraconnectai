@@ -5,7 +5,7 @@ from typing import List
 from datetime import datetime
 
 from core.database import get_db
-from core.auth import verify_access_token
+from core.auth import get_current_user
 from ..models.staff_models import StaffMember
 from ..models.biometric_models import StaffBiometric
 from ..schemas.biometric_schemas import (
@@ -24,7 +24,7 @@ router = APIRouter()
 async def enroll_fingerprint(
     request: FingerprintEnrollmentRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Enroll a staff member's fingerprint with enhanced security"""
     service = BiometricService(db)
@@ -53,7 +53,7 @@ async def enroll_fingerprint(
 async def enroll_face(
     request: FaceEnrollmentRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Enroll a staff member's face ID with enhanced security"""
     service = BiometricService(db)
@@ -152,7 +152,7 @@ async def face_check_in(
 async def setup_pin(
     request: PinSetupRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Set up PIN for a staff member with enhanced security"""
     service = BiometricService(db)
@@ -204,7 +204,7 @@ async def pin_check_in(
 async def get_biometric_status(
     staff_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get biometric enrollment status for a staff member"""
     biometric = db.query(StaffBiometric).filter(
@@ -233,7 +233,7 @@ async def delete_biometric_data(
     staff_id: int,
     data_type: str = "all",
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Delete biometric data for GDPR compliance"""
     service = BiometricService(db)
@@ -249,7 +249,7 @@ async def delete_biometric_data(
 async def export_biometric_data(
     staff_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(verify_access_token)
+    current_user: dict = Depends(get_current_user)
 ):
     """Export biometric data for GDPR data portability"""
     service = BiometricService(db)

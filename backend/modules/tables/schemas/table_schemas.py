@@ -85,7 +85,7 @@ class TableLayoutData(BaseModel):
     height: int = Field(100, gt=0)
     rotation: int = Field(0, ge=0, lt=360)
     shape: TableShape = TableShape.RECTANGLE
-    color: Optional[str] = Field(None, regex='^#[0-9A-Fa-f]{6}$')
+    color: Optional[str] = Field(None, pattern='^#[0-9A-Fa-f]{6}$')
 
 
 class TableFeatures(BaseModel):
@@ -120,7 +120,7 @@ class TableUpdate(BaseModel):
     height: Optional[int] = Field(None, gt=0)
     rotation: Optional[int] = Field(None, ge=0, lt=360)
     shape: Optional[TableShape] = None
-    color: Optional[str] = Field(None, regex='^#[0-9A-Fa-f]{6}$')
+    color: Optional[str] = Field(None, pattern='^#[0-9A-Fa-f]{6}$')
     status: Optional[TableStatus] = None
     is_active: Optional[bool] = None
     has_power_outlet: Optional[bool] = None
@@ -270,8 +270,8 @@ class TableLayoutCreate(BaseModel):
     is_active: bool = False
     is_default: bool = False
     active_days: Optional[List[str]] = None
-    active_from_time: Optional[str] = Field(None, regex='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
-    active_to_time: Optional[str] = Field(None, regex='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_from_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_to_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
     event_date: Optional[datetime] = None
     event_name: Optional[str] = Field(None, max_length=100)
 
@@ -284,8 +284,8 @@ class TableLayoutUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None
     active_days: Optional[List[str]] = None
-    active_from_time: Optional[str] = Field(None, regex='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
-    active_to_time: Optional[str] = Field(None, regex='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_from_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_to_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
     event_date: Optional[datetime] = None
     event_name: Optional[str] = Field(None, max_length=100)
 

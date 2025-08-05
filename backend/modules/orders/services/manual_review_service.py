@@ -9,7 +9,8 @@ from ..models.manual_review_models import (
     ManualReviewQueue, InventoryAdjustmentAttempt,
     ReviewReason, ReviewStatus
 )
-from ..models.order_models import Order, OrderStatus
+from ..models.order_models import Order
+from ..enums.order_enums import OrderStatus
 from ..exceptions.inventory_exceptions import InventoryDeductionError
 from ..utils.inventory_logging import InventoryLogger
 from ..utils.audit_logger import AuditLogger, audit_action

@@ -8,7 +8,8 @@ from datetime import datetime
 from decimal import Decimal
 
 from core.inventory_models import Inventory, InventoryAdjustment, AdjustmentType
-from ..models.order_models import OrderItem, OrderStatus
+from ..models.order_models import OrderItem
+from ..enums.order_enums import OrderStatus
 from ...menu.models.recipe_models import Recipe, RecipeIngredient, RecipeSubRecipe
 from ...menu.services.recipe_service import RecipeService
 
