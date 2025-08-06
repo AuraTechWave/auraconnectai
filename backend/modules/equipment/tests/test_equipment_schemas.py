@@ -12,6 +12,8 @@ from modules.equipment.schemas import (
 from modules.equipment.models import MaintenanceStatus, MaintenanceType, EquipmentStatus
 
 
+@pytest.mark.unit
+@pytest.mark.equipment
 class TestEquipmentSchemas:
     """Test equipment schemas validation"""
     

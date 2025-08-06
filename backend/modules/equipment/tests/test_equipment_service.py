@@ -14,6 +14,8 @@ from modules.equipment.schemas import (
 )
 
 
+@pytest.mark.unit
+@pytest.mark.equipment
 class TestEquipmentService:
     """Test equipment service operations"""
     
