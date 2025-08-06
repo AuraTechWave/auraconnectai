@@ -74,6 +74,9 @@ from modules.menu.routes.recipe_routes import router as recipe_router
 from modules.inventory.routes.inventory_routes import router as inventory_management_router
 from modules.inventory.routes.vendor_routes import router as vendor_management_router
 
+# ========== Equipment Management ==========
+from modules.equipment.routes import router as equipment_router
+
 # ========== Analytics & Insights ==========
 from modules.analytics.routers.analytics_router import router as analytics_router
 from modules.analytics.routers.realtime_router import router as realtime_analytics_router
@@ -255,6 +258,9 @@ app.include_router(recipe_router, prefix="/api/v1/menu", tags=["Recipe Managemen
 # Inventory Management
 app.include_router(inventory_management_router)
 app.include_router(vendor_management_router)
+
+# Equipment Management
+app.include_router(equipment_router, prefix="/api/v1", tags=["Equipment Management"])
 
 # Analytics & Insights
 app.include_router(analytics_router)
