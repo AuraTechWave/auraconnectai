@@ -4,6 +4,7 @@ import MenuCategoryManagement from '../../components/menu/MenuCategoryManagement
 import MenuItemManagement from '../../components/menu/MenuItemManagement';
 import ModifierManagement from '../../components/menu/ModifierManagement';
 import MenuVersioning from '../../components/menu/MenuVersioning';
+import RecipeManagement from '../../components/menu/RecipeManagement';
 import apiClient from '../../utils/authInterceptor';
 import './MenuDashboard.css';
 
@@ -17,7 +18,7 @@ interface MenuStats {
 
 const MenuDashboard: React.FC = () => {
   const { hasPermission } = useRBAC();
-  const [activeTab, setActiveTab] = useState<'categories' | 'items' | 'modifiers' | 'versioning' | 'overview'>('overview');
+  const [activeTab, setActiveTab] = useState<'categories' | 'items' | 'modifiers' | 'versioning' | 'recipes' | 'overview'>('overview');
   const [stats, setStats] = useState<MenuStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +64,7 @@ const MenuDashboard: React.FC = () => {
     { id: 'categories', label: 'Categories', icon: '📂' },
     { id: 'items', label: 'Menu Items', icon: '🍽️' },
     { id: 'modifiers', label: 'Modifiers', icon: '⚙️' },
+    { id: 'recipes', label: 'Recipes', icon: '👨‍🍳' },
     { id: 'versioning', label: 'Versioning', icon: '📋' }
   ];
 
@@ -189,6 +191,17 @@ const MenuDashboard: React.FC = () => {
                         <p>Create new modifiers and groups</p>
                       </div>
                     </button>
+
+                    <button 
+                      className="action-card"
+                      onClick={() => setActiveTab('recipes')}
+                    >
+                      <div className="action-icon">👨‍🍳</div>
+                      <div className="action-content">
+                        <h4>Manage Recipes</h4>
+                        <p>Configure recipes and ingredients</p>
+                      </div>
+                    </button>
                   </>
                 )}
 
@@ -259,6 +272,7 @@ const MenuDashboard: React.FC = () => {
         {activeTab === 'categories' && <MenuCategoryManagement />}
         {activeTab === 'items' && <MenuItemManagement />}
         {activeTab === 'modifiers' && <ModifierManagement />}
+        {activeTab === 'recipes' && <RecipeManagement />}
         {activeTab === 'versioning' && <MenuVersioning />}
       </div>
 
