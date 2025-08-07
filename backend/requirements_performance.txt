@@ -1,0 +1,18 @@
+# Performance optimization dependencies for recipe management
+
+# Redis for caching
+redis==5.0.1
+hiredis==2.3.2  # C parser for improved Redis performance
+
+# Celery for background tasks
+celery==5.3.4
+celery[redis]==5.3.4
+flower==2.0.1  # Celery monitoring tool
+
+# Performance monitoring
+prometheus-client==0.19.0
+psutil==5.9.8  # System metrics
+
+# Additional optimizations
+orjson==3.9.10  # Fast JSON serialization
+uvloop==0.19.0  # Fast event loop for asyncio
