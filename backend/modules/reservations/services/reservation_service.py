@@ -22,6 +22,17 @@ from ..schemas.reservation_schemas import (
 )
 from .availability_service import AvailabilityService
 from .notification_service import ReservationNotificationService
+from ..events import (
+    emit_reservation_event,
+    ReservationCreatedEvent,
+    ReservationUpdatedEvent,
+    ReservationCancelledEvent,
+    ReservationPromotedEvent,
+    ReservationSeatedEvent,
+    ReservationCompletedEvent,
+    ReservationNoShowEvent
+)
+from ..models.audit_models import ReservationAuditLog, AuditAction
 
 logger = logging.getLogger(__name__)
 
@@ -116,9 +127,39 @@ class ReservationService:
             table_numbers=", ".join([t.table_number for t in assigned_tables])
         )
         
+        # Set audit fields
+        reservation.created_by = customer_id  # Customer creating their own reservation
+        
         self.db.add(reservation)
         self.db.commit()
         self.db.refresh(reservation)
+        
+        # Create audit log
+        self._create_audit_log(
+            reservation_id=reservation.id,
+            action=AuditAction.CREATED,
+            user_id=customer_id,
+            user_type="customer",
+            metadata={
+                "source": reservation_data.source,
+                "party_size": reservation_data.party_size,
+                "table_assigned": reservation.table_numbers
+            }
+        )
+        
+        # Emit event
+        event = ReservationCreatedEvent(
+            reservation_id=reservation.id,
+            customer_id=customer_id,
+            timestamp=datetime.utcnow(),
+            user_id=customer_id,
+            party_size=reservation.party_size,
+            reservation_date=str(reservation.reservation_date),
+            reservation_time=str(reservation.reservation_time),
+            source=reservation.source,
+            metadata={"table_numbers": reservation.table_numbers}
+        )
+        await emit_reservation_event(event)
         
         # Send confirmation notification
         await self.notification_service.send_booking_confirmation(reservation)
@@ -151,6 +192,11 @@ class ReservationService:
         hours_in_advance = (reservation_datetime - now).total_seconds() / 3600
         if hours_in_advance < settings.min_advance_hours:
             raise ValueError(f"Reservations must be made at least {settings.min_advance_hours} hours in advance")
+        
+        # Check cutoff time (can't book within X minutes)
+        minutes_in_advance = (reservation_datetime - now).total_seconds() / 60
+        if minutes_in_advance < settings.min_advance_minutes:
+            raise ValueError(f"Reservations must be made at least {settings.min_advance_minutes} minutes in advance")
         
         # Check party size
         if reservation_data.party_size < settings.min_party_size:
@@ -241,13 +287,42 @@ class ReservationService:
             reservation.table_ids = [t.id for t in assigned_tables]
             reservation.table_numbers = ", ".join([t.table_number for t in assigned_tables])
         
-        # Update fields
+        # Track field changes for audit
+        field_changes = {}
         for field, value in update_data.dict(exclude_unset=True).items():
+            old_value = getattr(reservation, field)
+            if old_value != value:
+                field_changes[field] = {"old": str(old_value), "new": str(value)}
             setattr(reservation, field, value)
         
+        # Update audit fields
         reservation.updated_at = datetime.utcnow()
+        reservation.updated_by = customer_id
+        
         self.db.commit()
         self.db.refresh(reservation)
+        
+        # Create audit log
+        if field_changes:
+            self._create_audit_log(
+                reservation_id=reservation.id,
+                action=AuditAction.UPDATED,
+                user_id=customer_id,
+                user_type="customer",
+                field_changes=field_changes,
+                metadata={"needs_availability_check": needs_availability_check}
+            )
+        
+        # Emit event
+        event = ReservationUpdatedEvent(
+            reservation_id=reservation.id,
+            customer_id=customer_id,
+            timestamp=datetime.utcnow(),
+            user_id=customer_id,
+            field_changes=field_changes,
+            metadata={"table_reassigned": needs_availability_check}
+        )
+        await emit_reservation_event(event)
         
         # Send update notification
         await self.notification_service.send_update_notification(reservation)
@@ -277,6 +352,35 @@ class ReservationService:
         
         self.db.commit()
         self.db.refresh(reservation)
+        
+        # Create audit log
+        self._create_audit_log(
+            reservation_id=reservation.id,
+            action=AuditAction.CANCELLED,
+            user_id=customer_id,
+            user_type="customer",
+            reason=cancellation_data.reason,
+            metadata={
+                "cancelled_by": cancellation_data.cancelled_by,
+                "table_numbers": reservation.table_numbers
+            }
+        )
+        
+        # Emit event
+        event = ReservationCancelledEvent(
+            reservation_id=reservation.id,
+            customer_id=customer_id,
+            timestamp=datetime.utcnow(),
+            user_id=customer_id,
+            reason=cancellation_data.reason,
+            cancelled_by=cancellation_data.cancelled_by,
+            metadata={
+                "party_size": reservation.party_size,
+                "reservation_date": str(reservation.reservation_date),
+                "reservation_time": str(reservation.reservation_time)
+            }
+        )
+        await emit_reservation_event(event)
         
         # Send cancellation notification
         await self.notification_service.send_cancellation_notification(
@@ -311,12 +415,35 @@ class ReservationService:
         
         reservation.status = ReservationStatus.CONFIRMED
         reservation.confirmed_at = datetime.utcnow()
+        reservation.confirmed_by = customer_id
         
         if confirmation_data.special_requests_update:
             reservation.special_requests = confirmation_data.special_requests_update
         
         self.db.commit()
         self.db.refresh(reservation)
+        
+        # Create audit log
+        self._create_audit_log(
+            reservation_id=reservation.id,
+            action=AuditAction.CONFIRMED,
+            user_id=customer_id,
+            user_type="customer",
+            metadata={
+                "special_requests_updated": confirmation_data.special_requests_update is not None
+            }
+        )
+        
+        # Emit event
+        event = ReservationUpdatedEvent(
+            reservation_id=reservation.id,
+            customer_id=customer_id,
+            timestamp=datetime.utcnow(),
+            user_id=customer_id,
+            field_changes={"status": {"old": "pending", "new": "confirmed"}},
+            metadata={"confirmed_at": str(datetime.utcnow())}
+        )
+        await emit_reservation_event(event)
         
         # Send confirmation notification
         await self.notification_service.send_confirmation_status_notification(reservation)
@@ -391,42 +518,117 @@ class ReservationService:
     async def staff_update_reservation(
         self,
         reservation_id: int,
-        update_data: StaffReservationUpdate
+        update_data: StaffReservationUpdate,
+        staff_id: int
     ) -> Reservation:
         """Staff update reservation status or details"""
         reservation = self.db.query(Reservation).filter_by(id=reservation_id).first()
         if not reservation:
             raise ValueError("Reservation not found")
         
+        field_changes = {}
+        event = None
+        
         # Update status
         if update_data.status:
             old_status = reservation.status
             reservation.status = update_data.status
+            field_changes["status"] = {"old": old_status.value, "new": update_data.status.value}
             
-            # Set appropriate timestamps
+            # Set appropriate timestamps and audit fields
             if update_data.status == ReservationStatus.SEATED:
                 reservation.seated_at = datetime.utcnow()
+                reservation.seated_by = staff_id
+                event = ReservationSeatedEvent(
+                    reservation_id=reservation.id,
+                    customer_id=reservation.customer_id,
+                    timestamp=datetime.utcnow(),
+                    user_id=staff_id,
+                    table_numbers=reservation.table_numbers,
+                    metadata={"party_size": reservation.party_size}
+                )
             elif update_data.status == ReservationStatus.COMPLETED:
                 reservation.completed_at = datetime.utcnow()
+                reservation.completed_by = staff_id
+                event = ReservationCompletedEvent(
+                    reservation_id=reservation.id,
+                    customer_id=reservation.customer_id,
+                    timestamp=datetime.utcnow(),
+                    user_id=staff_id,
+                    duration_minutes=int((datetime.utcnow() - reservation.seated_at).total_seconds() / 60) if reservation.seated_at else None,
+                    metadata={"table_numbers": reservation.table_numbers}
+                )
             elif update_data.status == ReservationStatus.NO_SHOW:
+                event = ReservationNoShowEvent(
+                    reservation_id=reservation.id,
+                    customer_id=reservation.customer_id,
+                    timestamp=datetime.utcnow(),
+                    user_id=staff_id,
+                    metadata={
+                        "reservation_date": str(reservation.reservation_date),
+                        "reservation_time": str(reservation.reservation_time)
+                    }
+                )
                 # Track no-shows for customer
                 await self._track_no_show(reservation.customer_id)
         
         # Update table assignment
         if update_data.table_numbers:
+            old_tables = reservation.table_numbers
             reservation.table_numbers = update_data.table_numbers
+            field_changes["table_numbers"] = {"old": old_tables, "new": update_data.table_numbers}
         
         # Add staff notes
         if update_data.notes:
+            old_requests = reservation.special_requests
             if reservation.special_requests:
                 reservation.special_requests += f"\n[Staff note]: {update_data.notes}"
             else:
                 reservation.special_requests = f"[Staff note]: {update_data.notes}"
+            field_changes["special_requests"] = {"old": old_requests, "new": reservation.special_requests}
+        
+        # Update audit field
+        reservation.updated_by = staff_id
         
         self.db.commit()
         self.db.refresh(reservation)
         
-        logger.info(f"Staff updated reservation {reservation_id}")
+        # Create audit log
+        action = AuditAction.MANUAL_OVERRIDE if update_data.notes else AuditAction.UPDATED
+        if update_data.status == ReservationStatus.SEATED:
+            action = AuditAction.SEATED
+        elif update_data.status == ReservationStatus.COMPLETED:
+            action = AuditAction.COMPLETED
+        elif update_data.status == ReservationStatus.NO_SHOW:
+            action = AuditAction.NO_SHOW
+        elif update_data.table_numbers and not update_data.status:
+            action = AuditAction.TABLE_CHANGED
+            
+        self._create_audit_log(
+            reservation_id=reservation.id,
+            action=action,
+            user_id=staff_id,
+            user_type="staff",
+            field_changes=field_changes,
+            reason=update_data.notes,
+            metadata={"staff_update": True}
+        )
+        
+        # Emit event
+        if event:
+            await emit_reservation_event(event)
+        elif field_changes:
+            event = ReservationUpdatedEvent(
+                reservation_id=reservation.id,
+                customer_id=reservation.customer_id,
+                timestamp=datetime.utcnow(),
+                user_id=staff_id,
+                field_changes=field_changes,
+                metadata={"staff_update": True, "notes": update_data.notes}
+            )
+            await emit_reservation_event(event)
+        
+        logger.info(f"Staff {staff_id} updated reservation {reservation_id}")
         
         return reservation
     
@@ -487,3 +689,30 @@ class ReservationService:
                 # Schedule auto-cancellation
                 # This would be handled by a background task
                 pass
+    
+    def _create_audit_log(
+        self,
+        reservation_id: int,
+        action: AuditAction,
+        user_id: Optional[int] = None,
+        user_type: str = "system",
+        field_changes: Optional[Dict[str, Any]] = None,
+        reason: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        user_ip: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ):
+        """Create audit log entry"""
+        audit_log = ReservationAuditLog(
+            reservation_id=reservation_id,
+            action=action.value,
+            user_id=user_id,
+            user_type=user_type,
+            user_ip=user_ip,
+            user_agent=user_agent,
+            field_changes=field_changes,
+            reason=reason,
+            metadata=metadata
+        )
+        self.db.add(audit_log)
+        self.db.commit()

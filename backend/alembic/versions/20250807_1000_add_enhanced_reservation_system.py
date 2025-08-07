@@ -21,6 +21,7 @@ def upgrade():
     op.execute("CREATE TYPE reservationstatus AS ENUM ('pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show', 'waitlist_converted')")
     op.execute("CREATE TYPE waitliststatus AS ENUM ('waiting', 'notified', 'confirmed', 'converted', 'expired', 'cancelled')")
     op.execute("CREATE TYPE notificationmethod AS ENUM ('email', 'sms', 'both', 'none')")
+    op.execute("CREATE TYPE auditaction AS ENUM ('created', 'updated', 'cancelled', 'confirmed', 'seated', 'completed', 'no_show', 'manual_override', 'table_changed', 'promoted_from_waitlist', 'notification_sent', 'reminder_sent')")
     
     # Update existing reservations table with new columns
     op.execute("""
@@ -191,10 +192,97 @@ def upgrade():
         ('PR1', 'private', 8, 12, 10, '["private", "av-equipped"]'),
         ('PR2', 'private', 12, 20, 16, '["private", "av-equipped"]')
     """)
+    
+    # Add audit tracking columns to reservations table
+    op.execute("""
+        ALTER TABLE reservations 
+        ADD COLUMN IF NOT EXISTS created_by INTEGER,
+        ADD COLUMN IF NOT EXISTS updated_by INTEGER,
+        ADD COLUMN IF NOT EXISTS confirmed_by INTEGER,
+        ADD COLUMN IF NOT EXISTS seated_by INTEGER,
+        ADD COLUMN IF NOT EXISTS completed_by INTEGER,
+        ADD CONSTRAINT fk_reservations_created_by FOREIGN KEY (created_by) REFERENCES users(id),
+        ADD CONSTRAINT fk_reservations_updated_by FOREIGN KEY (updated_by) REFERENCES users(id),
+        ADD CONSTRAINT fk_reservations_confirmed_by FOREIGN KEY (confirmed_by) REFERENCES users(id),
+        ADD CONSTRAINT fk_reservations_seated_by FOREIGN KEY (seated_by) REFERENCES users(id),
+        ADD CONSTRAINT fk_reservations_completed_by FOREIGN KEY (completed_by) REFERENCES users(id)
+    """)
+    
+    # Create reservation audit log table
+    op.create_table('reservation_audit_logs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('reservation_id', sa.Integer(), nullable=False),
+        sa.Column('action', sa.String(50), nullable=False),
+        sa.Column('user_id', sa.Integer()),
+        sa.Column('user_type', sa.String(20)),
+        sa.Column('user_ip', sa.String(45)),
+        sa.Column('user_agent', sa.String(255)),
+        sa.Column('field_changes', sa.JSON()),
+        sa.Column('reason', sa.Text()),
+        sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.Column('metadata', sa.JSON()),
+        sa.ForeignKeyConstraint(['reservation_id'], ['reservations.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    
+    # Create waitlist audit log table
+    op.create_table('waitlist_audit_logs',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('waitlist_id', sa.Integer(), nullable=False),
+        sa.Column('action', sa.String(50), nullable=False),
+        sa.Column('user_id', sa.Integer()),
+        sa.Column('user_type', sa.String(20)),
+        sa.Column('field_changes', sa.JSON()),
+        sa.Column('reason', sa.Text()),
+        sa.Column('timestamp', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.Column('metadata', sa.JSON()),
+        sa.ForeignKeyConstraint(['waitlist_id'], ['waitlist_entries.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    
+    # Create scheduled reminders table
+    op.create_table('scheduled_reminders',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('reservation_id', sa.Integer(), nullable=False),
+        sa.Column('scheduled_for', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('reminder_type', sa.String(50)),
+        sa.Column('status', sa.String(20), default='pending'),
+        sa.Column('sent_at', sa.DateTime(timezone=True)),
+        sa.Column('metadata', sa.JSON()),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
+        sa.ForeignKeyConstraint(['reservation_id'], ['reservations.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    
+    # Create indexes for audit tables
+    op.create_index('idx_reservation_audit_reservation_id', 'reservation_audit_logs', ['reservation_id'])
+    op.create_index('idx_reservation_audit_user_id', 'reservation_audit_logs', ['user_id'])
+    op.create_index('idx_reservation_audit_timestamp', 'reservation_audit_logs', ['timestamp'])
+    op.create_index('idx_reservation_audit_action', 'reservation_audit_logs', ['action'])
+    op.create_index('idx_waitlist_audit_waitlist_id', 'waitlist_audit_logs', ['waitlist_id'])
+    op.create_index('idx_waitlist_audit_timestamp', 'waitlist_audit_logs', ['timestamp'])
+    op.create_index('idx_scheduled_reminders_status_scheduled', 'scheduled_reminders', ['status', 'scheduled_for'])
+    
+    # Add requested indexes for performance
+    op.create_index('idx_reservation_table_id', 'reservations', ['table_ids'])
+    op.create_index('idx_table_configurations_table_number', 'table_configurations', ['table_number'])
 
 
 def downgrade():
-    # Drop indexes
+    # Drop new indexes
+    op.drop_index('idx_table_configurations_table_number', table_name='table_configurations')
+    op.drop_index('idx_reservation_table_id', table_name='reservations')
+    op.drop_index('idx_scheduled_reminders_status_scheduled', table_name='scheduled_reminders')
+    op.drop_index('idx_waitlist_audit_timestamp', table_name='waitlist_audit_logs')
+    op.drop_index('idx_waitlist_audit_waitlist_id', table_name='waitlist_audit_logs')
+    op.drop_index('idx_reservation_audit_action', table_name='reservation_audit_logs')
+    op.drop_index('idx_reservation_audit_timestamp', table_name='reservation_audit_logs')
+    op.drop_index('idx_reservation_audit_user_id', table_name='reservation_audit_logs')
+    op.drop_index('idx_reservation_audit_reservation_id', table_name='reservation_audit_logs')
+    
+    # Drop original indexes
     op.drop_index('idx_special_dates_date', table_name='special_dates')
     op.drop_index('idx_reservation_status_date', table_name='reservations')
     op.drop_index('idx_reservation_customer_date', table_name='reservations')
@@ -202,8 +290,21 @@ def downgrade():
     op.drop_index('idx_waitlist_customer_status', table_name='waitlist_entries')
     op.drop_index('idx_waitlist_date_status', table_name='waitlist_entries')
     
-    # Drop foreign key constraint
-    op.execute("ALTER TABLE reservations DROP CONSTRAINT IF EXISTS fk_reservations_waitlist")
+    # Drop audit tables
+    op.drop_table('scheduled_reminders')
+    op.drop_table('waitlist_audit_logs')
+    op.drop_table('reservation_audit_logs')
+    
+    # Drop foreign key constraints
+    op.execute("""
+        ALTER TABLE reservations 
+        DROP CONSTRAINT IF EXISTS fk_reservations_completed_by,
+        DROP CONSTRAINT IF EXISTS fk_reservations_seated_by,
+        DROP CONSTRAINT IF EXISTS fk_reservations_confirmed_by,
+        DROP CONSTRAINT IF EXISTS fk_reservations_updated_by,
+        DROP CONSTRAINT IF EXISTS fk_reservations_created_by,
+        DROP CONSTRAINT IF EXISTS fk_reservations_waitlist
+    """)
     
     # Drop new columns from reservations
     op.execute("""
@@ -223,7 +324,12 @@ def downgrade():
         DROP COLUMN IF EXISTS cancelled_by,
         DROP COLUMN IF EXISTS confirmed_at,
         DROP COLUMN IF EXISTS seated_at,
-        DROP COLUMN IF EXISTS completed_at
+        DROP COLUMN IF EXISTS completed_at,
+        DROP COLUMN IF EXISTS created_by,
+        DROP COLUMN IF EXISTS updated_by,
+        DROP COLUMN IF EXISTS confirmed_by,
+        DROP COLUMN IF EXISTS seated_by,
+        DROP COLUMN IF EXISTS completed_by
     """)
     
     # Drop tables
@@ -233,6 +339,7 @@ def downgrade():
     op.drop_table('waitlist_entries')
     
     # Drop enums
+    op.execute("DROP TYPE IF EXISTS auditaction")
     op.execute("DROP TYPE IF EXISTS notificationmethod")
     op.execute("DROP TYPE IF EXISTS waitliststatus")
     op.execute("DROP TYPE IF EXISTS reservationstatus")

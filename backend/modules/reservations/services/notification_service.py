@@ -401,11 +401,59 @@ Reply YES within {data['response_minutes']} min to confirm.
     
     async def schedule_reminder(self, reservation: Reservation, hours_before: int):
         """Schedule a reminder to be sent later"""
-        # In production, this would schedule a background task
+        # Calculate when to send reminder
         reminder_time = datetime.combine(
             reservation.reservation_date,
             reservation.reservation_time
         ) - timedelta(hours=hours_before)
         
+        # In production, this would use a task scheduler like Celery or APScheduler
+        # For now, we'll create a scheduled task entry
+        from ..models.reservation_models import ScheduledReminder
+        
+        reminder = ScheduledReminder(
+            reservation_id=reservation.id,
+            scheduled_for=reminder_time,
+            reminder_type="reservation_reminder",
+            status="pending"
+        )
+        self.db.add(reminder)
+        self.db.commit()
+        
         logger.info(f"Scheduled reminder for reservation {reservation.id} at {reminder_time}")
-        # await task_scheduler.schedule(self.send_reminder, reservation.id, run_at=reminder_time)
+        # In production: await task_scheduler.schedule(self.send_reminder, reservation.id, run_at=reminder_time)
+    
+    async def process_scheduled_reminders(self):
+        """Process all due scheduled reminders"""
+        from ..models.reservation_models import ScheduledReminder
+        
+        # Find due reminders
+        now = datetime.utcnow()
+        due_reminders = self.db.query(ScheduledReminder).filter(
+            ScheduledReminder.scheduled_for <= now,
+            ScheduledReminder.status == "pending"
+        ).all()
+        
+        for reminder in due_reminders:
+            try:
+                # Get reservation
+                reservation = self.db.query(Reservation).filter_by(
+                    id=reminder.reservation_id
+                ).first()
+                
+                if reservation and reservation.status in [
+                    ReservationStatus.PENDING,
+                    ReservationStatus.CONFIRMED
+                ]:
+                    await self.send_reminder(reservation)
+                    reminder.status = "sent"
+                    reminder.sent_at = now
+                else:
+                    reminder.status = "skipped"
+                    reminder.metadata = {"reason": "Reservation not eligible"}
+            except Exception as e:
+                logger.error(f"Failed to send reminder {reminder.id}: {str(e)}")
+                reminder.status = "failed"
+                reminder.metadata = {"error": str(e)}
+            
+            self.db.commit()

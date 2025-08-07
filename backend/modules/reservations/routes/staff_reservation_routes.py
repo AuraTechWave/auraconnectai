@@ -121,7 +121,8 @@ async def update_reservation_status(
     try:
         reservation = await service.staff_update_reservation(
             reservation_id,
-            update_data
+            update_data,
+            current_user.id
         )
         
         customer = reservation.customer

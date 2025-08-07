@@ -92,6 +92,13 @@ class Reservation(Base):
     seated_at = Column(DateTime(timezone=True))
     completed_at = Column(DateTime(timezone=True))
     
+    # Audit tracking
+    created_by = Column(Integer, ForeignKey("users.id"))
+    updated_by = Column(Integer, ForeignKey("users.id"))
+    confirmed_by = Column(Integer, ForeignKey("users.id"))
+    seated_by = Column(Integer, ForeignKey("users.id"))
+    completed_by = Column(Integer, ForeignKey("users.id"))
+    
     # Relationships
     customer = relationship("Customer", back_populates="reservations")
     waitlist_entry = relationship("Waitlist", back_populates="reservation", uselist=False)
@@ -165,6 +172,7 @@ class ReservationSettings(Base):
     # Booking rules
     advance_booking_days = Column(Integer, default=90)  # How far in advance
     min_advance_hours = Column(Integer, default=2)  # Minimum hours before reservation
+    min_advance_minutes = Column(Integer, default=10)  # Cutoff time in minutes
     max_party_size = Column(Integer, default=20)
     min_party_size = Column(Integer, default=1)
     
@@ -264,3 +272,33 @@ class SpecialDate(Base):
     
     notes = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ScheduledReminder(Base):
+    """Scheduled reminders for reservations"""
+    __tablename__ = "scheduled_reminders"
+
+    id = Column(Integer, primary_key=True)
+    reservation_id = Column(Integer, ForeignKey("reservations.id"), nullable=False)
+    
+    # Scheduling
+    scheduled_for = Column(DateTime(timezone=True), nullable=False, index=True)
+    reminder_type = Column(String(50))  # reservation_reminder, confirmation_reminder
+    
+    # Status tracking
+    status = Column(String(20), default="pending")  # pending, sent, failed, skipped
+    sent_at = Column(DateTime(timezone=True))
+    
+    # Additional data
+    metadata = Column(JSON)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    reservation = relationship("Reservation", backref="scheduled_reminders")
+    
+    # Index for efficient querying
+    __table_args__ = (
+        Index('idx_scheduled_reminders_status_scheduled', 'status', 'scheduled_for'),
+    )
