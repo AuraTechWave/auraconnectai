@@ -50,8 +50,15 @@ def update_recipe_sub_recipes(
             detail="Recipe not found"
         )
     
-    # Initialize validator
-    validator = RecipeCircularValidator(db)
+    # Initialize validator with Redis if available
+    redis_client = None
+    try:
+        from core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+    except:
+        pass  # Redis not configured
+        
+    validator = RecipeCircularValidator(db, redis_client)
     
     # Prepare sub-recipe data for validation
     sub_recipe_data = [
@@ -216,8 +223,15 @@ def add_single_sub_recipe(
             detail="This sub-recipe is already linked to the parent recipe"
         )
     
-    # Validate circular dependency
-    validator = RecipeCircularValidator(db)
+    # Validate circular dependency with Redis if available
+    redis_client = None
+    try:
+        from core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+    except:
+        pass
+        
+    validator = RecipeCircularValidator(db, redis_client)
     
     try:
         validator.validate_no_circular_reference(
@@ -313,7 +327,14 @@ def validate_recipe_hierarchy(db: Session, recipe_id: int) -> dict:
     Returns:
         Dictionary with validation results
     """
-    validator = RecipeCircularValidator(db)
+    redis_client = None
+    try:
+        from core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+    except:
+        pass
+        
+    validator = RecipeCircularValidator(db, redis_client)
     return validator.validate_recipe_hierarchy(recipe_id)
 
 
@@ -328,7 +349,14 @@ def get_recipe_dependencies(db: Session, recipe_id: int) -> dict:
     Returns:
         Dictionary with dependencies and dependents
     """
-    validator = RecipeCircularValidator(db)
+    redis_client = None
+    try:
+        from core.redis_client import get_redis_client
+        redis_client = get_redis_client()
+    except:
+        pass
+        
+    validator = RecipeCircularValidator(db, redis_client)
     
     dependencies = validator.get_all_dependencies(recipe_id)
     dependents = validator.get_all_dependents(recipe_id)

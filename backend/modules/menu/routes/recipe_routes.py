@@ -313,10 +313,54 @@ async def get_recipe_history(
 @router.put("/bulk/update", response_model=dict)
 async def bulk_update_recipes(
     bulk_data: BulkRecipeUpdate,
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk update multiple recipes (manager/admin only)"""
+    """
+    Bulk update multiple recipes (manager/admin only).
+    
+    Use dry_run=true to simulate changes and see what would happen without committing.
+    """
+    if dry_run:
+        # Simulate the updates
+        validation_results = []
+        
+        for recipe_id in bulk_data.recipe_ids:
+            try:
+                recipe = recipe_service.get_recipe_by_id(recipe_id)
+                if not recipe:
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": False,
+                        "error": "Recipe not found"
+                    })
+                else:
+                    # Check if updates would be valid
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": True,
+                        "current_status": recipe.status,
+                        "would_update": bulk_data.updates.dict(exclude_unset=True)
+                    })
+            except Exception as e:
+                validation_results.append({
+                    "recipe_id": recipe_id,
+                    "valid": False,
+                    "error": str(e)
+                })
+        
+        valid_count = sum(1 for r in validation_results if r.get("valid", False))
+        
+        return {
+            "dry_run": True,
+            "total": len(bulk_data.recipe_ids),
+            "valid": valid_count,
+            "invalid": len(validation_results) - valid_count,
+            "results": validation_results
+        }
+    
+    # Actual update
     updated_count = 0
     errors = []
     
@@ -341,10 +385,56 @@ async def bulk_update_recipes(
 async def bulk_activate_recipes(
     recipe_ids: List[int],
     active: bool = True,
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk activate or deactivate recipes (manager/admin only)"""
+    """
+    Bulk activate or deactivate recipes (manager/admin only).
+    
+    Use dry_run=true to see which recipes would be affected without making changes.
+    """
+    if dry_run:
+        # Simulate the activation/deactivation
+        validation_results = []
+        
+        for recipe_id in recipe_ids:
+            try:
+                recipe = recipe_service.get_recipe_by_id(recipe_id)
+                if not recipe:
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": False,
+                        "error": "Recipe not found"
+                    })
+                else:
+                    would_change = (recipe.status == RecipeStatus.ACTIVE) != active
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": True,
+                        "current_status": recipe.status,
+                        "would_change": would_change,
+                        "new_status": "active" if active else "inactive"
+                    })
+            except Exception as e:
+                validation_results.append({
+                    "recipe_id": recipe_id,
+                    "valid": False,
+                    "error": str(e)
+                })
+        
+        changes_count = sum(1 for r in validation_results if r.get("would_change", False))
+        
+        return {
+            "dry_run": True,
+            "action": "activate" if active else "deactivate",
+            "total": len(recipe_ids),
+            "would_change": changes_count,
+            "already_correct": len(recipe_ids) - changes_count,
+            "results": validation_results
+        }
+    
+    # Actual update
     updated_count = 0
     errors = []
     
@@ -438,13 +528,51 @@ async def approve_recipe(
 async def update_recipe_sub_recipes(
     recipe_id: int,
     sub_recipes: List[RecipeSubRecipeCreate],
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("menu:update"))
 ):
     """
     Update sub-recipes for a recipe. This replaces all existing sub-recipes.
     Includes circular dependency validation.
+    
+    Use dry_run=true to validate changes without committing them.
     """
+    if dry_run:
+        # Validate without making changes
+        from ..services.recipe_circular_validation import RecipeCircularValidator
+        db = next(get_db())
+        validator = RecipeCircularValidator(db)
+        
+        # Check if recipe exists
+        recipe = recipe_service.get_recipe_by_id(recipe_id)
+        if not recipe:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Recipe not found"
+            )
+        
+        # Validate all sub-recipes
+        sub_recipe_data = [
+            {'sub_recipe_id': sub.sub_recipe_id, 'quantity': sub.quantity}
+            for sub in sub_recipes
+        ]
+        
+        try:
+            validator.validate_batch_sub_recipes(recipe_id, sub_recipe_data)
+            return {
+                "dry_run": True,
+                "valid": True,
+                "message": "All sub-recipes are valid and would not create circular dependencies",
+                "recipe_id": recipe_id,
+                "sub_recipes_count": len(sub_recipes)
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Validation failed: {str(e)}"
+            )
+    
     recipe = recipe_service.update_recipe_sub_recipes(recipe_id, sub_recipes, current_user.id)
     return recipe
 

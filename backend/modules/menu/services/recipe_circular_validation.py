@@ -6,7 +6,11 @@ Provides detailed detection and reporting of circular references in recipe hiera
 """
 
 from typing import Set, List, Dict, Optional, Tuple
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+import json
+import redis
+from datetime import timedelta
+from core.config import settings
 from ..models.recipe_models import Recipe, RecipeSubRecipe
 
 
@@ -20,9 +24,12 @@ class CircularDependencyError(Exception):
 class RecipeCircularValidator:
     """Validates and detects circular dependencies in recipe hierarchies"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, redis_client: Optional[redis.Redis] = None):
         self.db = db
         self._dependency_cache = {}
+        self._redis = redis_client
+        self._cache_ttl = timedelta(minutes=15)  # 15 minute TTL for dependency trees
+        self._cache_prefix = "recipe_deps:"
     
     def validate_no_circular_reference(
         self, 
@@ -123,10 +130,19 @@ class RecipeCircularValidator:
     def get_all_dependencies(self, recipe_id: int) -> Set[int]:
         """
         Get all recipe IDs that this recipe depends on (recursively).
+        Uses Redis cache if available for performance.
         
         Returns:
             Set of recipe IDs that are dependencies
         """
+        # Check Redis cache first
+        if self._redis:
+            cache_key = f"{self._cache_prefix}deps:{recipe_id}"
+            cached = self._redis.get(cache_key)
+            if cached:
+                return set(json.loads(cached))
+        
+        # Check local cache
         if recipe_id in self._dependency_cache:
             return self._dependency_cache[recipe_id].copy()
         
@@ -153,6 +169,15 @@ class RecipeCircularValidator:
         
         # Cache the result
         self._dependency_cache[recipe_id] = dependencies.copy()
+        
+        # Store in Redis if available
+        if self._redis:
+            cache_key = f"{self._cache_prefix}deps:{recipe_id}"
+            self._redis.setex(
+                cache_key, 
+                self._cache_ttl.total_seconds(), 
+                json.dumps(list(dependencies))
+            )
         
         return dependencies
     
@@ -238,17 +263,47 @@ class RecipeCircularValidator:
         return None
     
     def _get_recipe_names(self, recipe_ids: List[int]) -> List[str]:
-        """Get recipe names for a list of IDs"""
-        recipes = self.db.query(Recipe).filter(
+        """Get recipe names with menu item names for a list of IDs"""
+        from core.menu_models import MenuItem
+        
+        # Query recipes with their menu items
+        recipes = self.db.query(Recipe).options(
+            self.db.query(Recipe).joinedload(Recipe.menu_item)
+        ).filter(
             Recipe.id.in_(recipe_ids)
         ).all()
         
-        recipe_map = {r.id: r.name for r in recipes}
+        recipe_map = {}
+        for r in recipes:
+            if r.menu_item:
+                # Include both recipe name and menu item name for clarity
+                recipe_map[r.id] = f"{r.menu_item.name} ({r.name})"
+            else:
+                recipe_map[r.id] = r.name
+        
         return [recipe_map.get(rid, f"Recipe#{rid}") for rid in recipe_ids]
     
-    def clear_cache(self):
-        """Clear the dependency cache"""
-        self._dependency_cache.clear()
+    def clear_cache(self, recipe_id: Optional[int] = None):
+        """Clear the dependency cache for a specific recipe or all recipes"""
+        if recipe_id:
+            # Clear specific recipe from local cache
+            self._dependency_cache.pop(recipe_id, None)
+            
+            # Clear from Redis if available
+            if self._redis:
+                self._redis.delete(f"{self._cache_prefix}deps:{recipe_id}")
+                # Also clear dependent recipes cache
+                for dep_id in self.get_all_dependents(recipe_id):
+                    self._redis.delete(f"{self._cache_prefix}deps:{dep_id}")
+        else:
+            # Clear all caches
+            self._dependency_cache.clear()
+            
+            # Clear all recipe dependency keys from Redis
+            if self._redis:
+                pattern = f"{self._cache_prefix}*"
+                for key in self._redis.scan_iter(match=pattern):
+                    self._redis.delete(key)
     
     def validate_batch_sub_recipes(
         self,

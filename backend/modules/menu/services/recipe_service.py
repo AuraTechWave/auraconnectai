@@ -884,7 +884,15 @@ class RecipeService:
     
     def _would_create_circular_reference(self, parent_id: int, potential_sub_id: int) -> bool:
         """Check if adding a sub-recipe would create a circular reference"""
-        validator = RecipeCircularValidator(self.db)
+        # Try to get Redis client if available
+        redis_client = None
+        try:
+            from core.redis_client import get_redis_client
+            redis_client = get_redis_client()
+        except:
+            pass  # Redis not configured, will use local cache only
+            
+        validator = RecipeCircularValidator(self.db, redis_client)
         try:
             validator.validate_no_circular_reference(parent_id, potential_sub_id)
             return False
