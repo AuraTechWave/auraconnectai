@@ -32,6 +32,7 @@ from modules.orders.routes.pricing_routes import router as pricing_router
 from modules.orders.routes.pricing_rule_routes import router as pricing_rule_router
 from modules.orders.routes.payment_reconciliation_routes import router as payment_reconciliation_router
 from modules.orders.routes.order_promotion_routes import router as order_promotion_router
+from modules.orders.routes.order_inventory_routes import router as order_inventory_router
 from modules.orders.api.customer_tracking_endpoints import router as customer_tracking_router
 from modules.orders.api.manual_review_endpoints import router as manual_review_router
 from modules.orders.routers.sync import sync_router as order_sync_router
@@ -219,6 +220,7 @@ app.include_router(pricing_router)
 app.include_router(pricing_rule_router, prefix="/api/v1/orders", tags=["Pricing Rules"])
 app.include_router(payment_reconciliation_router, prefix="/api/v1/orders", tags=["Payment Reconciliation"])
 app.include_router(order_promotion_router, prefix="/api/v1/orders", tags=["Order Promotions"])
+app.include_router(order_inventory_router, prefix="/api/v1", tags=["Order Inventory Integration"])
 app.include_router(customer_tracking_router, prefix="/api/v1/orders", tags=["Customer Order Tracking"])
 app.include_router(manual_review_router, prefix="/api/v1/orders", tags=["Manual Order Review"])
 app.include_router(order_sync_router)
