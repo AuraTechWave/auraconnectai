@@ -28,6 +28,9 @@ from modules.orders.routes.inventory_routes import router as inventory_router
 from modules.orders.routes.inventory_impact_routes import router as inventory_impact_router
 from modules.orders.routes.kitchen_routes import router as kitchen_router
 from modules.orders.routes.print_ticket_routes import router as print_ticket_router
+
+# ========== Kitchen Display System (KDS) ==========
+from modules.kds.routes.kds_routes import router as kds_router
 from modules.orders.routes.pricing_routes import router as pricing_router
 from modules.orders.routes.pricing_rule_routes import router as pricing_rule_router
 from modules.orders.routes.payment_reconciliation_routes import router as payment_reconciliation_router
@@ -151,6 +154,7 @@ app = FastAPI(
     * **Analytics & Reporting** - Comprehensive business intelligence with AI insights
     * **Customer Management** - Customer profiles, order history, and preferences
     * **Feedback & Reviews** - Customer feedback collection and review management
+    * **Kitchen Display System** - Real-time order routing and kitchen station management
     * **Loyalty & Rewards** - Points-based loyalty programs and rewards
     * **Table Management** - Restaurant floor layout and table state management
     * **Reservation System** - Advanced booking system with waitlist management and confirmations
@@ -221,6 +225,9 @@ app.include_router(inventory_router)
 app.include_router(inventory_impact_router)
 app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
+
+# Kitchen Display System
+app.include_router(kds_router)
 app.include_router(pricing_router)
 app.include_router(pricing_rule_router, prefix="/api/v1/orders", tags=["Pricing Rules"])
 app.include_router(payment_reconciliation_router, prefix="/api/v1/orders", tags=["Payment Reconciliation"])

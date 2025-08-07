@@ -267,6 +267,32 @@ async def update_order_service(
     db.commit()
     db.refresh(order)
 
+    # Update KDS if order status changed to ready or completed
+    if status_changed and order.status in [OrderStatus.READY.value, OrderStatus.COMPLETED.value]:
+        try:
+            from modules.kds.models.kds_models import KDSOrderItem, DisplayStatus
+            from modules.kds.services.kds_service import KDSService
+            
+            kds_service = KDSService(db)
+            kds_items = db.query(KDSOrderItem).join(OrderItem).filter(
+                OrderItem.order_id == order.id
+            ).all()
+            
+            # Mark all KDS items as ready/completed
+            new_kds_status = DisplayStatus.READY if order.status == OrderStatus.READY.value else DisplayStatus.COMPLETED
+            for kds_item in kds_items:
+                if kds_item.status != DisplayStatus.COMPLETED:
+                    kds_item.status = new_kds_status
+                    if new_kds_status == DisplayStatus.COMPLETED:
+                        kds_item.completed_at = datetime.utcnow()
+                        kds_item.completed_by_id = user_id
+            
+            db.commit()
+            logger.info(f"Updated {len(kds_items)} KDS items for order {order.id} to {new_kds_status.value}")
+        except Exception as e:
+            logger.error(f"Failed to update KDS status for order {order.id}: {str(e)}")
+            # Don't fail the order update if KDS update fails
+
     if status_changed:
         webhook_service = WebhookService(db)
 
@@ -542,6 +568,16 @@ async def create_order_with_fraud_check(
 
     db.commit()
     db.refresh(order)
+
+    # Route order to KDS stations
+    try:
+        from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
+        kds_routing_service = KDSOrderRoutingService(db)
+        routed_items = kds_routing_service.route_order_to_stations(order.id)
+        logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items")
+    except Exception as e:
+        logger.error(f"Failed to route order {order.id} to KDS: {str(e)}")
+        # Don't fail the order creation if KDS routing fails
 
     webhook_service = WebhookService(db)
     await webhook_service.trigger_webhook(
