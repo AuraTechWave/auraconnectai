@@ -18,16 +18,64 @@ sys.path.insert(0, str(backend_dir))
 from app.main import app
 
 
-def generate_openapi_spec(output_file: str = "openapi.json", format: str = "json"):
+def generate_openapi_spec(output_file: str = "openapi.json", format: str = "json", include_metadata: bool = True):
     """
     Generate OpenAPI specification from the FastAPI app.
     
     Args:
         output_file: Path to save the OpenAPI specification
         format: Output format ('json' or 'yaml')
+        include_metadata: Include generation metadata for frontend
     """
     # Get the OpenAPI schema
     openapi_schema = app.openapi()
+    
+    # Add generation metadata for frontend
+    if include_metadata:
+        from datetime import datetime
+        import platform
+        
+        openapi_schema['x-generated'] = {
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'version': openapi_schema['info']['version'],
+            'generator': 'AuraConnect OpenAPI Generator',
+            'generatorVersion': '1.0.0',
+            'source': 'FastAPI',
+            'python': platform.python_version(),
+            'environment': os.getenv('ENVIRONMENT', 'development')
+        }
+        
+        # Add frontend-specific metadata
+        openapi_schema['x-frontend'] = {
+            'apiBaseUrl': os.getenv('API_BASE_URL', 'https://api.auraconnect.ai'),
+            'websocketUrl': os.getenv('WEBSOCKET_URL', 'wss://ws.auraconnect.ai'),
+            'authTokenHeader': 'Authorization',
+            'authTokenPrefix': 'Bearer',
+            'refreshTokenEndpoint': '/api/v1/auth/refresh',
+            'features': {
+                'pagination': True,
+                'filtering': True,
+                'sorting': True,
+                'websockets': True,
+                'fileUpload': True,
+                'batchOperations': True
+            },
+            'sdkVersions': {
+                'typescript': '1.0.0',
+                'react': '1.0.0',
+                'vue': '1.0.0',
+                'angular': '1.0.0'
+            }
+        }
+        
+        # Add API versioning info
+        openapi_schema['x-api-versioning'] = {
+            'currentVersion': 'v1',
+            'supportedVersions': ['v1'],
+            'deprecatedVersions': [],
+            'versioningStrategy': 'url',
+            'versionParameter': 'api_version'
+        }
     
     # Save to file
     output_path = Path(output_file)

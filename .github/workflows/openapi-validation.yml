@@ -1,0 +1,129 @@
+name: OpenAPI Validation
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**/*.py'
+      - 'docs/api/**'
+      - '.github/workflows/openapi-validation.yml'
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  validate-openapi:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install pyyaml  # For YAML export
+    
+    - name: Validate OpenAPI specification
+      run: |
+        cd backend
+        python scripts/validate_openapi.py
+    
+    - name: Generate OpenAPI specification
+      run: |
+        cd backend
+        python scripts/generate_openapi_spec.py -o ../docs/api/openapi.json -f json
+        python scripts/generate_openapi_spec.py -o ../docs/api/openapi.yaml -f yaml
+    
+    - name: Check for OpenAPI changes
+      id: check_changes
+      run: |
+        if git diff --exit-code docs/api/openapi.json; then
+          echo "No OpenAPI changes detected"
+          echo "changed=false" >> $GITHUB_OUTPUT
+        else
+          echo "OpenAPI changes detected"
+          echo "changed=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Upload OpenAPI artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: openapi-specs
+        path: |
+          docs/api/openapi.json
+          docs/api/openapi.yaml
+    
+    - name: Sync OpenAPI to frontend directories
+      if: github.ref == 'refs/heads/main' && success()
+      run: |
+        cd backend
+        python scripts/sync_openapi_to_frontend.py \
+          --spec ../docs/api/openapi.json \
+          --frontend-dirs ../frontend ../customer-web ../mobile
+    
+    - name: Create frontend sync PR
+      if: github.ref == 'refs/heads/main' && success()
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: sync OpenAPI spec to frontend"
+        title: "Sync OpenAPI Specification to Frontend"
+        body: |
+          ## OpenAPI Sync
+          
+          This PR automatically syncs the latest OpenAPI specification to frontend projects.
+          
+          ### Changes
+          - Updated `openapi.json` in frontend directories
+          - Updated API metadata files
+          - Generated timestamp: ${{ steps.current-time.outputs.time }}
+          
+          ### API Version
+          - Version: ${{ env.API_VERSION }}
+          
+          Please review and merge to keep frontend in sync with backend API.
+        branch: openapi-sync/${{ github.sha }}
+        delete-branch: true
+    
+    - name: Comment PR with OpenAPI changes
+      if: github.event_name == 'pull_request' && steps.check_changes.outputs.changed == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const changes = fs.readFileSync('docs/api/openapi.json', 'utf8');
+          const spec = JSON.parse(changes);
+          
+          const comment = `## 📚 OpenAPI Specification Update
+          
+          This PR includes changes to the API specification:
+          
+          - **Total Endpoints**: ${Object.keys(spec.paths || {}).length}
+          - **API Version**: ${spec.info.version}
+          
+          Please review the OpenAPI changes and ensure they are documented correctly.
+          
+          [View OpenAPI Spec](https://github.com/${{ github.repository }}/blob/${{ github.head_ref }}/docs/api/openapi.json)
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
