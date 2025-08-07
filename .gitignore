@@ -8,6 +8,11 @@ __pycache__/
 venv/
 .venv/
 .env.*
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
 
 # Node
 node_modules/
