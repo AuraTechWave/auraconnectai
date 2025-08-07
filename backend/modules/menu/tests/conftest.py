@@ -6,7 +6,8 @@ Provides common fixtures and test setup.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from typing import Dict, Tuple, Any
+from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 from fastapi.testclient import TestClient
 
@@ -15,15 +16,15 @@ from main import app
 
 
 @pytest.fixture
-def test_client():
+def test_client() -> TestClient:
     """Create a test client for the FastAPI app"""
     return TestClient(app)
 
 
 @pytest.fixture
-def mock_db_session():
+def mock_db_session() -> Mock:
     """Create a mock database session"""
-    session = Mock(spec=Session)
+    session: Mock = Mock(spec=Session)
     session.query = Mock()
     session.add = Mock()
     session.commit = Mock()
@@ -34,11 +35,11 @@ def mock_db_session():
 
 
 @pytest.fixture
-def auth_headers(request):
+def auth_headers(request: pytest.FixtureRequest) -> Tuple[Dict[str, str], User]:
     """Generate authorization headers for different user types"""
-    user_type = getattr(request, 'param', 'chef')
+    user_type: str = getattr(request, 'param', 'chef')
     
-    user_configs = {
+    user_configs: Dict[str, Dict[str, Any]] = {
         'admin': {
             'id': 1,
             'email': 'admin@test.com',
@@ -68,8 +69,8 @@ def auth_headers(request):
         }
     }
     
-    config = user_configs.get(user_type, user_configs['chef'])
-    user = User(**config)
+    config: Dict[str, Any] = user_configs.get(user_type, user_configs['chef'])
+    user: User = User(**config)
     
     # Mock the auth dependency
     with patch('core.auth.get_current_user', return_value=user):
@@ -77,9 +78,9 @@ def auth_headers(request):
 
 
 @pytest.fixture
-def mock_recipe_service():
+def mock_recipe_service() -> Mock:
     """Create a mock recipe service"""
-    service = Mock()
+    service: Mock = Mock()
     
     # Setup common method returns
     service.create_recipe.return_value = Mock(id=1, name="Test Recipe")
@@ -93,14 +94,14 @@ def mock_recipe_service():
 
 
 @pytest.fixture(autouse=True)
-def reset_mocks():
+def reset_mocks() -> None:
     """Reset all mocks before each test"""
     yield
     # Cleanup after test if needed
 
 
 # Parametrized fixtures for testing different user types
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
     """Generate test cases for different user types"""
     if "user_type" in metafunc.fixturenames:
         metafunc.parametrize("user_type", ["admin", "manager", "chef", "waiter", "unauthorized"])
