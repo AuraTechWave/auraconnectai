@@ -153,6 +153,65 @@ async def get_compliance_report_paginated(
     )
 
 
+# Cursor-based pagination for large datasets
+@router.get("/recipes")
+async def list_recipes_with_cursor(
+    cursor: Optional[str] = Query(None, description="Cursor for pagination"),
+    page_size: int = Query(50, ge=10, le=100, description="Items per page"),
+    order_by: str = Query("updated_at", description="Field to order by"),
+    include_cost: bool = Query(False, description="Include cost analysis"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    List recipes with cursor-based pagination for large datasets (5K+ recipes).
+    
+    Uses cursor-based pagination which is more efficient for large datasets
+    compared to offset-based pagination. The cursor encodes the position
+    in the result set, allowing for stable pagination even with concurrent updates.
+    
+    - **cursor**: Opaque cursor string from previous request
+    - **page_size**: Number of items per page
+    - **order_by**: Field to order by (updated_at, created_at, name)
+    - **include_cost**: Include cost analysis for each recipe
+    
+    Returns recipes with next/previous cursor for navigation.
+    """
+    from ..utils.pagination_utils import CursorPaginator
+    from ..models.recipe_models import Recipe
+    
+    # Build base query
+    query = db.query(Recipe).filter(
+        Recipe.deleted_at.is_(None),
+        Recipe.is_active == True
+    )
+    
+    # Use cursor paginator
+    paginator = CursorPaginator(
+        query=query,
+        order_by_field=order_by,
+        page_size=page_size
+    )
+    
+    result = paginator.paginate(cursor=cursor, page_size=page_size)
+    
+    # Optionally include cost analysis
+    if include_cost:
+        recipe_service = OptimizedRecipeService(db)
+        for recipe in result.items:
+            try:
+                cost = recipe_service.calculate_recipe_cost(recipe.id, use_cache=True)
+                recipe.cost_analysis = cost.dict()
+            except:
+                recipe.cost_analysis = None
+    
+    return {
+        "items": result.items,
+        "page_info": result.page_info,
+        "total": result.total
+    }
+
+
 @router.get("/compliance/export")
 async def export_compliance_report(
     format: str = Query("csv", description="Export format (csv, json, excel)"),

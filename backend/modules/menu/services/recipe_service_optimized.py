@@ -23,6 +23,8 @@ from .recipe_service import RecipeService
 from core.menu_models import MenuItem
 from core.inventory_models import Inventory
 from fastapi import HTTPException, status
+from ..utils.performance_utils import ParallelExecutor, timing_logger
+from ..exceptions.recipe_exceptions import RecipePerformanceError, RecipeErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +38,8 @@ class OptimizedRecipeService(RecipeService):
     def __init__(self, db: Session, cache_service=None):
         super().__init__(db)
         self.cache_service = cache_service or get_recipe_cache_service()
-        self._executor = ThreadPoolExecutor(max_workers=4)
     
+    @timing_logger("calculate_recipe_cost", warning_threshold_ms=300, error_threshold_ms=1000)
     def calculate_recipe_cost(self, recipe_id: int, use_cache: bool = True) -> RecipeCostAnalysis:
         """
         Calculate recipe cost with enhanced caching.
@@ -144,6 +146,7 @@ class OptimizedRecipeService(RecipeService):
         
         return result
     
+    @timing_logger("compliance_report", warning_threshold_ms=500, error_threshold_ms=2000)
     def get_recipe_compliance_report(
         self, 
         use_cache: bool = True,
@@ -261,6 +264,7 @@ class OptimizedRecipeService(RecipeService):
         
         return result
     
+    @timing_logger("bulk_cost_recalculation", warning_threshold_ms=5000, error_threshold_ms=30000)
     async def recalculate_all_recipe_costs_optimized(
         self, 
         user_id: int,
@@ -269,6 +273,7 @@ class OptimizedRecipeService(RecipeService):
     ) -> Dict[str, Any]:
         """
         Optimized bulk cost recalculation with batching and optional background processing.
+        Uses ParallelExecutor for CPU-bound operations.
         
         Args:
             user_id: ID of the user triggering recalculation
@@ -296,7 +301,7 @@ class OptimizedRecipeService(RecipeService):
                 "check_status_url": f"/api/v1/recipes/tasks/{task.id}"
             }
         else:
-            # Perform synchronous calculation with batching
+            # Perform synchronous calculation with parallelization
             recipes = self.db.query(Recipe).filter(
                 Recipe.deleted_at.is_(None),
                 Recipe.is_active == True
@@ -306,29 +311,39 @@ class OptimizedRecipeService(RecipeService):
             updated_count = 0
             failed_count = 0
             
-            # Process in batches
-            for i in range(0, total_recipes, batch_size):
-                batch = recipes[i:i + batch_size]
+            # Use ParallelExecutor for CPU-bound cost calculations
+            with ParallelExecutor(max_workers=4, chunk_size=batch_size) as executor:
+                # Define function to calculate cost for a recipe
+                def calculate_cost_for_recipe(recipe):
+                    try:
+                        self.calculate_recipe_cost(recipe.id, use_cache=False)
+                        return True
+                    except Exception as e:
+                        logger.error(f"Error calculating cost for recipe {recipe.id}: {str(e)}")
+                        return False
                 
-                # Process batch in parallel
-                with ThreadPoolExecutor(max_workers=4) as executor:
-                    futures = []
-                    for recipe in batch:
-                        future = executor.submit(
-                            self.calculate_recipe_cost,
-                            recipe.id,
-                            use_cache=False
-                        )
-                        futures.append((recipe.id, future))
-                    
-                    # Collect results
-                    for recipe_id, future in futures:
-                        try:
-                            future.result(timeout=30)
-                            updated_count += 1
-                        except Exception as e:
-                            logger.error(f"Error updating recipe {recipe_id}: {str(e)}")
-                            failed_count += 1
+                # Process recipes in parallel
+                results = executor.parallel_map(
+                    calculate_cost_for_recipe,
+                    recipes,
+                    timeout=300  # 5 minute timeout for all operations
+                )
+                
+                # Count successes and failures
+                for result in results:
+                    if isinstance(result, bool) and result:
+                        updated_count += 1
+                    else:
+                        failed_count += 1
+            
+            # Check if operation took too long
+            if updated_count + failed_count < total_recipes:
+                raise RecipePerformanceError(
+                    error_code=RecipeErrorCode.OPERATION_TIMEOUT,
+                    message="Bulk recalculation timed out",
+                    operation="bulk_cost_recalculation",
+                    threshold_ms=300000  # 5 minutes
+                )
             
             # Invalidate compliance cache
             self.cache_service.invalidate_compliance_cache()
@@ -340,9 +355,10 @@ class OptimizedRecipeService(RecipeService):
                 "timestamp": datetime.utcnow()
             }
     
+    @timing_logger("warm_cache", warning_threshold_ms=2000)
     def warm_cache(self, recipe_ids: Optional[List[int]] = None):
         """
-        Pre-warm cache for frequently accessed recipes.
+        Pre-warm cache for frequently accessed recipes using parallel processing.
         
         Args:
             recipe_ids: List of recipe IDs to warm (None for top recipes)
@@ -356,23 +372,28 @@ class OptimizedRecipeService(RecipeService):
             
             recipe_ids = [r[0] for r in top_recipes]
         
-        # Warm cache in parallel
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = []
-            for recipe_id in recipe_ids:
-                future = executor.submit(
-                    self.calculate_recipe_cost,
-                    recipe_id,
-                    use_cache=False
-                )
-                futures.append(future)
-            
-            # Wait for completion
-            for future in futures:
+        # Warm cache using ParallelExecutor
+        with ParallelExecutor(max_workers=4, chunk_size=25) as executor:
+            def warm_single_recipe(recipe_id):
                 try:
-                    future.result(timeout=10)
+                    self.calculate_recipe_cost(recipe_id, use_cache=False)
+                    return True
                 except Exception as e:
-                    logger.warning(f"Cache warming error: {e}")
+                    logger.warning(f"Cache warming error for recipe {recipe_id}: {e}")
+                    return False
+            
+            # Process all recipes in parallel
+            results = executor.parallel_map(
+                warm_single_recipe,
+                recipe_ids,
+                timeout=60  # 1 minute timeout
+            )
+            
+            # Log statistics
+            success_count = sum(1 for r in results if r is True)
+            logger.info(
+                f"Cache warming completed: {success_count}/{len(recipe_ids)} recipes warmed successfully"
+            )
     
     def get_cache_statistics(self) -> Dict[str, Any]:
         """Get cache performance statistics"""
