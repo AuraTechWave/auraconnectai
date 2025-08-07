@@ -340,6 +340,6 @@ Set up monitors to run collections on a schedule:
 ## Additional Resources
 
 - [Postman Learning Center](https://learning.postman.com/)
-- [AuraConnect API Documentation](/api/)
+- [AuraConnect API Documentation](../README.md)
 - [API Status Page](https://status.auraconnect.ai/)
 - [Developer Support](mailto:api-support@auraconnect.ai)
