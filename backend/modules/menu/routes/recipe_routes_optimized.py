@@ -331,9 +331,9 @@ async def get_cache_statistics(
 
 @router.post("/cache/warm")
 async def warm_cache(
+    background_tasks: BackgroundTasks,
     recipe_ids: Optional[List[int]] = Query(None, description="Recipe IDs to warm"),
     top_recipes: int = Query(100, description="Number of top recipes to warm"),
-    background_tasks: BackgroundTasks,
     recipe_service: OptimizedRecipeService = Depends(get_optimized_recipe_service),
     current_user: User = Depends(require_permission("admin:recipes"))
 ):

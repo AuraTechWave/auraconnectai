@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from core.database import get_db
-from core.auth import get_current_user, require_admin
+from core.auth import get_current_user, require_admin, User
 from core.rbac_service import RBACService, get_rbac_service
-from core.auth import User, RBACRole, RBACPermission, RBACSession
+from core.rbac_models import RBACUser, RBACRole, RBACPermission, RBACSession
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/rbac", tags=["RBAC Management"])
