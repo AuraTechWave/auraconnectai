@@ -13,6 +13,14 @@ from ..models.recipe_models import (
     RecipeHistory, RecipeNutrition,
     RecipeStatus, RecipeComplexity, UnitType
 )
+from .recipe_circular_validation import RecipeCircularValidator, CircularDependencyError
+from .recipe_service_enhanced import (
+    update_recipe_sub_recipes as enhanced_update_sub_recipes,
+    add_single_sub_recipe,
+    remove_sub_recipe,
+    validate_recipe_hierarchy as enhanced_validate_hierarchy,
+    get_recipe_dependencies
+)
 from ..schemas.recipe_schemas import (
     RecipeCreate, RecipeUpdate, RecipeResponse,
     RecipeIngredientCreate, RecipeIngredientUpdate,
@@ -876,29 +884,20 @@ class RecipeService:
     
     def _would_create_circular_reference(self, parent_id: int, potential_sub_id: int) -> bool:
         """Check if adding a sub-recipe would create a circular reference"""
-        # Check if potential_sub_id is already a parent of parent_id
-        visited = set()
-        to_check = [potential_sub_id]
-        
-        while to_check:
-            current_id = to_check.pop()
-            if current_id in visited:
-                continue
+        # Try to get Redis client if available
+        redis_client = None
+        try:
+            from core.redis_client import get_redis_client
+            redis_client = get_redis_client()
+        except:
+            pass  # Redis not configured, will use local cache only
             
-            if current_id == parent_id:
-                return True  # Found circular reference
-            
-            visited.add(current_id)
-            
-            # Get all sub-recipes of current recipe
-            sub_recipes = self.db.query(RecipeSubRecipe).filter(
-                RecipeSubRecipe.parent_recipe_id == current_id
-            ).all()
-            
-            for sub in sub_recipes:
-                to_check.append(sub.sub_recipe_id)
-        
-        return False
+        validator = RecipeCircularValidator(self.db, redis_client)
+        try:
+            validator.validate_no_circular_reference(parent_id, potential_sub_id)
+            return False
+        except CircularDependencyError:
+            return True
     
     def _get_cache_key(self, recipe_id: int, operation: str) -> str:
         """Generate cache key for recipe operations"""
@@ -918,3 +917,44 @@ class RecipeService:
         
         for link in parent_links:
             self._invalidate_cost_cache(link.parent_recipe_id)
+    
+    def update_recipe_sub_recipes(
+        self, 
+        recipe_id: int, 
+        sub_recipes: List[RecipeSubRecipeCreate], 
+        user_id: int
+    ) -> Recipe:
+        """Update recipe sub-recipes with enhanced circular dependency validation"""
+        return enhanced_update_sub_recipes(
+            self.db, 
+            recipe_id, 
+            sub_recipes, 
+            user_id, 
+            recipe_service_instance=self
+        )
+    
+    def add_sub_recipe(
+        self,
+        recipe_id: int,
+        sub_recipe_data: RecipeSubRecipeCreate,
+        user_id: int
+    ) -> RecipeSubRecipe:
+        """Add a single sub-recipe with validation"""
+        return add_single_sub_recipe(self.db, recipe_id, sub_recipe_data, user_id)
+    
+    def remove_sub_recipe_link(
+        self,
+        recipe_id: int,
+        sub_recipe_id: int,
+        user_id: int
+    ) -> None:
+        """Remove a sub-recipe from a recipe"""
+        remove_sub_recipe(self.db, recipe_id, sub_recipe_id, user_id)
+    
+    def validate_recipe_hierarchy(self, recipe_id: int) -> dict:
+        """Validate and analyze a recipe's entire hierarchy"""
+        return enhanced_validate_hierarchy(self.db, recipe_id)
+    
+    def get_recipe_dependencies_analysis(self, recipe_id: int) -> dict:
+        """Get all dependencies and dependents of a recipe"""
+        return get_recipe_dependencies(self.db, recipe_id)

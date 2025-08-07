@@ -15,7 +15,7 @@ from ..schemas.recipe_schemas import (
     RecipeComplianceReport, MenuItemRecipeStatus,
     RecipeCloneRequest, RecipeHistoryResponse,
     RecipeNutritionCreate, RecipeNutritionUpdate, RecipeNutritionResponse,
-    BulkRecipeUpdate
+    BulkRecipeUpdate, RecipeSubRecipeCreate, RecipeSubRecipeResponse
 )
 
 router = APIRouter(prefix="/recipes", tags=["Recipe Management"])
@@ -313,10 +313,54 @@ async def get_recipe_history(
 @router.put("/bulk/update", response_model=dict)
 async def bulk_update_recipes(
     bulk_data: BulkRecipeUpdate,
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk update multiple recipes (manager/admin only)"""
+    """
+    Bulk update multiple recipes (manager/admin only).
+    
+    Use dry_run=true to simulate changes and see what would happen without committing.
+    """
+    if dry_run:
+        # Simulate the updates
+        validation_results = []
+        
+        for recipe_id in bulk_data.recipe_ids:
+            try:
+                recipe = recipe_service.get_recipe_by_id(recipe_id)
+                if not recipe:
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": False,
+                        "error": "Recipe not found"
+                    })
+                else:
+                    # Check if updates would be valid
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": True,
+                        "current_status": recipe.status,
+                        "would_update": bulk_data.updates.dict(exclude_unset=True)
+                    })
+            except Exception as e:
+                validation_results.append({
+                    "recipe_id": recipe_id,
+                    "valid": False,
+                    "error": str(e)
+                })
+        
+        valid_count = sum(1 for r in validation_results if r.get("valid", False))
+        
+        return {
+            "dry_run": True,
+            "total": len(bulk_data.recipe_ids),
+            "valid": valid_count,
+            "invalid": len(validation_results) - valid_count,
+            "results": validation_results
+        }
+    
+    # Actual update
     updated_count = 0
     errors = []
     
@@ -341,10 +385,56 @@ async def bulk_update_recipes(
 async def bulk_activate_recipes(
     recipe_ids: List[int],
     active: bool = True,
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
     recipe_service: RecipeService = Depends(get_recipe_service),
     current_user: User = Depends(require_permission("manager:recipes"))
 ):
-    """Bulk activate or deactivate recipes (manager/admin only)"""
+    """
+    Bulk activate or deactivate recipes (manager/admin only).
+    
+    Use dry_run=true to see which recipes would be affected without making changes.
+    """
+    if dry_run:
+        # Simulate the activation/deactivation
+        validation_results = []
+        
+        for recipe_id in recipe_ids:
+            try:
+                recipe = recipe_service.get_recipe_by_id(recipe_id)
+                if not recipe:
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": False,
+                        "error": "Recipe not found"
+                    })
+                else:
+                    would_change = (recipe.status == RecipeStatus.ACTIVE) != active
+                    validation_results.append({
+                        "recipe_id": recipe_id,
+                        "valid": True,
+                        "current_status": recipe.status,
+                        "would_change": would_change,
+                        "new_status": "active" if active else "inactive"
+                    })
+            except Exception as e:
+                validation_results.append({
+                    "recipe_id": recipe_id,
+                    "valid": False,
+                    "error": str(e)
+                })
+        
+        changes_count = sum(1 for r in validation_results if r.get("would_change", False))
+        
+        return {
+            "dry_run": True,
+            "action": "activate" if active else "deactivate",
+            "total": len(recipe_ids),
+            "would_change": changes_count,
+            "already_correct": len(recipe_ids) - changes_count,
+            "results": validation_results
+        }
+    
+    # Actual update
     updated_count = 0
     errors = []
     
@@ -431,3 +521,156 @@ async def approve_recipe(
         "approved_by": current_user.id,
         "approved_at": recipe.approved_at
     }
+
+
+# Sub-Recipe Management Routes
+@router.put("/{recipe_id}/sub-recipes", response_model=RecipeResponse)
+async def update_recipe_sub_recipes(
+    recipe_id: int,
+    sub_recipes: List[RecipeSubRecipeCreate],
+    dry_run: bool = Query(False, description="Simulate the operation without making changes"),
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """
+    Update sub-recipes for a recipe. This replaces all existing sub-recipes.
+    Includes circular dependency validation.
+    
+    Use dry_run=true to validate changes without committing them.
+    """
+    if dry_run:
+        # Validate without making changes
+        from ..services.recipe_circular_validation import RecipeCircularValidator
+        db = next(get_db())
+        validator = RecipeCircularValidator(db)
+        
+        # Check if recipe exists
+        recipe = recipe_service.get_recipe_by_id(recipe_id)
+        if not recipe:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Recipe not found"
+            )
+        
+        # Validate all sub-recipes
+        sub_recipe_data = [
+            {'sub_recipe_id': sub.sub_recipe_id, 'quantity': sub.quantity}
+            for sub in sub_recipes
+        ]
+        
+        try:
+            validator.validate_batch_sub_recipes(recipe_id, sub_recipe_data)
+            return {
+                "dry_run": True,
+                "valid": True,
+                "message": "All sub-recipes are valid and would not create circular dependencies",
+                "recipe_id": recipe_id,
+                "sub_recipes_count": len(sub_recipes)
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Validation failed: {str(e)}"
+            )
+    
+    recipe = recipe_service.update_recipe_sub_recipes(recipe_id, sub_recipes, current_user.id)
+    return recipe
+
+
+@router.post("/{recipe_id}/sub-recipes", response_model=dict)
+async def add_sub_recipe(
+    recipe_id: int,
+    sub_recipe: RecipeSubRecipeCreate,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """
+    Add a single sub-recipe to an existing recipe.
+    Includes circular dependency validation.
+    """
+    sub_recipe_link = recipe_service.add_sub_recipe(recipe_id, sub_recipe, current_user.id)
+    return {
+        "message": "Sub-recipe added successfully",
+        "parent_recipe_id": recipe_id,
+        "sub_recipe_id": sub_recipe_link.sub_recipe_id,
+        "quantity": sub_recipe_link.quantity
+    }
+
+
+@router.delete("/{recipe_id}/sub-recipes/{sub_recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_sub_recipe(
+    recipe_id: int,
+    sub_recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """Remove a sub-recipe from a recipe"""
+    recipe_service.remove_sub_recipe_link(recipe_id, sub_recipe_id, current_user.id)
+
+
+@router.get("/{recipe_id}/validate-hierarchy", response_model=dict)
+async def validate_recipe_hierarchy(
+    recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Validate the entire hierarchy of a recipe for circular dependencies.
+    Returns validation results including depth and any detected cycles.
+    """
+    validation = recipe_service.validate_recipe_hierarchy(recipe_id)
+    return validation
+
+
+@router.get("/{recipe_id}/dependencies", response_model=dict)
+async def get_recipe_dependencies(
+    recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Get all dependencies (recipes this recipe uses) and dependents (recipes that use this recipe).
+    Useful for understanding the impact of changes.
+    """
+    dependencies = recipe_service.get_recipe_dependencies_analysis(recipe_id)
+    return dependencies
+
+
+@router.post("/validate-sub-recipes", response_model=dict)
+async def validate_sub_recipes(
+    parent_recipe_id: int,
+    sub_recipes: List[RecipeSubRecipeCreate],
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Validate a list of sub-recipes before adding them.
+    Checks for circular dependencies and duplicates.
+    """
+    from ..services.recipe_circular_validation import RecipeCircularValidator, CircularDependencyError
+    
+    db = next(get_db())
+    validator = RecipeCircularValidator(db)
+    
+    try:
+        sub_recipe_data = [
+            {'sub_recipe_id': sub.sub_recipe_id, 'quantity': sub.quantity}
+            for sub in sub_recipes
+        ]
+        validator.validate_batch_sub_recipes(parent_recipe_id, sub_recipe_data)
+        
+        return {
+            "valid": True,
+            "message": "All sub-recipes are valid and would not create circular dependencies"
+        }
+    except CircularDependencyError as e:
+        return {
+            "valid": False,
+            "message": str(e),
+            "cycle_path": e.cycle_path if hasattr(e, 'cycle_path') else []
+        }
+    except ValueError as e:
+        return {
+            "valid": False,
+            "message": str(e)
+        }
