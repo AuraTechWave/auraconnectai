@@ -17,3 +17,14 @@ python-jose[cryptography]
 argon2-cffi
 email-validator
 jinja2
+# Analytics and data processing dependencies
+pandas
+numpy
+statsmodels
+scikit-learn
+# Payment processing dependencies  
+stripe
+prometheus_client
+arq
+# JWT processing (for customer auth)
+PyJWT

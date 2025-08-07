@@ -7,7 +7,7 @@ Enhanced reservation service with full booking management.
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from datetime import datetime, date, time, timedelta
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 import random
 import string
 import logging
@@ -140,7 +140,7 @@ class ReservationService:
             action=AuditAction.CREATED,
             user_id=customer_id,
             user_type="customer",
-            metadata={
+            extra_data={
                 "source": reservation_data.source,
                 "party_size": reservation_data.party_size,
                 "table_assigned": reservation.table_numbers
@@ -157,7 +157,7 @@ class ReservationService:
             reservation_date=str(reservation.reservation_date),
             reservation_time=str(reservation.reservation_time),
             source=reservation.source,
-            metadata={"table_numbers": reservation.table_numbers}
+            extra_data={"table_numbers": reservation.table_numbers}
         )
         await emit_reservation_event(event)
         
@@ -310,7 +310,7 @@ class ReservationService:
                 user_id=customer_id,
                 user_type="customer",
                 field_changes=field_changes,
-                metadata={"needs_availability_check": needs_availability_check}
+                extra_data={"needs_availability_check": needs_availability_check}
             )
         
         # Emit event
@@ -320,7 +320,7 @@ class ReservationService:
             timestamp=datetime.utcnow(),
             user_id=customer_id,
             field_changes=field_changes,
-            metadata={"table_reassigned": needs_availability_check}
+            extra_data={"table_reassigned": needs_availability_check}
         )
         await emit_reservation_event(event)
         
@@ -360,7 +360,7 @@ class ReservationService:
             user_id=customer_id,
             user_type="customer",
             reason=cancellation_data.reason,
-            metadata={
+            extra_data={
                 "cancelled_by": cancellation_data.cancelled_by,
                 "table_numbers": reservation.table_numbers
             }
@@ -374,7 +374,7 @@ class ReservationService:
             user_id=customer_id,
             reason=cancellation_data.reason,
             cancelled_by=cancellation_data.cancelled_by,
-            metadata={
+            extra_data={
                 "party_size": reservation.party_size,
                 "reservation_date": str(reservation.reservation_date),
                 "reservation_time": str(reservation.reservation_time)
@@ -429,7 +429,7 @@ class ReservationService:
             action=AuditAction.CONFIRMED,
             user_id=customer_id,
             user_type="customer",
-            metadata={
+            extra_data={
                 "special_requests_updated": confirmation_data.special_requests_update is not None
             }
         )
@@ -441,7 +441,7 @@ class ReservationService:
             timestamp=datetime.utcnow(),
             user_id=customer_id,
             field_changes={"status": {"old": "pending", "new": "confirmed"}},
-            metadata={"confirmed_at": str(datetime.utcnow())}
+            extra_data={"confirmed_at": str(datetime.utcnow())}
         )
         await emit_reservation_event(event)
         
@@ -545,7 +545,7 @@ class ReservationService:
                     timestamp=datetime.utcnow(),
                     user_id=staff_id,
                     table_numbers=reservation.table_numbers,
-                    metadata={"party_size": reservation.party_size}
+                    extra_data={"party_size": reservation.party_size}
                 )
             elif update_data.status == ReservationStatus.COMPLETED:
                 reservation.completed_at = datetime.utcnow()
@@ -556,7 +556,7 @@ class ReservationService:
                     timestamp=datetime.utcnow(),
                     user_id=staff_id,
                     duration_minutes=int((datetime.utcnow() - reservation.seated_at).total_seconds() / 60) if reservation.seated_at else None,
-                    metadata={"table_numbers": reservation.table_numbers}
+                    extra_data={"table_numbers": reservation.table_numbers}
                 )
             elif update_data.status == ReservationStatus.NO_SHOW:
                 event = ReservationNoShowEvent(
@@ -564,7 +564,7 @@ class ReservationService:
                     customer_id=reservation.customer_id,
                     timestamp=datetime.utcnow(),
                     user_id=staff_id,
-                    metadata={
+                    extra_data={
                         "reservation_date": str(reservation.reservation_date),
                         "reservation_time": str(reservation.reservation_time)
                     }
@@ -611,7 +611,7 @@ class ReservationService:
             user_type="staff",
             field_changes=field_changes,
             reason=update_data.notes,
-            metadata={"staff_update": True}
+            extra_data={"staff_update": True}
         )
         
         # Emit event
@@ -624,7 +624,7 @@ class ReservationService:
                 timestamp=datetime.utcnow(),
                 user_id=staff_id,
                 field_changes=field_changes,
-                metadata={"staff_update": True, "notes": update_data.notes}
+                extra_data={"staff_update": True, "notes": update_data.notes}
             )
             await emit_reservation_event(event)
         
@@ -712,7 +712,7 @@ class ReservationService:
             user_agent=user_agent,
             field_changes=field_changes,
             reason=reason,
-            metadata=metadata
+            extra_data=metadata
         )
         self.db.add(audit_log)
         self.db.commit()
