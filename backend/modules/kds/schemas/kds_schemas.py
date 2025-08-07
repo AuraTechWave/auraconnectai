@@ -17,7 +17,7 @@ class StationCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     station_type: StationType
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: int = Field(0, ge=0, le=100)
     max_active_items: int = Field(10, ge=1, le=50)
     prep_time_multiplier: float = Field(1.0, ge=0.1, le=5.0)
@@ -37,7 +37,7 @@ class StationUpdate(BaseModel):
     station_type: Optional[StationType] = None
     status: Optional[StationStatus] = None
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: Optional[int] = Field(None, ge=0, le=100)
     max_active_items: Optional[int] = Field(None, ge=1, le=50)
     prep_time_multiplier: Optional[float] = Field(None, ge=0.1, le=5.0)
@@ -83,7 +83,7 @@ class KitchenDisplayCreate(BaseModel):
     display_number: int = Field(1, ge=1, le=10)
     name: Optional[str] = None
     ip_address: Optional[str] = None
-    layout_mode: str = Field("grid", regex="^(grid|list|single)$")
+    layout_mode: str = Field("grid", pattern="^(grid|list|single)$")
     items_per_page: int = Field(6, ge=1, le=20)
     auto_clear_completed: bool = True
     auto_clear_delay_seconds: int = Field(30, ge=10, le=300)
@@ -94,7 +94,7 @@ class KitchenDisplayUpdate(BaseModel):
     name: Optional[str] = None
     ip_address: Optional[str] = None
     is_active: Optional[bool] = None
-    layout_mode: Optional[str] = Field(None, regex="^(grid|list|single)$")
+    layout_mode: Optional[str] = Field(None, pattern="^(grid|list|single)$")
     items_per_page: Optional[int] = Field(None, ge=1, le=20)
     auto_clear_completed: Optional[bool] = None
     auto_clear_delay_seconds: Optional[int] = Field(None, ge=10, le=300)
@@ -249,7 +249,7 @@ class StationSummary(BaseModel):
 
 class KDSWebSocketMessage(BaseModel):
     """WebSocket message format for KDS updates"""
-    type: str = Field(..., regex="^(new_item|update_item|remove_item|station_update|heartbeat)$")
+    type: str = Field(..., pattern="^(new_item|update_item|remove_item|station_update|heartbeat)$")
     station_id: Optional[int] = None
     data: Dict[str, Any]
     timestamp: datetime = Field(default_factory=datetime.utcnow)

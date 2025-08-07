@@ -72,7 +72,7 @@ class InsightResponse(InsightBase):
 # Rating Schemas
 class InsightRatingCreate(BaseModel):
     """Create rating schema"""
-    rating: str = Field(..., regex="^(useful|irrelevant|needs_followup)$")
+    rating: str = Field(..., pattern="^(useful|irrelevant|needs_followup)$")
     comment: Optional[str] = Field(None, max_length=500)
 
 
@@ -237,4 +237,4 @@ class BulkInsightUpdate(BaseModel):
 class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
     insight_ids: List[int]
-    action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
+    action: str = Field(..., pattern="^(acknowledge|dismiss|export)$")
