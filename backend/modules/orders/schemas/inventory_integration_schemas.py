@@ -20,9 +20,11 @@ class OrderCompleteRequest(BaseModel):
         default=False,
         description="Force deduction even if inventory is insufficient"
     )
-    notes: Optional[str] = Field(
+    reason: Optional[str] = Field(
         None,
-        description="Optional notes for the completion"
+        min_length=1,
+        max_length=500,
+        description="Optional reason for the completion"
     )
 
 
@@ -59,9 +61,11 @@ class PartialFulfillmentRequest(BaseModel):
         min_items=1,
         description="List of items that have been fulfilled"
     )
-    notes: Optional[str] = Field(
+    reason: Optional[str] = Field(
         None,
-        description="Optional notes for the partial fulfillment"
+        min_length=1,
+        max_length=500,
+        description="Optional reason for the partial fulfillment"
     )
 
 

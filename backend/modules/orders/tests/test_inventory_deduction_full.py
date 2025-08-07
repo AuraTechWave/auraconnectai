@@ -263,3 +263,123 @@ class TestInventoryDeductionAPI:
         assert result["success"] is True
         assert result["inventory_deducted"] is False
         assert result["inventory_result"] is None
+    
+    def test_manual_reversal_admin_only(
+        self, client: TestClient, headers: dict, setup_test_data: dict, auth_token_manager: str
+    ):
+        """Test manual reversal endpoint requires admin access"""
+        order_id = setup_test_data["order_id"]
+        
+        # First complete the order
+        response = client.post(
+            f"/api/v1/orders/{order_id}/complete-with-inventory",
+            headers=headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Try to reverse with manager token (non-admin)
+        manager_token = auth_token_manager
+        manager_headers = {"Authorization": f"Bearer {manager_token}"}
+        
+        # Attempt reversal without force (should work for manager)
+        response = client.post(
+            f"/api/v1/orders/{order_id}/reverse-deduction?reason=Test%20reversal",
+            headers=manager_headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Create new order to test force reversal
+        order_data = {
+            "customer_id": 1,
+            "items": [
+                {"menu_item_id": setup_test_data["menu_item_id"], "quantity": 1, "price": 12.50}
+            ],
+            "total_amount": 12.50
+        }
+        response = client.post("/api/v1/orders", json=order_data, headers=headers)
+        assert response.status_code == status.HTTP_201_CREATED
+        new_order_id = response.json()["id"]
+        
+        # Complete the new order
+        response = client.post(
+            f"/api/v1/orders/{new_order_id}/complete-with-inventory",
+            headers=headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Try force reversal with manager token (should fail)
+        response = client.post(
+            f"/api/v1/orders/{new_order_id}/reverse-deduction?reason=Force%20test&force=true",
+            headers=manager_headers
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        
+        # Try force reversal with admin token (should succeed)
+        response = client.post(
+            f"/api/v1/orders/{new_order_id}/reverse-deduction?reason=Force%20test&force=true",
+            headers=headers  # Admin headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        
+        assert result["success"] is True
+        assert len(result["reversed_items"]) > 0
+    
+    def test_manual_reversal_behavior(
+        self, client: TestClient, headers: dict, setup_test_data: dict, db_session: Session
+    ):
+        """Test manual reversal endpoint behavior and inventory restoration"""
+        order_id = setup_test_data["order_id"]
+        
+        # Complete the order first
+        response = client.post(
+            f"/api/v1/orders/{order_id}/complete-with-inventory",
+            headers=headers
+        )
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Get inventory levels after completion
+        response = client.get(
+            f"/api/v1/inventory/{setup_test_data['inventory_ids'][0]}",
+            headers=headers
+        )
+        flour_after_completion = response.json()["quantity"]
+        
+        # Manually reverse the deduction
+        response = client.post(
+            f"/api/v1/orders/{order_id}/reverse-deduction?reason=Manual%20reversal%20test",
+            headers=headers
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        
+        # Verify reversal response
+        assert result["success"] is True
+        assert len(result["reversed_items"]) == 3  # 3 ingredients
+        assert result["total_items_reversed"] == 3
+        
+        # Verify flour was reversed
+        flour_reversal = next(
+            item for item in result["reversed_items"]
+            if item["item_name"] == "Flour"
+        )
+        assert flour_reversal["quantity_restored"] == 0.6  # 2 pizzas * 0.3 kg
+        
+        # Check inventory after reversal
+        response = client.get(
+            f"/api/v1/inventory/{setup_test_data['inventory_ids'][0]}",
+            headers=headers
+        )
+        flour_after_reversal = response.json()["quantity"]
+        
+        # Should be restored
+        assert flour_after_reversal == flour_after_completion + 0.6
+        
+        # Try to reverse again (should fail - already reversed)
+        response = client.post(
+            f"/api/v1/orders/{order_id}/reverse-deduction?reason=Duplicate%20reversal",
+            headers=headers
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "already been reversed" in response.json()["detail"]

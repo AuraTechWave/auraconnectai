@@ -33,21 +33,16 @@ def upgrade():
     """)
     
     # Add indexes for better query performance
-    op.create_index(
-        'idx_inventory_adjustments_reference',
-        'inventory_adjustments',
-        ['reference_type', 'reference_id'],
-        unique=False,
-        if_not_exists=True
-    )
+    # Using raw SQL for CONCURRENTLY option
+    op.execute("""
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_adjustments_reference 
+        ON inventory_adjustments (reference_type, reference_id);
+    """)
     
-    op.create_index(
-        'idx_inventory_adjustments_created_at',
-        'inventory_adjustments',
-        ['created_at'],
-        unique=False,
-        if_not_exists=True
-    )
+    op.execute("""
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_adjustments_created_at 
+        ON inventory_adjustments (created_at);
+    """)
     
     # Add completed_at and completed_by columns to orders if not exists
     op.execute("""
@@ -115,21 +110,16 @@ def upgrade():
     """)
     
     # Create index on audit logs
-    op.create_index(
-        'idx_audit_logs_entity',
-        'audit_logs',
-        ['entity_type', 'entity_id'],
-        unique=False,
-        if_not_exists=True
-    )
+    # Using raw SQL for CONCURRENTLY option
+    op.execute("""
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_audit_logs_entity 
+        ON audit_logs (entity_type, entity_id);
+    """)
     
-    op.create_index(
-        'idx_audit_logs_user_timestamp',
-        'audit_logs',
-        ['user_id', 'timestamp'],
-        unique=False,
-        if_not_exists=True
-    )
+    op.execute("""
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_audit_logs_user_timestamp 
+        ON audit_logs (user_id, timestamp);
+    """)
 
 
 def downgrade():

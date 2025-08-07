@@ -110,7 +110,7 @@ class OrderInventoryIntegrationService:
                         )
                         
                         # Log the deduction
-                        self._log_inventory_deduction(
+                        self.log_deduction_audit(
                             order_id=order_id,
                             user_id=user_id,
                             deduction_result=inventory_result,
@@ -218,7 +218,7 @@ class OrderInventoryIntegrationService:
                     )
                     
                     # Log the reversal
-                    self._log_inventory_reversal(
+                    self.log_reversal_audit(
                         order_id=order_id,
                         user_id=user_id,
                         reversal_result=reversal_result,
@@ -368,7 +368,7 @@ class OrderInventoryIntegrationService:
             logger.error(f"Failed to validate inventory for order {order_id}: {str(e)}")
             raise
     
-    def _log_inventory_deduction(
+    def log_deduction_audit(
         self,
         order_id: int,
         user_id: int,
@@ -400,7 +400,7 @@ class OrderInventoryIntegrationService:
             logger.error(f"Failed to create audit log for order {order_id}: {str(e)}")
             # Don't fail the main operation if audit logging fails
     
-    def _log_inventory_reversal(
+    def log_reversal_audit(
         self,
         order_id: int,
         user_id: int,
