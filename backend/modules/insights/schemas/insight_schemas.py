@@ -66,7 +66,7 @@ class InsightResponse(InsightBase):
     rating_summary: Optional[Dict[str, int]] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Rating Schemas
@@ -87,7 +87,7 @@ class InsightRatingResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Action Schemas
@@ -108,7 +108,7 @@ class InsightActionResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Notification Rule Schemas
@@ -177,7 +177,7 @@ class NotificationRuleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Thread Schemas

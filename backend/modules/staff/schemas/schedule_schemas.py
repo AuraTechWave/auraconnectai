@@ -18,7 +18,7 @@ class SchedulePreviewResponse(BaseModel):
     summary: Dict[str, Any]  # Summary statistics
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PaginatedPreviewResponse(BaseModel):
@@ -32,7 +32,7 @@ class PaginatedPreviewResponse(BaseModel):
     has_previous: bool
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Enhanced Schedule Publish Request
@@ -106,7 +106,7 @@ class ScheduleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Notification Schemas
@@ -141,7 +141,7 @@ class CacheStatsResponse(BaseModel):
     hit_rate: Optional[float] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Analytics and Reporting Schemas
@@ -156,7 +156,7 @@ class ScheduleAnalytics(BaseModel):
     labor_cost_estimate: Optional[float]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StaffScheduleMetrics(BaseModel):
@@ -174,7 +174,7 @@ class StaffScheduleMetrics(BaseModel):
     utilization_percentage: float
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Batch Operations

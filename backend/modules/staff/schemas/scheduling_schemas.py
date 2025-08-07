@@ -55,7 +55,7 @@ class ShiftTemplateResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Enhanced Shift Schemas
@@ -117,7 +117,7 @@ class ShiftResponse(BaseModel):
     breaks: List['ShiftBreakResponse'] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Break Schemas
@@ -145,7 +145,7 @@ class ShiftBreakResponse(BaseModel):
     is_paid: bool
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Availability Schemas
@@ -199,7 +199,7 @@ class AvailabilityResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Shift Swap Schemas
@@ -240,7 +240,7 @@ class ShiftSwapResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Schedule Generation Schemas
@@ -276,7 +276,7 @@ class SchedulePublishResponse(BaseModel):
     notes: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Dashboard Analytics Schemas
