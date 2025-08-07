@@ -225,23 +225,31 @@ class RecipeCostAnalysis(BaseModel):
     """Detailed cost breakdown for a recipe"""
     recipe_id: int
     recipe_name: str
-    menu_item_id: int
-    menu_item_name: str
-    menu_item_price: float
+    menu_item_id: Optional[int] = None
+    menu_item_name: Optional[str] = None
+    menu_item_price: Optional[float] = None
     
     # Cost details
     total_ingredient_cost: float
     total_sub_recipe_cost: float
     total_cost: float
+    cost_per_serving: Optional[float] = None
+    yield_quantity: Optional[float] = None
     
     # Analysis
-    food_cost_percentage: float
-    profit_margin: float
-    profit_amount: float
+    food_cost_percentage: Optional[float] = None
+    profit_margin: Optional[float] = None
+    profit_amount: Optional[float] = None
+    markup_percentage: Optional[float] = None
     
     # Breakdown
     ingredient_costs: List[Dict[str, Any]]
     sub_recipe_costs: List[Dict[str, Any]]
+    
+    # Metadata
+    last_calculated: Optional[datetime] = None
+    currency: Optional[str] = "USD"
+    suggested_price: Optional[float] = None
     
     # Recommendations
     cost_optimization_suggestions: Optional[List[str]] = None
