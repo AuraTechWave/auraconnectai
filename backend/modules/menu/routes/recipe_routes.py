@@ -15,7 +15,7 @@ from ..schemas.recipe_schemas import (
     RecipeComplianceReport, MenuItemRecipeStatus,
     RecipeCloneRequest, RecipeHistoryResponse,
     RecipeNutritionCreate, RecipeNutritionUpdate, RecipeNutritionResponse,
-    BulkRecipeUpdate
+    BulkRecipeUpdate, RecipeSubRecipeCreate, RecipeSubRecipeResponse
 )
 
 router = APIRouter(prefix="/recipes", tags=["Recipe Management"])
@@ -431,3 +431,118 @@ async def approve_recipe(
         "approved_by": current_user.id,
         "approved_at": recipe.approved_at
     }
+
+
+# Sub-Recipe Management Routes
+@router.put("/{recipe_id}/sub-recipes", response_model=RecipeResponse)
+async def update_recipe_sub_recipes(
+    recipe_id: int,
+    sub_recipes: List[RecipeSubRecipeCreate],
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """
+    Update sub-recipes for a recipe. This replaces all existing sub-recipes.
+    Includes circular dependency validation.
+    """
+    recipe = recipe_service.update_recipe_sub_recipes(recipe_id, sub_recipes, current_user.id)
+    return recipe
+
+
+@router.post("/{recipe_id}/sub-recipes", response_model=dict)
+async def add_sub_recipe(
+    recipe_id: int,
+    sub_recipe: RecipeSubRecipeCreate,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """
+    Add a single sub-recipe to an existing recipe.
+    Includes circular dependency validation.
+    """
+    sub_recipe_link = recipe_service.add_sub_recipe(recipe_id, sub_recipe, current_user.id)
+    return {
+        "message": "Sub-recipe added successfully",
+        "parent_recipe_id": recipe_id,
+        "sub_recipe_id": sub_recipe_link.sub_recipe_id,
+        "quantity": sub_recipe_link.quantity
+    }
+
+
+@router.delete("/{recipe_id}/sub-recipes/{sub_recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_sub_recipe(
+    recipe_id: int,
+    sub_recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:update"))
+):
+    """Remove a sub-recipe from a recipe"""
+    recipe_service.remove_sub_recipe_link(recipe_id, sub_recipe_id, current_user.id)
+
+
+@router.get("/{recipe_id}/validate-hierarchy", response_model=dict)
+async def validate_recipe_hierarchy(
+    recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Validate the entire hierarchy of a recipe for circular dependencies.
+    Returns validation results including depth and any detected cycles.
+    """
+    validation = recipe_service.validate_recipe_hierarchy(recipe_id)
+    return validation
+
+
+@router.get("/{recipe_id}/dependencies", response_model=dict)
+async def get_recipe_dependencies(
+    recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Get all dependencies (recipes this recipe uses) and dependents (recipes that use this recipe).
+    Useful for understanding the impact of changes.
+    """
+    dependencies = recipe_service.get_recipe_dependencies_analysis(recipe_id)
+    return dependencies
+
+
+@router.post("/validate-sub-recipes", response_model=dict)
+async def validate_sub_recipes(
+    parent_recipe_id: int,
+    sub_recipes: List[RecipeSubRecipeCreate],
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("menu:read"))
+):
+    """
+    Validate a list of sub-recipes before adding them.
+    Checks for circular dependencies and duplicates.
+    """
+    from ..services.recipe_circular_validation import RecipeCircularValidator, CircularDependencyError
+    
+    db = next(get_db())
+    validator = RecipeCircularValidator(db)
+    
+    try:
+        sub_recipe_data = [
+            {'sub_recipe_id': sub.sub_recipe_id, 'quantity': sub.quantity}
+            for sub in sub_recipes
+        ]
+        validator.validate_batch_sub_recipes(parent_recipe_id, sub_recipe_data)
+        
+        return {
+            "valid": True,
+            "message": "All sub-recipes are valid and would not create circular dependencies"
+        }
+    except CircularDependencyError as e:
+        return {
+            "valid": False,
+            "message": str(e),
+            "cycle_path": e.cycle_path if hasattr(e, 'cycle_path') else []
+        }
+    except ValueError as e:
+        return {
+            "valid": False,
+            "message": str(e)
+        }
