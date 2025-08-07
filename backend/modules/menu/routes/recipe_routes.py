@@ -126,8 +126,11 @@ async def search_recipes(
     
     recipes, total = recipe_service.search_recipes(params)
     
+    # Convert SQLAlchemy models to Pydantic models
+    recipe_responses = [RecipeResponse.from_orm(recipe) for recipe in recipes]
+    
     return {
-        "recipes": recipes,
+        "recipes": recipe_responses,
         "total": total,
         "page": (offset // limit) + 1,
         "pages": (total + limit - 1) // limit if limit > 0 else 0
