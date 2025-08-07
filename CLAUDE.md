@@ -147,10 +147,14 @@ npm run ios  # or android
 ### Branch Management
 **ALWAYS work on issues in a fresh, up-to-date branch:**
 ```bash
-# Before starting any issue:
+# Before starting ANY issue or task:
 git checkout main
 git pull origin main
 git checkout -b feature/AUR-XXX-brief-description
+
+# NEVER work directly on main
+# NEVER create a branch from another feature branch
+# ALWAYS start from an updated main branch
 ```
 
 This ensures:
@@ -158,6 +162,7 @@ This ensures:
 - Easy PR creation and review
 - Avoids conflicts with main branch
 - Maintains clean git history
+- Prevents mixing unrelated changes
 ```
 
 ## Active Development Tasks
