@@ -18,7 +18,7 @@ from modules.kds.schemas.kds_schemas import (
     StationCreate, StationAssignmentCreate, MenuItemStationCreate
 )
 from modules.orders.models.order_models import Order, OrderItem
-from modules.menu.models import MenuItem, MenuCategory
+from core.menu_models import MenuItem, MenuCategory
 from modules.staff.models import StaffMember
 
 
