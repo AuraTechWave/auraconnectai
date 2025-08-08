@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.auth import get_current_user
-from modules.auth.models import User
+from core.auth import User
 from modules.auth.permissions import Permission, check_permission
 
 from ..services.order_inventory_integration import OrderInventoryIntegrationService

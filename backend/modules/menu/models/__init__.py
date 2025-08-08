@@ -6,8 +6,14 @@ from .recipe_models import (
     RecipeStatus, RecipeComplexity, UnitType
 )
 
+# Import compatibility layer for tests and legacy imports
+from .menu_models import (
+    MenuItem, MenuCategory, Category, MenuItemStatus, Product
+)
+
 __all__ = [
     'Recipe', 'RecipeIngredient', 'RecipeSubRecipe',
     'RecipeHistory', 'RecipeNutrition',
-    'RecipeStatus', 'RecipeComplexity', 'UnitType'
+    'RecipeStatus', 'RecipeComplexity', 'UnitType',
+    'MenuItem', 'MenuCategory', 'Category', 'MenuItemStatus', 'Product'
 ]

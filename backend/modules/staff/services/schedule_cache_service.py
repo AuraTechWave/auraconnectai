@@ -7,7 +7,7 @@ import hashlib
 from redis import asyncio as aioredis
 import logging
 
-from core.config_validation import config as settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 
