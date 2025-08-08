@@ -191,7 +191,7 @@ class PaymentConfig(BaseSettings):
     def get_redis_settings(self) -> Dict[str, Any]:
         """Get Redis connection settings"""
         return {
-            "url": self.REDIS_URL,
+            "url": self.redis_url,
             "max_connections": self.REDIS_MAX_CONNECTIONS,
             "socket_timeout": self.REDIS_SOCKET_TIMEOUT,
             "socket_connect_timeout": self.REDIS_SOCKET_TIMEOUT,
@@ -241,7 +241,7 @@ def validate_payment_config():
         
         logger.info(f"Payment system configuration loaded:")
         logger.info(f"  Environment: {config.PAYMENT_ENVIRONMENT}")
-        logger.info(f"  Redis URL: {config.REDIS_URL[:20]}...")
+        logger.info(f"  Redis URL: {config.redis_url[:20]}...")
         logger.info(f"  Webhook Queue: {'Enabled' if config.ENABLE_WEBHOOK_QUEUE else 'Disabled'}")
         logger.info(f"  Auto Retry: {'Enabled' if config.ENABLE_AUTO_RETRY else 'Disabled'}")
         logger.info(f"  Metrics: {'Enabled' if config.ENABLE_METRICS else 'Disabled'}")

@@ -84,7 +84,7 @@ class RefundRequestResponse(BaseModel):
     refund_id: Optional[int]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RefundResponse(BaseModel):
@@ -99,7 +99,7 @@ class RefundResponse(BaseModel):
     gateway_refund_id: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RefundStatisticsResponse(BaseModel):

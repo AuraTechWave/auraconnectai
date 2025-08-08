@@ -38,7 +38,7 @@ class TaxRuleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             Decimal: str,
             datetime: lambda v: v.isoformat()
@@ -58,7 +58,7 @@ class PayrollConfigurationResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PayrollConfigurationCreate(BaseModel):
@@ -90,7 +90,7 @@ class StaffPayPolicyResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             Decimal: str
         }
@@ -126,7 +126,7 @@ class OvertimeRuleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             Decimal: str
         }
@@ -154,7 +154,7 @@ class RoleBasedPayRateResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             Decimal: str
         }
@@ -273,7 +273,7 @@ class PayrollJobResponse(BaseModel):
     tenant_id: Optional[int] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PayrollJobCreate(BaseModel):

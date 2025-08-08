@@ -74,7 +74,7 @@ class StationResponse(BaseModel):
     average_wait_time: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class KitchenDisplayCreate(BaseModel):
@@ -117,7 +117,7 @@ class KitchenDisplayResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StationAssignmentCreate(BaseModel):
@@ -151,7 +151,7 @@ class StationAssignmentResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class MenuItemStationCreate(BaseModel):
@@ -177,7 +177,7 @@ class MenuItemStationResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderItemDisplay(BaseModel):
@@ -229,7 +229,7 @@ class KDSOrderItemResponse(BaseModel):
     server_name: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StationSummary(BaseModel):
