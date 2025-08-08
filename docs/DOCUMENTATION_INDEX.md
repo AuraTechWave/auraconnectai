@@ -15,9 +15,17 @@ This document provides a comprehensive index of all documentation in the AuraCon
 - **API Overview**: [docs/api/README.md](./api/README.md)
 - **Complete API Reference**: [docs/api/COMPLETE_API_REFERENCE.md](./api/COMPLETE_API_REFERENCE.md)
 - **JavaScript SDK Examples**: [docs/api/examples/javascript.md](./api/examples/javascript.md)
+- **Complex API Workflows**: [docs/api/examples/complex_workflows.md](./api/examples/complex_workflows.md)
 - **OpenAPI Specification**: Available at `/docs` and `/redoc` endpoints
 - **POS Sync Endpoints**: [docs/api/pos_sync_endpoints.md](./api/pos_sync_endpoints.md)
 - **POS Analytics Endpoints**: [docs/api/pos_analytics_endpoints.md](./api/pos_analytics_endpoints.md)
+
+#### API Standards & Guidelines
+- **Authentication Guide**: [docs/api/AUTHENTICATION.md](./api/AUTHENTICATION.md)
+- **Error Code Registry**: [docs/api/ERROR_CODES.md](./api/ERROR_CODES.md)
+- **API Changelog**: [docs/api/CHANGELOG_API.md](./api/CHANGELOG_API.md)
+- **Rate Limiting & Quotas**: [docs/api/RATE_LIMITING.md](./api/RATE_LIMITING.md)
+- **Webhook Documentation**: [docs/api/WEBHOOKS.md](./api/WEBHOOKS.md)
 
 #### Module-Specific API Documentation
 - **Orders API Reference**: [docs/modules/orders/api-reference.md](./modules/orders/api-reference.md)
