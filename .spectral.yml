@@ -1,0 +1,78 @@
+extends: ["spectral:oas"]
+
+rules:
+  # Enforce operation IDs for better SDK generation
+  operation-operationId:
+    severity: error
+    given: $.paths.*[get,post,put,patch,delete]
+    then:
+      field: operationId
+      function: truthy
+
+  # Ensure all operations have tags for organization
+  operation-tag-defined:
+    severity: warn
+    given: $.paths.*[get,post,put,patch,delete]
+    then:
+      field: tags
+      function: truthy
+
+  # Require descriptions for all operations
+  operation-description:
+    severity: warn
+    given: $.paths.*[get,post,put,patch,delete]
+    then:
+      field: description
+      function: truthy
+
+  # Ensure consistent error responses
+  consistent-error-response:
+    severity: error
+    given: $.paths.*.*.responses[?(@property >= '400')]
+    then:
+      field: content.application/json.schema
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: ["error"]
+          properties:
+            error:
+              type: object
+              required: ["code", "message"]
+
+  # Require examples for request/response bodies
+  oas3-valid-media-type-example:
+    severity: warn
+
+  # Ensure all paths use kebab-case
+  path-kebab-case:
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: "^/[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*(?:/\\{[a-zA-Z0-9_]+\\})*$"
+
+  # Require security definitions
+  oas3-operation-security-defined:
+    severity: error
+    given: $.paths.*[get,post,put,patch,delete]
+    then:
+      - field: security
+        function: truthy
+
+  # Custom rule for AuraConnect - ensure pagination parameters
+  auraconnect-pagination:
+    severity: warn
+    given: $.paths.*.get.parameters[?(@.in == 'query')]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          contains:
+            type: object
+            properties:
+              name:
+                enum: ["page", "per_page", "limit", "offset"]

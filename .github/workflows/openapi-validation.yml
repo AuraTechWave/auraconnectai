@@ -1,0 +1,171 @@
+name: OpenAPI Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**/*.py'
+      - 'backend/requirements.txt'
+      - 'scripts/validate_openapi.py'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**/*.py'
+      - 'backend/requirements.txt'
+      - 'scripts/validate_openapi.py'
+
+jobs:
+  validate-openapi:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: auraconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        cd backend
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+    
+    - name: Set up environment
+      run: |
+        cd backend
+        cat > .env.test << EOF
+        DATABASE_URL=postgresql://testuser:testpass@localhost/auraconnect_test
+        REDIS_URL=redis://localhost:6379
+        JWT_SECRET_KEY=test-secret-key-for-ci
+        ENVIRONMENT=test
+        TESTING=true
+        EOF
+    
+    - name: Run database migrations
+      env:
+        DATABASE_URL: postgresql://testuser:testpass@localhost/auraconnect_test
+      run: |
+        cd backend
+        alembic upgrade head
+    
+    - name: Validate OpenAPI Schema
+      run: |
+        cd backend
+        python ../scripts/validate_openapi.py
+    
+    - name: Generate OpenAPI documentation
+      run: |
+        cd backend
+        python -c "
+        from main import app
+        import json
+        
+        openapi_schema = app.openapi()
+        with open('openapi.json', 'w') as f:
+            json.dump(openapi_schema, f, indent=2)
+        "
+    
+    - name: Upload OpenAPI schema
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: openapi-schema
+        path: backend/openapi.json
+    
+    - name: Validate schema with spectral
+      run: |
+        cd backend
+        npx @stoplight/spectral-cli lint openapi.json --ruleset ../.spectral.yml || true
+    
+    - name: Check for breaking changes
+      if: github.event_name == 'pull_request'
+      run: |
+        # Fetch the base branch OpenAPI schema
+        git fetch origin ${{ github.base_ref }}
+        git checkout origin/${{ github.base_ref }} -- backend/openapi.json 2>/dev/null || echo "No previous schema found"
+        
+        if [ -f backend/openapi.json ]; then
+          mv backend/openapi.json backend/openapi-base.json
+          git checkout -
+          
+          # Compare schemas
+          cd backend
+          python -c "
+          import json
+          import sys
+          
+          try:
+              with open('openapi.json') as f:
+                  current = json.load(f)
+              with open('openapi-base.json') as f:
+                  base = json.load(f)
+              
+              # Basic breaking change detection
+              current_paths = set(current.get('paths', {}).keys())
+              base_paths = set(base.get('paths', {}).keys())
+              
+              removed_paths = base_paths - current_paths
+              if removed_paths:
+                  print('⚠️  Breaking Change: Removed endpoints:', removed_paths)
+                  sys.exit(1)
+              
+              print('✅ No breaking changes detected')
+          except FileNotFoundError:
+              print('ℹ️  No base schema to compare against')
+          "
+        fi
+    
+    - name: Post validation results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const validation_passed = ${{ job.status == 'success' }};
+          
+          const comment = validation_passed
+            ? '✅ OpenAPI validation passed!'
+            : '❌ OpenAPI validation failed. Please check the logs.';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
