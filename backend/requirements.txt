@@ -4,6 +4,7 @@ sqlalchemy
 psycopg2-binary
 alembic
 pydantic
+pydantic-settings
 python-multipart
 boto3
 mkdocs
@@ -16,3 +17,31 @@ python-jose[cryptography]
 argon2-cffi
 email-validator
 jinja2
+# Analytics and data processing dependencies
+pandas
+numpy
+statsmodels
+scikit-learn
+# Payment processing dependencies  
+stripe
+prometheus_client
+arq
+# JWT processing (for customer auth)
+PyJWT
+# JSON Schema validation
+jsonschema
+# Cron expression parsing
+croniter
+# Task scheduling and background job processing
+apscheduler
+celery
+# HTTP client for external API calls
+aiohttp
+# WebSocket support
+websockets
+# Enhanced date/time parsing
+python-dateutil
+# Test data factories
+factory-boy
+# QR code generation for tables
+qrcode[pil]
