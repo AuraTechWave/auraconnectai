@@ -7,22 +7,20 @@ This document provides a comprehensive index of all documentation in the AuraCon
 ### 1. Core Documentation Hub
 - **Main Index**: [docs/index.md](./index.md)
 - **Documentation Index**: [docs/DOCUMENTATION_INDEX.md](./DOCUMENTATION_INDEX.md) (this file)
+- **Documentation Improvements Summary**: [docs/DOCUMENTATION_IMPROVEMENTS_SUMMARY.md](./DOCUMENTATION_IMPROVEMENTS_SUMMARY.md)
 
 ### 2. API Documentation
 
 #### General API Documentation
 - **API Overview**: [docs/api/README.md](./api/README.md)
+- **Complete API Reference**: [docs/api/COMPLETE_API_REFERENCE.md](./api/COMPLETE_API_REFERENCE.md)
+- **JavaScript SDK Examples**: [docs/api/examples/javascript.md](./api/examples/javascript.md)
 - **OpenAPI Specification**: Available at `/docs` and `/redoc` endpoints
 - **POS Sync Endpoints**: [docs/api/pos_sync_endpoints.md](./api/pos_sync_endpoints.md)
 - **POS Analytics Endpoints**: [docs/api/pos_analytics_endpoints.md](./api/pos_analytics_endpoints.md)
 
 #### Module-Specific API Documentation
 - **Orders API Reference**: [docs/modules/orders/api-reference.md](./modules/orders/api-reference.md)
-- **Payroll API**: [backend/modules/payroll/docs/API.md](../backend/modules/payroll/docs/API.md)
-- **Promotions API**: [backend/modules/promotions/docs/api_documentation.md](../backend/modules/promotions/docs/api_documentation.md)
-- **Staff Biometric API**: [backend/modules/staff/docs/BIOMETRIC_API.md](../backend/modules/staff/docs/BIOMETRIC_API.md)
-- **Staff Scheduling API**: [backend/modules/staff/docs/SCHEDULING_API.md](../backend/modules/staff/docs/SCHEDULING_API.md)
-- **Payment Refund API**: [backend/modules/payments/docs/REFUND_API.md](../backend/modules/payments/docs/REFUND_API.md)
 
 ### 3. Architecture Documentation
 
@@ -48,48 +46,40 @@ This document provides a comprehensive index of all documentation in the AuraCon
 
 #### Core Modules
 - **Menu Module**: [docs/modules/menu/README.md](./modules/menu/README.md)
-  - Recipe Management: [backend/modules/menu/docs/RECIPE_MANAGEMENT.md](../backend/modules/menu/docs/RECIPE_MANAGEMENT.md)
-  - Inventory Deduction: [backend/modules/menu/docs/INVENTORY_DEDUCTION_TODO.md](../backend/modules/menu/docs/INVENTORY_DEDUCTION_TODO.md)
-  - Performance Optimization: [backend/modules/menu/PERFORMANCE_OPTIMIZATION.md](../backend/modules/menu/PERFORMANCE_OPTIMIZATION.md)
-  - Performance Enhancements V2: [backend/modules/menu/PERFORMANCE_ENHANCEMENTS_V2.md](../backend/modules/menu/PERFORMANCE_ENHANCEMENTS_V2.md)
-
+- **Recipe Management**: [docs/modules/recipe-management/README.md](./modules/recipe-management/README.md)
 - **Orders Module**: [docs/modules/orders/README.md](./modules/orders/README.md)
   - Architecture: [docs/modules/orders/architecture.md](./modules/orders/architecture.md)
-  - Error Handling Guide: [backend/modules/orders/docs/ERROR_HANDLING_GUIDE.md](../backend/modules/orders/docs/ERROR_HANDLING_GUIDE.md)
-  - Inventory Deduction: [backend/modules/orders/docs/INVENTORY_DEDUCTION_IMPLEMENTATION.md](../backend/modules/orders/docs/INVENTORY_DEDUCTION_IMPLEMENTATION.md)
-  - Pricing Rules UI: [backend/modules/orders/docs/PRICING_RULES_ADMIN_UI.md](../backend/modules/orders/docs/PRICING_RULES_ADMIN_UI.md)
-
+  - API Reference: [docs/modules/orders/api-reference.md](./modules/orders/api-reference.md)
 - **Staff Module**: [docs/modules/staff/README.md](./modules/staff/README.md)
-  - Notification System: [backend/modules/staff/docs/NOTIFICATION_SYSTEM_TODO.md](../backend/modules/staff/docs/NOTIFICATION_SYSTEM_TODO.md)
-  - Scheduling Usage: [backend/modules/staff/docs/SCHEDULING_USAGE.md](../backend/modules/staff/docs/SCHEDULING_USAGE.md)
-
 - **Payments Module**: [docs/modules/payments/README.md](./modules/payments/README.md)
-  - Split Bill Feature: [backend/modules/payments/README_SPLIT_BILL.md](../backend/modules/payments/README_SPLIT_BILL.md)
-  - Production Deployment: [backend/modules/payments/docs/PRODUCTION_DEPLOYMENT.md](../backend/modules/payments/docs/PRODUCTION_DEPLOYMENT.md)
-
-- **Payroll Module**: [backend/modules/payroll/README.md](../backend/modules/payroll/README.md)
-  - Architecture: [backend/modules/payroll/docs/ARCHITECTURE.md](../backend/modules/payroll/docs/ARCHITECTURE.md)
-  - Developer Guide: [backend/modules/payroll/docs/DEVELOPER_GUIDE.md](../backend/modules/payroll/docs/DEVELOPER_GUIDE.md)
-  - User Guide: [backend/modules/payroll/docs/USER_GUIDE.md](../backend/modules/payroll/docs/USER_GUIDE.md)
-  - Integration Guide: [backend/modules/payroll/docs/INTEGRATION.md](../backend/modules/payroll/docs/INTEGRATION.md)
-  - Migration Guide: [backend/modules/payroll/docs/MIGRATION_GUIDE.md](../backend/modules/payroll/docs/MIGRATION_GUIDE.md)
-  - Deployment: [backend/modules/payroll/docs/DEPLOYMENT.md](../backend/modules/payroll/docs/DEPLOYMENT.md)
-
-- **Tax Module**: [backend/modules/tax/README.md](../backend/modules/tax/README.md)
+- **Payroll Production Checklist**: [docs/modules/payroll/production-checklist.md](./modules/payroll/production-checklist.md)
+- **Table Management**: [docs/modules/table-management/README.md](./modules/table-management/README.md)
+- **Pricing Rules**: [docs/modules/pricing-rules/README.md](./modules/pricing-rules/README.md)
 
 ### 5. Feature Documentation
 
 - **Feature Docs Index**: [docs/feature_docs/README.md](./feature_docs/README.md)
 - **AI Agents**: [docs/feature_docs/ai_agents/README.md](./feature_docs/ai_agents/README.md)
+  - Architecture: [docs/feature_docs/ai_agents/architecture.md](./feature_docs/ai_agents/architecture.md)
 - **AI Customization**: [docs/feature_docs/ai_customization/README.md](./feature_docs/ai_customization/README.md)
+  - Architecture: [docs/feature_docs/ai_customization/architecture.md](./feature_docs/ai_customization/architecture.md)
 - **Compliance**: [docs/feature_docs/compliance/README.md](./feature_docs/compliance/README.md)
+  - Architecture: [docs/feature_docs/compliance/architecture.md](./feature_docs/compliance/architecture.md)
 - **Mobile Features**: [docs/feature_docs/mobile/README.md](./feature_docs/mobile/README.md)
+  - Push Notifications: [docs/feature_docs/mobile/push-notifications.md](./feature_docs/mobile/push-notifications.md)
 - **Offline Sync**: [docs/feature_docs/offline_sync/README.md](./feature_docs/offline_sync/README.md)
+  - Architecture: [docs/feature_docs/offline_sync/architecture.md](./feature_docs/offline_sync/architecture.md)
 - **Payroll Features**: [docs/feature_docs/payroll/README.md](./feature_docs/payroll/README.md)
+  - Architecture: [docs/feature_docs/payroll/architecture.md](./feature_docs/payroll/architecture.md)
+  - Tax Calculation Flow: [docs/feature_docs/payroll/tax_calculation_flow.md](./feature_docs/payroll/tax_calculation_flow.md)
 - **POS Integration**: [docs/feature_docs/pos_integration/README.md](./feature_docs/pos_integration/README.md)
+  - Architecture: [docs/feature_docs/pos_integration/architecture.md](./feature_docs/pos_integration/architecture.md)
 - **Reservation System**: [docs/feature_docs/reservation/README.md](./feature_docs/reservation/README.md)
+  - Architecture: [docs/feature_docs/reservation/architecture.md](./feature_docs/reservation/architecture.md)
 - **Tax Features**: [docs/feature_docs/tax/README.md](./feature_docs/tax/README.md)
+  - Architecture: [docs/feature_docs/tax/architecture.md](./feature_docs/tax/architecture.md)
 - **White Label**: [docs/feature_docs/white_label/README.md](./feature_docs/white_label/README.md)
+  - Architecture: [docs/feature_docs/white_label/architecture.md](./feature_docs/white_label/architecture.md)
 
 ### 6. Development Guides
 
@@ -98,53 +88,23 @@ This document provides a comprehensive index of all documentation in the AuraCon
 - **Developer Personas**: [docs/guides/developer-personas.md](./guides/developer-personas.md)
 - **CI/CD Setup**: [docs/dev/CI_CD_SETUP.md](./dev/CI_CD_SETUP.md)
 - **Customer Web App Guide**: [docs/guides/customer-web-app.md](./guides/customer-web-app.md)
+- **Payroll Tax Developer Guide**: [docs/dev/payroll_tax_developer_guide.md](./dev/payroll_tax_developer_guide.md)
+
+### 7. Advanced Topics
+
+- **Menu Versioning Architecture**: [docs/guides/features/menu-versioning-architecture.md](./guides/features/menu-versioning-architecture.md)
 - **Menu Versioning Setup**: [docs/guides/features/menu-versioning-setup.md](./guides/features/menu-versioning-setup.md)
 - **Versioning API Guide**: [docs/guides/features/versioning-api-guide.md](./guides/features/versioning-api-guide.md)
 
-### 7. Test Documentation
-
-- **Menu RBAC Tests**: [backend/modules/menu/tests/README_RBAC_TESTS.md](../backend/modules/menu/tests/README_RBAC_TESTS.md)
-- **Orders Integration Tests**: [backend/modules/orders/tests/README_INTEGRATION_TESTS.md](../backend/modules/orders/tests/README_INTEGRATION_TESTS.md)
-- **Analytics Tests**: [backend/modules/analytics/tests/README.md](../backend/modules/analytics/tests/README.md)
-- **Payroll Tests**: [backend/modules/payroll/tests/README.md](../backend/modules/payroll/tests/README.md)
-
-### 8. Mobile Documentation
-
-- **Mobile App README**: [mobile/README.md](../mobile/README.md)
-- **Offline Sync Architecture**: [mobile/docs/OFFLINE_SYNC_ARCHITECTURE.md](../mobile/docs/OFFLINE_SYNC_ARCHITECTURE.md)
-- **Offline Sync Implementation**: [mobile/docs/offline-sync-implementation.md](../mobile/docs/offline-sync-implementation.md)
-- **Push Notifications**: [mobile/docs/push-notifications-implementation.md](../mobile/docs/push-notifications-implementation.md)
-
-### 9. Frontend Documentation
-
-- **Customer Web App**: [customer-web/README.md](../customer-web/README.md)
-- **Recipe Management UI**: [frontend/components/menu/RECIPE_MANAGEMENT_README.md](../frontend/components/menu/RECIPE_MANAGEMENT_README.md)
-
-### 10. Deployment & Operations
+### 8. Deployment & Operations
 
 - **Deployment Guide**: [docs/deployment/README.md](./deployment/README.md)
-- **Production Checklist**: [docs/modules/payroll/production-checklist.md](./modules/payroll/production-checklist.md)
-- **Migration Scripts**: [backend/scripts/migration/README.md](../backend/scripts/migration/README.md)
-
-### 11. Special Topics
-
-- **KDS UI Components**: [backend/modules/kds/docs/KDS_UI_COMPONENTS.md](../backend/modules/kds/docs/KDS_UI_COMPONENTS.md)
-- **Frontend Dashboard Requirements**: [backend/modules/insights/docs/FRONTEND_DASHBOARD_REQUIREMENTS.md](../backend/modules/insights/docs/FRONTEND_DASHBOARD_REQUIREMENTS.md)
-- **AI Assistant**: [backend/modules/analytics/docs/AI_ASSISTANT_README.md](../backend/modules/analytics/docs/AI_ASSISTANT_README.md)
-- **AI Recommendations**: [backend/modules/ai_recommendations/README.md](../backend/modules/ai_recommendations/README.md)
-
-### 12. Project Documentation
-
-- **Main README**: [README.md](../README.md)
-- **Simple README**: [README-simple.md](../README-simple.md)
-- **Scripts README**: [scripts/README.md](../scripts/README.md)
-- **Claude Instructions**: [CLAUDE.md](../CLAUDE.md)
 
 ## 📋 Documentation Standards
 
 ### File Naming Conventions
 - Use `README.md` for main module documentation
-- Use descriptive names with underscores (e.g., `API_DOCUMENTATION.md`)
+- Use descriptive names with hyphens (e.g., `api-reference.md`)
 - Place in appropriate directory based on scope
 
 ### Documentation Structure
@@ -160,36 +120,14 @@ This document provides a comprehensive index of all documentation in the AuraCon
 ### Markdown Standards
 - Use proper heading hierarchy (# for title, ## for main sections)
 - Include code blocks with language specification
-- Use tables for structured data
-- Add links to related documentation
+- Use relative links for internal documentation
 - Include diagrams where helpful
+- Keep line length reasonable for readability
 
-## 🔍 Finding Documentation
+## 🔍 Quick Links
 
-### By Feature
-Use the feature_docs directory for feature-specific documentation.
-
-### By Module
-Check the module's directory for its README and docs folder.
-
-### By Role
-- **Frontend Developer**: Check frontend/, customer-web/, and mobile/ directories
-- **Backend Developer**: Check backend/modules/ and docs/dev/
-- **DevOps**: Check docs/deployment/ and infrastructure documentation
-- **Product Manager**: Check feature_docs/ and high-level architecture docs
-
-## 📝 Contributing to Documentation
-
-When adding new documentation:
-1. Place it in the appropriate directory
-2. Update this index file
-3. Add links from related documents
-4. Follow the documentation standards above
-5. Include examples and use cases
-
-## 🔄 Documentation Maintenance
-
-- Review and update documentation with each feature release
-- Remove outdated documentation
-- Keep API documentation in sync with code
-- Maintain consistency across all documentation
+- **API Documentation**: [Complete API Reference](./api/COMPLETE_API_REFERENCE.md)
+- **Getting Started**: [Developer Guide](./guides/getting-started.md)
+- **Architecture Overview**: [System Architecture](./dev/architecture/global_architecture_overview.md)
+- **Module Documentation**: [Modules Overview](./modules/README.md)
+- **Feature Documentation**: [Features Overview](./feature_docs/README.md)
