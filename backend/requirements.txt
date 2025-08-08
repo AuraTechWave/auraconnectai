@@ -32,3 +32,14 @@ PyJWT
 jsonschema
 # Cron expression parsing
 croniter
+# Task scheduling and background job processing
+apscheduler
+celery
+# HTTP client for external API calls
+aiohttp
+# WebSocket support
+websockets
+# Enhanced date/time parsing
+python-dateutil
+# Test data factories
+factory-boy
