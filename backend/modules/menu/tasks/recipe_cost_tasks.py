@@ -293,3 +293,5 @@ def get_task_status(task_id: str) -> Dict[str, Any]:
         response['error'] = str(result.info)
     
     return response
+
+# Force rebuild
