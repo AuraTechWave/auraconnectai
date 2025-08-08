@@ -7,10 +7,8 @@ from app.startup import run_startup_checks
 
 # ========== Authentication & Authorization ==========
 from modules.auth.routes.auth_routes import router as auth_router
-# TODO: Fix RBAC routes - SQLAlchemy/Pydantic mismatch
-# from modules.auth.routes.rbac_routes import router as rbac_router
-# TODO: Fix password routes - SQLAlchemy/Pydantic mismatch
-# from modules.auth.routes.password_routes import router as password_router
+from modules.auth.routes.rbac_routes import router as rbac_router
+from modules.auth.routes.password_routes import router as password_router
 
 # ========== Staff Management ==========
 from modules.staff.routes.staff_routes import router as staff_router
@@ -207,8 +205,8 @@ app.add_middleware(
 
 # Authentication & Authorization
 app.include_router(auth_router)
-# app.include_router(rbac_router)  # TODO: Fix RBAC routes
-# app.include_router(password_router)  # TODO: Fix password routes
+app.include_router(rbac_router, prefix="/api/v1/auth", tags=["RBAC Management"])
+app.include_router(password_router, prefix="/api/v1/auth", tags=["Password Security"])
 
 # Staff Management
 app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API
@@ -402,3 +400,20 @@ async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_erro
             "status": "decode_failed",
             "error": str(e)
         }
+
+
+# ========== Enhanced OpenAPI Documentation ==========
+from core.openapi_custom import custom_openapi, configure_openapi_ui, add_operation_ids
+from core.api_documentation import add_api_examples
+
+# Configure custom OpenAPI schema
+app.openapi = lambda: custom_openapi(app)
+
+# Configure enhanced UI
+configure_openapi_ui(app)
+
+# Add operation IDs for better client generation
+add_operation_ids(app)
+
+# Add API examples
+add_api_examples(app)

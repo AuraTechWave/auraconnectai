@@ -83,10 +83,17 @@ nav:
       - RBAC System: dev/architecture/rbac_system_architecture.md
       
   - API Reference:
-    - api/README.md
-    - Orders API: modules/orders/api-reference.md
-    - POS Sync Endpoints: api/pos_sync_endpoints.md
-    - POS Analytics Endpoints: api/pos_analytics_endpoints.md
+    - Overview: api/README.md
+    - Complete API Reference: api/COMPLETE_API_REFERENCE.md
+    - Endpoints:
+      - Orders API: modules/orders/api-reference.md
+      - POS Sync Endpoints: api/pos_sync_endpoints.md
+      - POS Analytics Endpoints: api/pos_analytics_endpoints.md
+    - Examples:
+      - cURL Examples: api/examples/curl.md
+      - Postman Collection: api/examples/postman.md
+      - Python Examples: api/examples/python.md
+      - JavaScript Examples: api/examples/javascript.md
       
   - Feature Documentation:
     - feature_docs/README.md
@@ -168,11 +175,11 @@ plugins:
       minify_css: true
       htmlmin_opts:
         remove_comments: true
-  - mike:  # For versioning
-      canonical_version: latest
-      version_selector: true
-      css_dir: css
-      javascript_dir: js
+  # - mike:  # For versioning - commented out for now
+  #     canonical_version: latest
+  #     version_selector: true
+  #     css_dir: css
+  #     javascript_dir: js
 
 extra:
   version:

@@ -5,8 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.auth import get_current_user
-from modules.auth.models import User
+from core.auth import get_current_user, User
 from modules.auth.permissions import Permission, check_permission
 
 from .service import EquipmentService
@@ -42,8 +41,8 @@ async def search_equipment(
     location: Optional[str] = Query(None, description="Filter by location"),
     is_critical: Optional[bool] = Query(None, description="Filter by critical equipment"),
     needs_maintenance: Optional[bool] = Query(None, description="Filter equipment needing maintenance"),
-    sort_by: str = Query("equipment_name", regex="^(equipment_name|next_due_date|status|created_at)$"),
-    sort_order: str = Query("asc", regex="^(asc|desc)$"),
+    sort_by: str = Query("equipment_name", pattern="^(equipment_name|next_due_date|status|created_at)$"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -150,8 +149,8 @@ async def search_maintenance_records(
     date_from: Optional[str] = Query(None, description="Filter by date from (ISO format)"),
     date_to: Optional[str] = Query(None, description="Filter by date to (ISO format)"),
     performed_by: Optional[str] = Query(None, description="Filter by person who performed maintenance"),
-    sort_by: str = Query("scheduled_date", regex="^(scheduled_date|date_performed|status|cost)$"),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_by: str = Query("scheduled_date", pattern="^(scheduled_date|date_performed|status|cost)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),

@@ -31,14 +31,27 @@ AuraConnect is an enterprise-grade restaurant management platform that revolutio
 
 ## 📚 Documentation Hub
 
+### 🎯 Quick Access
 | Documentation | Description |
 |--------------|-------------|
-| [🏗️ Architecture Overview](docs/architecture/README.md) | System design, patterns, and technical decisions |
+| [📑 Documentation Index](docs/DOCUMENTATION_INDEX.md) | Complete index of all documentation |
 | [🚀 Getting Started](docs/guides/getting-started.md) | Quick start guide for developers |
+| [🔌 Complete API Reference](docs/api/COMPLETE_API_REFERENCE.md) | Comprehensive API endpoint documentation |
+| [🏗️ Architecture Overview](docs/architecture/README.md) | System design and technical decisions |
+
+### 📖 Documentation Categories
+| Category | Description |
+|----------|-------------|
 | [📦 Module Documentation](docs/modules/README.md) | Detailed documentation for each module |
-| [🔌 API Reference](docs/api/README.md) | Complete API documentation |
-| [💻 Development Guide](docs/development/README.md) | Development setup and best practices |
+| [🎨 Feature Documentation](docs/feature_docs/README.md) | Feature-specific guides and architecture |
+| [💻 Development Guide](docs/dev/README.md) | Development setup and best practices |
 | [🚢 Deployment Guide](docs/deployment/README.md) | Production deployment instructions |
+
+### 🔍 API Documentation
+- **Interactive API Docs**: Run the backend and visit `/docs` for Swagger UI
+- **Alternative Docs**: Visit `/redoc` for ReDoc interface
+- **OpenAPI Schema**: Available at `/openapi.json`
+- **[Complete API Reference](docs/api/COMPLETE_API_REFERENCE.md)**: Detailed endpoint documentation
 
 ## 🏛️ System Architecture
 

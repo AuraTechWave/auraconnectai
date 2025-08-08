@@ -20,7 +20,7 @@ class StaffOut(StaffBase):
     photo_url: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RoleBase(BaseModel):
@@ -32,4 +32,4 @@ class RoleOut(RoleBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

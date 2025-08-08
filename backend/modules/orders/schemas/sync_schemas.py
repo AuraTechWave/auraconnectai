@@ -55,7 +55,7 @@ class SyncBatchResponse(BaseModel):
     error_summary: Optional[Dict[str, Any]] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -75,7 +75,7 @@ class SyncConflictResponse(BaseModel):
     resolution_notes: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -148,7 +148,7 @@ class OrderSyncStatusResponse(BaseModel):
     remote_checksum: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -167,7 +167,7 @@ class SyncLogResponse(BaseModel):
     error_code: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 

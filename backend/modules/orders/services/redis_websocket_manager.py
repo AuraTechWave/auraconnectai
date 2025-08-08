@@ -26,7 +26,7 @@ class RedisWebSocketManager:
     """
     
     def __init__(self, redis_url: Optional[str] = None):
-        self.redis_url = redis_url or settings.REDIS_URL
+        self.redis_url = redis_url or settings.redis_url
         self.redis_client: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.server_id = str(uuid.uuid4())

@@ -5,7 +5,7 @@ Notification service for reservation confirmations, reminders, and updates.
 """
 
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 from typing import Optional, Dict, Any
 import logging
 import asyncio
@@ -450,10 +450,10 @@ Reply YES within {data['response_minutes']} min to confirm.
                     reminder.sent_at = now
                 else:
                     reminder.status = "skipped"
-                    reminder.metadata = {"reason": "Reservation not eligible"}
+                    reminder.extra_data = {"reason": "Reservation not eligible"}
             except Exception as e:
                 logger.error(f"Failed to send reminder {reminder.id}: {str(e)}")
                 reminder.status = "failed"
-                reminder.metadata = {"error": str(e)}
+                reminder.extra_data = {"error": str(e)}
             
             self.db.commit()

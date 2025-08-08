@@ -66,13 +66,13 @@ class InsightResponse(InsightBase):
     rating_summary: Optional[Dict[str, int]] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Rating Schemas
 class InsightRatingCreate(BaseModel):
     """Create rating schema"""
-    rating: str = Field(..., regex="^(useful|irrelevant|needs_followup)$")
+    rating: str = Field(..., pattern="^(useful|irrelevant|needs_followup)$")
     comment: Optional[str] = Field(None, max_length=500)
 
 
@@ -87,7 +87,7 @@ class InsightRatingResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Action Schemas
@@ -108,7 +108,7 @@ class InsightActionResponse(BaseModel):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Notification Rule Schemas
@@ -177,7 +177,7 @@ class NotificationRuleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Thread Schemas
@@ -237,4 +237,4 @@ class BulkInsightUpdate(BaseModel):
 class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
     insight_ids: List[int]
-    action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
+    action: str = Field(..., pattern="^(acknowledge|dismiss|export)$")

@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 # Initialize Celery
 celery_app = Celery(
     'recipe_tasks',
-    broker=settings.REDIS_URL or 'redis://localhost:6379/0',
-    backend=settings.REDIS_URL or 'redis://localhost:6379/0'
+    broker=settings.redis_url or 'redis://localhost:6379/0',
+    backend=settings.redis_url or 'redis://localhost:6379/0'
 )
 
 # Configure Celery
@@ -293,3 +293,5 @@ def get_task_status(task_id: str) -> Dict[str, Any]:
         response['error'] = str(result.info)
     
     return response
+
+# Force rebuild

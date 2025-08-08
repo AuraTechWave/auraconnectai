@@ -71,20 +71,23 @@ class SessionManager:
     blacklisting, and session cleanup.
     """
     
-    def __init__(self, redis_url: str = REDIS_URL):
+    def __init__(self, redis_url: Optional[str] = REDIS_URL):
         """Initialize session manager with Redis connection."""
-        try:
-            self.redis = Redis.from_url(redis_url, decode_responses=True)
-            # Test connection
-            self.redis.ping()
-            logger.info("Connected to Redis for session management")
-        except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            # Fallback to in-memory storage (not recommended for production)
-            self.redis = None
-            self._memory_sessions: Dict[str, Session] = {}
-            self._blacklisted_tokens: Set[str] = set()
-            logger.warning("Using in-memory session storage - not suitable for production")
+        self.redis = None
+        self._memory_sessions: Dict[str, Session] = {}
+        self._blacklisted_tokens: Set[str] = set()
+        
+        if redis_url:
+            try:
+                self.redis = Redis.from_url(redis_url, decode_responses=True)
+                # Test connection
+                self.redis.ping()
+                logger.info("Connected to Redis for session management")
+            except Exception as e:
+                logger.error(f"Failed to connect to Redis: {e}")
+                logger.warning("Using in-memory session storage - not suitable for production")
+        else:
+            logger.warning("No Redis URL provided - using in-memory session storage")
     
     def _get_session_key(self, session_id: str) -> str:
         """Generate Redis key for session storage."""

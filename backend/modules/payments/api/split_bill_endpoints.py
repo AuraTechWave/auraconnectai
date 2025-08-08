@@ -129,7 +129,7 @@ class SplitResponse(BaseModel):
     created_at: str
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ParticipantResponse(BaseModel):
@@ -145,7 +145,7 @@ class ParticipantResponse(BaseModel):
     access_token: Optional[str] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SplitDetailResponse(SplitResponse):
@@ -153,7 +153,7 @@ class SplitDetailResponse(SplitResponse):
     split_config: Optional[Dict[str, Any]]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PaginatedSplitsResponse(BaseModel):

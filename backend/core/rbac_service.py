@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from datetime import datetime, timedelta
 import logging
+from fastapi import Depends
 
 from .rbac_models import (
     RBACUser, RBACRole, RBACPermission, UserPermission, 
@@ -610,8 +611,6 @@ class RBACService:
 
 
 # Dependency function for FastAPI
-def get_rbac_service(db: Session = None) -> RBACService:
+def get_rbac_service(db: Session = Depends(get_db)) -> RBACService:
     """Get RBAC service instance."""
-    if db is None:
-        db = next(get_db())
     return RBACService(db)

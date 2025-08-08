@@ -16,8 +16,9 @@ import logging
 from ..models.recipe_models import Recipe, RecipeIngredient, RecipeStatus
 from ..schemas.recipe_schemas import (
     RecipeCostAnalysis, RecipeComplianceReport, 
-    MenuItemRecipeStatus, PaginatedResponse
+    MenuItemRecipeStatus
 )
+from ..utils.pagination_utils import PaginatedResponse
 from .recipe_cache_service import get_recipe_cache_service
 from .recipe_service import RecipeService
 from core.menu_models import MenuItem
@@ -135,7 +136,7 @@ class OptimizedRecipeService(RecipeService):
             total_ingredient_cost=total_ingredient_cost,
             total_sub_recipe_cost=total_sub_recipe_cost,
             last_calculated=datetime.utcnow(),
-            currency=recipe.currency or "USD",
+            currency="USD",
             suggested_price=suggested_price,
             profit_margin=profit_margin,
             markup_percentage=markup_percentage

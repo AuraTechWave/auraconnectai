@@ -265,7 +265,7 @@ CRON_JOBS = [
 def get_worker_settings():
     """Get Arq worker settings"""
     return {
-        'redis_settings': RedisSettings.from_dsn(settings.REDIS_URL),
+        'redis_settings': RedisSettings.from_dsn(settings.redis_url),
         'max_jobs': 10,
         'job_timeout': 300,  # 5 minutes
         'keep_result': 3600,  # 1 hour

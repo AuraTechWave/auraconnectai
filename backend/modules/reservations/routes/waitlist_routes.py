@@ -277,7 +277,7 @@ async def cancel_waitlist_entry(
 @router.get("/estimate/{date}", response_model=dict)
 async def estimate_wait_time(
     date: date,
-    time_start: str = Query(..., regex="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"),
+    time_start: str = Query(..., pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"),
     party_size: int = Query(..., ge=1, le=20),
     db: Session = Depends(get_db)
 ):

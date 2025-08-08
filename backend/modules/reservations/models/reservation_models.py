@@ -290,7 +290,7 @@ class ScheduledReminder(Base):
     sent_at = Column(DateTime(timezone=True))
     
     # Additional data
-    metadata = Column(JSON)
+    extra_data = Column(JSON)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
