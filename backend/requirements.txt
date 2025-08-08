@@ -30,3 +30,5 @@ arq
 PyJWT
 # JSON Schema validation
 jsonschema
+# Cron expression parsing
+croniter
