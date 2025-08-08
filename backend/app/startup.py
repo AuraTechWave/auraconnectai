@@ -38,7 +38,7 @@ class StartupValidator:
     
     def check_redis_connection(self) -> bool:
         """Check Redis connectivity (if configured)"""
-        if not config.REDIS_URL:
+        if not config.redis_url:
             if config.ENVIRONMENT == "production":
                 self.errors.append("Redis is required in production but not configured")
                 return False
@@ -48,7 +48,7 @@ class StartupValidator:
         
         try:
             import redis
-            r = redis.from_url(config.REDIS_URL)
+            r = redis.from_url(config.redis_url)
             r.ping()
             logger.info("Redis connection successful")
             return True

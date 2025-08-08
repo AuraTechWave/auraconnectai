@@ -317,7 +317,7 @@ def get_worker_settings():
     """Get Arq worker settings for split bill notifications"""
     return {
         'functions': [send_split_bill_notification],
-        'redis_settings': RedisSettings.from_dsn(settings.REDIS_URL),
+        'redis_settings': RedisSettings.from_dsn(settings.redis_url),
         'queue_name': 'notifications',
         'max_jobs': 10,
         'job_timeout': 30,

@@ -20,7 +20,7 @@ class RedisConfig:
     """Redis connection configuration"""
     
     def __init__(self):
-        self.url = settings.REDIS_URL or os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.url = settings.redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
         self.max_connections = int(os.getenv("REDIS_MAX_CONNECTIONS", "10"))
         self.decode_responses = True
         self.socket_timeout = 5

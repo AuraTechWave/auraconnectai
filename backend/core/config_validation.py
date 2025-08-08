@@ -98,7 +98,7 @@ class EnvironmentConfig(BaseSettings):
         errors = []
         
         # Check Redis
-        if not self.REDIS_URL:
+        if not self.redis_url:
             errors.append("Redis URL is required for production")
         
         # Check secrets
@@ -122,7 +122,7 @@ class EnvironmentConfig(BaseSettings):
         warnings = []
         
         if self.ENVIRONMENT == "development":
-            if not self.REDIS_URL:
+            if not self.redis_url:
                 warnings.append("Redis not configured - using in-memory session storage")
             if "dev-secret" in self.SESSION_SECRET:
                 warnings.append("Using default SESSION_SECRET - change for production")
@@ -153,8 +153,8 @@ def validate_configuration():
 
 def get_redis_url() -> Optional[str]:
     """Get Redis URL with fallback behavior"""
-    if config.REDIS_URL:
-        return config.REDIS_URL
+    if config.redis_url:
+        return config.redis_url
     
     if config.ENVIRONMENT == "production":
         raise ValueError("Redis is required in production environment")
