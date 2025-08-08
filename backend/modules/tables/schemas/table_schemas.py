@@ -55,7 +55,7 @@ class FloorResponse(FloorBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Table Schemas
@@ -152,7 +152,7 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Table Session Schemas
@@ -192,7 +192,7 @@ class TableSessionResponse(BaseModel):
     combined_tables: Optional[List[Dict[str, Any]]] = []
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Reservation Schemas
@@ -258,7 +258,7 @@ class TableReservationResponse(TableReservationBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Layout Schemas
@@ -308,7 +308,7 @@ class TableLayoutResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Bulk Operations

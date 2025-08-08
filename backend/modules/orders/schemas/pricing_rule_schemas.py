@@ -141,7 +141,7 @@ class PricingRuleResponse(BaseModel):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Debug Models
@@ -228,7 +228,7 @@ class PricingRuleApplicationResponse(BaseModel):
     conditions_met: Dict[str, bool]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PricingRuleMetricsResponse(BaseModel):
@@ -253,7 +253,7 @@ class PricingRuleMetricsResponse(BaseModel):
     daily_applications: List[Dict[str, Any]]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Validation schemas
