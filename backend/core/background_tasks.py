@@ -117,7 +117,7 @@ class TaskManager:
     """Manager for background tasks and analytics"""
     
     def __init__(self):
-        self.redis_client = redis.from_url(settings.REDIS_URL) if hasattr(settings, 'REDIS_URL') else None
+        self.redis_client = redis.from_url(settings.redis_url) if hasattr(settings, 'redis_url') else None
         self.task_history = {}
     
     def schedule_analytics_calculation(self, analytics_type: str, date_range: Dict[str, Any] = None):

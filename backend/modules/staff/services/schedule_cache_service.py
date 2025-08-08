@@ -16,7 +16,7 @@ class ScheduleCacheService:
     """Service for caching schedule previews and computations"""
     
     def __init__(self):
-        self.redis_url = settings.REDIS_URL or "redis://localhost:6379"
+        self.redis_url = settings.redis_url or "redis://localhost:6379"
         self.cache_ttl = 3600  # 1 hour default TTL
         self.preview_cache_prefix = "schedule:preview:"
         self.computation_cache_prefix = "schedule:computation:"
