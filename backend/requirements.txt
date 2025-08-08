@@ -43,3 +43,5 @@ websockets
 python-dateutil
 # Test data factories
 factory-boy
+# QR code generation for tables
+qrcode[pil]
