@@ -93,7 +93,7 @@ jobs:
       run: |
         cd backend
         python -c "
-        from main import app
+        from app.main import app
         import json
         
         openapi_schema = app.openapi()
