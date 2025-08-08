@@ -14,7 +14,7 @@ from core.auth import get_current_user, User
 from modules.auth.permissions import Permission, check_permission
 
 from ..services.order_inventory_integration import OrderInventoryIntegrationService
-from ..schemas.order_schemas import (
+from ..schemas.inventory_integration_schemas import (
     OrderCompleteRequest,
     OrderCompleteResponse,
     OrderCancelRequest,
