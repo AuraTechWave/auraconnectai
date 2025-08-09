@@ -16,7 +16,7 @@ class TaxRule(Base, TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     rule_name = Column(String(100), nullable=False, index=True)
     location = Column(String(100), nullable=False, index=True)
-    tax_type = Column(Enum(TaxType), nullable=False)
+    tax_type = Column(Enum(TaxType, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     rate_percent = Column(Numeric(5, 4), nullable=False)
     max_taxable_amount = Column(Numeric(12, 2), nullable=True)
     min_taxable_amount = Column(Numeric(12, 2), nullable=True)
@@ -41,7 +41,7 @@ class PayrollPolicy(Base, TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     policy_name = Column(String(100), nullable=False, index=True)
     location = Column(String(100), nullable=False, index=True)
-    pay_frequency = Column(Enum(PayFrequency), nullable=False)
+    pay_frequency = Column(Enum(PayFrequency, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
     overtime_threshold_hours = Column(
         Numeric(6, 2), default=40.00, nullable=False
     )
@@ -138,11 +138,11 @@ class EmployeePayment(Base, TimestampMixin):
 
     # Status and metadata
     payment_status = Column(
-        Enum(PaymentStatus),
+        Enum(PaymentStatus, values_callable=lambda obj: [e.value for e in obj]),
         default=PaymentStatus.PENDING,
         nullable=False
     )
-    payment_method = Column(Enum(PaymentMethod), nullable=True)
+    payment_method = Column(Enum(PaymentMethod, values_callable=lambda obj: [e.value for e in obj]), nullable=True)
     notes = Column(Text, nullable=True)
     processed_by = Column(String(100), nullable=True)
     processed_at = Column(DateTime, nullable=True)

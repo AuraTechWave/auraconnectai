@@ -26,7 +26,7 @@ def upgrade() -> None:
     connection.execute(sa.text("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentstatus') THEN
-                CREATE TYPE paymentstatus AS ENUM ('PENDING', 'CALCULATED', 'APPROVED', 'PROCESSED', 'PAID', 'CANCELLED', 'FAILED');
+                CREATE TYPE paymentstatus AS ENUM ('pending', 'calculated', 'approved', 'processed', 'paid', 'cancelled', 'failed');
             END IF;
         END$$;
     """))
@@ -34,7 +34,7 @@ def upgrade() -> None:
     connection.execute(sa.text("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payfrequency') THEN
-                CREATE TYPE payfrequency AS ENUM ('WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY');
+                CREATE TYPE payfrequency AS ENUM ('weekly', 'biweekly', 'semimonthly', 'monthly');
             END IF;
         END$$;
     """))
@@ -42,7 +42,7 @@ def upgrade() -> None:
     connection.execute(sa.text("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'taxtype') THEN
-                CREATE TYPE taxtype AS ENUM ('FEDERAL', 'STATE', 'LOCAL', 'SOCIAL_SECURITY', 'MEDICARE', 'UNEMPLOYMENT', 'DISABILITY', 'WORKERS_COMP');
+                CREATE TYPE taxtype AS ENUM ('federal', 'state', 'local', 'social_security', 'medicare', 'unemployment', 'disability', 'workers_comp');
             END IF;
         END$$;
     """))
@@ -50,7 +50,7 @@ def upgrade() -> None:
     connection.execute(sa.text("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentmethod') THEN
-                CREATE TYPE paymentmethod AS ENUM ('DIRECT_DEPOSIT', 'CHECK', 'CASH', 'DIGITAL_WALLET');
+                CREATE TYPE paymentmethod AS ENUM ('direct_deposit', 'check', 'cash', 'digital_wallet');
             END IF;
         END$$;
     """))
@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('rule_name', sa.String(100), nullable=False),
         sa.Column('location', sa.String(100), nullable=False),
-        sa.Column('tax_type', sa.Enum('FEDERAL', 'STATE', 'LOCAL', 'SOCIAL_SECURITY', 'MEDICARE', 'UNEMPLOYMENT', 'DISABILITY', 'WORKERS_COMP', name='taxtype', create_type=False), nullable=False),
+        sa.Column('tax_type', sa.Enum('federal', 'state', 'local', 'social_security', 'medicare', 'unemployment', 'disability', 'workers_comp', name='taxtype', create_type=False), nullable=False),
         sa.Column('rate_percent', sa.Numeric(5, 4), nullable=False),
         sa.Column('max_taxable_amount', sa.Numeric(12, 2), nullable=True),
         sa.Column('min_taxable_amount', sa.Numeric(12, 2), nullable=True),
@@ -86,7 +86,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('policy_name', sa.String(100), nullable=False),
         sa.Column('location', sa.String(100), nullable=False),
-        sa.Column('pay_frequency', sa.Enum('WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY', name='payfrequency', create_type=False), nullable=False),
+        sa.Column('pay_frequency', sa.Enum('weekly', 'biweekly', 'semimonthly', 'monthly', name='payfrequency', create_type=False), nullable=False),
         sa.Column('overtime_threshold_hours', sa.Numeric(6, 2), nullable=False, server_default='40.00'),
         sa.Column('overtime_multiplier', sa.Numeric(5, 4), nullable=False, server_default='1.5000'),
         sa.Column('double_time_threshold_hours', sa.Numeric(6, 2), nullable=True),
@@ -146,8 +146,8 @@ def upgrade() -> None:
         sa.Column('net_pay', sa.Numeric(12, 2), nullable=False),
         sa.Column('currency', sa.String(3), nullable=False, server_default='USD'),
         sa.Column('tenant_id', sa.Integer(), nullable=True),
-        sa.Column('payment_status', sa.Enum('PENDING', 'CALCULATED', 'APPROVED', 'PROCESSED', 'PAID', 'CANCELLED', 'FAILED', name='paymentstatus', create_type=False), nullable=False, server_default='PENDING'),
-        sa.Column('payment_method', sa.Enum('DIRECT_DEPOSIT', 'CHECK', 'CASH', 'DIGITAL_WALLET', name='paymentmethod', create_type=False), nullable=True),
+        sa.Column('payment_status', sa.Enum('pending', 'calculated', 'approved', 'processed', 'paid', 'cancelled', 'failed', name='paymentstatus', create_type=False), nullable=False, server_default='pending'),
+        sa.Column('payment_method', sa.Enum('direct_deposit', 'check', 'cash', 'digital_wallet', name='paymentmethod', create_type=False), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
         sa.Column('processed_by', sa.String(100), nullable=True),
         sa.Column('processed_at', sa.DateTime(), nullable=True),
