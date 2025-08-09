@@ -17,15 +17,32 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum types
-    sync_direction_enum = postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection')
-    sync_direction_enum.create(op.get_bind())
+    # Create enum types with existence checks
+    connection = op.get_bind()
     
-    sync_status_enum = postgresql.ENUM('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled', name='syncstatus')
-    sync_status_enum.create(op.get_bind())
+    # Check and create syncdirection enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'syncdirection'"
+    ))
+    if not result.fetchone():
+        sync_direction_enum = postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection')
+        sync_direction_enum.create(connection)
     
-    conflict_resolution_enum = postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution')
-    conflict_resolution_enum.create(op.get_bind())
+    # Check and create syncstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'syncstatus'"
+    ))
+    if not result.fetchone():
+        sync_status_enum = postgresql.ENUM('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled', name='syncstatus')
+        sync_status_enum.create(connection)
+    
+    # Check and create conflictresolution enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'conflictresolution'"
+    ))
+    if not result.fetchone():
+        conflict_resolution_enum = postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution')
+        conflict_resolution_enum.create(connection)
 
     # POS Menu Mappings table
     op.create_table('pos_menu_mappings',
@@ -37,10 +54,10 @@ def upgrade():
         sa.Column('pos_entity_id', sa.String(length=255), nullable=False),
         sa.Column('pos_entity_data', sa.JSON(), nullable=True),
         sa.Column('sync_enabled', sa.Boolean(), nullable=False, default=True),
-        sa.Column('sync_direction', sync_direction_enum, nullable=False, default='bidirectional'),
-        sa.Column('conflict_resolution', conflict_resolution_enum, nullable=False, default='manual'),
+        sa.Column('sync_direction', postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection', create_type=False), nullable=False, default='bidirectional'),
+        sa.Column('conflict_resolution', postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution', create_type=False), nullable=False, default='manual'),
         sa.Column('last_sync_at', sa.DateTime(), nullable=True),
-        sa.Column('last_sync_direction', sync_direction_enum, nullable=True),
+        sa.Column('last_sync_direction', postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection', create_type=False), nullable=True),
         sa.Column('aura_last_modified', sa.DateTime(), nullable=True),
         sa.Column('pos_last_modified', sa.DateTime(), nullable=True),
         sa.Column('sync_hash', sa.String(length=64), nullable=True),
@@ -63,10 +80,10 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('job_id', postgresql.UUID(as_uuid=True), nullable=False, unique=True),
         sa.Column('pos_integration_id', sa.Integer(), nullable=False),
-        sa.Column('sync_direction', sync_direction_enum, nullable=False),
+        sa.Column('sync_direction', postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection', create_type=False), nullable=False),
         sa.Column('entity_types', sa.JSON(), nullable=True),
         sa.Column('entity_ids', sa.JSON(), nullable=True),
-        sa.Column('status', sync_status_enum, nullable=False, default='pending'),
+        sa.Column('status', postgresql.ENUM('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled', name='syncstatus', create_type=False), nullable=False, default='pending'),
         sa.Column('started_at', sa.DateTime(), nullable=True),
         sa.Column('completed_at', sa.DateTime(), nullable=True),
         sa.Column('scheduled_at', sa.DateTime(), nullable=True),
@@ -101,15 +118,15 @@ def upgrade():
         sa.Column('aura_entity_id', sa.Integer(), nullable=True),
         sa.Column('pos_entity_id', sa.String(length=255), nullable=True),
         sa.Column('operation', sa.String(length=50), nullable=False),
-        sa.Column('sync_direction', sync_direction_enum, nullable=False),
-        sa.Column('status', sync_status_enum, nullable=False),
+        sa.Column('sync_direction', postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection', create_type=False), nullable=False),
+        sa.Column('status', postgresql.ENUM('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled', name='syncstatus', create_type=False), nullable=False),
         sa.Column('aura_data_before', sa.JSON(), nullable=True),
         sa.Column('aura_data_after', sa.JSON(), nullable=True),
         sa.Column('pos_data_before', sa.JSON(), nullable=True),
         sa.Column('pos_data_after', sa.JSON(), nullable=True),
         sa.Column('changes_detected', sa.JSON(), nullable=True),
         sa.Column('conflict_type', sa.String(length=100), nullable=True),
-        sa.Column('conflict_resolution', conflict_resolution_enum, nullable=True),
+        sa.Column('conflict_resolution', postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution', create_type=False), nullable=True),
         sa.Column('conflict_resolved_by', sa.Integer(), nullable=True),
         sa.Column('conflict_resolved_at', sa.DateTime(), nullable=True),
         sa.Column('processing_time_ms', sa.Integer(), nullable=True),
@@ -150,7 +167,7 @@ def upgrade():
         sa.Column('pos_current_data', sa.JSON(), nullable=True),
         sa.Column('conflicting_fields', sa.JSON(), nullable=True),
         sa.Column('status', sa.String(length=20), nullable=False, default='unresolved'),
-        sa.Column('resolution_strategy', conflict_resolution_enum, nullable=True),
+        sa.Column('resolution_strategy', postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution', create_type=False), nullable=True),
         sa.Column('resolved_by', sa.Integer(), nullable=True),
         sa.Column('resolved_at', sa.DateTime(), nullable=True),
         sa.Column('resolution_notes', sa.Text(), nullable=True),
@@ -177,8 +194,8 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('pos_integration_id', sa.Integer(), nullable=False, unique=True),
         sa.Column('sync_enabled', sa.Boolean(), nullable=False, default=True),
-        sa.Column('default_sync_direction', sync_direction_enum, nullable=False, default='bidirectional'),
-        sa.Column('default_conflict_resolution', conflict_resolution_enum, nullable=False, default='manual'),
+        sa.Column('default_sync_direction', postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection', create_type=False), nullable=False, default='bidirectional'),
+        sa.Column('default_conflict_resolution', postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution', create_type=False), nullable=False, default='manual'),
         sa.Column('auto_sync_enabled', sa.Boolean(), nullable=False, default=False),
         sa.Column('sync_frequency_minutes', sa.Integer(), nullable=True),
         sa.Column('sync_time_windows', sa.JSON(), nullable=True),
