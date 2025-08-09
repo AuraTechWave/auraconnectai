@@ -1,7 +1,7 @@
-"""create_enhanced_payroll_tax_tables
+"""create_enhanced_payroll_tax_tables_v2
 
-Revision ID: 20250725_0730_0008
-Revises: 20250725_0700_0007
+Revision ID: 20250725_0730_0008_v2
+Revises: 20250725_0601_0005
 Create Date: 2025-07-25 07:30:00.000000
 
 """
@@ -12,47 +12,48 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '20250725_0730_0008'
-down_revision = '20250725_0601_0005'
-branch_labels = None
-depends_on = None
+revision: str = '20250725_0730_0008_v2'
+down_revision: Union[str, None] = '20250725_0601_0005'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create enum types with existence checks
+    # Get connection
     connection = op.get_bind()
     
-    # Check and create payment status enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'paymentstatus'"
-    ))
-    if not result.fetchone():
-        payment_status_enum = sa.Enum('PENDING', 'CALCULATED', 'APPROVED', 'PROCESSED', 'PAID', 'CANCELLED', 'FAILED', name='paymentstatus')
-        payment_status_enum.create(connection)
+    # Create enum types with existence check using raw SQL
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentstatus') THEN
+                CREATE TYPE paymentstatus AS ENUM ('PENDING', 'CALCULATED', 'APPROVED', 'PROCESSED', 'PAID', 'CANCELLED', 'FAILED');
+            END IF;
+        END$$;
+    """))
     
-    # Check and create pay frequency enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'payfrequency'"
-    ))
-    if not result.fetchone():
-        pay_frequency_enum = sa.Enum('WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY', name='payfrequency')
-        pay_frequency_enum.create(connection)
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'payfrequency') THEN
+                CREATE TYPE payfrequency AS ENUM ('WEEKLY', 'BIWEEKLY', 'SEMIMONTHLY', 'MONTHLY');
+            END IF;
+        END$$;
+    """))
     
-    # Check and create tax type enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'taxtype'"
-    ))
-    if not result.fetchone():
-        tax_type_enum = sa.Enum('FEDERAL', 'STATE', 'LOCAL', 'SOCIAL_SECURITY', 'MEDICARE', 'UNEMPLOYMENT', 'DISABILITY', 'WORKERS_COMP', name='taxtype')
-        tax_type_enum.create(connection)
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'taxtype') THEN
+                CREATE TYPE taxtype AS ENUM ('FEDERAL', 'STATE', 'LOCAL', 'SOCIAL_SECURITY', 'MEDICARE', 'UNEMPLOYMENT', 'DISABILITY', 'WORKERS_COMP');
+            END IF;
+        END$$;
+    """))
     
-    # Check and create payment method enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'paymentmethod'"
-    ))
-    if not result.fetchone():
-        payment_method_enum = sa.Enum('DIRECT_DEPOSIT', 'CHECK', 'CASH', 'DIGITAL_WALLET', name='paymentmethod')
-        payment_method_enum.create(connection)
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'paymentmethod') THEN
+                CREATE TYPE paymentmethod AS ENUM ('DIRECT_DEPOSIT', 'CHECK', 'CASH', 'DIGITAL_WALLET');
+            END IF;
+        END$$;
+    """))
 
     # Create enhanced payroll_tax_rules table
     op.create_table(
@@ -195,8 +196,9 @@ def downgrade() -> None:
     op.drop_table('payroll_policies')
     op.drop_table('payroll_tax_rules')
     
-    # Drop enum types
-    sa.Enum(name='paymentmethod').drop(op.get_bind())
-    sa.Enum(name='taxtype').drop(op.get_bind())
-    sa.Enum(name='payfrequency').drop(op.get_bind())
-    sa.Enum(name='paymentstatus').drop(op.get_bind())
+    # Drop enum types using raw SQL with existence check
+    connection = op.get_bind()
+    connection.execute(sa.text("DROP TYPE IF EXISTS paymentmethod"))
+    connection.execute(sa.text("DROP TYPE IF EXISTS taxtype"))
+    connection.execute(sa.text("DROP TYPE IF EXISTS payfrequency"))
+    connection.execute(sa.text("DROP TYPE IF EXISTS paymentstatus"))
