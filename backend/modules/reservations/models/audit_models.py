@@ -51,7 +51,7 @@ class ReservationAuditLog(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # Additional context
-    metadata = Column(JSON)  # Any additional data
+    audit_metadata = Column(JSON)  # Any additional data
     
     # Relationships
     reservation = relationship("Reservation", backref="audit_logs")
@@ -89,7 +89,7 @@ class WaitlistAuditLog(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # Additional context
-    metadata = Column(JSON)
+    audit_metadata = Column(JSON)
     
     # Relationships
     waitlist_entry = relationship("Waitlist", backref="audit_logs")

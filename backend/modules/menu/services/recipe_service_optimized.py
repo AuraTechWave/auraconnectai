@@ -16,8 +16,9 @@ import logging
 from ..models.recipe_models import Recipe, RecipeIngredient, RecipeStatus
 from ..schemas.recipe_schemas import (
     RecipeCostAnalysis, RecipeComplianceReport, 
-    MenuItemRecipeStatus, PaginatedResponse
+    MenuItemRecipeStatus
 )
+from ..utils.pagination_utils import PaginatedResponse
 from .recipe_cache_service import get_recipe_cache_service
 from .recipe_service import RecipeService
 from core.menu_models import MenuItem

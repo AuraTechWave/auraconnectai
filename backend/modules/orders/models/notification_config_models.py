@@ -112,7 +112,7 @@ class NotificationRetryQueue(Base, TimestampMixin):
     recipient = Column(String, nullable=False)
     subject = Column(String, nullable=True)
     message = Column(Text, nullable=False)
-    metadata = Column(JSONB, nullable=True, default={})
+    notification_metadata = Column(JSONB, nullable=True, default={})
     
     # Status
     is_abandoned = Column(Boolean, nullable=False, default=False)
