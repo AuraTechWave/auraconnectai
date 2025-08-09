@@ -402,3 +402,20 @@ async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_erro
             "status": "decode_failed",
             "error": str(e)
         }
+
+
+# ========== Enhanced OpenAPI Documentation ==========
+from core.openapi_custom import custom_openapi, configure_openapi_ui, add_operation_ids
+from core.api_documentation import add_api_examples
+
+# Configure custom OpenAPI schema
+app.openapi = lambda: custom_openapi(app)
+
+# Configure enhanced UI
+configure_openapi_ui(app)
+
+# Add operation IDs for better client generation
+add_operation_ids(app)
+
+# Add API examples
+add_api_examples(app)

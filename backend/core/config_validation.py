@@ -22,7 +22,7 @@ class EnvironmentConfig(BaseSettings):
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     
     # Redis configuration
-    REDIS_URL: Optional[str] = Field(default=None, env="REDIS_URL")
+    redis_url: Optional[str] = Field(default=None, env="REDIS_URL")
     USE_IN_MEMORY_CACHE: bool = Field(default=False, env="USE_IN_MEMORY_CACHE")
     
     # Session configuration
@@ -41,12 +41,12 @@ class EnvironmentConfig(BaseSettings):
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v):
         """Validate environment setting"""
-        valid_environments = ["development", "staging", "production"]
+        valid_environments = ["development", "staging", "production", "test"]
         if v not in valid_environments:
             raise ValueError(f"ENVIRONMENT must be one of {valid_environments}")
         return v
     
-    @field_validator("REDIS_URL")
+    @field_validator("redis_url")
     def validate_redis_url(cls, v, info):
         """Validate Redis configuration"""
         env = info.data.get("ENVIRONMENT", "development")
@@ -98,7 +98,7 @@ class EnvironmentConfig(BaseSettings):
         errors = []
         
         # Check Redis
-        if not self.REDIS_URL:
+        if not self.redis_url:
             errors.append("Redis URL is required for production")
         
         # Check secrets
@@ -122,7 +122,7 @@ class EnvironmentConfig(BaseSettings):
         warnings = []
         
         if self.ENVIRONMENT == "development":
-            if not self.REDIS_URL:
+            if not self.redis_url:
                 warnings.append("Redis not configured - using in-memory session storage")
             if "dev-secret" in self.SESSION_SECRET:
                 warnings.append("Using default SESSION_SECRET - change for production")
@@ -153,8 +153,8 @@ def validate_configuration():
 
 def get_redis_url() -> Optional[str]:
     """Get Redis URL with fallback behavior"""
-    if config.REDIS_URL:
-        return config.REDIS_URL
+    if config.redis_url:
+        return config.redis_url
     
     if config.ENVIRONMENT == "production":
         raise ValueError("Redis is required in production environment")

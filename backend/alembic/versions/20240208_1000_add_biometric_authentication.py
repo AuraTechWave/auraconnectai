@@ -1,7 +1,7 @@
 """Add biometric authentication tables
 
 Revision ID: add_biometric_auth
-Revises: 20250130_1500_0016_add_payroll_audit_indexes
+Revises: 0016
 Create Date: 2024-02-08 10:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_biometric_auth'
-down_revision = '20250130_1500_0016_add_payroll_audit_indexes'
+down_revision = '20250130_1500_0016'
 branch_labels = None
 depends_on = None
 

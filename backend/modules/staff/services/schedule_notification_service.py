@@ -12,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 import smtplib
 
 from ..models import Staff, Schedule
-from core.config_validation import config as settings
+from core.config import settings
 # TODO: Fix import - notification service module structure changed
 # from core.notifications import notification_service as core_notification
 core_notification = None  # Temporary fix

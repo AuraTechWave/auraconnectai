@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ReservationEvent:
     """Base reservation event"""
-    event_type: str
     reservation_id: int
     customer_id: int
     timestamp: datetime
+    event_type: str = ""
     user_id: Optional[int] = None  # Who triggered the event
     metadata: Dict[str, Any] = None
 

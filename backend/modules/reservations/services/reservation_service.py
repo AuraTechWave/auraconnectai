@@ -7,7 +7,7 @@ Enhanced reservation service with full booking management.
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from datetime import datetime, date, time, timedelta
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 import random
 import string
 import logging

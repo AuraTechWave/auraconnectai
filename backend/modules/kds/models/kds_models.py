@@ -255,3 +255,37 @@ class KDSOrderItem(Base):
         if self.target_time and self.status not in [DisplayStatus.COMPLETED, DisplayStatus.CANCELLED]:
             return datetime.utcnow() > self.target_time
         return False
+
+
+class StationRoutingRule(Base):
+    """Configurable routing rules for directing orders to kitchen stations"""
+    __tablename__ = "station_routing_rules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_id = Column(Integer, nullable=False, index=True)
+    
+    # Rule conditions (any can be used)
+    menu_item_id = Column(Integer, nullable=True, index=True)
+    category_id = Column(Integer, nullable=True, index=True)
+    tag_name = Column(String(100), nullable=True, index=True)
+    
+    # Target station
+    target_station_id = Column(Integer, ForeignKey("kitchen_stations.id"), nullable=False)
+    
+    # Rule metadata
+    priority = Column(Integer, default=0)  # Higher priority rules are evaluated first
+    is_active = Column(Boolean, default=True)
+    description = Column(Text)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    station = relationship("KitchenStation", backref="routing_rules")
+    
+    # Indexes for performance
+    __table_args__ = (
+        Index('idx_routing_rule_restaurant', 'restaurant_id', 'is_active'),
+        Index('idx_routing_rule_priority', 'restaurant_id', 'priority', 'is_active'),
+    )
