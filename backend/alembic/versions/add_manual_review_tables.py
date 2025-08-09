@@ -17,9 +17,22 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum types
-    op.execute("CREATE TYPE reviewreason AS ENUM ('missing_recipe', 'insufficient_stock', 'inventory_not_found', 'recipe_circular_dependency', 'sync_conflict', 'concurrent_modification', 'other')")
-    op.execute("CREATE TYPE reviewstatus AS ENUM ('pending', 'in_review', 'resolved', 'escalated', 'cancelled')")
+    # Create enum types with IF NOT EXISTS check
+    connection = op.get_bind()
+    
+    # Check if reviewreason type exists
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'reviewreason'"
+    ))
+    if not result.fetchone():
+        op.execute("CREATE TYPE reviewreason AS ENUM ('missing_recipe', 'insufficient_stock', 'inventory_not_found', 'recipe_circular_dependency', 'sync_conflict', 'concurrent_modification', 'other')")
+    
+    # Create manual review status type with different name to avoid conflict
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'manualreviewstatus'"
+    ))
+    if not result.fetchone():
+        op.execute("CREATE TYPE manualreviewstatus AS ENUM ('pending', 'in_review', 'resolved', 'escalated', 'cancelled')")
     
     # Create manual_review_queue table
     op.create_table(
@@ -30,7 +43,7 @@ def upgrade():
                                            'recipe_circular_dependency', 'sync_conflict', 'concurrent_modification', 
                                            'other', name='reviewreason'), nullable=False),
         sa.Column('status', postgresql.ENUM('pending', 'in_review', 'resolved', 'escalated', 'cancelled', 
-                                           name='reviewstatus'), nullable=False),
+                                           name='manualreviewstatus'), nullable=False),
         sa.Column('error_details', sa.JSON(), nullable=True),
         sa.Column('error_message', sa.Text(), nullable=True),
         sa.Column('assigned_to', sa.Integer(), nullable=True),
@@ -98,5 +111,5 @@ def downgrade():
     op.drop_table('manual_review_queue')
     
     # Drop enum types
-    op.execute('DROP TYPE reviewstatus')
-    op.execute('DROP TYPE reviewreason')
+    op.execute('DROP TYPE IF EXISTS manualreviewstatus')
+    op.execute('DROP TYPE IF EXISTS reviewreason')
