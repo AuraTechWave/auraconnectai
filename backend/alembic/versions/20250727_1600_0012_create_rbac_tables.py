@@ -15,10 +15,10 @@ from sqlalchemy.dialects import postgresql
 from datetime import datetime
 
 # revision identifiers
-revision: str = '20250727_1600_0012'
-down_revision: Union[str, None] = '20250726_1200_0011'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision = '20250727_1600_0012'
+down_revision = '20250726_1200_0011'
+branch_labels = None
+depends_on = None
 
 
 def upgrade() -> None:
