@@ -16,8 +16,16 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    priority_enum = postgresql.ENUM('low', 'normal', 'high', 'urgent', name='orderpriority')
-    priority_enum.create(op.get_bind())
+    # Get database connection
+    connection = op.get_bind()
+    
+    # Check and create orderpriority enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'orderpriority'"
+    ))
+    if not result.fetchone():
+        priority_enum = sa.Enum('low', 'normal', 'high', 'urgent', name='orderpriority')
+        priority_enum.create(connection)
     
     op.add_column('orders', sa.Column(
         'priority', 

@@ -10,23 +10,41 @@ depends_on = None
 
 
 def upgrade():
-    reconciliation_status_enum = postgresql.ENUM(
+    # Get database connection
+    connection = op.get_bind()
+    
+    # Check and create reconciliationstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'reconciliationstatus'"
+    ))
+    if not result.fetchone():
+        reconciliation_status_enum = sa.Enum(
         'pending', 'matched', 'discrepancy', 'resolved',
         name='reconciliationstatus'
     )
-    reconciliation_status_enum.create(op.get_bind())
+        reconciliation_status_enum.create(connection)
 
-    discrepancy_type_enum = postgresql.ENUM(
+    # Check and create discrepancytype enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'discrepancytype'"
+    ))
+    if not result.fetchone():
+        discrepancy_type_enum = sa.Enum(
         'amount_mismatch', 'missing_payment', 'duplicate_payment',
         name='discrepancytype'
     )
-    discrepancy_type_enum.create(op.get_bind())
+        discrepancy_type_enum.create(connection)
 
-    reconciliation_action_enum = postgresql.ENUM(
+    # Check and create reconciliationaction enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'reconciliationaction'"
+    ))
+    if not result.fetchone():
+        reconciliation_action_enum = sa.Enum(
         'auto_matched', 'manual_review', 'exception_handled',
         name='reconciliationaction'
     )
-    reconciliation_action_enum.create(op.get_bind())
+        reconciliation_action_enum.create(connection)
 
     op.create_table(
         'payment_reconciliations',

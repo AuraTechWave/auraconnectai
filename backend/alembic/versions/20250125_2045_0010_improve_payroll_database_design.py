@@ -22,14 +22,22 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Get database connection
+    connection = op.get_bind()
+    
     """Apply database improvements."""
     
     # Create new staff_status enum
-    staff_status_enum = postgresql.ENUM(
+    # Check and create staffstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'staffstatus'"
+    ))
+    if not result.fetchone():
+        staff_status_enum = sa.Enum(
         'active', 'inactive', 'on_leave', 'terminated', 'suspended',
         name='staffstatus'
     )
-    staff_status_enum.create(op.get_bind())
+        staff_status_enum.create(connection)
     
     # Update staff_members table to use enum and improve constraints
     op.alter_column(
