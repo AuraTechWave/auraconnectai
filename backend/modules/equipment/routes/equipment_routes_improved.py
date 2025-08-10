@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.auth import get_current_user
-from core.error_handling import handle_api_errors, NotFoundError, ValidationError as APIValidationError
+from core.error_handling import handle_api_errors, NotFoundError, APIValidationError
 from modules.auth.models import User
 from modules.auth.permissions import Permission, check_permission
 
@@ -21,6 +21,10 @@ from ..schemas import (
     MaintenanceRecord, MaintenanceRecordCreate, MaintenanceRecordUpdate,
     MaintenanceRecordComplete, MaintenanceSearchParams, MaintenanceListResponse,
     MaintenanceSummary
+)
+from ..schemas.equipment_bulk_schemas import (
+    BulkScheduleMaintenanceRequest,
+    BulkScheduleMaintenanceResponse
 )
 
 router = APIRouter(prefix="/equipment", tags=["equipment"])
@@ -461,10 +465,10 @@ async def get_maintenance_summary(
 
 
 # Bulk operations
-@router.post("/bulk/schedule-maintenance")
+@router.post("/bulk/schedule-maintenance", response_model=BulkScheduleMaintenanceResponse)
 @handle_api_errors
 async def bulk_schedule_maintenance(
-    equipment_ids: List[int],
+    request: BulkScheduleMaintenanceRequest,
     maintenance_data: MaintenanceRecordCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -482,12 +486,7 @@ async def bulk_schedule_maintenance(
     """
     check_permission(current_user, Permission.EQUIPMENT_UPDATE)
     
-    if not equipment_ids:
-        raise APIValidationError("At least one equipment ID must be provided")
-    
-    if len(equipment_ids) > 100:
-        raise APIValidationError("Cannot schedule maintenance for more than 100 items at once")
-    
+    equipment_ids = request.equipment_ids
     service = EquipmentService(db)
     
     # Validate all equipment exists
@@ -507,10 +506,12 @@ async def bulk_schedule_maintenance(
         record = service.create_maintenance_record(record_data, current_user.id)
         created_records.append(record)
     
-    return {
-        "message": f"Successfully scheduled maintenance for {len(created_records)} equipment items",
-        "records": created_records
-    }
+    return BulkScheduleMaintenanceResponse(
+        message=f"Successfully scheduled maintenance for {len(created_records)} equipment items",
+        records=created_records,
+        scheduled_count=len(created_records),
+        failed_count=0
+    )
 
 
 from datetime import datetime

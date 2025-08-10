@@ -12,7 +12,7 @@ import logging
 
 from core.database import get_db
 from core.auth import get_current_user
-from core.error_handling import handle_api_errors, NotFoundError, ValidationError as APIValidationError, ConflictError
+from core.error_handling import handle_api_errors, NotFoundError, APIValidationError, ConflictError
 from modules.auth.models import User
 from modules.auth.permissions import Permission, check_permission
 
@@ -26,6 +26,11 @@ from ..schemas.kds_schemas import (
     MenuItemStationCreate, MenuItemStationResponse,
     KDSOrderItemResponse, StationSummary,
     KDSWebSocketMessage
+)
+from ..schemas.kds_bulk_schemas import (
+    BulkStationStatusUpdateRequest,
+    BulkStationStatusUpdateResponse,
+    OrderRoutingResponse
 )
 from ..models.kds_models import DisplayStatus, StationType, StationStatus
 
@@ -876,7 +881,7 @@ async def websocket_endpoint(
 
 # ========== Order Integration ==========
 
-@router.post("/orders/{order_id}/route")
+@router.post("/orders/{order_id}/route", response_model=OrderRoutingResponse)
 @handle_api_errors
 async def route_order_to_stations(
     order_id: int,
@@ -921,15 +926,15 @@ async def route_order_to_stations(
                 "items": [KDSOrderItemResponse.from_orm(item).dict() for item in items]
             })
         
-        return {
-            "message": "Order routed successfully",
-            "items_routed": len(routed_items),
-            "stations_affected": len(station_items),
-            "routing_summary": {
+        return OrderRoutingResponse(
+            message="Order routed successfully",
+            items_routed=len(routed_items),
+            stations_affected=len(station_items),
+            routing_summary={
                 str(station_id): len(items) 
                 for station_id, items in station_items.items()
             }
-        }
+        )
         
     except ValueError as e:
         if "not found" in str(e).lower():
@@ -938,11 +943,10 @@ async def route_order_to_stations(
 
 # ========== Bulk Operations ==========
 
-@router.post("/stations/bulk/update-status")
+@router.post("/stations/bulk/update-status", response_model=BulkStationStatusUpdateResponse)
 @handle_api_errors
 async def bulk_update_station_status(
-    station_ids: List[int],
-    status: StationStatus,
+    request: BulkStationStatusUpdateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -958,16 +962,13 @@ async def bulk_update_station_status(
     """
     check_permission(current_user, Permission.KDS_MANAGE)
     
-    if not station_ids:
-        raise APIValidationError("At least one station ID must be provided")
-    
-    if len(station_ids) > 50:
-        raise APIValidationError("Cannot update more than 50 stations at once")
-    
+    station_ids = request.station_ids
+    status = request.status
     service = KDSService(db)
     
     updated_count = 0
     errors = []
+    updated_stations = []
     
     for station_id in station_ids:
         try:
@@ -978,6 +979,7 @@ async def bulk_update_station_status(
             
             service.update_station(station_id, StationUpdate(status=status))
             updated_count += 1
+            updated_stations.append(station_id)
             
             # Broadcast update
             await ws_manager.broadcast_station_update(station_id, {
@@ -988,8 +990,9 @@ async def bulk_update_station_status(
         except Exception as e:
             errors.append({"station_id": station_id, "error": str(e)})
     
-    return {
-        "message": f"Updated {updated_count} stations",
-        "updated_count": updated_count,
-        "errors": errors if errors else None
-    }
+    return BulkStationStatusUpdateResponse(
+        message=f"Updated {updated_count} stations",
+        updated_count=updated_count,
+        errors=errors if errors else None,
+        updated_stations=updated_stations
+    )
