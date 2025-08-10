@@ -12,7 +12,7 @@ class StaffMember(Base):
     email = Column(String, unique=True)
     phone = Column(String)
     role_id = Column(Integer, ForeignKey("roles.id"))
-    status = Column(Enum(StaffStatus), default=StaffStatus.ACTIVE, nullable=False)
+    status = Column(Enum(StaffStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=StaffStatus.ACTIVE, nullable=False)
     is_active = Column(Boolean, default=True)
     start_date = Column(DateTime)
     photo_url = Column(String)

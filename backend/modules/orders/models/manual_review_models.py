@@ -34,8 +34,8 @@ class ManualReviewQueue(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
-    reason = Column(Enum(ReviewReason), nullable=False)
-    status = Column(Enum(ReviewStatus), default=ReviewStatus.PENDING, nullable=False)
+    reason = Column(Enum(ReviewReason, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False)
+    status = Column(Enum(ReviewStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=ReviewStatus.PENDING, nullable=False)
     
     # Details about the issue
     error_details = Column(JSON, nullable=True)  # Structured error information
