@@ -36,17 +36,17 @@ def upgrade() -> None:
     """Create payroll configuration tables."""
     
     # Create PayrollConfigurationType enum
-    # Check and create payrollconfigurationtype enum
+    # Check and create payrollconfigurationtype enum using raw SQL
     result = connection.execute(sa.text(
         "SELECT 1 FROM pg_type WHERE typname = 'payrollconfigurationtype'"
     ))
     if not result.fetchone():
-        payroll_config_type_enum = sa.Enum(
-        'benefit_proration', 'overtime_rules', 'tax_approximation', 
-        'role_rates', 'jurisdiction_rules',
-        name='payrollconfigurationtype'
-    )
-        payroll_config_type_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE payrollconfigurationtype AS ENUM (
+                'benefit_proration', 'overtime_rules', 'tax_approximation', 
+                'role_rates', 'jurisdiction_rules'
+            )
+        """))
     
     # Create payroll_configurations table
     op.create_table(
