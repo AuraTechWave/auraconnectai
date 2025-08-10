@@ -17,9 +17,6 @@ depends_on = None
 
 
 def upgrade():
-    # Get enum types
-    reward_type_enum = sa.Enum(name='rewardtype')
-    reward_status_enum = sa.Enum(name='rewardstatus')
     
     # Create customer_rewards_v2 table
     op.create_table(
@@ -27,14 +24,14 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('customer_id', sa.Integer(), nullable=False),
         sa.Column('template_id', sa.Integer(), nullable=False),
-        sa.Column('reward_type', reward_type_enum, nullable=False),
+        sa.Column('reward_type', sa.Enum('points_discount', 'percentage_discount', 'fixed_discount', 'free_item', 'free_delivery', 'bonus_points', 'cashback', 'gift_card', 'tier_upgrade', 'custom', name='rewardtype', create_type=False), nullable=False),
         sa.Column('title', sa.String(length=200), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('value', sa.Float(), nullable=True),
         sa.Column('percentage', sa.Float(), nullable=True),
         sa.Column('points_cost', sa.Integer(), nullable=True),
         sa.Column('code', sa.String(length=20), nullable=False),
-        sa.Column('status', reward_status_enum, nullable=False),
+        sa.Column('status', sa.Enum('available', 'reserved', 'redeemed', 'expired', 'revoked', 'pending', name='rewardstatus', create_type=False), nullable=False),
         sa.Column('reserved_at', sa.DateTime(), nullable=True),
         sa.Column('reserved_until', sa.DateTime(), nullable=True),
         sa.Column('redeemed_at', sa.DateTime(), nullable=True),

@@ -17,9 +17,6 @@ depends_on = None
 
 
 def upgrade():
-    # Get enum types
-    reward_type_enum = sa.Enum(name='rewardtype')
-    trigger_type_enum = sa.Enum(name='triggertype')
     
     # Create reward_templates table
     op.create_table(
@@ -27,7 +24,7 @@ def upgrade():
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('reward_type', reward_type_enum, nullable=False),
+        sa.Column('reward_type', sa.Enum('points_discount', 'percentage_discount', 'fixed_discount', 'free_item', 'free_delivery', 'bonus_points', 'cashback', 'gift_card', 'tier_upgrade', 'custom', name='rewardtype', create_type=False), nullable=False),
         sa.Column('value', sa.Float(), nullable=True),
         sa.Column('percentage', sa.Float(), nullable=True),
         sa.Column('points_cost', sa.Integer(), nullable=True),
@@ -41,7 +38,7 @@ def upgrade():
         sa.Column('valid_from_date', sa.DateTime(), nullable=True),
         sa.Column('valid_until_date', sa.DateTime(), nullable=True),
         sa.Column('eligible_tiers', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column('trigger_type', trigger_type_enum, nullable=False),
+        sa.Column('trigger_type', sa.Enum('order_complete', 'points_earned', 'tier_upgrade', 'birthday', 'anniversary', 'referral_success', 'milestone', 'manual', 'scheduled', 'conditional', name='triggertype', create_type=False), nullable=False),
         sa.Column('trigger_conditions', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column('auto_apply', sa.Boolean(), nullable=True),
         sa.Column('title', sa.String(length=200), nullable=False),

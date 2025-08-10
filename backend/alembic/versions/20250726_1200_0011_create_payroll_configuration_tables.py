@@ -52,7 +52,7 @@ def upgrade() -> None:
     op.create_table(
         'payroll_configurations',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('config_type', payroll_config_type_enum, nullable=False, index=True),
+        sa.Column('config_type', sa.Enum('benefit_proration', 'overtime_rules', 'tax_approximation', 'role_rates', 'jurisdiction_rules', name='payrollconfigurationtype', create_type=False), nullable=False, index=True),
         sa.Column('config_key', sa.String(100), nullable=False, index=True),
         sa.Column('config_value', sa.JSON, nullable=False),
         sa.Column('description', sa.Text, nullable=True),
