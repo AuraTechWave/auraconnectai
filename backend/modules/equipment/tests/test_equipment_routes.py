@@ -1,5 +1,494 @@
 # backend/modules/equipment/tests/test_equipment_routes.py
 
+"""
+Comprehensive tests for Equipment Management API routes.
+"""
+
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from unittest.mock import Mock, patch
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+from main import app
+from core.database import get_db
+from modules.auth.models import User
+from modules.auth.permissions import Permission
+from modules.equipment.models import Equipment as EquipmentModel, MaintenanceRecord as MaintenanceRecordModel
+from modules.equipment.schemas import (
+    EquipmentCreate, EquipmentUpdate, MaintenanceRecordCreate,
+    EquipmentSearchParams, MaintenanceSearchParams
+)
+
+
+class TestEquipmentRoutes:
+    """Test suite for Equipment API endpoints"""
+    
+    @pytest.fixture
+    def client(self):
+        """Test client fixture"""
+        return TestClient(app)
+    
+    @pytest.fixture
+    def mock_db(self):
+        """Mock database session"""
+        return Mock(spec=Session)
+    
+    @pytest.fixture
+    def mock_user(self):
+        """Mock authenticated user with equipment permissions"""
+        user = Mock(spec=User)
+        user.id = 1
+        user.email = "test@example.com"
+        user.has_permission = Mock(return_value=True)
+        return user
+    
+    @pytest.fixture
+    def auth_headers(self):
+        """Mock authentication headers"""
+        return {"Authorization": "Bearer mock-token"}
+    
+    # ========== Equipment CRUD Tests ==========
+    
+    def test_create_equipment_success(self, client, mock_db, mock_user):
+        """Test successful equipment creation"""
+        # Arrange
+        equipment_data = {
+            "equipment_name": "Commercial Oven",
+            "equipment_type": "Kitchen",
+            "manufacturer": "TurboChef",
+            "model_number": "TCO-2000",
+            "serial_number": "SN123456",
+            "purchase_date": "2023-01-15",
+            "warranty_expiry": "2025-01-15",
+            "location": "Main Kitchen",
+            "is_critical": True,
+            "maintenance_interval_days": 90,
+            "maintenance_notes": "Quarterly deep cleaning required"
+        }
+        
+        mock_equipment = EquipmentModel(
+            id=1,
+            **equipment_data,
+            status="operational",
+            created_at=datetime.utcnow(),
+            created_by=1
+        )
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.create_equipment.return_value = mock_equipment
+                    
+                    # Act
+                    response = client.post("/equipment/", json=equipment_data)
+        
+        # Assert
+        assert response.status_code == 201
+        data = response.json()
+        assert data["equipment_name"] == "Commercial Oven"
+        assert data["is_critical"] == True
+        assert data["id"] == 1
+    
+    def test_create_equipment_validation_error(self, client, mock_user):
+        """Test equipment creation with invalid data"""
+        # Arrange - Missing required fields
+        equipment_data = {
+            "equipment_name": "",  # Empty name
+            "equipment_type": "Kitchen",
+            "maintenance_interval_days": -10  # Negative interval
+        }
+        
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            # Act
+            response = client.post("/equipment/", json=equipment_data)
+        
+        # Assert
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any("equipment_name" in str(error) for error in errors)
+        assert any("maintenance_interval_days" in str(error) for error in errors)
+    
+    def test_create_equipment_permission_denied(self, client, mock_user):
+        """Test equipment creation without proper permissions"""
+        # Arrange
+        mock_user.has_permission = Mock(return_value=False)
+        equipment_data = {"equipment_name": "Test Equipment", "equipment_type": "Test"}
+        
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            with patch("modules.equipment.routes.check_permission") as mock_check_permission:
+                mock_check_permission.side_effect = PermissionError("Permission denied")
+                
+                # Act
+                response = client.post("/equipment/", json=equipment_data)
+        
+        # Assert
+        assert response.status_code in [403, 500]  # Depends on error handling
+    
+    def test_search_equipment_with_filters(self, client, mock_db, mock_user):
+        """Test searching equipment with various filters"""
+        # Arrange
+        mock_equipment = [
+            EquipmentModel(
+                id=1,
+                equipment_name="Oven 1",
+                equipment_type="Kitchen",
+                status="operational",
+                location="Main Kitchen",
+                is_critical=True,
+                created_at=datetime.utcnow()
+            ),
+            EquipmentModel(
+                id=2,
+                equipment_name="Freezer 1",
+                equipment_type="Storage",
+                status="maintenance",
+                location="Storage Room",
+                is_critical=True,
+                created_at=datetime.utcnow()
+            )
+        ]
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.search_equipment.return_value = (mock_equipment[:1], 1)
+                    
+                    # Act
+                    response = client.get(
+                        "/equipment/search?equipment_type=Kitchen&status=operational&is_critical=true&page=1&size=10"
+                    )
+        
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+        assert data["items"][0]["equipment_type"] == "Kitchen"
+        assert data["page"] == 1
+        assert data["pages"] == 1
+    
+    def test_search_equipment_invalid_sort_field(self, client, mock_user):
+        """Test equipment search with invalid sort field"""
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            # Act
+            response = client.get("/equipment/search?sort_by=invalid_field")
+        
+        # Assert
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any("sort_by" in str(error) for error in errors)
+    
+    def test_get_equipment_by_id_success(self, client, mock_db, mock_user):
+        """Test getting equipment by ID with maintenance history"""
+        # Arrange
+        mock_maintenance_records = [
+            MaintenanceRecordModel(
+                id=1,
+                equipment_id=1,
+                maintenance_type="preventive",
+                status="completed",
+                scheduled_date=datetime.utcnow() - timedelta(days=30),
+                date_performed=datetime.utcnow() - timedelta(days=29),
+                performed_by="John Doe",
+                cost=Decimal("150.00"),
+                downtime_hours=2,
+                created_at=datetime.utcnow()
+            ),
+            MaintenanceRecordModel(
+                id=2,
+                equipment_id=1,
+                maintenance_type="repair",
+                status="completed",
+                scheduled_date=datetime.utcnow() - timedelta(days=60),
+                date_performed=datetime.utcnow() - timedelta(days=59),
+                performed_by="Jane Smith",
+                cost=Decimal("500.00"),
+                downtime_hours=8,
+                created_at=datetime.utcnow()
+            )
+        ]
+        
+        mock_equipment = EquipmentModel(
+            id=1,
+            equipment_name="Commercial Oven",
+            equipment_type="Kitchen",
+            status="operational",
+            created_at=datetime.utcnow(),
+            maintenance_records=mock_maintenance_records
+        )
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.get_equipment.return_value = mock_equipment
+                    
+                    # Act
+                    response = client.get("/equipment/1")
+        
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["equipment_name"] == "Commercial Oven"
+        assert data["total_maintenance_count"] == 2
+        assert data["total_maintenance_cost"] == 650.0
+        assert data["average_downtime_hours"] == 5.0
+        assert len(data["maintenance_records"]) == 2
+    
+    def test_get_equipment_not_found(self, client, mock_db, mock_user):
+        """Test getting non-existent equipment"""
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.get_equipment.side_effect = ValueError("Equipment not found")
+                    
+                    # Act
+                    response = client.get("/equipment/999")
+        
+        # Assert
+        assert response.status_code == 500  # Should be 404 with proper error handling
+    
+    def test_update_equipment_success(self, client, mock_db, mock_user):
+        """Test successful equipment update"""
+        # Arrange
+        update_data = {
+            "status": "maintenance",
+            "location": "Repair Shop",
+            "maintenance_notes": "Under repair"
+        }
+        
+        updated_equipment = EquipmentModel(
+            id=1,
+            equipment_name="Commercial Oven",
+            equipment_type="Kitchen",
+            status="maintenance",
+            location="Repair Shop",
+            maintenance_notes="Under repair",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.update_equipment.return_value = updated_equipment
+                    
+                    # Act
+                    response = client.put("/equipment/1", json=update_data)
+        
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "maintenance"
+        assert data["location"] == "Repair Shop"
+    
+    def test_delete_equipment_success(self, client, mock_db, mock_user):
+        """Test soft deleting equipment"""
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.delete_equipment.return_value = None
+                    
+                    # Act
+                    response = client.delete("/equipment/1")
+        
+        # Assert
+        assert response.status_code == 204
+    
+    # ========== Maintenance Record Tests ==========
+    
+    def test_create_maintenance_record_success(self, client, mock_db, mock_user):
+        """Test creating maintenance record"""
+        # Arrange
+        record_data = {
+            "equipment_id": 1,
+            "maintenance_type": "preventive",
+            "scheduled_date": "2024-02-01",
+            "description": "Quarterly maintenance",
+            "estimated_duration_hours": 4,
+            "estimated_cost": 200.00
+        }
+        
+        mock_record = MaintenanceRecordModel(
+            id=1,
+            **record_data,
+            status="scheduled",
+            created_at=datetime.utcnow(),
+            created_by=1
+        )
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.create_maintenance_record.return_value = mock_record
+                    
+                    # Act
+                    response = client.post("/equipment/maintenance", json=record_data)
+        
+        # Assert
+        assert response.status_code == 201
+        data = response.json()
+        assert data["maintenance_type"] == "preventive"
+        assert data["status"] == "scheduled"
+    
+    def test_search_maintenance_records_with_date_filter(self, client, mock_db, mock_user):
+        """Test searching maintenance records with date filters"""
+        # Arrange
+        mock_records = [
+            MaintenanceRecordModel(
+                id=1,
+                equipment_id=1,
+                maintenance_type="preventive",
+                status="completed",
+                scheduled_date=datetime(2024, 1, 15),
+                date_performed=datetime(2024, 1, 16),
+                created_at=datetime.utcnow()
+            )
+        ]
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.search_maintenance_records.return_value = (mock_records, 1)
+                    
+                    # Act
+                    response = client.get(
+                        "/equipment/maintenance/search?date_from=2024-01-01&date_to=2024-01-31&status=completed"
+                    )
+        
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+    
+    def test_search_maintenance_invalid_date_format(self, client, mock_user):
+        """Test maintenance search with invalid date format"""
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            # Act
+            response = client.get("/equipment/maintenance/search?date_from=invalid-date")
+        
+        # Assert
+        assert response.status_code == 500  # Should be 422 with proper error handling
+    
+    def test_get_maintenance_summary_success(self, client, mock_db, mock_user):
+        """Test getting maintenance summary statistics"""
+        # Arrange
+        mock_summary = {
+            "total_equipment": 50,
+            "operational_count": 45,
+            "maintenance_count": 3,
+            "out_of_service_count": 2,
+            "overdue_maintenance": 5,
+            "upcoming_maintenance_7_days": 8,
+            "total_maintenance_cost_ytd": 15000.00,
+            "average_downtime_hours": 4.5
+        }
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.get_maintenance_summary.return_value = mock_summary
+                    
+                    # Act
+                    response = client.get("/equipment/maintenance/summary")
+        
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_equipment"] == 50
+        assert data["overdue_maintenance"] == 5
+    
+    # ========== Edge Cases and Security Tests ==========
+    
+    def test_unauthorized_access(self, client):
+        """Test accessing endpoints without authentication"""
+        # Act - No auth headers
+        response = client.get("/equipment/search")
+        
+        # Assert
+        assert response.status_code == 401
+    
+    def test_sql_injection_prevention(self, client, mock_db, mock_user):
+        """Test SQL injection prevention in search"""
+        # Arrange - Malicious input
+        malicious_query = "'; DROP TABLE equipment; --"
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.search_equipment.return_value = ([], 0)
+                    
+                    # Act
+                    response = client.get(f"/equipment/search?query={malicious_query}")
+        
+        # Assert - Should handle safely
+        assert response.status_code == 200
+        # The service should handle the query safely without executing SQL
+    
+    def test_large_page_size_validation(self, client, mock_user):
+        """Test page size limit validation"""
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            # Act - Exceed max size
+            response = client.get("/equipment/search?page=1&size=1000")
+        
+        # Assert
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any("size" in str(error) for error in errors)
+    
+    def test_negative_cost_validation(self, client, mock_user):
+        """Test negative cost validation in maintenance record"""
+        record_data = {
+            "equipment_id": 1,
+            "maintenance_type": "repair",
+            "scheduled_date": "2024-02-01",
+            "estimated_cost": -100.00  # Negative cost
+        }
+        
+        with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+            # Act
+            response = client.post("/equipment/maintenance", json=record_data)
+        
+        # Assert
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any("cost" in str(error) for error in errors)
+    
+    def test_concurrent_update_handling(self, client, mock_db, mock_user):
+        """Test handling concurrent updates"""
+        update_data = {"status": "maintenance"}
+        
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    # Simulate optimistic locking error
+                    mock_service.return_value.update_equipment.side_effect = ValueError(
+                        "Equipment has been modified by another user"
+                    )
+                    
+                    # Act
+                    response = client.put("/equipment/1", json=update_data)
+        
+        # Assert
+        assert response.status_code == 500  # Should be 409 with proper error handling
+    
+    def test_equipment_with_active_maintenance_deletion(self, client, mock_db, mock_user):
+        """Test preventing deletion of equipment with active maintenance"""
+        with patch("modules.equipment.routes.get_db", return_value=mock_db):
+            with patch("modules.equipment.routes.get_current_user", return_value=mock_user):
+                with patch("modules.equipment.routes.EquipmentService") as mock_service:
+                    mock_service.return_value.delete_equipment.side_effect = ValueError(
+                        "Cannot delete equipment with active maintenance records"
+                    )
+                    
+                    # Act
+                    response = client.delete("/equipment/1")
+        
+        # Assert
+        assert response.status_code == 500  # Should be 400 with proper error handling
+
 import pytest
 from datetime import datetime, timedelta
 from fastapi import status

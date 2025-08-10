@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 
-from modules.equipment.service import EquipmentService
+from modules.equipment.services import EquipmentService
 from modules.equipment.models import Equipment, MaintenanceRecord, EquipmentStatus, MaintenanceStatus, MaintenanceType
 from modules.equipment.schemas import (
     EquipmentCreate, EquipmentUpdate, EquipmentSearchParams,

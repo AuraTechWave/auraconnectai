@@ -1,4 +1,4 @@
-# backend/modules/equipment/service.py
+# backend/modules/equipment/services/equipment_service.py
 
 from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from fastapi import HTTPException, status
 
-from .models import Equipment, MaintenanceRecord, EquipmentStatus, MaintenanceStatus, MaintenanceType
-from .schemas import (
+from ..models import Equipment, MaintenanceRecord, EquipmentStatus, MaintenanceStatus, MaintenanceType
+from ..schemas import (
     EquipmentCreate, EquipmentUpdate, EquipmentSearchParams,
     MaintenanceRecordCreate, MaintenanceRecordUpdate, MaintenanceRecordComplete,
     MaintenanceSearchParams, MaintenanceSummary
