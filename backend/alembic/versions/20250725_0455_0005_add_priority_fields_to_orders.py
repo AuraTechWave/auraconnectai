@@ -24,12 +24,13 @@ def upgrade():
         "SELECT 1 FROM pg_type WHERE typname = 'orderpriority'"
     ))
     if not result.fetchone():
-        priority_enum = sa.Enum('low', 'normal', 'high', 'urgent', name='orderpriority')
-        priority_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE orderpriority AS ENUM ('low', 'normal', 'high', 'urgent')
+        """))
     
     op.add_column('orders', sa.Column(
         'priority', 
-        priority_enum,
+        sa.Enum('low', 'normal', 'high', 'urgent', name='orderpriority', create_type=False),
         nullable=False, 
         server_default='normal'
     ))

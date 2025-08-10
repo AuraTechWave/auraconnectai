@@ -17,31 +17,37 @@ depends_on = None
 
 
 def upgrade():
-    # Create reward type enum
-    reward_type_enum = sa.Enum(
-        'points_discount', 'percentage_discount', 'fixed_discount', 'free_item',
-        'free_delivery', 'bonus_points', 'cashback', 'gift_card', 'tier_upgrade', 'custom',
-        name='rewardtype',
-        create_type=False
-    )
-    reward_type_enum.create(op.get_bind(), checkfirst=True)
+    # Get database connection
+    connection = op.get_bind()
     
-    # Create reward status enum
-    reward_status_enum = sa.Enum(
-        'available', 'reserved', 'redeemed', 'expired', 'revoked', 'pending',
-        name='rewardstatus',
-        create_type=False
-    )
-    reward_status_enum.create(op.get_bind(), checkfirst=True)
+    # Check and create rewardtype enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'rewardtype'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE rewardtype AS ENUM ('points_discount', 'percentage_discount', 'fixed_discount', 'free_item',
+                'free_delivery', 'bonus_points', 'cashback', 'gift_card', 'tier_upgrade', 'custom')
+        """))
     
-    # Create trigger type enum
-    trigger_type_enum = sa.Enum(
-        'order_complete', 'points_earned', 'tier_upgrade', 'birthday', 'anniversary',
-        'referral_success', 'milestone', 'manual', 'scheduled', 'conditional',
-        name='triggertype',
-        create_type=False
-    )
-    trigger_type_enum.create(op.get_bind(), checkfirst=True)
+    # Check and create rewardstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'rewardstatus'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE rewardstatus AS ENUM ('available', 'reserved', 'redeemed', 'expired', 'revoked', 'pending')
+        """))
+    
+    # Check and create triggertype enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'triggertype'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE triggertype AS ENUM ('order_complete', 'points_earned', 'tier_upgrade', 'birthday', 'anniversary',
+                'referral_success', 'milestone', 'manual', 'scheduled', 'conditional')
+        """))
     
     # Create reward_templates table
     op.create_table(

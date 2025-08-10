@@ -17,21 +17,26 @@ depends_on = None
 
 
 def upgrade():
-    # Create customer status enum
-    customer_status_enum = sa.Enum(
-        'active', 'inactive', 'suspended', 'deleted',
-        name='customerstatus',
-        create_type=False
-    )
-    customer_status_enum.create(op.get_bind(), checkfirst=True)
+    # Get database connection
+    connection = op.get_bind()
     
-    # Create customer tier enum
-    customer_tier_enum = sa.Enum(
-        'bronze', 'silver', 'gold', 'platinum', 'vip',
-        name='customertier',
-        create_type=False
-    )
-    customer_tier_enum.create(op.get_bind(), checkfirst=True)
+    # Check and create customerstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'customerstatus'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE customerstatus AS ENUM ('active', 'inactive', 'suspended', 'deleted')
+        """))
+    
+    # Check and create customertier enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'customertier'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE customertier AS ENUM ('bronze', 'silver', 'gold', 'platinum', 'vip')
+        """))
     
     # Create customers table
     op.create_table(

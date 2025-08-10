@@ -18,33 +18,27 @@ def upgrade():
         "SELECT 1 FROM pg_type WHERE typname = 'reconciliationstatus'"
     ))
     if not result.fetchone():
-        reconciliation_status_enum = sa.Enum(
-        'pending', 'matched', 'discrepancy', 'resolved',
-        name='reconciliationstatus'
-    )
-        reconciliation_status_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE reconciliationstatus AS ENUM ('pending', 'matched', 'discrepancy', 'resolved')
+        """))
 
     # Check and create discrepancytype enum
     result = connection.execute(sa.text(
         "SELECT 1 FROM pg_type WHERE typname = 'discrepancytype'"
     ))
     if not result.fetchone():
-        discrepancy_type_enum = sa.Enum(
-        'amount_mismatch', 'missing_payment', 'duplicate_payment',
-        name='discrepancytype'
-    )
-        discrepancy_type_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE discrepancytype AS ENUM ('amount_mismatch', 'missing_payment', 'duplicate_payment')
+        """))
 
     # Check and create reconciliationaction enum
     result = connection.execute(sa.text(
         "SELECT 1 FROM pg_type WHERE typname = 'reconciliationaction'"
     ))
     if not result.fetchone():
-        reconciliation_action_enum = sa.Enum(
-        'auto_matched', 'manual_review', 'exception_handled',
-        name='reconciliationaction'
-    )
-        reconciliation_action_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE reconciliationaction AS ENUM ('auto_matched', 'manual_review', 'exception_handled')
+        """))
 
     op.create_table(
         'payment_reconciliations',

@@ -19,21 +19,27 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum types
-    version_type_enum = postgresql.ENUM(
-        'manual', 'scheduled', 'rollback', 'migration', 'auto_save',
-        name='versiontype',
-        create_type=False
-    )
-    version_type_enum.create(op.get_bind(), checkfirst=True)
+    # Get database connection
+    connection = op.get_bind()
     
-    change_type_enum = postgresql.ENUM(
-        'create', 'update', 'delete', 'activate', 'deactivate', 
-        'price_change', 'availability_change', 'category_change', 'modifier_change',
-        name='changetype',
-        create_type=False
-    )
-    change_type_enum.create(op.get_bind(), checkfirst=True)
+    # Check and create versiontype enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'versiontype'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE versiontype AS ENUM ('manual', 'scheduled', 'rollback', 'migration', 'auto_save')
+        """))
+    
+    # Check and create changetype enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'changetype'"
+    ))
+    if not result.fetchone():
+        connection.execute(sa.text("""
+            CREATE TYPE changetype AS ENUM ('create', 'update', 'delete', 'activate', 'deactivate', 
+                'price_change', 'availability_change', 'category_change', 'modifier_change')
+        """))
     
     # Create menu_versions table
     op.create_table('menu_versions',
@@ -41,7 +47,7 @@ def upgrade():
         sa.Column('version_number', sa.String(length=50), nullable=False),
         sa.Column('version_name', sa.String(length=200), nullable=True),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('version_type', version_type_enum, nullable=False),
+        sa.Column('version_type', postgresql.ENUM('manual', 'scheduled', 'rollback', 'migration', 'auto_save', name='versiontype', create_type=False), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False),
         sa.Column('is_published', sa.Boolean(), nullable=False),
         sa.Column('published_at', sa.DateTime(), nullable=True),
@@ -72,7 +78,7 @@ def upgrade():
         sa.Column('is_active', sa.Boolean(), nullable=False),
         sa.Column('parent_category_id', sa.Integer(), nullable=True),
         sa.Column('image_url', sa.String(length=500), nullable=True),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('change_summary', sa.Text(), nullable=True),
         sa.Column('changed_fields', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -104,7 +110,7 @@ def upgrade():
         sa.Column('display_order', sa.Integer(), nullable=False),
         sa.Column('prep_time_minutes', sa.Integer(), nullable=True),
         sa.Column('cooking_instructions', sa.Text(), nullable=True),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('change_summary', sa.Text(), nullable=True),
         sa.Column('changed_fields', sa.JSON(), nullable=True),
         sa.Column('price_history', sa.JSON(), nullable=True),
@@ -129,7 +135,7 @@ def upgrade():
         sa.Column('max_selections', sa.Integer(), nullable=True),
         sa.Column('display_order', sa.Integer(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('change_summary', sa.Text(), nullable=True),
         sa.Column('changed_fields', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -150,7 +156,7 @@ def upgrade():
         sa.Column('price_adjustment', sa.Float(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False),
         sa.Column('display_order', sa.Integer(), nullable=False),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('change_summary', sa.Text(), nullable=True),
         sa.Column('changed_fields', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
@@ -169,7 +175,7 @@ def upgrade():
         sa.Column('original_association_id', sa.Integer(), nullable=True),
         sa.Column('is_required', sa.Boolean(), nullable=False),
         sa.Column('display_order', sa.Integer(), nullable=False),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['menu_item_version_id'], ['menu_item_versions.id'], ),
@@ -187,7 +193,7 @@ def upgrade():
         sa.Column('entity_type', sa.String(length=50), nullable=False),
         sa.Column('entity_id', sa.Integer(), nullable=True),
         sa.Column('entity_name', sa.String(length=200), nullable=True),
-        sa.Column('change_type', change_type_enum, nullable=False),
+        sa.Column('change_type', postgresql.ENUM('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change', name='changetype', create_type=False), nullable=False),
         sa.Column('old_values', sa.JSON(), nullable=True),
         sa.Column('new_values', sa.JSON(), nullable=True),
         sa.Column('changed_fields', sa.JSON(), nullable=True),

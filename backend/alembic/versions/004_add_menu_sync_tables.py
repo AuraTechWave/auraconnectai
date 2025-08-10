@@ -25,24 +25,27 @@ def upgrade():
         "SELECT 1 FROM pg_type WHERE typname = 'syncdirection'"
     ))
     if not result.fetchone():
-        sync_direction_enum = postgresql.ENUM('push', 'pull', 'bidirectional', name='syncdirection')
-        sync_direction_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE syncdirection AS ENUM ('push', 'pull', 'bidirectional')
+        """))
     
     # Check and create syncstatus enum
     result = connection.execute(sa.text(
         "SELECT 1 FROM pg_type WHERE typname = 'syncstatus'"
     ))
     if not result.fetchone():
-        sync_status_enum = postgresql.ENUM('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled', name='syncstatus')
-        sync_status_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE syncstatus AS ENUM ('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled')
+        """))
     
     # Check and create conflictresolution enum
     result = connection.execute(sa.text(
         "SELECT 1 FROM pg_type WHERE typname = 'conflictresolution'"
     ))
     if not result.fetchone():
-        conflict_resolution_enum = postgresql.ENUM('manual', 'pos_wins', 'aura_wins', 'latest_wins', name='conflictresolution')
-        conflict_resolution_enum.create(connection)
+        connection.execute(sa.text("""
+            CREATE TYPE conflictresolution AS ENUM ('manual', 'pos_wins', 'aura_wins', 'latest_wins')
+        """))
 
     # POS Menu Mappings table
     op.create_table('pos_menu_mappings',
