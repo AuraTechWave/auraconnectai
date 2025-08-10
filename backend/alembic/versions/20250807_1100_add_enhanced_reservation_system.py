@@ -1,6 +1,6 @@
 """Add enhanced reservation system with waitlist
 
-Revision ID: add_enhanced_reservation_system
+Revision ID: 20250807_1100_add_enhanced_reservation_system
 Revises: 20250807_1000_add_kds_tables
 Create Date: 2025-08-07 11:00:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'add_enhanced_reservation_system'
+revision = '20250807_1100_add_enhanced_reservation_system'
 down_revision = '20250807_1000_add_kds_tables'
 branch_labels = None
 depends_on = None
