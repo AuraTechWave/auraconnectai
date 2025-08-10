@@ -40,15 +40,19 @@ def upgrade() -> None:
         staff_status_enum.create(connection)
     
     # Update staff_members table to use enum and improve constraints
-    op.alter_column(
-        'staff_members',
-        'status',
-        existing_type=sa.String(),
-        type_=staff_status_enum,
-        existing_nullable=True,
-        nullable=False,
-        server_default='active'
-    )
+    # Use raw SQL with USING clause for proper type conversion
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status TYPE staffstatus 
+        USING status::staffstatus
+    """))
+    
+    # Set default and not null constraint
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status SET NOT NULL,
+        ALTER COLUMN status SET DEFAULT 'active'
+    """))
     
     # Add foreign key constraint for employee_payments.staff_id
     op.create_foreign_key(
@@ -226,15 +230,19 @@ def downgrade() -> None:
     op.drop_constraint('fk_employee_payments_staff_id', 'employee_payments', type_='foreignkey')
     
     # Revert staff status column
-    op.alter_column(
-        'staff_members',
-        'status',
-        existing_type=postgresql.ENUM('active', 'inactive', 'on_leave', 'terminated', 'suspended', name='staffstatus'),
-        type_=sa.String(),
-        existing_nullable=False,
-        nullable=True,
-        server_default=None
-    )
+    # Use raw SQL with USING clause for proper type conversion
+    connection = op.get_bind()
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status DROP DEFAULT,
+        ALTER COLUMN status DROP NOT NULL
+    """))
+    
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status TYPE VARCHAR 
+        USING status::text
+    """))
     
     # Drop the enum
-    op.execute('DROP TYPE staffstatus')
+    connection.execute(sa.text('DROP TYPE IF EXISTS staffstatus'))
