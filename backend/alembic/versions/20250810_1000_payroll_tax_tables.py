@@ -1,6 +1,6 @@
-"""Create payroll tax tables - final approach
+"""Create payroll tax tables - final
 
-Revision ID: 20250810_1000_payroll_tax_tables_final
+Revision ID: 20250810_1000_payroll_tax_tables
 Revises: 20250725_0601_0005
 Create Date: 2025-08-10 10:00:00.000000
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '20250810_1000_payroll_tax_tables_final'
+revision: str = '20250810_1000_payroll_tax_tables'
 down_revision: Union[str, None] = '20250725_0601_0005'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

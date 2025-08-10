@@ -13,7 +13,7 @@ import sqlalchemy as sa
 revision = 'merge_all_heads_v2'
 down_revision = (
     'merge_all_heads',
-    '20250810_1000_payroll_tax_tables_final',
+    '20250810_1000_payroll_tax_tables',
     '20250125_2045_0010'
 )
 branch_labels = None
