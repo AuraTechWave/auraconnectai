@@ -22,7 +22,6 @@ def upgrade():
     # Get database connection
     connection = op.get_bind()
     
-    # Check and create versiontype enum
     # Check and create versiontype enum using DO block
     connection.execute(sa.text("""
         DO $$ 
@@ -32,7 +31,14 @@ def upgrade():
                 JOIN pg_namespace n ON t.typnamespace = n.oid
                 WHERE t.typname = 'versiontype'
                 AND n.nspname = current_schema()
- # Check and create changetype enum using DO block
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE versiontype AS ENUM ('manual', 'scheduled', 'rollback', 'migration', 'auto_save');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create changetype enum using DO block
     connection.execute(sa.text("""
         DO $$ 
         BEGIN
@@ -46,11 +52,7 @@ def upgrade():
                 CREATE TYPE changetype AS ENUM ('create', 'update', 'delete', 'activate', 'deactivate', 'price_change', 'availability_change', 'category_change', 'modifier_change');
             END IF;
         END$$;
-    """))fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE changetype AS ENUM ('create', 'update', 'delete', 'activate', 'deactivate', 
-                'price_change', 'availability_change', 'category_change', 'modifier_change')
-        """))
+    """))
     
     # Create menu_versions table
     op.create_table('menu_versions',
