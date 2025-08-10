@@ -10,24 +10,21 @@ depends_on = None
 
 
 def upgrade():
-    # Get database connection
-    connection = op.get_bind()
-    
-    # Check and create reconciliationaction enum using DO block
-    connection.execute(sa.text("""
+    # Create enums if they don't exist
+    op.execute("""
         DO $$ 
         BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_type t
-                JOIN pg_namespace n ON t.typnamespace = n.oid
-                WHERE t.typname = 'reconciliationaction'
-                AND n.nspname = current_schema()
-                AND t.typtype = 'e'
-            ) THEN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reconciliationstatus') THEN
+                CREATE TYPE reconciliationstatus AS ENUM ('pending', 'matched', 'discrepancy', 'resolved');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'discrepancytype') THEN
+                CREATE TYPE discrepancytype AS ENUM ('amount_mismatch', 'missing_payment', 'duplicate_payment');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'reconciliationaction') THEN
                 CREATE TYPE reconciliationaction AS ENUM ('auto_matched', 'manual_review', 'exception_handled');
             END IF;
         END$$;
-    """))
+    """)
 
     op.create_table(
         'payment_reconciliations',
