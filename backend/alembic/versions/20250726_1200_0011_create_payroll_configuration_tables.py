@@ -37,55 +37,56 @@ def upgrade() -> None:
     
     # Create PayrollConfigurationType enum
     # Check and create payrollconfigurationtype enum using raw SQL
-    # First, try to drop the enum if it exists in an inconsistent state
-    try:
-        # Check if the enum exists
-        result = connection.execute(sa.text("""
-            SELECT EXISTS (
+    # Use advisory lock to prevent concurrent creation attempts
+    connection.execute(sa.text("""
+        -- Acquire an advisory lock to prevent concurrent enum creation
+        SELECT pg_advisory_lock(12345);
+        
+        -- Create the enum if it doesn't exist
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
                 SELECT 1 FROM pg_type t
                 JOIN pg_namespace n ON t.typnamespace = n.oid
                 WHERE t.typname = 'payrollconfigurationtype'
                 AND n.nspname = current_schema()
                 AND t.typtype = 'e'
-            )
-        """))
-        enum_exists = result.scalar()
-        
-        if not enum_exists:
-            # Create the enum if it doesn't exist
-            connection.execute(sa.text("""
+            ) THEN
                 CREATE TYPE payrollconfigurationtype AS ENUM (
                     'benefit_proration', 'overtime_rules', 'tax_approximation', 
                     'role_rates', 'jurisdiction_rules'
-                )
-            """))
-    except sa.exc.ProgrammingError as e:
-        # If we get a duplicate object error, that's fine - the enum already exists
-        if 'already exists' not in str(e):
-            raise
+                );
+            END IF;
+        END$$;
+        
+        -- Release the advisory lock
+        SELECT pg_advisory_unlock(12345);
+    """))
     
     # Check and create payrolljobstatus enum (for PayrollJobTracking table)
-    try:
-        result = connection.execute(sa.text("""
-            SELECT EXISTS (
+    connection.execute(sa.text("""
+        -- Acquire an advisory lock to prevent concurrent enum creation
+        SELECT pg_advisory_lock(12346);
+        
+        -- Create the enum if it doesn't exist
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
                 SELECT 1 FROM pg_type t
                 JOIN pg_namespace n ON t.typnamespace = n.oid
                 WHERE t.typname = 'payrolljobstatus'
                 AND n.nspname = current_schema()
                 AND t.typtype = 'e'
-            )
-        """))
-        enum_exists = result.scalar()
-        
-        if not enum_exists:
-            connection.execute(sa.text("""
+            ) THEN
                 CREATE TYPE payrolljobstatus AS ENUM (
                     'pending', 'processing', 'completed', 'failed', 'cancelled'
-                )
-            """))
-    except sa.exc.ProgrammingError as e:
-        if 'already exists' not in str(e):
-            raise
+                );
+            END IF;
+        END$$;
+        
+        -- Release the advisory lock
+        SELECT pg_advisory_unlock(12346);
+    """))
     
     # Create payroll_configurations table
     op.create_table(
