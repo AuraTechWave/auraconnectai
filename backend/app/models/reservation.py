@@ -22,7 +22,7 @@ class Reservation(Base):
     reservation_date = Column(Date, nullable=False)
     reservation_time = Column(Time, nullable=False)
     party_size = Column(Integer, nullable=False)
-    status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
+    status = Column(Enum(ReservationStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=ReservationStatus.PENDING)
     table_number = Column(String(20))
     special_requests = Column(Text)
     confirmation_code = Column(String(10), unique=True, index=True)

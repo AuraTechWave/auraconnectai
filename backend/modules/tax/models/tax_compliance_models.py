@@ -48,12 +48,12 @@ class TaxFiling(Base, TimestampMixin, TenantMixin):
     
     # Jurisdiction and period
     jurisdiction_id = Column(Integer, ForeignKey("tax_jurisdictions.id"), nullable=False)
-    filing_type = Column(Enum(FilingType), nullable=False)
+    filing_type = Column(Enum(FilingType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False)
     period_start = Column(Date, nullable=False)
     period_end = Column(Date, nullable=False)
     
     # Status tracking
-    status = Column(Enum(FilingStatus), nullable=False, default=FilingStatus.DRAFT)
+    status = Column(Enum(FilingStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, default=FilingStatus.DRAFT)
     due_date = Column(Date, nullable=False)
     filed_date = Column(DateTime, nullable=True)
     
@@ -244,7 +244,7 @@ class TaxReportTemplate(Base, TimestampMixin, TenantMixin):
     
     # Template type
     report_type = Column(String(100), nullable=False)  # filing_form, summary_report, detail_report
-    filing_type = Column(Enum(FilingType), nullable=True)
+    filing_type = Column(Enum(FilingType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=True)
     
     # Jurisdiction
     jurisdiction_id = Column(Integer, ForeignKey("tax_jurisdictions.id"), nullable=True)

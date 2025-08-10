@@ -39,7 +39,7 @@ class WebhookDeliveryLog(Base, TimestampMixin):
         Integer, ForeignKey("orders.id"),
         nullable=False, index=True
     )
-    event_type = Column(Enum(WebhookEventType), nullable=False, index=True)
+    event_type = Column(Enum(WebhookEventType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, index=True)
     status = Column(
         Enum(WebhookStatus), nullable=False,
         default=WebhookStatus.PENDING, index=True

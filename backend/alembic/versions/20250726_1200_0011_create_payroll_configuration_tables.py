@@ -30,21 +30,69 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Get database connection
+    connection = op.get_bind()
+    
     """Create payroll configuration tables."""
     
     # Create PayrollConfigurationType enum
-    payroll_config_type_enum = postgresql.ENUM(
-        'benefit_proration', 'overtime_rules', 'tax_approximation', 
-        'role_rates', 'jurisdiction_rules',
-        name='payrollconfigurationtype'
-    )
-    payroll_config_type_enum.create(op.get_bind())
+    # Check and create payrollconfigurationtype enum using raw SQL
+    # Use advisory lock to prevent concurrent creation attempts
+    connection.execute(sa.text("""
+        -- Acquire an advisory lock to prevent concurrent enum creation
+        SELECT pg_advisory_lock(12345);
+        
+        -- Create the enum if it doesn't exist
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'payrollconfigurationtype'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE payrollconfigurationtype AS ENUM (
+                    'benefit_proration', 'overtime_rules', 'tax_approximation', 
+                    'role_rates', 'jurisdiction_rules'
+                );
+            END IF;
+        END$$;
+        
+        -- Release the advisory lock
+        SELECT pg_advisory_unlock(12345);
+    """))
+    
+    # Check and create payrolljobstatus enum (for PayrollJobTracking table)
+    connection.execute(sa.text("""
+        -- Acquire an advisory lock to prevent concurrent enum creation
+        SELECT pg_advisory_lock(12346);
+        
+        -- Create the enum if it doesn't exist
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'payrolljobstatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE payrolljobstatus AS ENUM (
+                    'pending', 'processing', 'completed', 'failed', 'cancelled'
+                );
+            END IF;
+        END$$;
+        
+        -- Release the advisory lock
+        SELECT pg_advisory_unlock(12346);
+    """))
     
     # Create payroll_configurations table
     op.create_table(
         'payroll_configurations',
         sa.Column('id', sa.Integer, primary_key=True, index=True),
-        sa.Column('config_type', payroll_config_type_enum, nullable=False, index=True),
+        sa.Column('config_type', sa.Enum('benefit_proration', 'overtime_rules', 'tax_approximation', 'role_rates', 'jurisdiction_rules', name='payrollconfigurationtype', create_type=False), nullable=False, index=True),
         sa.Column('config_key', sa.String(100), nullable=False, index=True),
         sa.Column('config_value', sa.JSON, nullable=False),
         sa.Column('description', sa.Text, nullable=True),
@@ -205,7 +253,7 @@ def upgrade() -> None:
         sa.Column('tenant_id', sa.Integer, nullable=True),
         
         # Status tracking
-        sa.Column('status', sa.String(50), default='pending', nullable=False, index=True),
+        sa.Column('status', sa.Enum('pending', 'processing', 'completed', 'failed', 'cancelled', name='payrolljobstatus', create_type=False), default='pending', nullable=False, index=True),
         sa.Column('total_items', sa.Integer, default=0, nullable=False),
         sa.Column('completed_items', sa.Integer, default=0, nullable=False),
         sa.Column('failed_items', sa.Integer, default=0, nullable=False),
@@ -301,5 +349,6 @@ def downgrade() -> None:
     op.drop_table('staff_pay_policies')
     op.drop_table('payroll_configurations')
     
-    # Drop enum
-    op.execute('DROP TYPE payrollconfigurationtype')
+    # Drop enums
+    op.execute('DROP TYPE IF EXISTS payrollconfigurationtype')
+    op.execute('DROP TYPE IF EXISTS payrolljobstatus')
