@@ -1,5 +1,7 @@
 # Getting Started with AuraConnect
 
+**Version: 1.0.0** | Last Updated: January 2025
+
 Welcome to AuraConnect! This guide will help you get up and running with the platform quickly. Whether you're setting up a development environment or deploying to production, we'll walk you through each step.
 
 ## Table of Contents
@@ -45,18 +47,88 @@ cd auraconnectai
 
 ### 2. Configure Environment
 
+Create the following `.env` files:
+
+**Root `.env.example`**:
 ```bash
-# Copy example environment files
+# Environment
+ENVIRONMENT=development
+DEBUG=True
+
+# Docker Compose Settings
+COMPOSE_PROJECT_NAME=auraconnect
+```
+
+**Backend `.env.example`**:
+```bash
+# Core Settings
+ENVIRONMENT=development
+DEBUG=True
+PROJECT_NAME=AuraConnect
+VERSION=1.0.0
+
+# Security
+SECRET_KEY=your-secret-key-here-change-in-production
+JWT_SECRET_KEY=your-jwt-secret-key-change-in-production
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
+
+# Database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/auraconnect
+DATABASE_POOL_SIZE=20
+DATABASE_MAX_OVERFLOW=40
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+REDIS_CACHE_TTL=3600
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# External Services (Optional)
+STRIPE_API_KEY=sk_test_your_stripe_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+TWILIO_ACCOUNT_SID=your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_token
+SENDGRID_API_KEY=your_sendgrid_key
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=us-east-1
+
+# Feature Flags
+ENABLE_AI_RECOMMENDATIONS=False
+ENABLE_ANALYTICS=True
+ENABLE_NOTIFICATIONS=True
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=True
+RATE_LIMIT_PER_MINUTE=60
+```
+
+**Frontend `.env.example`**:
+```bash
+# API Configuration
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_VERSION=v1
+
+# Features
+REACT_APP_ENABLE_ANALYTICS=true
+REACT_APP_ENABLE_NOTIFICATIONS=true
+
+# Third Party Keys (public)
+REACT_APP_GOOGLE_MAPS_API_KEY=your_google_maps_key
+REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key
+```
+
+```bash
+# Copy and configure environment files
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# Edit .env files with your settings
-# At minimum, update:
-# - DATABASE_URL
-# - REDIS_URL
-# - JWT_SECRET_KEY
-# - API_KEYS for external services
+# Edit the files with your actual values
+# IMPORTANT: Never commit .env files to version control!
 ```
 
 ### 3. Start All Services
