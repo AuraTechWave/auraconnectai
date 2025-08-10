@@ -24,7 +24,7 @@ down_revision = (
     'recipe_performance_indexes',
     '0003_create_tax_tables',
     'update_inventory_adjustments',
-    '0016',
+    '20250728_0130_0016',
     '9a7b19d94ae6',
     'add_enhanced_reservation_system',
     '008_pos_analytics'
