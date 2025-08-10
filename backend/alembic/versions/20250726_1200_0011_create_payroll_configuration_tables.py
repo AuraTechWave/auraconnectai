@@ -37,16 +37,55 @@ def upgrade() -> None:
     
     # Create PayrollConfigurationType enum
     # Check and create payrollconfigurationtype enum using raw SQL
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'payrollconfigurationtype'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE payrollconfigurationtype AS ENUM (
-                'benefit_proration', 'overtime_rules', 'tax_approximation', 
-                'role_rates', 'jurisdiction_rules'
+    # First, try to drop the enum if it exists in an inconsistent state
+    try:
+        # Check if the enum exists
+        result = connection.execute(sa.text("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'payrollconfigurationtype'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
             )
         """))
+        enum_exists = result.scalar()
+        
+        if not enum_exists:
+            # Create the enum if it doesn't exist
+            connection.execute(sa.text("""
+                CREATE TYPE payrollconfigurationtype AS ENUM (
+                    'benefit_proration', 'overtime_rules', 'tax_approximation', 
+                    'role_rates', 'jurisdiction_rules'
+                )
+            """))
+    except sa.exc.ProgrammingError as e:
+        # If we get a duplicate object error, that's fine - the enum already exists
+        if 'already exists' not in str(e):
+            raise
+    
+    # Check and create payrolljobstatus enum (for PayrollJobTracking table)
+    try:
+        result = connection.execute(sa.text("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'payrolljobstatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            )
+        """))
+        enum_exists = result.scalar()
+        
+        if not enum_exists:
+            connection.execute(sa.text("""
+                CREATE TYPE payrolljobstatus AS ENUM (
+                    'pending', 'processing', 'completed', 'failed', 'cancelled'
+                )
+            """))
+    except sa.exc.ProgrammingError as e:
+        if 'already exists' not in str(e):
+            raise
     
     # Create payroll_configurations table
     op.create_table(
@@ -213,7 +252,7 @@ def upgrade() -> None:
         sa.Column('tenant_id', sa.Integer, nullable=True),
         
         # Status tracking
-        sa.Column('status', sa.String(50), default='pending', nullable=False, index=True),
+        sa.Column('status', sa.Enum('pending', 'processing', 'completed', 'failed', 'cancelled', name='payrolljobstatus', create_type=False), default='pending', nullable=False, index=True),
         sa.Column('total_items', sa.Integer, default=0, nullable=False),
         sa.Column('completed_items', sa.Integer, default=0, nullable=False),
         sa.Column('failed_items', sa.Integer, default=0, nullable=False),
@@ -309,5 +348,6 @@ def downgrade() -> None:
     op.drop_table('staff_pay_policies')
     op.drop_table('payroll_configurations')
     
-    # Drop enum
-    op.execute('DROP TYPE payrollconfigurationtype')
+    # Drop enums
+    op.execute('DROP TYPE IF EXISTS payrollconfigurationtype')
+    op.execute('DROP TYPE IF EXISTS payrolljobstatus')

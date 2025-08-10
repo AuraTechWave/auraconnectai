@@ -20,13 +20,21 @@ def upgrade():
     connection = op.get_bind()
     
     # Check and create orderpriority enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'orderpriority'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE orderpriority AS ENUM ('low', 'normal', 'high', 'urgent')
-        """))
+    # Check and create orderpriority enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'orderpriority'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE orderpriority AS ENUM ('low', 'normal', 'high', 'urgent');
+            END IF;
+        END$$;
+    """))
     
     op.add_column('orders', sa.Column(
         'priority', 

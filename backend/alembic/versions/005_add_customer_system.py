@@ -20,23 +20,37 @@ def upgrade():
     # Get database connection
     connection = op.get_bind()
     
-    # Check and create customerstatus enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'customerstatus'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE customerstatus AS ENUM ('active', 'inactive', 'suspended', 'deleted')
-        """))
+    # Check and create customerstatus enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'customerstatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE customerstatus AS ENUM ('active', 'inactive', 'suspended', 'deleted');
+            END IF;
+        END$$;
+    """))
     
-    # Check and create customertier enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'customertier'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE customertier AS ENUM ('bronze', 'silver', 'gold', 'platinum', 'vip')
-        """))
+    # Check and create customertier enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'customertier'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE customertier AS ENUM ('bronze', 'silver', 'gold', 'platinum', 'vip');
+            END IF;
+        END$$;
+    """))
     
     # Create customers table
     op.create_table(

@@ -17,11 +17,72 @@ depends_on = None
 
 
 def upgrade():
-    # Create reservation status enum
-    op.execute("CREATE TYPE reservationstatus AS ENUM ('pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show', 'waitlist_converted')")
-    op.execute("CREATE TYPE waitliststatus AS ENUM ('waiting', 'notified', 'confirmed', 'converted', 'expired', 'cancelled')")
-    op.execute("CREATE TYPE notificationmethod AS ENUM ('email', 'sms', 'both', 'none')")
-    op.execute("CREATE TYPE auditaction AS ENUM ('created', 'updated', 'cancelled', 'confirmed', 'seated', 'completed', 'no_show', 'manual_override', 'table_changed', 'promoted_from_waitlist', 'notification_sent', 'reminder_sent')")
+    # Create enum types with existence checks
+    connection = op.get_bind()
+    
+    # Check and create reservationstatus enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'reservationstatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE reservationstatus AS ENUM ('pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show', 'waitlist_converted');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create waitliststatus enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'waitliststatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE waitliststatus AS ENUM ('waiting', 'notified', 'confirmed', 'converted', 'expired', 'cancelled');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create notificationmethod enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'notificationmethod'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE notificationmethod AS ENUM ('email', 'sms', 'both', 'none');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create auditaction enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'auditaction'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE auditaction AS ENUM ('created', 'updated', 'cancelled', 'confirmed', 'seated', 'completed', 'no_show', 'manual_override', 'table_changed', 'promoted_from_waitlist', 'notification_sent', 'reminder_sent');
+            END IF;
+        END$$;
+    """))
     
     # Update existing reservations table with new columns
     op.execute("""

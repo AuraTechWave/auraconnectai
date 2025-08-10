@@ -13,32 +13,21 @@ def upgrade():
     # Get database connection
     connection = op.get_bind()
     
-    # Check and create reconciliationstatus enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'reconciliationstatus'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE reconciliationstatus AS ENUM ('pending', 'matched', 'discrepancy', 'resolved')
-        """))
-
-    # Check and create discrepancytype enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'discrepancytype'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE discrepancytype AS ENUM ('amount_mismatch', 'missing_payment', 'duplicate_payment')
-        """))
-
-    # Check and create reconciliationaction enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'reconciliationaction'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE reconciliationaction AS ENUM ('auto_matched', 'manual_review', 'exception_handled')
-        """))
+    # Check and create reconciliationaction enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'reconciliationaction'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE reconciliationaction AS ENUM ('auto_matched', 'manual_review', 'exception_handled');
+            END IF;
+        END$$;
+    """))
 
     op.create_table(
         'payment_reconciliations',

@@ -20,32 +20,21 @@ def upgrade():
     # Create enum types with existence checks
     connection = op.get_bind()
     
-    # Check and create syncdirection enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'syncdirection'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE syncdirection AS ENUM ('push', 'pull', 'bidirectional')
-        """))
-    
-    # Check and create syncstatus enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'syncstatus'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE syncstatus AS ENUM ('pending', 'in_progress', 'success', 'error', 'conflict', 'cancelled')
-        """))
-    
-    # Check and create conflictresolution enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'conflictresolution'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE conflictresolution AS ENUM ('manual', 'pos_wins', 'aura_wins', 'latest_wins')
-        """))
+    # Check and create conflictresolution enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'conflictresolution'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE conflictresolution AS ENUM ('manual', 'pos_wins', 'aura_wins', 'latest_wins');
+            END IF;
+        END$$;
+    """))
 
     # POS Menu Mappings table
     op.create_table('pos_menu_mappings',

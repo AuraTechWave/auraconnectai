@@ -19,34 +19,21 @@ def upgrade():
     # Get database connection
     connection = op.get_bind()
     
-    # Check and create rewardtype enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'rewardtype'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE rewardtype AS ENUM ('points_discount', 'percentage_discount', 'fixed_discount', 'free_item',
-                'free_delivery', 'bonus_points', 'cashback', 'gift_card', 'tier_upgrade', 'custom')
-        """))
-    
-    # Check and create rewardstatus enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'rewardstatus'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE rewardstatus AS ENUM ('available', 'reserved', 'redeemed', 'expired', 'revoked', 'pending')
-        """))
-    
-    # Check and create triggertype enum
-    result = connection.execute(sa.text(
-        "SELECT 1 FROM pg_type WHERE typname = 'triggertype'"
-    ))
-    if not result.fetchone():
-        connection.execute(sa.text("""
-            CREATE TYPE triggertype AS ENUM ('order_complete', 'points_earned', 'tier_upgrade', 'birthday', 'anniversary',
-                'referral_success', 'milestone', 'manual', 'scheduled', 'conditional')
-        """))
+    # Check and create triggertype enum using DO block
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'triggertype'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE triggertype AS ENUM ('order_complete', 'points_earned', 'tier_upgrade', 'birthday', 'anniversary', 'referral_success', 'milestone', 'manual', 'scheduled', 'conditional');
+            END IF;
+        END$$;
+    """))
 
 
 def downgrade():

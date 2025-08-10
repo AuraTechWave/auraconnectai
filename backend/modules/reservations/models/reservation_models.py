@@ -58,7 +58,7 @@ class Reservation(Base):
     duration_minutes = Column(Integer, default=90)  # Expected duration
     
     # Status and tracking
-    status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING, index=True)
+    status = Column(Enum(ReservationStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=ReservationStatus.PENDING, index=True)
     confirmation_code = Column(String(10), unique=True, index=True)
     source = Column(String(50), default="website")  # website, phone, walk-in, waitlist
     
@@ -72,7 +72,7 @@ class Reservation(Base):
     occasion = Column(String(100))  # birthday, anniversary, business, etc.
     
     # Notification preferences
-    notification_method = Column(Enum(NotificationMethod), default=NotificationMethod.EMAIL)
+    notification_method = Column(Enum(NotificationMethod, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=NotificationMethod.EMAIL)
     reminder_sent = Column(Boolean, default=False)
     reminder_sent_at = Column(DateTime(timezone=True))
     
@@ -133,11 +133,11 @@ class Waitlist(Base):
     alternative_dates = Column(JSON, default=list)  # List of alternative dates
     
     # Status tracking
-    status = Column(Enum(WaitlistStatus), default=WaitlistStatus.WAITING, index=True)
+    status = Column(Enum(WaitlistStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=WaitlistStatus.WAITING, index=True)
     position = Column(Integer)  # Position in waitlist
     
     # Notification details
-    notification_method = Column(Enum(NotificationMethod), default=NotificationMethod.EMAIL)
+    notification_method = Column(Enum(NotificationMethod, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=NotificationMethod.EMAIL)
     notified_at = Column(DateTime(timezone=True))
     notification_expires_at = Column(DateTime(timezone=True))
     confirmed_at = Column(DateTime(timezone=True))

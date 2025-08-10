@@ -56,8 +56,8 @@ class KitchenStation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
-    station_type = Column(Enum(StationType), nullable=False, index=True)
-    status = Column(Enum(StationStatus), default=StationStatus.ACTIVE, index=True)
+    station_type = Column(Enum(StationType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, index=True)
+    status = Column(Enum(StationStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=StationStatus.ACTIVE, index=True)
     
     # Station configuration
     display_name = Column(String(100))
@@ -204,7 +204,7 @@ class KDSOrderItem(Base):
     special_instructions = Column(Text)
     
     # Status tracking
-    status = Column(Enum(DisplayStatus), default=DisplayStatus.PENDING, index=True)
+    status = Column(Enum(DisplayStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=DisplayStatus.PENDING, index=True)
     sequence_number = Column(Integer)  # For multi-station items
     
     # Timing
