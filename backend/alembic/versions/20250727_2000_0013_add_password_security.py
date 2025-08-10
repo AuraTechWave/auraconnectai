@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from datetime import datetime
 
 # revision identifiers, used by Alembic.
-revision = '0013_add_password_security'
-down_revision = '0012_create_rbac_tables'
+revision = '20250727_2000_0013'
+down_revision = '20250727_1600_0012'
 branch_labels = None
 depends_on = None
 

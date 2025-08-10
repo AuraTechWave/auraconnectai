@@ -10,17 +10,63 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '20250807_1000'
-down_revision = '20250806_1500_add_inventory_deduction_tracking'
+revision = '20250807_1000_add_kds_tables'
+down_revision = 'add_inventory_deduction_tracking'
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    # Create enum types
-    op.execute("CREATE TYPE stationtype AS ENUM ('grill', 'fry', 'saute', 'salad', 'dessert', 'beverage', 'expo', 'prep', 'pizza', 'sandwich', 'sushi', 'bar')")
-    op.execute("CREATE TYPE stationstatus AS ENUM ('active', 'inactive', 'busy', 'offline', 'maintenance')")
-    op.execute("CREATE TYPE displaystatus AS ENUM ('pending', 'in_progress', 'ready', 'recalled', 'completed', 'cancelled')")
+    # Create enum types with existence checks
+    connection = op.get_bind()
+    
+    # Check and create stationtype enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'stationtype'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE stationtype AS ENUM ('grill', 'fry', 'saute', 'salad', 'dessert', 'beverage', 'expo', 'prep', 'pizza', 'sandwich', 'sushi', 'bar');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create stationstatus enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'stationstatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE stationstatus AS ENUM ('active', 'inactive', 'busy', 'offline', 'maintenance');
+            END IF;
+        END$$;
+    """))
+    
+    # Check and create displaystatus enum
+    connection.execute(sa.text("""
+        DO $$ 
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON t.typnamespace = n.oid
+                WHERE t.typname = 'displaystatus'
+                AND n.nspname = current_schema()
+                AND t.typtype = 'e'
+            ) THEN
+                CREATE TYPE displaystatus AS ENUM ('pending', 'in_progress', 'ready', 'recalled', 'completed', 'cancelled');
+            END IF;
+        END$$;
+    """))
 
     # Create kitchen_stations table
     op.create_table('kitchen_stations',

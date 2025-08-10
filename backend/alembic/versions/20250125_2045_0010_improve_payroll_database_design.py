@@ -16,31 +16,43 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '20250125_2045_0010'
-down_revision = '20250725_0730_0008_create_enhanced_payroll_tax_tables'
+down_revision = '20250810_1000_payroll_tax_tables'
 branch_labels = None
 depends_on = None
 
 
 def upgrade() -> None:
+    # Get database connection
+    connection = op.get_bind()
+    
     """Apply database improvements."""
     
     # Create new staff_status enum
-    staff_status_enum = postgresql.ENUM(
+    # Check and create staffstatus enum
+    result = connection.execute(sa.text(
+        "SELECT 1 FROM pg_type WHERE typname = 'staffstatus'"
+    ))
+    if not result.fetchone():
+        staff_status_enum = sa.Enum(
         'active', 'inactive', 'on_leave', 'terminated', 'suspended',
         name='staffstatus'
     )
-    staff_status_enum.create(op.get_bind())
+        staff_status_enum.create(connection)
     
     # Update staff_members table to use enum and improve constraints
-    op.alter_column(
-        'staff_members',
-        'status',
-        existing_type=sa.String(),
-        type_=staff_status_enum,
-        existing_nullable=True,
-        nullable=False,
-        server_default='active'
-    )
+    # Use raw SQL with USING clause for proper type conversion
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status TYPE staffstatus 
+        USING status::staffstatus
+    """))
+    
+    # Set default and not null constraint
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status SET NOT NULL,
+        ALTER COLUMN status SET DEFAULT 'active'
+    """))
     
     # Add foreign key constraint for employee_payments.staff_id
     op.create_foreign_key(
@@ -218,15 +230,19 @@ def downgrade() -> None:
     op.drop_constraint('fk_employee_payments_staff_id', 'employee_payments', type_='foreignkey')
     
     # Revert staff status column
-    op.alter_column(
-        'staff_members',
-        'status',
-        existing_type=postgresql.ENUM('active', 'inactive', 'on_leave', 'terminated', 'suspended', name='staffstatus'),
-        type_=sa.String(),
-        existing_nullable=False,
-        nullable=True,
-        server_default=None
-    )
+    # Use raw SQL with USING clause for proper type conversion
+    connection = op.get_bind()
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status DROP DEFAULT,
+        ALTER COLUMN status DROP NOT NULL
+    """))
+    
+    connection.execute(sa.text("""
+        ALTER TABLE staff_members 
+        ALTER COLUMN status TYPE VARCHAR 
+        USING status::text
+    """))
     
     # Drop the enum
-    op.execute('DROP TYPE staffstatus')
+    connection.execute(sa.text('DROP TYPE IF EXISTS staffstatus'))
