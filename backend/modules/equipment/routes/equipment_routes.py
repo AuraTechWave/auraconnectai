@@ -1,4 +1,4 @@
-# backend/modules/equipment/routes.py
+# backend/modules/equipment/routes/equipment_routes.py
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,8 +9,8 @@ from core.auth import get_current_user
 from modules.auth.models import User
 from modules.auth.permissions import Permission, check_permission
 
-from .service import EquipmentService
-from .schemas import (
+from ..services import EquipmentService
+from ..schemas import (
     Equipment, EquipmentCreate, EquipmentUpdate, EquipmentWithMaintenance,
     EquipmentSearchParams, EquipmentListResponse,
     MaintenanceRecord, MaintenanceRecordCreate, MaintenanceRecordUpdate,
