@@ -36,7 +36,7 @@ class PayrollConfiguration(Base, TimestampMixin):
     __tablename__ = "payroll_configurations"
     
     id = Column(Integer, primary_key=True, index=True)
-    config_type = Column(Enum(PayrollConfigurationType), nullable=False, index=True)
+    config_type = Column(Enum(PayrollConfigurationType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, index=True)
     config_key = Column(String(100), nullable=False, index=True)
     config_value = Column(JSON, nullable=False)
     description = Column(Text, nullable=True)
