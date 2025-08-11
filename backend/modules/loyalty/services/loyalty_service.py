@@ -43,7 +43,31 @@ class LoyaltyService:
     # ========== Customer Loyalty Management ==========
     
     def get_customer_loyalty(self, customer_id: int) -> Optional[CustomerLoyaltyStats]:
-        """Get customer loyalty statistics"""
+        """Get comprehensive customer loyalty statistics.
+        
+        Retrieves customer's complete loyalty profile including:
+        - Current points balance (excluding expired points)
+        - Lifetime points earned and spent
+        - Current tier with benefits
+        - Recent points history (last 90 days)
+        - Rewards statistics (earned vs redeemed)
+        - Average order value and visit frequency
+        - Points expiring in next 30 days
+        
+        Args:
+            customer_id: The customer's database ID
+            
+        Returns:
+            CustomerLoyaltyStats object with complete loyalty profile
+            
+        Raises:
+            NotFoundError: If customer doesn't exist
+            
+        Business Logic:
+            - Tiers: Bronze (0-1999), Silver (2000-4999), Gold (5000-9999), Platinum (10000+)
+            - Points expire after 365 days by default
+            - Tier calculation based on lifetime earned points
+        """
         customer = self.db.query(Customer).filter(
             Customer.id == customer_id
         ).first()
