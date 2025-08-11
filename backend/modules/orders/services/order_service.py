@@ -25,6 +25,8 @@ from .inventory_service import deduct_inventory
 from .recipe_inventory_service import RecipeInventoryService
 from ..config.inventory_config import get_inventory_config
 from .webhook_service import WebhookService
+from .routing_rule_service import RoutingRuleService
+from ..schemas.routing_schemas import RouteEvaluationRequest
 from core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
@@ -569,15 +571,44 @@ async def create_order_with_fraud_check(
     db.commit()
     db.refresh(order)
 
-    # Route order to KDS stations
+    # Evaluate routing rules first
     try:
-        from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
-        kds_routing_service = KDSOrderRoutingService(db)
-        routed_items = kds_routing_service.route_order_to_stations(order.id)
-        logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items")
+        from ..schemas.routing_schemas import RouteEvaluationRequest
+        from .routing_rule_service import RoutingRuleService
+        
+        routing_service = RoutingRuleService(db)
+        evaluation_request = RouteEvaluationRequest(
+            order_id=order.id,
+            test_mode=False  # Apply routing in production mode
+        )
+        
+        routing_result = routing_service.evaluate_order_routing(evaluation_request)
+        
+        # Log routing decision
+        logger.info(f"Order {order.id} routing decision: {routing_result.routing_decision}")
+        
+        # If routing rules didn't match or defaulted to KDS stations, use legacy routing
+        if routing_result.routing_decision.get("type") == "default":
+            # Route order to KDS stations using legacy system
+            try:
+                from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
+                kds_routing_service = KDSOrderRoutingService(db)
+                routed_items = kds_routing_service.route_order_to_stations(order.id)
+                logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items")
+            except Exception as e:
+                logger.error(f"Failed to route order {order.id} to KDS: {str(e)}")
+                # Don't fail the order creation if KDS routing fails
+        
     except Exception as e:
-        logger.error(f"Failed to route order {order.id} to KDS: {str(e)}")
-        # Don't fail the order creation if KDS routing fails
+        logger.error(f"Failed to evaluate routing rules for order {order.id}: {str(e)}")
+        # Fall back to legacy KDS routing if rule evaluation fails
+        try:
+            from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
+            kds_routing_service = KDSOrderRoutingService(db)
+            routed_items = kds_routing_service.route_order_to_stations(order.id)
+            logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items (fallback)")
+        except Exception as e2:
+            logger.error(f"Failed to route order {order.id} to KDS (fallback): {str(e2)}")
 
     webhook_service = WebhookService(db)
     await webhook_service.trigger_webhook(
