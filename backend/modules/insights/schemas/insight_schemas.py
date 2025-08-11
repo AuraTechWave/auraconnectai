@@ -30,10 +30,15 @@ class InsightBase(BaseModel):
 
 class InsightCreate(InsightBase):
     """Create insight schema"""
+    restaurant_id: int
     generated_by: str = Field(..., max_length=100)
     thread_id: Optional[str] = None
+    parent_insight_id: Optional[int] = None
     expires_at: Optional[datetime] = None
     notification_config: Optional[Dict[str, Any]] = {}
+    trend_data: Optional[Dict[str, Any]] = {}
+    comparison_data: Optional[Dict[str, Any]] = {}
+    time_period: Optional[Dict[str, Any]] = {}
 
 
 class InsightUpdate(BaseModel):
@@ -238,3 +243,75 @@ class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
     insight_ids: List[int]
     action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
+
+
+# Batch Operations
+class InsightBatchAction(BaseModel):
+    """Batch action request"""
+    insight_ids: List[int] = Field(..., min_items=1, max_items=100)
+    notes: Optional[str] = Field(None, max_length=500)
+
+
+# Filter and List Schemas
+class InsightFilters(BaseModel):
+    """Insight filter criteria"""
+    restaurant_id: Optional[int] = None
+    domain: Optional[InsightDomain] = None
+    type: Optional[InsightType] = None
+    severity: Optional[InsightSeverity] = None
+    status: Optional[InsightStatus] = None
+    thread_id: Optional[str] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    search: Optional[str] = Field(None, max_length=100)
+
+
+class InsightListResponse(BaseModel):
+    """Paginated insight list response"""
+    items: List[InsightResponse]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+class InsightSummary(BaseModel):
+    """Insight summary statistics"""
+    total_insights: int
+    status_breakdown: Dict[str, int]
+    severity_breakdown: Dict[str, int]
+    total_estimated_value: float
+    average_impact_score: float
+    trend_data: List[Dict[str, Any]]
+    period_days: int
+
+
+class ThreadFilters(BaseModel):
+    """Thread filter criteria"""
+    restaurant_id: Optional[int] = None
+    is_active: Optional[bool] = None
+    is_recurring: Optional[bool] = None
+    category: Optional[str] = None
+
+
+class InsightThreadResponse(BaseModel):
+    """Thread response schema"""
+    id: int
+    thread_id: str
+    restaurant_id: int
+    title: str
+    description: Optional[str]
+    category: Optional[str]
+    first_insight_date: Optional[datetime]
+    last_insight_date: Optional[datetime]
+    total_insights: int
+    total_value: float
+    is_active: bool
+    is_recurring: bool
+    recurrence_pattern: Optional[Dict[str, Any]]
+    created_at: datetime
+    updated_at: datetime
+    insights: Optional[List[InsightResponse]] = None
+    
+    class Config:
+        orm_mode = True
