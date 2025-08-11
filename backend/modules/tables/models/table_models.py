@@ -8,6 +8,9 @@ from enum import Enum
 from core.database import Base
 from core.mixins import TimestampMixin
 
+# Import core models
+from modules.core.models import Floor, FloorStatus, Restaurant
+
 
 class TableStatus(str, Enum):
     """Table availability status"""
@@ -29,13 +32,6 @@ class TableShape(str, Enum):
     CUSTOM = "custom"
 
 
-class FloorStatus(str, Enum):
-    """Floor/section status"""
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    MAINTENANCE = "maintenance"
-
-
 class ReservationStatus(str, Enum):
     """Reservation status"""
     PENDING = "pending"
@@ -46,38 +42,7 @@ class ReservationStatus(str, Enum):
     NO_SHOW = "no_show"
 
 
-class Floor(Base, TimestampMixin):
-    """Restaurant floor/section configuration"""
-    __tablename__ = "floors"
-    
-    id = Column(Integer, primary_key=True)
-    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
-    name = Column(String(100), nullable=False)
-    display_name = Column(String(100))
-    floor_number = Column(Integer, default=1)
-    
-    # Layout configuration
-    width = Column(Integer, nullable=False, default=1000)  # Canvas width in pixels
-    height = Column(Integer, nullable=False, default=800)  # Canvas height in pixels
-    background_image = Column(String(500))  # Optional background image URL
-    grid_size = Column(Integer, default=20)  # Grid snap size for designer
-    
-    # Status and settings
-    status = Column(SQLEnum(FloorStatus), default=FloorStatus.ACTIVE)
-    is_default = Column(Boolean, default=False)
-    max_capacity = Column(Integer)
-    
-    # Metadata
-    layout_config = Column(JSON, default={})  # Additional layout settings
-    
-    # Relationships
-    restaurant = relationship("Restaurant", back_populates="floors")
-    tables = relationship("Table", back_populates="floor", cascade="all, delete-orphan")
-    
-    __table_args__ = (
-        UniqueConstraint('restaurant_id', 'name', name='uix_floor_restaurant_name'),
-    )
-
+# Floor model is now imported from modules.core.models
 
 class Table(Base, TimestampMixin):
     """Restaurant table configuration and state"""

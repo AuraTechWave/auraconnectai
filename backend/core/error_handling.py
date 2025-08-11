@@ -1,12 +1,14 @@
-# backend/core/error_handling.py
+# backend/core/error_handling_fixed.py
 
 """
-Comprehensive error handling utilities for API routes.
+Fixed error handling utilities for API routes.
+Addresses async/sync decorator issues and name collisions.
 """
 
 from typing import Callable, Type, Dict, Any, Optional
 from functools import wraps
 import logging
+import inspect
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, DataError, OperationalError
@@ -50,8 +52,8 @@ class ConflictError(APIError):
         )
 
 
-class ValidationError(APIError):
-    """Input validation error"""
+class APIValidationError(APIError):
+    """Input validation error - renamed from ValidationError to avoid Pydantic collision"""
     def __init__(self, message: str, errors: Optional[Dict[str, Any]] = None):
         super().__init__(
             message=message,
@@ -72,6 +74,7 @@ class AuthorizationError(APIError):
 def handle_api_errors(func: Callable) -> Callable:
     """
     Decorator to handle common API errors with proper status codes and messages.
+    Properly handles both async and sync functions.
     
     Usage:
         @router.get("/items/{item_id}")
@@ -80,14 +83,12 @@ def handle_api_errors(func: Callable) -> Callable:
             # Your code here
             pass
     """
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await func(*args, **kwargs)
-            
-        except APIError as e:
+    
+    def handle_exception(e: Exception, func_name: str, kwargs: dict) -> None:
+        """Common exception handling logic"""
+        if isinstance(e, APIError):
             # Handle custom API errors
-            logger.warning(f"API Error in {func.__name__}: {e.message}", extra={
+            logger.warning(f"API Error in {func_name}: {e.message}", extra={
                 "status_code": e.status_code,
                 "details": e.details
             })
@@ -99,11 +100,10 @@ def handle_api_errors(func: Callable) -> Callable:
                 }
             )
             
-        except ValueError as e:
+        elif isinstance(e, ValueError):
             # Handle service-level validation errors
-            logger.warning(f"Validation error in {func.__name__}: {str(e)}")
+            logger.warning(f"Validation error in {func_name}: {str(e)}")
             
-            # Check for common patterns
             error_message = str(e).lower()
             if "not found" in error_message:
                 raise HTTPException(
@@ -126,17 +126,17 @@ def handle_api_errors(func: Callable) -> Callable:
                     detail={"message": str(e)}
                 )
                 
-        except PermissionError as e:
+        elif isinstance(e, PermissionError):
             # Handle permission errors
-            logger.warning(f"Permission denied in {func.__name__}: {str(e)}")
+            logger.warning(f"Permission denied in {func_name}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"message": str(e) or "Insufficient permissions"}
             )
             
-        except IntegrityError as e:
+        elif isinstance(e, IntegrityError):
             # Handle database integrity errors
-            logger.error(f"Database integrity error in {func.__name__}: {str(e.orig)}")
+            logger.error(f"Database integrity error in {func_name}: {str(e.orig)}")
             
             error_info = str(e.orig).lower() if e.orig else str(e).lower()
             if "foreign key" in error_info:
@@ -172,9 +172,9 @@ def handle_api_errors(func: Callable) -> Callable:
                     }
                 )
                 
-        except DataError as e:
+        elif isinstance(e, DataError):
             # Handle data type errors
-            logger.error(f"Data error in {func.__name__}: {str(e.orig)}")
+            logger.error(f"Data error in {func_name}: {str(e.orig)}")
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
@@ -183,9 +183,9 @@ def handle_api_errors(func: Callable) -> Callable:
                 }
             )
             
-        except OperationalError as e:
+        elif isinstance(e, OperationalError):
             # Handle database operational errors
-            logger.error(f"Database operational error in {func.__name__}: {str(e.orig)}")
+            logger.error(f"Database operational error in {func_name}: {str(e.orig)}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail={
@@ -194,9 +194,9 @@ def handle_api_errors(func: Callable) -> Callable:
                 }
             )
             
-        except ValidationError as e:
+        elif isinstance(e, ValidationError):
             # Handle Pydantic validation errors
-            logger.warning(f"Pydantic validation error in {func.__name__}: {e.errors()}")
+            logger.warning(f"Pydantic validation error in {func_name}: {e.errors()}")
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail={
@@ -205,14 +205,14 @@ def handle_api_errors(func: Callable) -> Callable:
                 }
             )
             
-        except HTTPException:
+        elif isinstance(e, HTTPException):
             # Re-raise FastAPI HTTP exceptions
             raise
             
-        except Exception as e:
+        else:
             # Handle unexpected errors
             logger.error(
-                f"Unexpected error in {func.__name__}: {str(e)}\n{traceback.format_exc()}"
+                f"Unexpected error in {func_name}: {str(e)}\n{traceback.format_exc()}"
             )
             
             # In production, don't expose internal error details
@@ -235,13 +235,22 @@ def handle_api_errors(func: Callable) -> Callable:
                     }
                 )
     
-    # Handle both sync and async functions
-    if asyncio.iscoroutinefunction(func):
-        return wrapper
+    # Check if the function is async
+    if inspect.iscoroutinefunction(func):
+        @wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                handle_exception(e, func.__name__, kwargs)
+        return async_wrapper
     else:
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            return asyncio.run(wrapper(*args, **kwargs))
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                handle_exception(e, func.__name__, kwargs)
         return sync_wrapper
 
 
@@ -263,6 +272,8 @@ def create_error_response(
     Returns:
         JSONResponse with error information
     """
+    from datetime import datetime
+    
     content = {
         "error": {
             "message": message,
@@ -292,6 +303,7 @@ class ErrorHandlingMiddleware:
         self.app = app
         
     async def __call__(self, request, call_next):
+        import uuid
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         
         try:
@@ -345,8 +357,8 @@ def handle_database_errors(error: Exception) -> HTTPException:
 
 def validate_request_data(
     data: Dict[str, Any],
-    required_fields: List[str],
-    optional_fields: Optional[List[str]] = None
+    required_fields: list[str],
+    optional_fields: Optional[list[str]] = None
 ) -> Dict[str, Any]:
     """
     Validate request data contains required fields.
@@ -360,7 +372,7 @@ def validate_request_data(
         Validated data dictionary
         
     Raises:
-        ValidationError: If validation fails
+        APIValidationError: If validation fails
     """
     errors = {}
     
@@ -379,16 +391,9 @@ def validate_request_data(
         errors["unknown_fields"] = list(unknown_fields)
         
     if errors:
-        raise ValidationError(
+        raise APIValidationError(
             message="Request validation failed",
             errors=errors
         )
         
     return data
-
-
-# Import required modules
-import asyncio
-import uuid
-from datetime import datetime
-from typing import List
