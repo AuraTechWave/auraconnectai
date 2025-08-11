@@ -28,6 +28,7 @@ from modules.orders.routes.inventory_routes import router as inventory_router
 from modules.orders.routes.inventory_impact_routes import router as inventory_impact_router
 from modules.orders.routes.kitchen_routes import router as kitchen_router
 from modules.orders.routes.print_ticket_routes import router as print_ticket_router
+from modules.orders.routes.order_split_routes import router as order_split_router
 
 # ========== Kitchen Display System (KDS) ==========
 from modules.kds.routes.kds_routes import router as kds_router
@@ -226,6 +227,7 @@ app.include_router(inventory_router)
 app.include_router(inventory_impact_router)
 app.include_router(kitchen_router)
 app.include_router(print_ticket_router)
+app.include_router(order_split_router)
 
 # Kitchen Display System
 app.include_router(kds_router)
