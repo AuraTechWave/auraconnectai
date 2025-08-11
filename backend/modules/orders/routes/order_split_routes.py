@@ -65,32 +65,7 @@ async def split_order(
     return service.split_order(order_id, split_request, current_user.id)
 
 
-@router.post("/{order_id}/split/bulk", response_model=OrderSplitResponse)
-@handle_api_errors
-async def bulk_split_order(
-    order_id: int,
-    bulk_request: BulkSplitRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Split an order into multiple parts using a strategy.
-    
-    Strategies include:
-    - by_station: Split by kitchen station
-    - by_customer: Split by customer
-    - by_course: Split by course type
-    - equal_split: Split equally for payment
-    """
-    # Convert bulk request to regular split request
-    # This is a simplified implementation
-    service = OrderSplitService(db)
-    
-    # TODO: Implement bulk split logic based on strategy
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Bulk split functionality coming soon"
-    )
+# Bulk split endpoint removed - to be implemented in future release
 
 
 @router.get("/{order_id}/splits", response_model=SplitOrderSummary)
@@ -226,28 +201,7 @@ async def get_table_splits(
     return summaries
 
 
-@router.post("/{order_id}/split/kitchen-display")
-@handle_api_errors
-async def split_for_kitchen_display(
-    order_id: int,
-    station_assignments: dict,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Split order for kitchen display system by station.
-    
-    Automatically creates splits based on menu item station assignments.
-    Each station gets its own ticket with relevant items.
-    """
-    # This would integrate with KDS module to split by station
-    service = OrderSplitService(db)
-    
-    # TODO: Implement KDS-specific split logic
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="KDS split functionality coming soon"
-    )
+# KDS split endpoint removed - to be implemented with KDS module integration
 
 
 @router.get("/{order_id}/splits/tracking")

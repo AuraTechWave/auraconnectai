@@ -38,6 +38,7 @@ def upgrade() -> None:
     op.create_index('idx_order_split_parent', 'order_splits', ['parent_order_id'], unique=False)
     op.create_index('idx_order_split_child', 'order_splits', ['split_order_id'], unique=False)
     op.create_index(op.f('ix_order_splits_id'), 'order_splits', ['id'], unique=False)
+    op.create_index('idx_order_splits_parent_type', 'order_splits', ['parent_order_id', 'split_type'], unique=False)
     
     # Create split_payments table
     op.create_table('split_payments',

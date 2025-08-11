@@ -146,8 +146,10 @@ class OrderSplitService:
                     detail=validation.reason or "Cannot split order"
                 )
             
-            # Get the parent order
-            parent_order = self.db.query(Order).filter(Order.id == order_id).first()
+            # Get the parent order with lock to prevent concurrent splits
+            parent_order = self.db.query(Order).filter(
+                Order.id == order_id
+            ).with_for_update().first()
             
             # Create split orders based on type
             if split_request.split_type == SplitType.TICKET:
@@ -745,8 +747,10 @@ class OrderSplitService:
         allowing flexible payment collection.
         """
         try:
-            # Get the parent order
-            parent_order = self.db.query(Order).filter(Order.id == order_id).first()
+            # Get the parent order with lock to prevent concurrent splits
+            parent_order = self.db.query(Order).filter(
+                Order.id == order_id
+            ).with_for_update().first()
             
             if not parent_order:
                 raise HTTPException(
@@ -755,8 +759,8 @@ class OrderSplitService:
                 )
             
             # Validate total amounts match
-            total_split_amount = sum(split.get('amount', 0) for split in payment_request.splits)
-            if abs(float(parent_order.final_amount) - total_split_amount) > 0.01:
+            total_split_amount = sum(Decimal(str(split.get('amount', 0))) for split in payment_request.splits)
+            if abs(parent_order.final_amount - total_split_amount) > Decimal('0.01'):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Split amounts ({total_split_amount}) do not match order total ({parent_order.final_amount})"

@@ -218,8 +218,8 @@ class OrderSplit(Base, TimestampMixin):
     __tablename__ = "order_splits"
     
     id = Column(Integer, primary_key=True, index=True)
-    parent_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
-    split_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    parent_order_id = Column(Integer, ForeignKey("orders.id", ondelete="RESTRICT"), nullable=False, index=True)
+    split_order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
     split_type = Column(String, nullable=False)  # 'ticket', 'delivery', 'payment'
     split_reason = Column(Text, nullable=True)
     split_by = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
@@ -241,8 +241,8 @@ class SplitPayment(Base, TimestampMixin):
     __tablename__ = "split_payments"
     
     id = Column(Integer, primary_key=True, index=True)
-    parent_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
-    split_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    parent_order_id = Column(Integer, ForeignKey("orders.id", ondelete="RESTRICT"), nullable=False, index=True)
+    split_order_id = Column(Integer, ForeignKey("orders.id", ondelete="CASCADE"), nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     payment_method = Column(String, nullable=True)
     payment_status = Column(String, nullable=False, default="pending")
