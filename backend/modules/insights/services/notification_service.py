@@ -2,8 +2,8 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_
 import asyncio
 import aiohttp
 import logging
@@ -15,7 +15,7 @@ from ..models.insight_models import (
     Insight, InsightNotificationRule, NotificationChannel,
     InsightSeverity, InsightStatus
 )
-from core.config import settings
+from ..schemas.insight_schemas import NotificationRuleCreate, NotificationRuleUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -23,32 +23,33 @@ logger = logging.getLogger(__name__)
 class InsightNotificationService:
     """Service for sending insight notifications"""
     
-    def __init__(self):
+    def __init__(self, db: Session):
+        self.db = db
+        
+        # These would come from settings/environment
         self.smtp_config = {
-            "host": settings.SMTP_HOST,
-            "port": settings.SMTP_PORT,
-            "username": settings.SMTP_USERNAME,
-            "password": settings.SMTP_PASSWORD,
-            "use_tls": settings.SMTP_USE_TLS
+            "host": "",  # Will be configured via settings module
+            "port": 587,
+            "username": "",
+            "password": "",
+            "use_tls": True
         }
         
         self.slack_config = {
-            "webhook_url": settings.SLACK_WEBHOOK_URL,
-            "default_channel": settings.SLACK_DEFAULT_CHANNEL
+            "webhook_url": "",
+            "default_channel": "#insights"
         }
+        
+        self.frontend_url = "http://localhost:3000"
         
         # Rate limiting tracking
         self.sent_notifications: Dict[int, List[datetime]] = {}
     
-    async def process_insight_notifications(
-        self,
-        db: AsyncSession,
-        insight: Insight
-    ):
+    async def process_new_insight(self, insight: Insight):
         """Process notifications for a new insight"""
         
         # Get applicable notification rules
-        rules = await self._get_applicable_rules(db, insight)
+        rules = self._get_applicable_rules(insight)
         
         for rule in rules:
             # Check rate limits
@@ -60,24 +61,15 @@ class InsightNotificationService:
             if rule.immediate:
                 await self._send_immediate_notifications(insight, rule)
             else:
-                await self._queue_batch_notification(db, insight, rule)
+                await self._queue_batch_notification(insight, rule)
     
-    async def _get_applicable_rules(
-        self,
-        db: AsyncSession,
-        insight: Insight
-    ) -> List[InsightNotificationRule]:
+    def _get_applicable_rules(self, insight: Insight) -> List[InsightNotificationRule]:
         """Get notification rules that apply to this insight"""
         
-        query = select(InsightNotificationRule).where(
-            and_(
-                InsightNotificationRule.restaurant_id == insight.restaurant_id,
-                InsightNotificationRule.is_active == True
-            )
-        )
-        
-        result = await db.execute(query)
-        all_rules = result.scalars().all()
+        all_rules = self.db.query(InsightNotificationRule).filter(
+            InsightNotificationRule.restaurant_id == insight.restaurant_id,
+            InsightNotificationRule.is_active == True
+        ).all()
         
         applicable_rules = []
         
@@ -334,7 +326,7 @@ class InsightNotificationService:
                         {recommendations_html}
                         
                         <div style="margin-top: 20px;">
-                            <a href="{settings.FRONTEND_URL}/insights/{insight.id}" 
+                            <a href="{self.frontend_url}/insights/{insight.id}" 
                                style="background-color: #007bff; color: white; padding: 10px 20px; 
                                       text-decoration: none; border-radius: 5px;">
                                 View Details
@@ -432,7 +424,7 @@ class InsightNotificationService:
                         "type": "plain_text",
                         "text": "View Details"
                     },
-                    "url": f"{settings.FRONTEND_URL}/insights/{insight.id}",
+                    "url": f"{self.frontend_url}/insights/{insight.id}",
                     "style": "primary"
                 }
             ]
@@ -465,7 +457,6 @@ class InsightNotificationService:
     
     async def _queue_batch_notification(
         self,
-        db: AsyncSession,
         insight: Insight,
         rule: InsightNotificationRule
     ):
@@ -475,17 +466,94 @@ class InsightNotificationService:
         # This would typically use a task queue like Celery or a database table
         logger.info(f"Insight {insight.id} queued for batch notification via rule {rule.id}")
     
-    async def send_batch_notifications(
-        self,
-        db: AsyncSession,
-        restaurant_id: int
-    ):
+    async def send_batch_notifications(self, restaurant_id: int):
         """Send batch notifications for queued insights"""
         
         # TODO: Implement batch notification sending
         # This would be called by a scheduled task
         logger.info(f"Sending batch notifications for restaurant {restaurant_id}")
-
-
-# Create singleton service
-insight_notification_service = InsightNotificationService()
+    
+    # CRUD operations for notification rules
+    
+    def create_rule(
+        self,
+        rule_data: NotificationRuleCreate,
+        restaurant_id: int
+    ) -> InsightNotificationRule:
+        """Create a new notification rule"""
+        rule = InsightNotificationRule(
+            restaurant_id=restaurant_id,
+            name=rule_data.name,
+            description=rule_data.description,
+            domains=rule_data.domains,
+            types=rule_data.types,
+            min_severity=rule_data.min_severity,
+            min_impact_score=rule_data.min_impact_score,
+            min_estimated_value=rule_data.min_estimated_value,
+            channels=rule_data.channels,
+            recipients=rule_data.recipients,
+            immediate=rule_data.immediate,
+            batch_hours=rule_data.batch_hours,
+            max_per_hour=rule_data.max_per_hour,
+            max_per_day=rule_data.max_per_day
+        )
+        
+        self.db.add(rule)
+        self.db.commit()
+        self.db.refresh(rule)
+        
+        return rule
+    
+    def list_rules(
+        self,
+        restaurant_id: int,
+        is_active: Optional[bool] = None
+    ) -> List[InsightNotificationRule]:
+        """List notification rules"""
+        query = self.db.query(InsightNotificationRule).filter(
+            InsightNotificationRule.restaurant_id == restaurant_id
+        )
+        
+        if is_active is not None:
+            query = query.filter(InsightNotificationRule.is_active == is_active)
+        
+        return query.all()
+    
+    def update_rule(
+        self,
+        rule_id: int,
+        update_data: NotificationRuleUpdate,
+        restaurant_id: int
+    ) -> Optional[InsightNotificationRule]:
+        """Update a notification rule"""
+        rule = self.db.query(InsightNotificationRule).filter(
+            InsightNotificationRule.id == rule_id,
+            InsightNotificationRule.restaurant_id == restaurant_id
+        ).first()
+        
+        if not rule:
+            return None
+        
+        update_dict = update_data.dict(exclude_unset=True)
+        for field, value in update_dict.items():
+            setattr(rule, field, value)
+        
+        self.db.commit()
+        self.db.refresh(rule)
+        
+        return rule
+    
+    def delete_rule(self, rule_id: int, restaurant_id: int) -> bool:
+        """Delete a notification rule"""
+        rule = self.db.query(InsightNotificationRule).filter(
+            InsightNotificationRule.id == rule_id,
+            InsightNotificationRule.restaurant_id == restaurant_id
+        ).first()
+        
+        if not rule:
+            return False
+        
+        self.db.delete(rule)
+        self.db.commit()
+        
+        return True
