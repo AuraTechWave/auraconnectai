@@ -211,3 +211,50 @@ class AutoCancellationConfig(Base, TimestampMixin):
             unique=True
         ),
     )
+
+
+class OrderSplit(Base, TimestampMixin):
+    """Represents a split from an original order"""
+    __tablename__ = "order_splits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    parent_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    split_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    split_type = Column(String, nullable=False)  # 'ticket', 'delivery', 'payment'
+    split_reason = Column(Text, nullable=True)
+    split_by = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
+    split_metadata = Column(JSONB, nullable=True)  # Additional split-specific data
+    
+    # Relationships
+    parent_order = relationship("Order", foreign_keys=[parent_order_id], backref="child_splits")
+    split_order = relationship("Order", foreign_keys=[split_order_id], backref="parent_split")
+    staff_member = relationship("StaffMember", backref="order_splits")
+    
+    __table_args__ = (
+        Index('idx_order_split_parent', 'parent_order_id'),
+        Index('idx_order_split_child', 'split_order_id'),
+    )
+
+
+class SplitPayment(Base, TimestampMixin):
+    """Tracks payment allocation for split orders"""
+    __tablename__ = "split_payments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    parent_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    split_order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    amount = Column(Numeric(10, 2), nullable=False)
+    payment_method = Column(String, nullable=True)
+    payment_status = Column(String, nullable=False, default="pending")
+    payment_reference = Column(String, nullable=True)
+    paid_by_customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    
+    # Relationships
+    parent_order = relationship("Order", foreign_keys=[parent_order_id])
+    split_order = relationship("Order", foreign_keys=[split_order_id])
+    customer = relationship("Customer")
+    
+    __table_args__ = (
+        Index('idx_split_payment_parent', 'parent_order_id'),
+        Index('idx_split_payment_split', 'split_order_id'),
+    )
