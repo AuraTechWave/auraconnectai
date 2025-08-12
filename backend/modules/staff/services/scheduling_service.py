@@ -8,7 +8,7 @@ from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability, 
     ShiftSwap, ShiftBreak, SchedulePublication
 )
-from ..models.staff_models import StaffMember
+from ..models.staff_models import StaffMember, Role
 from ..enums.scheduling_enums import (
     ShiftStatus, AvailabilityStatus, SwapStatus, 
     RecurrenceType, DayOfWeek
@@ -676,7 +676,6 @@ class SchedulingService:
     
     def _get_all_role_ids(self, location_id: int) -> List[int]:
         """Get all role IDs for a location"""
-        from ..models.staff_models import Role
         roles = self.db.query(Role).filter(Role.restaurant_id == location_id).all()
         return [role.id for role in roles]
     
@@ -834,11 +833,12 @@ class SchedulingService:
         rows = self.db.query(
             func.extract('hour', Order.created_at).label('hour'),
             func.count(Order.id).label('cnt')
+        ).join(
+            StaffMember, Order.staff_id == StaffMember.id
         ).filter(
             func.date(Order.created_at) >= lookback_start,
             func.date(Order.created_at) < target_date,
             func.extract('isodow', Order.created_at) == dow_iso,
-            Order.staff_id == StaffMember.id,
             StaffMember.restaurant_id == location_id,
             Order.status.in_(['completed', 'paid'])
         ).group_by(func.extract('hour', Order.created_at)).all()
@@ -867,7 +867,6 @@ class SchedulingService:
         
         # Map role names to ids for the location
         role_name_to_id = {}
-        from ..models.staff_models import Role
         # Get all roles for the restaurant (not filtered by location_id since roles are restaurant-scoped)
         roles = self.db.query(Role).filter(Role.restaurant_id == location_id).all()
         for r in roles:
