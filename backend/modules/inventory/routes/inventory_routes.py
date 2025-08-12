@@ -22,6 +22,8 @@ from core.inventory_schemas import (
 )
 from core.inventory_models import WasteReason
 from core.auth import require_permission, User
+from modules.menu.services.recipe_service import RecipeService
+from modules.menu.schemas.recipe_schemas import RecipeCostAnalysis
 
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
@@ -30,6 +32,20 @@ router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
 def get_inventory_service(db: Session = Depends(get_db)) -> InventoryService:
     """Dependency to get inventory service instance"""
     return InventoryService(db)
+
+
+# Dependency to access recipe service within the inventory context
+def get_recipe_service(db: Session = Depends(get_db)) -> RecipeService:
+    """Dependency to get a RecipeService instance.
+
+    Although this lives in the menu module, exposing it here allows the
+    inventory module to provide recipe-cost insights that rely on the latest
+    inventory pricing information.
+    """
+    # We intentionally bypass the internal cache to guarantee that each request
+    # reflects *current* inventory pricing. Any upstream caching is handled by
+    # `RecipeService` itself if `use_cache=True` is supplied by callers.
+    return RecipeService(db)
 
 
 # Core Inventory Management
@@ -836,3 +852,42 @@ async def inventory_health_check(
         "critical_alerts": len([a for a in alerts if a.priority == AlertPriority.CRITICAL]),
         "timestamp": datetime.utcnow()
     }
+
+
+# ---------------------------------------------------------------------------
+# Recipe Cost Analysis
+# ---------------------------------------------------------------------------
+
+
+@router.get("/recipes/{recipe_id}/cost", response_model=RecipeCostAnalysis)
+async def get_recipe_cost_analysis(
+    recipe_id: int,
+    recipe_service: RecipeService = Depends(get_recipe_service),
+    current_user: User = Depends(require_permission("inventory:read"))
+):
+    """Calculate and return the cost analysis for a recipe.
+
+    The calculation is performed in real-time using the latest *inventory* cost
+    data, ensuring that fluctuations in ingredient prices are immediately
+    reflected. Sub-recipe trees are resolved recursively, so the returned
+    values always represent the true current cost structure.
+    """
+
+    try:
+        # Force a fresh calculation to avoid serving stale values from any
+        # intermediate cache layers.
+        cost_analysis = recipe_service.calculate_recipe_cost(
+            recipe_id, use_cache=False
+        )
+    except HTTPException as exc:
+        # Propagate not-found and other HTTP errors directly.
+        raise exc
+    except Exception as exc:
+        # Wrap any unexpected error so the client receives a consistent
+        # response structure.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error calculating recipe cost: {str(exc)}",
+        ) from exc
+
+    return cost_analysis
