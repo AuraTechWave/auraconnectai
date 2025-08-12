@@ -253,6 +253,9 @@ class ScheduleGenerationRequest(BaseModel):
     respect_availability: bool = True
     max_hours_per_week: float = 40
     min_hours_between_shifts: int = 8
+    use_historical_demand: bool = False
+    demand_lookback_days: int = 90
+    buffer_percentage: float = 10.0
     
 
 class SchedulePublishRequest(BaseModel):
