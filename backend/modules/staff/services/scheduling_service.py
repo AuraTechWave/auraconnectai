@@ -17,7 +17,7 @@ from ..schemas.scheduling_schemas import (
     ScheduleConflict, StaffingAnalytics
 )
 from modules.orders.models.order_models import Order
-from ..models.scheduling_models import ShiftRequirement
+
 
 logger = logging.getLogger(__name__)
 
@@ -624,20 +624,11 @@ class SchedulingService:
         """
         if peak_orders <= 0:
             return {}
-        # Productivity assumptions (orders per hour per person)
-        productivity = {
-            'Manager': 100,
-            'Chef': 15,
-            'Server': 12,
-            'Dishwasher': 35,
-        }
-        # Minimum floor regardless of demand
-        minimums = {
-            'Manager': 1,
-            'Chef': 1,
-            'Server': 2,
-            'Dishwasher': 1,
-        }
+        # Load configurable productivity and minimums
+        from .scheduling_config import load_scheduling_config
+        cfg = load_scheduling_config()
+        productivity = cfg.productivity
+        minimums = cfg.minimums
         # Map role names to ids for the location
         role_name_to_id = {}
         from ..models.staff_models import Role
