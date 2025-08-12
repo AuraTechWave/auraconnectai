@@ -7,6 +7,14 @@ Core service for loyalty program management.
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func, desc
 from typing import List, Optional, Dict, Any, Tuple
+
+# Import configurable loyalty tier service from customer module
+try:
+    # The configurable tier service lives under the customer module
+    from modules.customers.models.loyalty_config import LoyaltyService as TierConfigService  # type: ignore
+except ModuleNotFoundError:  # Fallback in case import path changes in the future
+    TierConfigService = None  # pragma: no cover
+
 from datetime import datetime, timedelta, date
 import logging
 import random
@@ -826,10 +834,22 @@ class LoyaltyService:
         return {"earned": earned, "redeemed": redeemed}
     
     def _get_customer_tier(self, customer_id: int) -> str:
-        """Get customer's current tier"""
-        # Simple tier calculation based on lifetime points
+        """Determine customer's current tier using configurable tier definitions.
+
+        Falls back to the legacy static calculation if the configurable service
+        is unavailable (e.g. during certain unit-tests).
+        """
+
+        # Attempt to use advanced tier configuration if available
+        if TierConfigService:
+            customer = self.db.query(Customer).filter(Customer.id == customer_id).first()
+            if customer:
+                tier_service = TierConfigService(self.db)
+                return tier_service.calculate_tier_for_customer(customer)
+
+        # Legacy static calculation (back-compat)
         lifetime_points = self._get_lifetime_points_earned(customer_id)
-        
+
         if lifetime_points >= 10000:
             return "platinum"
         elif lifetime_points >= 5000:
@@ -844,34 +864,73 @@ class LoyaltyService:
         customer_id: int,
         current_balance: int
     ) -> Dict[str, Any]:
-        """Calculate tier information"""
+        """Return detailed tier info (benefits, progress, etc.) using configurable tiers."""
+
+        # Attempt to use advanced tier configuration if available
+        if TierConfigService:
+            customer = self.db.query(Customer).filter(Customer.id == customer_id).first()
+            if customer:
+                tier_service = TierConfigService(self.db)
+                tier_configs = tier_service.get_tier_configs()
+
+                # Ensure configs are ordered correctly
+                tier_configs.sort(key=lambda cfg: cfg.tier_order)
+
+                lifetime_points = self._get_lifetime_points_earned(customer_id)
+                current_tier = tier_service.calculate_tier_for_customer(customer)
+
+                result: Dict[str, Any] = {
+                    "current_tier": current_tier,
+                    "benefits": tier_service.get_tier_benefits(current_tier)
+                }
+
+                # Determine next tier information
+                tier_names = [cfg.tier_name for cfg in tier_configs]
+                if current_tier in tier_names:
+                    current_idx = tier_names.index(current_tier)
+                    if current_idx < len(tier_configs) - 1:
+                        next_cfg = tier_configs[current_idx + 1]
+                        points_needed = (next_cfg.min_lifetime_points or 0) - lifetime_points
+                        result.update(
+                            {
+                                "next_tier": next_cfg.tier_name,
+                                "points_to_next_tier": max(0, points_needed),
+                                "progress_percentage": min(100, (lifetime_points / (next_cfg.min_lifetime_points or 1)) * 100)
+                            }
+                        )
+
+                return result
+
+        # Fallback to legacy static tiers if config not available
         lifetime_points = self._get_lifetime_points_earned(customer_id)
         current_tier = self._get_customer_tier(customer_id)
-        
-        # Define tier thresholds
+
         tiers = {
             "bronze": {"min": 0, "benefits": ["1x points earning"]},
             "silver": {"min": 2000, "benefits": ["1.2x points earning", "Birthday bonus"]},
             "gold": {"min": 5000, "benefits": ["1.5x points earning", "Birthday bonus", "Free delivery"]},
             "platinum": {"min": 10000, "benefits": ["2x points earning", "Birthday bonus", "Free delivery", "VIP support"]}
         }
-        
-        # Find next tier
+
         tier_order = ["bronze", "silver", "gold", "platinum"]
         current_idx = tier_order.index(current_tier)
-        
+
         result = {
             "current_tier": current_tier,
             "benefits": tiers[current_tier]["benefits"]
         }
-        
+
         if current_idx < len(tier_order) - 1:
             next_tier = tier_order[current_idx + 1]
             points_needed = tiers[next_tier]["min"] - lifetime_points
-            result["points_to_next_tier"] = max(0, points_needed)
-            result["next_tier"] = next_tier
-            result["progress_percentage"] = min(100, (lifetime_points / tiers[next_tier]["min"]) * 100)
-        
+            result.update(
+                {
+                    "points_to_next_tier": max(0, points_needed),
+                    "next_tier": next_tier,
+                    "progress_percentage": min(100, (lifetime_points / tiers[next_tier]["min"]) * 100)
+                }
+            )
+
         return result
     
     def _get_expiring_points(self, customer_id: int, days: int = 30) -> int:
