@@ -14,7 +14,7 @@ from ..models.priority_models import (
     PriorityProfile, QueuePriorityConfig, PriorityMetrics,
     OrderPriorityScore
 )
-from ..models.queue_models import QueueItem, OrderQueue, QueueItemStatus, QueueMetrics
+from ..models.queue_models import QueueItem, OrderQueue, QueueItemStatus, QueueMetrics, QueueStatus
 from ..models.order_models import Order
 from ..services.priority_service import PriorityService
 
@@ -75,7 +75,7 @@ class PriorityMonitor:
                 OrderQueue,
                 QueuePriorityConfig.queue_id == OrderQueue.id
             ).filter(
-                OrderQueue.status == "active"
+                OrderQueue.status == QueueStatus.ACTIVE
             ).all()
             
             current_time = datetime.utcnow()
