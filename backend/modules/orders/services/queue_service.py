@@ -17,6 +17,7 @@ from ..models.queue_models import (
     QueueType, QueueStatus, QueueItemStatus
 )
 from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.priority_models import OrderPriorityScore, QueuePriorityConfig
 from ..schemas.queue_schemas import (
     QueueCreate, QueueUpdate, QueueItemCreate, QueueItemUpdate,
     MoveItemRequest, TransferItemRequest, ExpediteItemRequest,
@@ -25,6 +26,7 @@ from ..schemas.queue_schemas import (
 )
 from ...staff.models import StaffMember
 from modules.kds.models.kds_models import KitchenStation
+from .priority_service import PriorityService
 
 logger = logging.getLogger(__name__)
 
@@ -153,11 +155,26 @@ class QueueService:
                     detail=f"Order {item_data.order_id} is already in queue"
                 )
             
-            # Get next sequence number
-            sequence_number = self._get_next_sequence_number(queue.id)
+            # Calculate priority using priority service
+            priority_service = PriorityService(self.db)
+            try:
+                priority_score = priority_service.calculate_order_priority(
+                    order_id=item_data.order_id,
+                    queue_id=item_data.queue_id
+                )
+                calculated_priority = priority_score.normalized_score
+            except Exception as e:
+                logger.warning(f"Failed to calculate priority, using default: {str(e)}")
+                calculated_priority = item_data.priority or queue.priority or 0
             
-            # Apply sequencing rules
-            priority, sequence_adjustment = self._apply_sequence_rules(queue, order, item_data)
+            # Apply sequencing rules with calculated priority
+            priority, sequence_adjustment = self._apply_sequence_rules(queue, order, item_data, calculated_priority)
+            
+            # Get appropriate sequence number based on priority
+            if queue.auto_sequence:
+                sequence_number = self._get_priority_based_sequence(queue.id, priority)
+            else:
+                sequence_number = self._get_next_sequence_number(queue.id)
             
             # Create queue item
             queue_item = QueueItem(
@@ -672,14 +689,37 @@ class QueueService:
         
         return max_seq + 1
     
+    def _get_priority_based_sequence(self, queue_id: int, priority: float) -> int:
+        """Get sequence number based on priority score"""
+        # Get all active items in queue ordered by sequence
+        items = self.db.query(QueueItem).filter(
+            and_(
+                QueueItem.queue_id == queue_id,
+                QueueItem.status.in_([QueueItemStatus.QUEUED, QueueItemStatus.ON_HOLD])
+            )
+        ).order_by(QueueItem.sequence_number).all()
+        
+        if not items:
+            return 1
+        
+        # Find appropriate position based on priority
+        for i, item in enumerate(items):
+            if priority > item.priority:
+                # Insert before this item
+                return item.sequence_number
+        
+        # If priority is lowest, add at end
+        return items[-1].sequence_number + 1
+    
     def _apply_sequence_rules(
         self,
         queue: OrderQueue,
         order: Order,
-        item_data: QueueItemCreate
+        item_data: QueueItemCreate,
+        calculated_priority: float = None
     ) -> Tuple[int, int]:
         """Apply sequence rules and return priority and sequence adjustment"""
-        priority = item_data.priority or queue.priority
+        priority = calculated_priority if calculated_priority is not None else (item_data.priority or queue.priority)
         sequence_adjustment = 0
         
         # Get active rules for queue
@@ -852,3 +892,42 @@ class QueueService:
                 "max_wait_time": max((m.max_wait_time for m in metrics), default=0)
             }
         }
+    
+    def rebalance_queue_priorities(self, queue_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """Rebalance queue items based on current priorities"""
+        try:
+            # Check if priority-based rebalancing is enabled
+            config = self.db.query(QueuePriorityConfig).filter(
+                QueuePriorityConfig.queue_id == queue_id
+            ).first()
+            
+            if not config or not config.rebalance_enabled:
+                return {
+                    "success": False,
+                    "message": "Priority rebalancing is not enabled for this queue"
+                }
+            
+            # Use priority service to rebalance
+            priority_service = PriorityService(self.db)
+            result = priority_service.rebalance_queue(queue_id)
+            
+            # Log the rebalance action
+            if result.get("rebalanced") and result.get("changes"):
+                logger.info(
+                    f"Queue {queue_id} rebalanced by user {user_id}. "
+                    f"{result['items_reordered']} items reordered."
+                )
+            
+            return {
+                "success": result.get("rebalanced", False),
+                "message": result.get("reason", "Rebalancing completed"),
+                "items_reordered": result.get("items_reordered", 0),
+                "changes": result.get("changes", [])
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to rebalance queue {queue_id}: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Failed to rebalance queue: {str(e)}"
+            }
