@@ -22,6 +22,7 @@ from ..schemas.scheduling_schemas import (
 )
 from ..services.scheduling_service import SchedulingService
 from ..enums.scheduling_enums import ShiftStatus, SwapStatus
+from ..services.config_manager import ConfigManager
 
 router = APIRouter()
 
@@ -642,7 +643,10 @@ async def get_staff_schedule_summary(
         for shift in shifts
     )
     
-    overtime_hours = max(0, total_hours - 40)
+    # Fetch configurable overtime rules
+    config_manager = ConfigManager(db)
+    weekly_threshold = float(config_manager.get_overtime_rules().get('weekly_threshold', 40))
+    overtime_hours = max(0, total_hours - weekly_threshold)
     estimated_earnings = sum(shift.estimated_cost or 0 for shift in shifts)
     
     # Check availability compliance

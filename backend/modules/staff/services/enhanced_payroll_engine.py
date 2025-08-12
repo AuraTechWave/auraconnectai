@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, date
 from dataclasses import dataclass
+from .config_manager import ConfigManager
 
 from ..models.attendance_models import AttendanceLog
 from ..models.staff_models import StaffMember
@@ -221,8 +222,10 @@ class EnhancedPayrollEngine:
             current_day = datetime.combine(current_day + datetime.timedelta(days=1), datetime.min.time()).date()
         
         # Calculate regular vs overtime hours using configurable thresholds
-        # Standard rule: Over 40 hours per week is overtime (configurable)
-        weekly_threshold = Decimal('40.0')  # Could be made configurable per jurisdiction
+        # Get configurable overtime threshold
+        config_manager = ConfigManager(self.db)
+        overtime_rules = config_manager.get_overtime_rules()
+        weekly_threshold = overtime_rules['weekly_threshold']
         regular_hours = min(total_hours, weekly_threshold)
         overtime_hours = max(Decimal('0.00'), total_hours - weekly_threshold)
         
