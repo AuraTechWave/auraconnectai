@@ -194,8 +194,10 @@ class ShiftSwapRequest(BaseModel):
     to_shift_id: Optional[int] = None
     to_staff_id: Optional[int] = None
     reason: str = Field(..., min_length=1, max_length=500)
+    urgency: Optional[str] = "normal"  # "urgent", "normal", "flexible"
     preferred_dates: Optional[List[date]] = None
-
+    preferred_response_by: Optional[datetime] = None
+    
     @validator('to_shift_id', 'to_staff_id')
     def validate_swap_target(cls, v, values):
         if 'to_shift_id' not in values and 'to_staff_id' not in values:
@@ -207,6 +209,7 @@ class ShiftSwapApproval(BaseModel):
     swap_id: int
     approved: bool
     manager_notes: Optional[str] = None
+    rejection_reason: Optional[str] = None
     alternative_shift_id: Optional[int] = None
 
 
@@ -223,13 +226,112 @@ class ShiftSwapResponse(BaseModel):
     status: SwapStatus
     reason: Optional[str]
     manager_notes: Optional[str]
+    rejection_reason: Optional[str]
     approved_by_id: Optional[int]
     approved_by_name: Optional[str]
     approved_at: Optional[datetime]
+    approval_level: Optional[str]
+    auto_approval_eligible: bool
+    auto_approval_reason: Optional[str]
+    response_deadline: Optional[datetime]
+    requester_notified: bool
+    to_staff_notified: bool
+    manager_notified: bool
     created_at: datetime
+    updated_at: datetime
     
     class Config:
         orm_mode = True
+
+
+class ShiftSwapListFilter(BaseModel):
+    status: Optional[SwapStatus] = None
+    requester_id: Optional[int] = None
+    staff_id: Optional[int] = None  # Shows swaps where user is requester or target
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    pending_approval: Optional[bool] = None
+    
+    
+class SwapApprovalRuleCreate(BaseModel):
+    rule_name: str
+    is_active: bool = True
+    priority: int = 0
+    max_hours_difference: Optional[float] = None
+    same_role_required: bool = True
+    same_location_required: bool = True
+    min_advance_notice_hours: int = 24
+    max_advance_notice_hours: Optional[int] = None
+    min_tenure_days: int = 90
+    max_swaps_per_month: int = 3
+    no_recent_violations: bool = True
+    performance_rating_min: Optional[float] = None
+    blackout_dates: List[date] = []
+    restricted_shifts: List[str] = []
+    peak_hours_restricted: bool = False
+    requires_manager_approval: bool = True
+    requires_both_staff_consent: bool = True
+    approval_timeout_hours: int = 48
+
+
+class SwapApprovalRuleUpdate(BaseModel):
+    rule_name: Optional[str] = None
+    is_active: Optional[bool] = None
+    priority: Optional[int] = None
+    max_hours_difference: Optional[float] = None
+    same_role_required: Optional[bool] = None
+    same_location_required: Optional[bool] = None
+    min_advance_notice_hours: Optional[int] = None
+    max_advance_notice_hours: Optional[int] = None
+    min_tenure_days: Optional[int] = None
+    max_swaps_per_month: Optional[int] = None
+    no_recent_violations: Optional[bool] = None
+    performance_rating_min: Optional[float] = None
+    blackout_dates: Optional[List[date]] = None
+    restricted_shifts: Optional[List[str]] = None
+    peak_hours_restricted: Optional[bool] = None
+    requires_manager_approval: Optional[bool] = None
+    requires_both_staff_consent: Optional[bool] = None
+    approval_timeout_hours: Optional[int] = None
+
+
+class SwapApprovalRuleResponse(BaseModel):
+    id: int
+    restaurant_id: int
+    rule_name: str
+    is_active: bool
+    priority: int
+    max_hours_difference: Optional[float]
+    same_role_required: bool
+    same_location_required: bool
+    min_advance_notice_hours: int
+    max_advance_notice_hours: Optional[int]
+    min_tenure_days: int
+    max_swaps_per_month: int
+    no_recent_violations: bool
+    performance_rating_min: Optional[float]
+    blackout_dates: List[date]
+    restricted_shifts: List[str]
+    peak_hours_restricted: bool
+    requires_manager_approval: bool
+    requires_both_staff_consent: bool
+    approval_timeout_hours: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        orm_mode = True
+
+
+class ShiftSwapHistory(BaseModel):
+    total_swaps: int
+    approved_swaps: int
+    rejected_swaps: int
+    pending_swaps: int
+    cancelled_swaps: int
+    average_approval_time_hours: Optional[float]
+    most_common_reasons: List[Dict[str, Any]]
+    swap_trends: List[Dict[str, Any]]
 
 
 # Schedule Generation Schemas

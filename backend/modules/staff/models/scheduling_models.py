@@ -149,13 +149,31 @@ class ShiftSwap(Base):
     # Status
     status = Column(Enum(SwapStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=SwapStatus.PENDING)
     
-    # Approval
+    # Approval workflow
     approved_by_id = Column(Integer, ForeignKey("staff_members.id"))
     approved_at = Column(DateTime)
+    approval_level = Column(String(50))  # "auto", "supervisor", "manager"
+    requires_secondary_approval = Column(Boolean, default=False)
+    secondary_approver_id = Column(Integer, ForeignKey("staff_members.id"))
+    secondary_approved_at = Column(DateTime)
     
     # Reason and notes
     reason = Column(Text)
     manager_notes = Column(Text)
+    rejection_reason = Column(Text)
+    
+    # Notification tracking
+    requester_notified = Column(Boolean, default=False)
+    to_staff_notified = Column(Boolean, default=False)
+    manager_notified = Column(Boolean, default=False)
+    notification_sent_at = Column(DateTime)
+    
+    # Auto-approval eligibility
+    auto_approval_eligible = Column(Boolean, default=False)
+    auto_approval_reason = Column(String(200))
+    
+    # Deadline for response
+    response_deadline = Column(DateTime)
     
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -165,6 +183,7 @@ class ShiftSwap(Base):
     requester = relationship("StaffMember", foreign_keys=[requester_id])
     to_staff = relationship("StaffMember", foreign_keys=[to_staff_id])
     approved_by = relationship("StaffMember", foreign_keys=[approved_by_id])
+    secondary_approver = relationship("StaffMember", foreign_keys=[secondary_approver_id])
     from_shift = relationship("EnhancedShift", foreign_keys=[from_shift_id], back_populates="swap_requests_from")
     to_shift = relationship("EnhancedShift", foreign_keys=[to_shift_id], back_populates="swap_requests_to")
 
@@ -208,6 +227,48 @@ class ShiftRequirement(Base):
     
     # Relationships
     template = relationship("ShiftTemplate", back_populates="requirements")
+
+
+class SwapApprovalRule(Base):
+    __tablename__ = "swap_approval_rules"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False)
+    
+    # Rule configuration
+    rule_name = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=True)
+    priority = Column(Integer, default=0)  # Higher priority rules are checked first
+    
+    # Auto-approval conditions
+    max_hours_difference = Column(Float)  # Max difference in shift hours for auto-approval
+    same_role_required = Column(Boolean, default=True)
+    same_location_required = Column(Boolean, default=True)
+    min_advance_notice_hours = Column(Integer, default=24)
+    max_advance_notice_hours = Column(Integer)  # Optional upper limit
+    
+    # Staff eligibility
+    min_tenure_days = Column(Integer, default=90)  # Min days of employment
+    max_swaps_per_month = Column(Integer, default=3)
+    no_recent_violations = Column(Boolean, default=True)
+    performance_rating_min = Column(Float)  # Optional min performance rating
+    
+    # Shift restrictions
+    blackout_dates = Column(JSON, default=list)  # Dates when swaps are not allowed
+    restricted_shifts = Column(JSON, default=list)  # Shift types that can't be auto-approved
+    peak_hours_restricted = Column(Boolean, default=False)
+    
+    # Approval requirements
+    requires_manager_approval = Column(Boolean, default=True)
+    requires_both_staff_consent = Column(Boolean, default=True)
+    approval_timeout_hours = Column(Integer, default=48)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    restaurant = relationship("Restaurant")
 
 
 class SchedulePublication(Base):

@@ -20,6 +20,7 @@ from modules.staff.routes.attendance_routes import router as attendance_router
 from modules.staff.routes.shift_routes import router as shift_router
 from modules.staff.routers.biometric_router import router as biometric_router
 from modules.staff.routers.scheduling_router import router as scheduling_router
+from modules.staff.routers.shift_swap_router import router as shift_swap_router
 from modules.staff.routers.schedule_router import router as schedule_router
 
 # ========== Orders Management ==========
@@ -226,6 +227,7 @@ app.include_router(attendance_router, prefix="/api/v1/staff", tags=["Staff Atten
 app.include_router(shift_router, prefix="/api/v1/staff", tags=["Staff Shifts"])
 app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biometrics"])
 app.include_router(scheduling_router, prefix="/api/v1/staff", tags=["Staff Scheduling"])
+app.include_router(shift_swap_router, prefix="/api/v1/staff", tags=["Shift Swapping"])
 app.include_router(schedule_router, prefix="/api/v1/staff", tags=["Staff Schedule Management"])
 
 # Orders Management
