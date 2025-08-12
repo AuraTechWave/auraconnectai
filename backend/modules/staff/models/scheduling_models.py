@@ -101,7 +101,7 @@ class StaffAvailability(Base):
     staff_id = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
     
     # Day of week or specific date
-    day_of_week = Column(Enum(DayOfWeek, create_type=False))  # For recurring availability
+    day_of_week = Column(Enum(DayOfWeek, values_callable=lambda obj: [e.value for e in obj], create_type=False))  # For recurring availability
     specific_date = Column(DateTime)  # For specific date availability
     
     # Time slots
@@ -109,7 +109,7 @@ class StaffAvailability(Base):
     end_time = Column(Time, nullable=False)
     
     # Availability type
-    status = Column(Enum(AvailabilityStatus, create_type=False), default=AvailabilityStatus.AVAILABLE)
+    status = Column(Enum(AvailabilityStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=AvailabilityStatus.AVAILABLE)
     
     # Preferences
     max_hours_per_day = Column(Float)
@@ -147,7 +147,7 @@ class ShiftSwap(Base):
     to_staff_id = Column(Integer, ForeignKey("staff_members.id"))
     
     # Status
-    status = Column(Enum(SwapStatus, create_type=False), default=SwapStatus.PENDING)
+    status = Column(Enum(SwapStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=SwapStatus.PENDING)
     
     # Approval
     approved_by_id = Column(Integer, ForeignKey("staff_members.id"))
@@ -176,7 +176,7 @@ class ShiftBreak(Base):
     shift_id = Column(Integer, ForeignKey("enhanced_shifts.id"), nullable=False)
     
     # Break details
-    break_type = Column(Enum(BreakType, create_type=False), nullable=False)
+    break_type = Column(Enum(BreakType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     duration_minutes = Column(Integer, nullable=False)
