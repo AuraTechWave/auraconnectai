@@ -402,9 +402,16 @@ class PromotionRule(Base, TimestampMixin):
     
     # Rule configuration
     rule_type = Column(String(50), nullable=False)  # customer_segment, item_quantity, etc.
-    rule_operator = Column(String(20), nullable=False)  # equals, greater_than, in, etc.
-    rule_value = Column(JSONB, nullable=False)
-    
+    rule_operator = Column(String(20), nullable=True)  # equals, greater_than, in, etc.
+    rule_value = Column(JSONB, nullable=True)
+
+    # Automation-specific configuration (for marketing campaign triggers and actions)
+    # These fields are optional and will be populated by automation & scheduling services.
+    condition_type = Column(String(50), nullable=True, index=True)  # e.g., customer_lifecycle, purchase_behavior
+    condition_value = Column(JSONB, nullable=True)  # JSON structure defining the condition specifics
+    action_type = Column(String(50), nullable=True)  # e.g., activate_promotion, deactivate_promotion
+    action_value = Column(JSONB, nullable=True)  # JSON detailing action parameters (duration_hours, status, etc.)
+
     # Metadata
     description = Column(String(500))
     is_active = Column(Boolean, default=True)
