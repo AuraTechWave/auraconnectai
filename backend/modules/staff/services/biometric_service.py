@@ -6,17 +6,20 @@ from typing import Optional, Tuple, Dict
 from sqlalchemy.orm import Session
 import logging
 import json
+import os
 
 from ..models.staff_models import StaffMember
 from ..models.biometric_models import StaffBiometric
 from ..models.attendance_models import AttendanceLog
 from ..enums.attendance_enums import CheckInMethod, AttendanceStatus
 
+from core.config_validation import config
+
 logger = logging.getLogger(__name__)
 
-# GDPR compliance settings
-BIOMETRIC_RETENTION_DAYS = 730  # 2 years default retention
-AUDIT_LOG_RETENTION_DAYS = 2555  # 7 years for audit logs
+# GDPR compliance settings (centralised)
+BIOMETRIC_RETENTION_DAYS = config.BIOMETRIC_RETENTION_DAYS
+AUDIT_LOG_RETENTION_DAYS = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", str(config.DATA_RETENTION_DAYS * 7)))  # default 7x general retention
 
 
 class BiometricService:
