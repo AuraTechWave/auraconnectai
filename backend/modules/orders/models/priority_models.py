@@ -24,6 +24,13 @@ class PriorityAlgorithm(enum.Enum):
     CUSTOM = "custom"                # Custom algorithm
     FAIR_SHARE = "fair_share"        # Ensures fairness across customers
     REVENUE_OPTIMIZED = "revenue_optimized"  # Maximizes revenue
+    PREPARATION_TIME = "preparation_time"      # Based on estimated prep time
+    DELIVERY_WINDOW = "delivery_window"        # Based on promised delivery time
+    VIP_STATUS = "vip_status"                 # Based on customer VIP level
+    ORDER_VALUE = "order_value"               # Based on order total
+    WAIT_TIME = "wait_time"                   # Based on how long customer waited
+    ITEM_COMPLEXITY = "item_complexity"       # Based on order complexity
+    COMPOSITE = "composite"                   # Weighted combination
 
 
 class PriorityScoreType(enum.Enum):
@@ -38,6 +45,10 @@ class PriorityScoreType(enum.Enum):
     GROUP_SIZE = "group_size"
     SPECIAL_NEEDS = "special_needs"
     CUSTOM = "custom"
+    LINEAR = "linear"          # Linear scaling
+    EXPONENTIAL = "exponential"  # Exponential scaling
+    LOGARITHMIC = "logarithmic"  # Logarithmic scaling
+    STEP = "step"             # Step function
 
 
 class PriorityRule(Base, TimestampMixin):
@@ -79,6 +90,20 @@ class PriorityRule(Base, TimestampMixin):
     normalize_output = Column(Boolean, default=True)
     normalization_method = Column(String(50), default="min_max")
     
+    # Algorithm parameters (JSON for flexibility) - from main branch
+    parameters = Column(JSON, nullable=False, default=dict)
+    # Examples:
+    # preparation_time: {"base_minutes": 15, "penalty_per_minute": 2}
+    # delivery_window: {"grace_minutes": 10, "critical_minutes": 30}
+    # vip_status: {"bronze": 10, "silver": 20, "gold": 30, "platinum": 50, "vip": 100}
+    
+    # Scoring function
+    score_function = Column(Text)  # Custom scoring function (if needed)
+    
+    # Conditions (when to apply this rule)
+    conditions = Column(JSON, default=dict)
+    # Example: {"order_type": ["delivery", "takeout"], "min_order_value": 50}
+    
     # Relationships
     profile_rules = relationship("PriorityProfileRule", back_populates="rule")
     
@@ -86,6 +111,8 @@ class PriorityRule(Base, TimestampMixin):
     __table_args__ = (
         CheckConstraint('min_score <= max_score', name='check_score_range'),
         CheckConstraint('default_weight >= 0', name='check_positive_weight'),
+        Index('idx_priority_rule_active', 'is_active'),
+        Index('idx_priority_rule_type', 'score_type', 'is_active'),
     )
 
 
@@ -119,6 +146,15 @@ class PriorityProfile(Base, TimestampMixin):
     cache_duration_seconds = Column(Integer, default=60)
     recalculation_threshold = Column(Float, default=0.1)  # Minimum change to trigger recalc
     
+    # Profile application - from main branch
+    queue_types = Column(JSON, default=list)  # Which queue types to apply to
+    order_types = Column(JSON, default=list)  # Which order types to apply to
+    time_ranges = Column(JSON, default=list)  # Time-based activation
+    
+    # Score normalization
+    normalize_scores = Column(Boolean, default=True)
+    normalization_method = Column(String(50), default="min_max")
+    
     # Relationships
     profile_rules = relationship("PriorityProfileRule", back_populates="profile", 
                                cascade="all, delete-orphan")
@@ -127,6 +163,8 @@ class PriorityProfile(Base, TimestampMixin):
     # Indexes
     __table_args__ = (
         Index('idx_profile_active_default', 'is_active', 'is_default'),
+        Index('idx_priority_profile_active', 'is_active'),
+        Index('idx_priority_profile_default', 'is_default', 'is_active'),
     )
 
 
@@ -135,8 +173,8 @@ class PriorityProfileRule(Base):
     __tablename__ = "priority_profile_rules"
     
     id = Column(Integer, primary_key=True, index=True)
-    profile_id = Column(Integer, ForeignKey("priority_profiles.id"), nullable=False)
-    rule_id = Column(Integer, ForeignKey("priority_rules.id"), nullable=False)
+    profile_id = Column(Integer, ForeignKey("priority_profiles.id"), nullable=False, index=True)
+    rule_id = Column(Integer, ForeignKey("priority_rules.id"), nullable=False, index=True)
     
     # Rule configuration within profile
     weight = Column(Float, nullable=False, default=1.0)
@@ -145,6 +183,15 @@ class PriorityProfileRule(Base):
     # Override rule settings
     override_config = Column(JSONB)  # Override rule's score_config
     boost_conditions = Column(JSONB)  # Additional conditions for boosting
+    
+    # Override rule settings - from main branch
+    weight_override = Column(Float)  # Override rule's default weight
+    is_required = Column(Boolean, default=False)  # Must have data for this rule
+    fallback_score = Column(Float, default=0.0)  # Score if data unavailable
+    
+    # Thresholds
+    min_threshold = Column(Float)  # Don't apply if score below this
+    max_threshold = Column(Float)  # Cap score at this value
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -187,6 +234,19 @@ class QueuePriorityConfig(Base, TimestampMixin):
     queue_overrides = Column(JSONB)  # Queue-specific rule overrides
     peak_hours_config = Column(JSONB)  # Time-based adjustments
     
+    # Queue-specific overrides - from main branch
+    priority_boost_vip = Column(Float, default=20.0)  # Extra points for VIP
+    priority_boost_delayed = Column(Float, default=15.0)  # Extra points if delayed
+    priority_boost_large_party = Column(Float, default=10.0)  # For large groups
+    
+    # Rebalancing settings - from main branch
+    rebalance_enabled = Column(Boolean, default=True)
+    rebalance_interval = Column(Integer, default=300)  # Seconds between rebalancing
+    
+    # Time-based adjustments
+    peak_hours = Column(JSON, default=list)  # Peak hour definitions
+    peak_multiplier = Column(Float, default=1.5)  # Priority multiplier during peak
+    
     # Relationships
     queue = relationship("OrderQueue")
     profile = relationship("PriorityProfile", back_populates="queue_configs")
@@ -195,6 +255,7 @@ class QueuePriorityConfig(Base, TimestampMixin):
     # Indexes
     __table_args__ = (
         Index('idx_queue_priority_active', 'queue_id', 'is_active'),
+        Index('idx_queue_priority_config', 'queue_id'),
     )
 
 
@@ -230,14 +291,27 @@ class OrderPriorityScore(Base):
     boost_expires_at = Column(DateTime(timezone=True))
     boost_reason = Column(String(100))
     
+    # Additional fields from main branch
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    queue_id = Column(Integer, ForeignKey("order_queues.id"), nullable=False, index=True)
+    normalized_score = Column(Float)  # 0-100 normalized
+    profile_used = Column(String(100))  # Which profile was used
+    factors_applied = Column(JSON)  # What factors were considered
+    priority_tier = Column(String(20))  # high, medium, low
+    suggested_sequence = Column(Integer)  # Suggested queue position
+    
     # Relationships
     queue_item = relationship("QueueItem")
     config = relationship("QueuePriorityConfig", back_populates="priority_scores")
+    order = relationship("Order")
+    queue = relationship("OrderQueue")
     
     # Indexes
     __table_args__ = (
         Index('idx_priority_score_queue', 'config_id', 'total_score'),
         Index('idx_priority_score_boost', 'is_boosted', 'boost_expires_at'),
+        UniqueConstraint('order_id', 'queue_id', name='uq_order_queue_score'),
+        Index('idx_priority_score_order', 'order_id'),
     )
 
 
@@ -262,9 +336,24 @@ class PriorityAdjustmentLog(Base):
     adjusted_by_id = Column(Integer, ForeignKey("staff_members.id"))
     adjusted_at = Column(DateTime(timezone=True), server_default=func.now())
     
+    # Additional fields from main branch
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    old_priority = Column(Float, nullable=False)
+    new_priority = Column(Float, nullable=False)
+    old_sequence = Column(Integer)
+    new_sequence = Column(Integer)
+    affected_orders = Column(JSON)  # Orders that were resequenced
+    
     # Relationships
     queue_item = relationship("QueueItem")
     adjusted_by = relationship("StaffMember")
+    order = relationship("Order")
+    
+    # Indexes
+    __table_args__ = (
+        Index('idx_priority_adjustment_order', 'order_id'),
+        Index('idx_priority_adjustment_time', 'adjusted_at'),
+    )
 
 
 class PriorityMetrics(Base):
@@ -272,6 +361,7 @@ class PriorityMetrics(Base):
     __tablename__ = "priority_metrics"
     
     id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("priority_profiles.id"), nullable=False, index=True)
     queue_id = Column(Integer, ForeignKey("order_queues.id"), nullable=False, index=True)
     
     # Time period
@@ -297,15 +387,35 @@ class PriorityMetrics(Base):
     revenue_impact = Column(Numeric(10, 2))  # Compared to baseline
     customer_satisfaction_score = Column(Float)  # If available
     
+    # Effectiveness metrics - from main branch
+    avg_wait_time_reduction = Column(Float)  # % reduction vs FIFO
+    on_time_delivery_rate = Column(Float)  # % delivered on time
+    vip_satisfaction_score = Column(Float)  # VIP order performance
+    
+    # Fairness metrics - from main branch
+    fairness_index = Column(Float)  # Gini coefficient for wait times
+    max_wait_time_ratio = Column(Float)  # Max wait vs average
+    priority_override_count = Column(Integer, default=0)
+    
+    # Algorithm performance - from main branch
+    avg_position_changes = Column(Float)  # Avg positions moved per rebalance
+    
+    # Business impact - from main branch
+    customer_complaints = Column(Integer, default=0)
+    staff_overrides = Column(Integer, default=0)
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
+    profile = relationship("PriorityProfile")
     queue = relationship("OrderQueue")
     
     # Constraints and indexes
     __table_args__ = (
         UniqueConstraint('queue_id', 'metric_date', 'hour_of_day', 
                         name='uq_priority_metrics_period'),
+        UniqueConstraint('profile_id', 'queue_id', 'metric_date', 'hour_of_day', name='uq_priority_metrics_period'),
         Index('idx_priority_metrics_date', 'queue_id', 'metric_date'),
+        Index('idx_priority_metrics_profile', 'profile_id', 'metric_date'),
     )

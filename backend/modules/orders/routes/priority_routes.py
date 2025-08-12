@@ -3,9 +3,10 @@ API routes for order priority management system.
 """
 
 from typing import List, Optional
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 from core.database import get_db
 from core.deps import get_current_user
@@ -17,7 +18,7 @@ from ..models.priority_models import (
     QueuePriorityConfig, OrderPriorityScore, PriorityAdjustmentLog,
     PriorityMetrics
 )
-from ..models.queue_models import OrderQueue
+from ..models.queue_models import OrderQueue, QueueItem, QueueItemStatus
 from ..schemas.priority_schemas import (
     PriorityRuleCreate, PriorityRuleUpdate, PriorityRuleResponse,
     PriorityRuleListResponse,
@@ -29,9 +30,14 @@ from ..schemas.priority_schemas import (
     PriorityAdjustmentRequest, PriorityAdjustmentResponse,
     QueueRebalanceRequest, QueueRebalanceResponse,
     PriorityMetricsQuery, PriorityMetricsResponse,
-    BulkPriorityCalculateRequest, BulkPriorityCalculateResponse
+    BulkPriorityCalculateRequest, BulkPriorityCalculateResponse,
+    # Additional schemas from main branch
+    PriorityCalculationRequest, PriorityScoreResponse,
+    ManualPriorityAdjustmentRequest, RebalanceQueueRequest, RebalanceQueueResponse,
+    PriorityMetricsRequest, BatchProfileRuleUpdate
 )
 from ..services.priority_service import PriorityService
+from ..services.queue_service import QueueService
 
 router = APIRouter(prefix="/api/v1/priority", tags=["priority"])
 
@@ -42,6 +48,7 @@ def list_priority_rules(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     is_active: Optional[bool] = None,
+    algorithm_type: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -52,6 +59,9 @@ def list_priority_rules(
     
     if is_active is not None:
         query = query.filter(PriorityRule.is_active == is_active)
+    
+    if algorithm_type:
+        query = query.filter(PriorityRule.score_type == algorithm_type)
     
     # Get total count
     total = query.count()
@@ -191,6 +201,7 @@ def list_priority_profiles(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     is_active: Optional[bool] = None,
+    queue_type: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -208,6 +219,10 @@ def list_priority_profiles(
     # Apply pagination
     offset = (page - 1) * per_page
     profiles = query.offset(offset).limit(per_page).all()
+    
+    # Filter by queue type if specified
+    if queue_type:
+        profiles = [p for p in profiles if not p.queue_types or queue_type in p.queue_types]
     
     # Add rule count to each profile
     profile_responses = []
@@ -349,6 +364,54 @@ def update_priority_profile(
     ).filter(PriorityProfile.id == profile_id).first()
     
     return PriorityProfileDetailResponse.model_validate(profile)
+
+
+@router.post("/profiles/{profile_id}/rules")
+def update_profile_rules(
+    profile_id: int,
+    update_data: BatchProfileRuleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update rules assigned to a profile"""
+    check_permission(current_user, "priority:write")
+    
+    profile = db.query(PriorityProfile).filter(
+        PriorityProfile.id == profile_id
+    ).first()
+    
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Priority profile {profile_id} not found"
+        )
+    
+    # Remove existing assignments
+    db.query(PriorityProfileRule).filter(
+        PriorityProfileRule.profile_id == profile_id
+    ).delete()
+    
+    # Add new assignments
+    for assignment in update_data.assignments:
+        # Verify rule exists
+        rule = db.query(PriorityRule).filter(
+            PriorityRule.id == assignment.rule_id
+        ).first()
+        if not rule:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Priority rule {assignment.rule_id} not found"
+            )
+        
+        profile_rule = PriorityProfileRule(
+            profile_id=profile_id,
+            **assignment.dict()
+        )
+        db.add(profile_rule)
+    
+    db.commit()
+    
+    return {"message": f"Updated {len(update_data.assignments)} rule assignments"}
 
 
 @router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -789,4 +852,3 @@ def get_priority_metrics(
 
 # Import for time
 import time
-from datetime import datetime, timedelta

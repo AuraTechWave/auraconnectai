@@ -138,6 +138,7 @@ from modules.orders.tasks.sync_tasks import start_sync_scheduler, stop_sync_sche
 from modules.orders.tasks.webhook_retry_task import start_webhook_retry_scheduler, stop_webhook_retry_scheduler
 from modules.orders.tasks.pricing_rule_tasks import start_pricing_rule_worker, stop_pricing_rule_worker
 from modules.orders.tasks.queue_tasks import start_queue_monitor, stop_queue_monitor
+from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -351,6 +352,8 @@ async def startup_event():
     await start_pricing_rule_worker()
     # Start queue monitor
     await start_queue_monitor()
+    # Start priority monitor
+    await start_priority_monitor()
 
 
 @app.on_event("shutdown")
@@ -364,6 +367,8 @@ async def shutdown_event():
     await stop_pricing_rule_worker()
     # Stop queue monitor
     await stop_queue_monitor()
+    # Stop priority monitor
+    await stop_priority_monitor()
 
 
 @app.get("/")
