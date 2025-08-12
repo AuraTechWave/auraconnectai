@@ -32,6 +32,7 @@ from modules.orders.routes.order_split_routes import router as order_split_route
 from modules.orders.routes.routing_rules_routes import router as routing_rules_router
 from modules.orders.routes.queue_routes import router as queue_router
 from modules.orders.routes.queue_analytics_routes import router as queue_analytics_router
+from modules.orders.routes.priority_routes import router as priority_router
 
 # ========== Kitchen Display System (KDS) ==========
 from modules.kds.routes.kds_routes import router as kds_router
@@ -235,6 +236,7 @@ app.include_router(order_split_router)
 app.include_router(routing_rules_router)
 app.include_router(queue_router)
 app.include_router(queue_analytics_router)
+app.include_router(priority_router)
 
 # Kitchen Display System
 app.include_router(kds_router)
