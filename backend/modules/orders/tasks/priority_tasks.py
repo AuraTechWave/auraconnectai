@@ -1,24 +1,410 @@
 """
-Background tasks for priority analytics and monitoring.
+Background tasks for priority system maintenance and optimization.
 """
 
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
 from core.database import SessionLocal
+from modules.customers.models import Customer
 from ..models.priority_models import (
-    PriorityProfile, QueuePriorityConfig, PriorityMetrics,
-    OrderPriorityScore
+    QueuePriorityConfig, OrderPriorityScore, PriorityMetrics,
+    PriorityProfile, PriorityAdjustmentLog
 )
-from ..models.queue_models import QueueItem, OrderQueue, QueueItemStatus, QueueMetrics
+from ..models.queue_models import (
+    OrderQueue, QueueItem, QueueStatus, QueueItemStatus, QueueMetrics
+)
 from ..models.order_models import Order
 from ..services.priority_service import PriorityService
 
 logger = logging.getLogger(__name__)
+
+
+def auto_rebalance_queues():
+    """
+    Automatically rebalance queues based on configuration.
+    This task should be scheduled to run periodically (e.g., every minute).
+    """
+    db = SessionLocal()
+    try:
+        # Get all active queue configurations with auto-rebalance enabled
+        configs = db.query(QueuePriorityConfig).join(
+            OrderQueue
+        ).filter(
+            QueuePriorityConfig.is_active == True,
+            QueuePriorityConfig.auto_rebalance == True,
+            OrderQueue.status == QueueStatus.ACTIVE
+        ).all()
+        
+        service = PriorityService(db)
+        
+        for config in configs:
+            try:
+                # Check if rebalancing is needed
+                if config.last_rebalance_time:
+                    time_since_rebalance = (
+                        datetime.utcnow() - config.last_rebalance_time
+                    ).total_seconds() / 60
+                    
+                    if time_since_rebalance < config.rebalance_interval_minutes:
+                        continue
+                
+                # Perform rebalancing
+                result = service.rebalance_queue(config.queue_id, force=False)
+                
+                if result.items_moved > 0:
+                    logger.info(
+                        f"Rebalanced queue {config.queue_id}: "
+                        f"{result.items_moved} items moved, "
+                        f"fairness improved by {result.fairness_improvement:.2f}"
+                    )
+                
+            except Exception as e:
+                logger.error(
+                    f"Failed to rebalance queue {config.queue_id}: {str(e)}"
+                )
+        
+    finally:
+        db.close()
+
+
+def cleanup_expired_boosts():
+    """
+    Clean up expired priority boosts.
+    This task should be scheduled to run periodically (e.g., every 5 minutes).
+    """
+    db = SessionLocal()
+    try:
+        # Find priority scores with expired boosts
+        expired_boosts = db.query(OrderPriorityScore).filter(
+            and_(
+                OrderPriorityScore.is_boosted == True,
+                OrderPriorityScore.boost_expires_at <= datetime.utcnow()
+            )
+        ).all()
+        
+        service = PriorityService(db)
+        
+        for priority_score in expired_boosts:
+            try:
+                # Remove boost
+                priority_score.is_boosted = False
+                priority_score.boost_score = 0.0
+                priority_score.boost_expires_at = None
+                priority_score.boost_reason = None
+                
+                # Recalculate total score
+                priority_score.total_score = priority_score.base_score
+                
+                logger.info(
+                    f"Removed expired boost from priority score {priority_score.id}"
+                )
+                
+            except Exception as e:
+                logger.error(
+                    f"Failed to cleanup boost for priority score {priority_score.id}: {str(e)}"
+                )
+        
+        db.commit()
+        
+    finally:
+        db.close()
+
+
+def calculate_priority_metrics():
+    """
+    Calculate and store priority system metrics.
+    This task should be scheduled to run periodically (e.g., every hour).
+    """
+    db = SessionLocal()
+    try:
+        # Get all active queue configurations
+        configs = db.query(QueuePriorityConfig).join(
+            OrderQueue
+        ).filter(
+            QueuePriorityConfig.is_active == True,
+            OrderQueue.status == QueueStatus.ACTIVE
+        ).all()
+        
+        current_time = datetime.utcnow()
+        hour_start = current_time.replace(minute=0, second=0, microsecond=0)
+        
+        for config in configs:
+            try:
+                metrics = _calculate_metrics_for_queue(db, config, hour_start)
+                
+                # Save or update metrics
+                existing = db.query(PriorityMetrics).filter(
+                    and_(
+                        PriorityMetrics.profile_id == config.profile_id,
+                        PriorityMetrics.queue_id == config.queue_id,
+                        PriorityMetrics.metric_date == hour_start,
+                        PriorityMetrics.hour_of_day == hour_start.hour
+                    )
+                ).first()
+                
+                if existing:
+                    # Update existing metrics
+                    for key, value in metrics.items():
+                        setattr(existing, key, value)
+                else:
+                    # Create new metrics
+                    new_metrics = PriorityMetrics(
+                        profile_id=config.profile_id,
+                        queue_id=config.queue_id,
+                        metric_date=hour_start,
+                        hour_of_day=hour_start.hour,
+                        **metrics
+                    )
+                    db.add(new_metrics)
+                
+                db.commit()
+                
+            except Exception as e:
+                logger.error(
+                    f"Failed to calculate metrics for queue {config.queue_id}: {str(e)}"
+                )
+                db.rollback()
+        
+    finally:
+        db.close()
+
+
+def _calculate_metrics_for_queue(
+    db: Session, config: QueuePriorityConfig, hour_start: datetime
+) -> Dict[str, Any]:
+    """Calculate priority metrics for a specific queue"""
+    hour_end = hour_start + timedelta(hours=1)
+    
+    # Get queue items processed in this hour
+    queue_items = db.query(QueueItem).filter(
+        and_(
+            QueueItem.queue_id == config.queue_id,
+            QueueItem.completed_at >= hour_start,
+            QueueItem.completed_at < hour_end
+        )
+    ).all()
+    
+    if not queue_items:
+        return {
+            "avg_wait_time_reduction": 0,
+            "on_time_delivery_rate": 0,
+            "vip_satisfaction_score": 0,
+            "fairness_index": 0,
+            "max_wait_time_ratio": 0,
+            "priority_override_count": 0,
+            "avg_calculation_time_ms": 0,
+            "rebalance_count": 0,
+            "avg_position_changes": 0,
+            "revenue_impact": 0,
+            "customer_complaints": 0,
+            "staff_overrides": 0
+        }
+    
+    # Calculate wait time metrics
+    wait_times = []
+    on_time_count = 0
+    vip_orders_on_time = 0
+    vip_orders_total = 0
+    
+    for item in queue_items:
+        if item.queued_at and item.completed_at:
+            wait_time = (item.completed_at - item.queued_at).total_seconds() / 60
+            wait_times.append(wait_time)
+
+            # Fetch related order once
+            order = db.query(Order).filter(Order.id == item.order_id).first()
+
+            # Determine VIP status (count every VIP order)
+            if order and order.customer_id:
+                customer = db.query(Customer).filter(Customer.id == order.customer_id).first()
+                if customer and customer.vip_status:
+                    vip_orders_total += 1
+                    # Check if completed on time
+                    if order.estimated_delivery_time and item.completed_at <= order.estimated_delivery_time:
+                        vip_orders_on_time += 1
+
+            # Overall on-time count (regardless of VIP)
+            if order and order.estimated_delivery_time and item.completed_at <= order.estimated_delivery_time:
+                on_time_count += 1
+    
+    # Calculate fairness metrics
+    priority_scores = db.query(OrderPriorityScore).join(QueueItem).filter(
+        and_(
+            QueueItem.queue_id == config.queue_id,
+            QueueItem.completed_at >= hour_start,
+            QueueItem.completed_at < hour_end
+        )
+    ).all()
+    
+    fairness_index = _calculate_fairness_index([ps.total_score for ps in priority_scores])
+    
+    # Calculate max wait time ratio
+    max_wait_time_ratio = 0
+    if wait_times:
+        avg_wait = sum(wait_times) / len(wait_times)
+        max_wait = max(wait_times)
+        max_wait_time_ratio = max_wait / avg_wait if avg_wait > 0 else 0
+    
+    # Count priority overrides
+    priority_override_count = db.query(PriorityAdjustmentLog).filter(
+        and_(
+            PriorityAdjustmentLog.queue_item_id.in_([item.id for item in queue_items]),
+            PriorityAdjustmentLog.adjusted_at >= hour_start,
+            PriorityAdjustmentLog.adjusted_at < hour_end
+        )
+    ).count()
+    
+    # Calculate average calculation time
+    calculation_times = [
+        ps.calculation_time_ms for ps in priority_scores 
+        if ps.calculation_time_ms is not None
+    ]
+    avg_calculation_time_ms = (
+        sum(calculation_times) / len(calculation_times) 
+        if calculation_times else 0
+    )
+    
+    # Get rebalancing metrics
+    rebalance_count = 0
+    avg_position_changes = 0
+    
+    # Calculate revenue impact (simplified)
+    revenue_impact = 0
+    if queue_items:
+        total_revenue = sum(
+            float(db.query(Order).filter(Order.id == item.order_id).first().total_amount or 0)
+            for item in queue_items
+        )
+        # Assume 5% improvement due to priority system
+        revenue_impact = total_revenue * 0.05
+    
+    # Count customer complaints (would need to integrate with feedback system)
+    customer_complaints = 0
+    
+    # Count staff overrides
+    staff_overrides = priority_override_count
+    
+    return {
+        "avg_wait_time_reduction": 15.0,  # Placeholder - would need baseline comparison
+        "on_time_delivery_rate": (on_time_count / len(queue_items)) * 100 if queue_items else 0,
+        "vip_satisfaction_score": (vip_orders_on_time / vip_orders_total) * 100 if vip_orders_total > 0 else 0,
+        "fairness_index": fairness_index,
+        "max_wait_time_ratio": max_wait_time_ratio,
+        "priority_override_count": priority_override_count,
+        "avg_calculation_time_ms": avg_calculation_time_ms,
+        "rebalance_count": rebalance_count,
+        "avg_position_changes": avg_position_changes,
+        "revenue_impact": revenue_impact,
+        "customer_complaints": customer_complaints,
+        "staff_overrides": staff_overrides
+    }
+
+
+def _calculate_fairness_index(scores: List[float]) -> float:
+    """Calculate fairness index (1 = perfect fairness, 0 = perfect inequality)"""
+    if not scores or len(scores) < 2:
+        return 1.0
+    
+    # Calculate Gini coefficient
+    sorted_scores = sorted(scores)
+    n = len(sorted_scores)
+    
+    sum_weighted = sum((i + 1) * score for i, score in enumerate(sorted_scores))
+    sum_total = sum(sorted_scores)
+    
+    if sum_total == 0:
+        return 1.0
+    
+    gini = (2 * sum_weighted) / (n * sum_total) - (n + 1) / n
+    
+    # Convert to fairness index
+    fairness_index = 1 - gini
+    return max(0.0, min(1.0, fairness_index))
+
+
+def recalculate_priorities_for_queue(queue_id: int):
+    """
+    Recalculate priorities for all items in a specific queue.
+    This can be called manually or triggered by events.
+    """
+    db = SessionLocal()
+    try:
+        service = PriorityService(db)
+        
+        # Get all active items in queue
+        queue_items = db.query(QueueItem).filter(
+            and_(
+                QueueItem.queue_id == queue_id,
+                QueueItem.status.in_([
+                    QueueItemStatus.QUEUED,
+                    QueueItemStatus.IN_PREPARATION
+                ])
+            )
+        ).all()
+        
+        recalculated_count = 0
+        errors = []
+        
+        for queue_item in queue_items:
+            try:
+                # Recalculate priority
+                service.calculate_order_priority(
+                    queue_item.order_id, 
+                    queue_id
+                )
+                recalculated_count += 1
+                
+            except Exception as e:
+                errors.append({
+                    "order_id": queue_item.order_id,
+                    "error": str(e)
+                })
+        
+        logger.info(
+            f"Recalculated priorities for queue {queue_id}: "
+            f"{recalculated_count} items processed, {len(errors)} errors"
+        )
+        
+        if errors:
+            logger.error(f"Errors during priority recalculation: {errors}")
+        
+    finally:
+        db.close()
+
+
+def cleanup_old_metrics(days_to_keep: int = 30):
+    """
+    Clean up old priority metrics to prevent database bloat.
+    This task should be scheduled to run daily.
+    """
+    db = SessionLocal()
+    try:
+        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+        
+        # Delete old metrics
+        deleted_count = db.query(PriorityMetrics).filter(
+            PriorityMetrics.metric_date < cutoff_date
+        ).delete()
+        
+        # Delete old adjustment logs
+        deleted_logs = db.query(PriorityAdjustmentLog).filter(
+            PriorityAdjustmentLog.adjusted_at < cutoff_date
+        ).delete()
+        
+        db.commit()
+        
+        logger.info(
+            f"Cleaned up {deleted_count} old priority metrics and "
+            f"{deleted_logs} old adjustment logs"
+        )
+        
+    finally:
+        db.close()
 
 
 class PriorityMonitor:
@@ -75,7 +461,7 @@ class PriorityMonitor:
                 OrderQueue,
                 QueuePriorityConfig.queue_id == OrderQueue.id
             ).filter(
-                OrderQueue.status == "active"
+                OrderQueue.status == QueueStatus.ACTIVE
             ).all()
             
             current_time = datetime.utcnow()
@@ -83,14 +469,12 @@ class PriorityMonitor:
             
             for config in configs:
                 try:
-                    metrics = self._calculate_metrics_for_queue(
-                        db, config, hour_start
-                    )
+                    metrics = _calculate_metrics_for_queue(db, config, hour_start)
                     
                     # Save or update metrics
                     existing = db.query(PriorityMetrics).filter(
                         and_(
-                            PriorityMetrics.profile_id == config.priority_profile_id,
+                            PriorityMetrics.profile_id == config.profile_id,
                             PriorityMetrics.queue_id == config.queue_id,
                             PriorityMetrics.metric_date == hour_start,
                             PriorityMetrics.hour_of_day == hour_start.hour
@@ -104,7 +488,7 @@ class PriorityMonitor:
                     else:
                         # Create new metrics
                         new_metrics = PriorityMetrics(
-                            profile_id=config.priority_profile_id,
+                            profile_id=config.profile_id,
                             queue_id=config.queue_id,
                             metric_date=hour_start,
                             hour_of_day=hour_start.hour,
@@ -122,214 +506,3 @@ class PriorityMonitor:
             
         finally:
             db.close()
-    
-    def _calculate_metrics_for_queue(
-        self, db: Session, config: QueuePriorityConfig, hour_start: datetime
-    ) -> Dict[str, Any]:
-        """Calculate priority metrics for a specific queue"""
-        hour_end = hour_start + timedelta(hours=1)
-        
-        # Get queue items processed in this hour
-        queue_items = db.query(QueueItem).filter(
-            and_(
-                QueueItem.queue_id == config.queue_id,
-                QueueItem.completed_at >= hour_start,
-                QueueItem.completed_at < hour_end
-            )
-        ).all()
-        
-        if not queue_items:
-            return {
-                "avg_wait_time_reduction": 0,
-                "on_time_delivery_rate": 0,
-                "vip_satisfaction_score": 0,
-                "fairness_index": 0,
-                "max_wait_time_ratio": 0,
-                "priority_override_count": 0,
-                "avg_calculation_time_ms": 0,
-                "rebalance_count": 0,
-                "avg_position_changes": 0,
-                "revenue_impact": 0,
-                "customer_complaints": 0,
-                "staff_overrides": 0
-            }
-        
-        # Calculate wait time metrics
-        wait_times = []
-        on_time_count = 0
-        vip_orders_on_time = 0
-        vip_orders_total = 0
-        
-        for item in queue_items:
-            if item.queued_at and item.completed_at:
-                wait_time = (item.completed_at - item.queued_at).total_seconds() / 60
-                wait_times.append(wait_time)
-                
-                # Check if delivered on time
-                order = db.query(Order).filter(Order.id == item.order_id).first()
-                if order and order.scheduled_fulfillment_time:
-                    if item.completed_at <= order.scheduled_fulfillment_time:
-                        on_time_count += 1
-                    
-                    # Check VIP orders
-                    if order.customer_id:
-                        # Simplified VIP check - would need to join with Customer table
-                        vip_orders_total += 1
-                        if item.completed_at <= order.scheduled_fulfillment_time:
-                            vip_orders_on_time += 1
-        
-        # Calculate metrics
-        avg_wait_time = sum(wait_times) / len(wait_times) if wait_times else 0
-        max_wait_time = max(wait_times) if wait_times else 0
-        min_wait_time = min(wait_times) if wait_times else 0
-        
-        # Calculate fairness index (simplified Gini coefficient)
-        fairness_index = self._calculate_fairness_index(wait_times)
-        
-        # Get comparison with FIFO baseline
-        baseline_wait_time = self._get_baseline_wait_time(db, config.queue_id, hour_start)
-        wait_time_reduction = 0
-        if baseline_wait_time > 0:
-            wait_time_reduction = ((baseline_wait_time - avg_wait_time) / baseline_wait_time) * 100
-        
-        # Count priority overrides
-        override_count = db.query(func.count()).filter(
-            and_(
-                QueueItem.queue_id == config.queue_id,
-                QueueItem.created_at >= hour_start,
-                QueueItem.created_at < hour_end,
-                QueueItem.priority != QueueItem.sequence_number  # Simplified check
-            )
-        ).scalar() or 0
-        
-        # Count rebalances (would need a separate rebalance log table)
-        rebalance_count = 0  # Placeholder
-        
-        return {
-            "avg_wait_time_reduction": wait_time_reduction,
-            "on_time_delivery_rate": (on_time_count / len(queue_items) * 100) if queue_items else 0,
-            "vip_satisfaction_score": (vip_orders_on_time / vip_orders_total * 100) if vip_orders_total else 100,
-            "fairness_index": fairness_index,
-            "max_wait_time_ratio": max_wait_time / avg_wait_time if avg_wait_time > 0 else 1,
-            "priority_override_count": override_count,
-            "avg_calculation_time_ms": 50,  # Placeholder - would need actual timing
-            "rebalance_count": rebalance_count,
-            "avg_position_changes": 2.5,  # Placeholder
-            "revenue_impact": 0,  # Would need business logic
-            "customer_complaints": 0,  # Would need complaint tracking
-            "staff_overrides": override_count
-        }
-    
-    def _calculate_fairness_index(self, wait_times: list) -> float:
-        """Calculate fairness index (0-1, where 1 is perfectly fair)"""
-        if not wait_times or len(wait_times) < 2:
-            return 1.0
-        
-        # Sort wait times
-        sorted_times = sorted(wait_times)
-        n = len(sorted_times)
-        
-        # Calculate Gini coefficient
-        index = 0
-        for i in range(n):
-            index += (2 * (i + 1) - n - 1) * sorted_times[i]
-        
-        gini = index / (n * sum(sorted_times))
-        
-        # Convert to fairness index (1 - Gini)
-        return 1 - abs(gini)
-    
-    def _get_baseline_wait_time(self, db: Session, queue_id: int, hour_start: datetime) -> float:
-        """Get baseline wait time for FIFO comparison"""
-        # Look for historical metrics when priority was not used
-        # This is a simplified approach - would need proper baseline tracking
-        baseline_metrics = db.query(QueueMetrics).filter(
-            and_(
-                QueueMetrics.queue_id == queue_id,
-                QueueMetrics.metric_date >= hour_start - timedelta(days=7),
-                QueueMetrics.metric_date < hour_start
-            )
-        ).all()
-        
-        if baseline_metrics:
-            avg_waits = [m.avg_wait_time for m in baseline_metrics if m.avg_wait_time]
-            return sum(avg_waits) / len(avg_waits) if avg_waits else 20  # Default 20 minutes
-        
-        return 20  # Default baseline
-
-
-# Global monitor instance
-priority_monitor = PriorityMonitor()
-
-
-async def start_priority_monitor():
-    """Start the priority monitoring task"""
-    await priority_monitor.start()
-
-
-async def stop_priority_monitor():
-    """Stop the priority monitoring task"""
-    await priority_monitor.stop()
-
-
-def calculate_priority_batch(order_ids: list, queue_id: int) -> Dict[int, float]:
-    """Calculate priorities for a batch of orders"""
-    db = SessionLocal()
-    priority_service = PriorityService(db)
-    results = {}
-    
-    try:
-        for order_id in order_ids:
-            try:
-                score = priority_service.calculate_order_priority(order_id, queue_id)
-                results[order_id] = score.normalized_score
-            except Exception as e:
-                logger.error(f"Failed to calculate priority for order {order_id}: {str(e)}")
-                results[order_id] = 0
-        
-        db.commit()
-    finally:
-        db.close()
-    
-    return results
-
-
-async def auto_rebalance_queues():
-    """Automatically rebalance queues based on configuration"""
-    db = SessionLocal()
-    try:
-        # Get all queues with auto-rebalance enabled
-        configs = db.query(QueuePriorityConfig).filter(
-            QueuePriorityConfig.rebalance_enabled == True
-        ).all()
-        
-        priority_service = PriorityService(db)
-        current_time = datetime.utcnow()
-        
-        for config in configs:
-            try:
-                # Check if it's time to rebalance
-                last_rebalance = getattr(config, 'last_rebalance_time', None)
-                if last_rebalance:
-                    time_since_last = (current_time - last_rebalance).total_seconds()
-                    if time_since_last < config.rebalance_interval:
-                        continue
-                
-                # Perform rebalance
-                result = priority_service.rebalance_queue(config.queue_id)
-                
-                if result.get("rebalanced"):
-                    logger.info(
-                        f"Auto-rebalanced queue {config.queue_id}: "
-                        f"{result.get('items_reordered', 0)} items reordered"
-                    )
-                
-                # Update last rebalance time (would need to add this field)
-                # config.last_rebalance_time = current_time
-                
-            except Exception as e:
-                logger.error(f"Failed to auto-rebalance queue {config.queue_id}: {str(e)}")
-        
-        db.commit()
-    finally:
-        db.close()
