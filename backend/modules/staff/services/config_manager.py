@@ -7,9 +7,10 @@ way to manage business rules and calculation parameters.
 
 import os
 from decimal import Decimal
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from ...payroll.models.payroll_configuration import PayrollConfiguration, PayrollConfigurationType
 
@@ -135,6 +136,59 @@ class ConfigManager:
                 config.medicare_additional_threshold_single = Decimal(str(config_value.get("single", config.medicare_additional_threshold_single)))
                 config.medicare_additional_threshold_joint = Decimal(str(config_value.get("joint", config.medicare_additional_threshold_joint)))
     
+    def validate_overtime_rules(self, rules: Dict[str, Any]) -> List[str]:
+        """
+        Validate overtime rules for compliance and reasonableness.
+        
+        Args:
+            rules: Dictionary containing overtime rule values
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Validate daily overtime threshold
+        daily_threshold = rules.get('daily_threshold', Decimal('8.0'))
+        if not isinstance(daily_threshold, (int, float, Decimal)):
+            errors.append("Daily overtime threshold must be a numeric value")
+        elif daily_threshold < Decimal('4.0') or daily_threshold > Decimal('12.0'):
+            errors.append("Daily overtime threshold should be between 4 and 12 hours")
+        
+        # Validate weekly overtime threshold
+        weekly_threshold = rules.get('weekly_threshold', Decimal('40.0'))
+        if not isinstance(weekly_threshold, (int, float, Decimal)):
+            errors.append("Weekly overtime threshold must be a numeric value")
+        elif weekly_threshold < Decimal('30.0') or weekly_threshold > Decimal('60.0'):
+            errors.append("Weekly overtime threshold should be between 30 and 60 hours")
+        
+        # Validate overtime multiplier
+        ot_multiplier = rules.get('overtime_multiplier', Decimal('1.5'))
+        if not isinstance(ot_multiplier, (int, float, Decimal)):
+            errors.append("Overtime multiplier must be a numeric value")
+        elif ot_multiplier < Decimal('1.0') or ot_multiplier > Decimal('3.0'):
+            errors.append("Overtime multiplier should be between 1.0 and 3.0")
+        
+        # Validate double time threshold
+        double_time_threshold = rules.get('double_time_threshold', Decimal('12.0'))
+        if not isinstance(double_time_threshold, (int, float, Decimal)):
+            errors.append("Double time threshold must be a numeric value")
+        elif double_time_threshold <= daily_threshold:
+            errors.append("Double time threshold must be greater than daily overtime threshold")
+        elif double_time_threshold > Decimal('16.0'):
+            errors.append("Double time threshold should not exceed 16 hours per day")
+        
+        # Validate double time multiplier
+        double_time_multiplier = rules.get('double_time_multiplier', Decimal('2.0'))
+        if not isinstance(double_time_multiplier, (int, float, Decimal)):
+            errors.append("Double time multiplier must be a numeric value")
+        elif double_time_multiplier <= ot_multiplier:
+            errors.append("Double time multiplier must be greater than overtime multiplier")
+        elif double_time_multiplier > Decimal('3.0'):
+            errors.append("Double time multiplier should not exceed 3.0")
+        
+        return errors
+    
     def get_overtime_rules(self, location: str = "default") -> Dict[str, Decimal]:
         """Get overtime calculation rules."""
         config = self.get_config(location)
@@ -145,6 +199,73 @@ class ConfigManager:
             "double_time_threshold": config.double_time_threshold,
             "double_time_multiplier": config.double_time_multiplier
         }
+    
+    def update_overtime_rules(
+        self, 
+        rules: Dict[str, Any], 
+        location: str = "default",
+        description: str = ""
+    ) -> List[str]:
+        """
+        Update overtime rules with validation.
+        
+        Args:
+            rules: Dictionary containing new overtime rule values
+            location: Location for the configuration
+            description: Human-readable description
+            
+        Returns:
+            List of validation error messages (empty if successful)
+        """
+        # Validate the rules first
+        errors = self.validate_overtime_rules(rules)
+        if errors:
+            return errors
+        
+        # Update each rule individually
+        for rule_key, rule_value in rules.items():
+            if rule_key == "daily_threshold":
+                self.update_configuration(
+                    PayrollConfigurationType.OVERTIME_RULES,
+                    "daily_overtime_threshold",
+                    {"threshold": float(rule_value)},
+                    location,
+                    description
+                )
+            elif rule_key == "weekly_threshold":
+                self.update_configuration(
+                    PayrollConfigurationType.OVERTIME_RULES,
+                    "weekly_overtime_threshold",
+                    {"threshold": float(rule_value)},
+                    location,
+                    description
+                )
+            elif rule_key == "overtime_multiplier":
+                self.update_configuration(
+                    PayrollConfigurationType.OVERTIME_RULES,
+                    "overtime_multiplier",
+                    {"multiplier": float(rule_value)},
+                    location,
+                    description
+                )
+            elif rule_key == "double_time_threshold":
+                self.update_configuration(
+                    PayrollConfigurationType.OVERTIME_RULES,
+                    "double_time_threshold",
+                    {"threshold": float(rule_value)},
+                    location,
+                    description
+                )
+            elif rule_key == "double_time_multiplier":
+                self.update_configuration(
+                    PayrollConfigurationType.OVERTIME_RULES,
+                    "double_time_multiplier",
+                    {"multiplier": float(rule_value)},
+                    location,
+                    description
+                )
+        
+        return []
     
     def get_benefit_proration_factors(self, location: str = "default") -> Dict[str, Decimal]:
         """Get benefit proration factors for different pay frequencies."""

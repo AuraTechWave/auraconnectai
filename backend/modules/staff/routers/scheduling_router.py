@@ -21,8 +21,8 @@ from ..schemas.scheduling_schemas import (
     StaffingAnalytics, StaffScheduleSummary, ScheduleConflict
 )
 from ..services.scheduling_service import SchedulingService
-from ..enums.scheduling_enums import ShiftStatus, SwapStatus
 from ..services.config_manager import ConfigManager
+from ..enums.scheduling_enums import ShiftStatus, SwapStatus
 
 router = APIRouter()
 
@@ -618,3 +618,157 @@ async def get_staff_schedule_summary_by_id(
         availability_compliance=availability_compliance,
         estimated_earnings=estimated_earnings
     )
+
+
+# Overtime Management Endpoints
+@router.get("/overtime/rules")
+async def get_overtime_rules(
+    location: str = Query("default"),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get current overtime rules configuration"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "view_overtime_rules",
+        db
+    )
+    
+    config_manager = ConfigManager(db)
+    return config_manager.get_overtime_rules(location)
+
+
+@router.put("/overtime/rules")
+async def update_overtime_rules(
+    rules: dict,
+    location: str = Query("default"),
+    description: str = Query(""),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Update overtime rules configuration"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "manage_overtime_rules",
+        db
+    )
+    
+    config_manager = ConfigManager(db)
+    errors = config_manager.update_overtime_rules(rules, location, description)
+    
+    if errors:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Invalid overtime rules configuration",
+                "errors": errors
+            }
+        )
+    
+    return {
+        "message": "Overtime rules updated successfully",
+        "rules": config_manager.get_overtime_rules(location)
+    }
+
+
+@router.post("/overtime/validate")
+async def validate_overtime_rules(
+    rules: dict,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Validate overtime rules without applying them"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "view_overtime_rules",
+        db
+    )
+    
+    config_manager = ConfigManager(db)
+    errors = config_manager.validate_overtime_rules(rules)
+    
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors
+    }
+
+
+@router.get("/overtime/analytics")
+async def get_overtime_analytics(
+    start_date: date = Query(...),
+    end_date: date = Query(...),
+    location_id: Optional[int] = None,
+    staff_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get overtime analytics for a date range"""
+    # Check permission
+    SchedulingPermissions.require_permission(
+        current_user["sub"],
+        "view_overtime_analytics",
+        db
+    )
+    
+    from ..services.attendance_optimizer import AttendanceOptimizer
+    from ..utils.hours_calculator import HoursCalculator
+    
+    optimizer = AttendanceOptimizer(db)
+    calculator = HoursCalculator(db)
+    
+    # Get staff members to analyze
+    staff_query = db.query(StaffMember).filter(StaffMember.status == "active")
+    if location_id:
+        staff_query = staff_query.filter(StaffMember.restaurant_id == location_id)
+    if staff_id:
+        staff_query = staff_query.filter(StaffMember.id == staff_id)
+    
+    staff_members = staff_query.all()
+    
+    analytics = []
+    for staff in staff_members:
+        # Get attendance statistics
+        stats = optimizer.get_attendance_statistics(
+            staff.id, start_date, end_date
+        )
+        
+        # Calculate hours breakdown
+        hours_breakdown = calculator.calculate_hours_for_period(
+            staff.id, start_date, end_date
+        )
+        
+        analytics.append({
+            "staff_id": staff.id,
+            "staff_name": staff.name,
+            "total_hours": float(hours_breakdown.total_hours),
+            "regular_hours": float(hours_breakdown.regular_hours),
+            "overtime_hours": float(hours_breakdown.overtime_hours),
+            "double_time_hours": float(hours_breakdown.double_time_hours),
+            "days_worked": stats.get('total_days', 0),
+            "average_hours_per_day": float(stats.get('average_hours_per_day', 0)),
+            "days_with_overtime": stats.get('days_with_overtime', 0),
+            "overtime_percentage": (
+                float(hours_breakdown.overtime_hours) / float(hours_breakdown.total_hours) * 100
+                if hours_breakdown.total_hours > 0 else 0
+            )
+        })
+    
+    return {
+        "period": {
+            "start_date": start_date,
+            "end_date": end_date
+        },
+        "analytics": analytics,
+        "summary": {
+            "total_staff": len(analytics),
+            "total_overtime_hours": sum(a["overtime_hours"] for a in analytics),
+            "average_overtime_percentage": (
+                sum(a["overtime_percentage"] for a in analytics) / len(analytics)
+                if analytics else 0
+            ),
+            "staff_with_overtime": sum(1 for a in analytics if a["overtime_hours"] > 0)
+        }
+    }
