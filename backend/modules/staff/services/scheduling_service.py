@@ -611,7 +611,6 @@ class SchedulingService:
                         )
                         if not staff_member:
                             continue
-                        
                         shift = EnhancedShift(
                             location_id=location_id,
                             role_id=role_id,
@@ -821,14 +820,10 @@ class SchedulingService:
         
         return final_shifts
 
-    def _estimate_peak_orders(self, target_date: date, location_id: int, demand_lookback_days: int) -> Dict[int, int]:
-        """Estimate orders per hour using historical data for the same day-of-week over a configurable lookback window, filtered by location.
-        
-        Returns a dict mapping hour -> order_count for the entire day.
-        """
+    def _estimate_peak_orders(self, target_date: date, location_id: int, demand_lookback_days: int) -> int:
+        """Estimate peak hourly orders using historical data for the same day-of-week over a configurable lookback window, filtered by location."""
         lookback_start = target_date - timedelta(days=demand_lookback_days)
         dow_iso = target_date.isoweekday()  # 1=Mon .. 7=Sun
-        
         # Count orders per hour for matching DOW and location
         rows = self.db.query(
             func.extract('hour', Order.created_at).label('hour'),
@@ -842,60 +837,36 @@ class SchedulingService:
             StaffMember.restaurant_id == location_id,
             Order.status.in_(['completed', 'paid'])
         ).group_by(func.extract('hour', Order.created_at)).all()
-        
-        # Initialize hourly demand dict
-        hourly_demand = {hour: 0 for hour in range(24)}
-        
-        # Populate with actual data
-        for row in rows:
-            hourly_demand[int(row.hour)] = int(row.cnt)
-        
-        return hourly_demand
+        if not rows:
+            return 0
+        peak = max(r.cnt for r in rows)
+        return int(peak)
 
-    def _map_orders_to_role_requirements(self, hourly_demand: Dict[int, int], location_id: int) -> Dict[int, Dict[int, int]]:
-        """Translate hourly orders to per-role required counts using simple productivity ratios.
-        Returns a dict of role_id -> {hour -> required_count}.
+    def _map_orders_to_role_requirements(self, peak_orders: int, location_id: int) -> Dict[int, int]:
+        """Translate peak orders to per-role required counts using simple productivity ratios.
+        Returns a dict of role_id -> required_count.
         """
-        if not hourly_demand or max(hourly_demand.values()) <= 0:
+        if peak_orders <= 0:
             return {}
-        
         # Load configurable productivity and minimums
         from .scheduling_config import load_scheduling_config
         cfg = load_scheduling_config()
         productivity = cfg.productivity
         minimums = cfg.minimums
-        
         # Map role names to ids for the location
         role_name_to_id = {}
-        # Get all roles for the restaurant (not filtered by location_id since roles are restaurant-scoped)
+        from ..models.staff_models import Role
         roles = self.db.query(Role).filter(Role.restaurant_id == location_id).all()
         for r in roles:
             role_name_to_id[r.name] = r.id
-        
-        # Calculate requirements for each hour
-        hourly_requirements: Dict[int, Dict[int, int]] = {}
-        
-        for hour, orders in hourly_demand.items():
-            if orders <= 0:
-                continue
-                
-            hour_requirements: Dict[int, int] = {}
-            for role_name, prod in productivity.items():
-                # Fix: Handle zero productivity to prevent ZeroDivisionError
-                if prod <= 0:
-                    logger.warning(f"Invalid productivity value {prod} for role {role_name}, skipping")
-                    continue
-                
-                base = int((orders + prod - 1) // prod)  # ceiling division
-                base = max(base, minimums.get(role_name, 0))
-                role_id = role_name_to_id.get(role_name)
-                if role_id:
-                    hour_requirements[role_id] = base
-            
-            if hour_requirements:
-                hourly_requirements[hour] = hour_requirements
-        
-        return hourly_requirements
+        required: Dict[int, int] = {}
+        for role_name, prod in productivity.items():
+            base = int((peak_orders + prod - 1) // prod)  # ceiling division
+            base = max(base, minimums.get(role_name, 0))
+            role_id = role_name_to_id.get(role_name)
+            if role_id:
+                required[role_id] = base
+        return required
 
     def _pick_best_staff_for_shift(
         self,
