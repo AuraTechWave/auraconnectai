@@ -6,6 +6,7 @@ way to manage business rules and calculation parameters.
 """
 
 import os
+import logging
 from decimal import Decimal
 from typing import Dict, Optional, Any, List
 from dataclasses import dataclass
@@ -13,6 +14,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from ...payroll.models.payroll_configuration import PayrollConfiguration, PayrollConfigurationType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -222,50 +225,65 @@ class ConfigManager:
         if errors:
             return errors
         
-        # Update each rule individually
-        for rule_key, rule_value in rules.items():
-            if rule_key == "daily_threshold":
-                self.update_configuration(
-                    PayrollConfigurationType.OVERTIME_RULES,
-                    "daily_overtime_threshold",
-                    {"threshold": float(rule_value)},
-                    location,
-                    description
-                )
-            elif rule_key == "weekly_threshold":
-                self.update_configuration(
-                    PayrollConfigurationType.OVERTIME_RULES,
-                    "weekly_overtime_threshold",
-                    {"threshold": float(rule_value)},
-                    location,
-                    description
-                )
-            elif rule_key == "overtime_multiplier":
-                self.update_configuration(
-                    PayrollConfigurationType.OVERTIME_RULES,
-                    "overtime_multiplier",
-                    {"multiplier": float(rule_value)},
-                    location,
-                    description
-                )
-            elif rule_key == "double_time_threshold":
-                self.update_configuration(
-                    PayrollConfigurationType.OVERTIME_RULES,
-                    "double_time_threshold",
-                    {"threshold": float(rule_value)},
-                    location,
-                    description
-                )
-            elif rule_key == "double_time_multiplier":
-                self.update_configuration(
-                    PayrollConfigurationType.OVERTIME_RULES,
-                    "double_time_multiplier",
-                    {"multiplier": float(rule_value)},
-                    location,
-                    description
-                )
+        # Validate location format
+        if not isinstance(location, str) or len(location.strip()) == 0:
+            errors.append("Location must be a non-empty string")
+            return errors
         
-        return []
+        try:
+            # Update each rule individually
+            for rule_key, rule_value in rules.items():
+                if rule_key == "daily_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "daily_overtime_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "weekly_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "weekly_overtime_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "overtime_multiplier":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "overtime_multiplier",
+                        {"multiplier": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "double_time_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "double_time_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "double_time_multiplier":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "double_time_multiplier",
+                        {"multiplier": float(rule_value)},
+                        location,
+                        description
+                    )
+                else:
+                    logger.warning(f"Unknown overtime rule key: {rule_key}")
+            
+            # Clear cache to force reload
+            self.invalidate_cache()
+            
+        except Exception as e:
+            logger.error(f"Failed to update overtime rules: {e}")
+            errors.append(f"Failed to update configuration: {str(e)}")
+        
+        return errors
     
     def get_benefit_proration_factors(self, location: str = "default") -> Dict[str, Decimal]:
         """Get benefit proration factors for different pay frequencies."""

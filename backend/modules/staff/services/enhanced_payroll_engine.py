@@ -8,6 +8,7 @@ This module integrates with:
 - EmployeePayment record generation
 """
 
+import logging
 from sqlalchemy.orm import Session
 from typing import Dict, List, Optional, Tuple
 from decimal import Decimal, ROUND_HALF_UP
@@ -24,6 +25,8 @@ from ...payroll.schemas.payroll_tax_schemas import (
     PayrollTaxCalculationRequest, PayrollTaxServiceRequest
 )
 from ...payroll.models.payroll_models import EmployeePayment
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -139,37 +142,80 @@ class EnhancedPayrollEngine:
     
     def get_staff_pay_policy(self, staff_id: int) -> StaffPayPolicy:
         """
-        Get staff member's pay policy. In a real implementation, this would
-        fetch from a database table. For now, using defaults with some variation.
+        Get staff member's pay policy from database or fallback to defaults.
+        
+        Args:
+            staff_id: Staff member ID
+            
+        Returns:
+            StaffPayPolicy with configured rates and benefits
+            
+        Raises:
+            ValueError: If staff member not found
         """
         staff = self.db.query(StaffMember).filter(StaffMember.id == staff_id).first()
         if not staff:
             raise ValueError(f"Staff member with ID {staff_id} not found")
         
-        # TODO: Replace with actual policy lookup from database
-        # For now, varying rates based on role or other criteria
-        base_rate = Decimal('15.00')  # Default rate
+        # Try to get policy from database first
+        try:
+            from ..models.payroll_models import StaffPayPolicy as StaffPayPolicyModel
+            db_policy = self.db.query(StaffPayPolicyModel).filter(
+                StaffPayPolicyModel.staff_id == staff_id,
+                StaffPayPolicyModel.is_active == True
+            ).first()
+            
+            if db_policy:
+                return StaffPayPolicy(
+                    base_hourly_rate=Decimal(str(db_policy.base_hourly_rate)),
+                    overtime_multiplier=Decimal(str(db_policy.overtime_multiplier)),
+                    regular_hours_threshold=Decimal(str(db_policy.regular_hours_threshold)),
+                    location=db_policy.location or "default",
+                    health_insurance=Decimal(str(db_policy.health_insurance or 0)),
+                    dental_insurance=Decimal(str(db_policy.dental_insurance or 0)),
+                    retirement_contribution=Decimal(str(db_policy.retirement_contribution or 0)),
+                    parking_fee=Decimal(str(db_policy.parking_fee or 0))
+                )
+        except Exception as e:
+            logger.warning(f"Could not load pay policy from database for staff {staff_id}: {e}")
         
-        if staff.role and staff.role.name:
-            role_rates = {
-                'manager': Decimal('25.00'),
-                'supervisor': Decimal('20.00'),
-                'server': Decimal('12.00'),
-                'cook': Decimal('16.00'),
-                'cashier': Decimal('14.00')
-            }
-            base_rate = role_rates.get(staff.role.name.lower(), base_rate)
+        # Fallback to role-based defaults
+        base_rate = self._get_default_rate_for_role(staff)
         
         return StaffPayPolicy(
             base_hourly_rate=base_rate,
             overtime_multiplier=Decimal('1.5'),
             regular_hours_threshold=Decimal('40.0'),
-            location="restaurant_main",  # Would come from staff location
+            location=self._get_staff_location(staff),
             health_insurance=Decimal('120.00'),  # Monthly amount
             dental_insurance=Decimal('25.00'),
             retirement_contribution=Decimal('50.00'),
             parking_fee=Decimal('15.00')
         )
+    
+    def _get_default_rate_for_role(self, staff: StaffMember) -> Decimal:
+        """Get default hourly rate based on staff role."""
+        if not staff.role or not staff.role.name:
+            return Decimal('15.00')  # Default rate
+        
+        role_rates = {
+            'manager': Decimal('25.00'),
+            'supervisor': Decimal('20.00'),
+            'server': Decimal('12.00'),
+            'cook': Decimal('16.00'),
+            'cashier': Decimal('14.00'),
+            'dishwasher': Decimal('13.00'),
+            'host': Decimal('11.00'),
+            'bartender': Decimal('14.00')
+        }
+        
+        return role_rates.get(staff.role.name.lower(), Decimal('15.00'))
+    
+    def _get_staff_location(self, staff: StaffMember) -> str:
+        """Get staff location identifier."""
+        # This would typically come from a location field in the staff model
+        # For now, using restaurant_id as location identifier
+        return f"restaurant_{staff.restaurant_id}"
     
     def calculate_hours_for_period(
         self, 

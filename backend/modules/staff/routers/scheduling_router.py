@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import List, Optional
 from datetime import datetime, date, timedelta
+import logging
 
 from core.database import get_db
 from core.auth import get_current_user
@@ -24,6 +25,7 @@ from ..services.scheduling_service import SchedulingService
 from ..services.config_manager import ConfigManager
 from ..enums.scheduling_enums import ShiftStatus, SwapStatus
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -517,6 +519,38 @@ async def publish_schedule(
         # Implement notification logic
         publication.notifications_sent = True
         publication.notification_count = len(set(s.staff_id for s in shifts if s.staff_id))
+        
+        # Send notifications to affected staff
+        try:
+            from ..services.schedule_notification_service import ScheduleNotificationService
+            notification_service = ScheduleNotificationService()
+            
+            # Group shifts by staff for efficient notification
+            staff_shifts = {}
+            for shift in shifts:
+                if shift.staff_id not in staff_shifts:
+                    staff_shifts[shift.staff_id] = []
+                staff_shifts[shift.staff_id].append(shift)
+            
+            # Send notifications
+            notification_result = await notification_service.send_schedule_published_notifications(
+                db=db,
+                restaurant_id=request.location_id if hasattr(request, 'location_id') else None,
+                start_date=request.start_date,
+                end_date=request.end_date,
+                channels=["email", "in_app"],
+                notes=request.notes
+            )
+            
+            # Update publication record with notification results
+            publication.notifications_sent = notification_result.get("success", False)
+            publication.notification_count = notification_result.get("total_staff", 0)
+            
+        except Exception as e:
+            logger.error(f"Failed to send schedule notifications: {e}")
+            # Don't fail the entire operation if notifications fail
+            publication.notifications_sent = False
+            publication.notification_count = 0
     
     db.commit()
     db.refresh(publication)
