@@ -493,16 +493,32 @@ async def generate_schedule(
     service = SchedulingService(db)
     
     if getattr(request, "use_historical_demand", False):
-        shifts = service.generate_demand_aware_schedule(
-            request.start_date,
-            request.end_date,
-            request.location_id,
-            demand_lookback_days=getattr(request, "demand_lookback_days", 90),
-            buffer_percentage=getattr(request, "buffer_percentage", 10.0),
-            respect_availability=getattr(request, "respect_availability", True),
-            max_hours_per_week=getattr(request, "max_hours_per_week", 40),
-            min_hours_between_shifts=getattr(request, "min_hours_between_shifts", 8),
-        )
+        # Use flexible demand-based scheduling for better shift optimization
+        if getattr(request, "use_flexible_shifts", False):
+            shifts = service.generate_flexible_demand_schedule(
+                request.start_date,
+                request.end_date,
+                request.location_id,
+                demand_lookback_days=getattr(request, "demand_lookback_days", 90),
+                buffer_percentage=getattr(request, "buffer_percentage", 10.0),
+                respect_availability=getattr(request, "respect_availability", True),
+                max_hours_per_week=getattr(request, "max_hours_per_week", 40),
+                min_hours_between_shifts=getattr(request, "min_hours_between_shifts", 8),
+                min_shift_hours=getattr(request, "min_shift_hours", 4),
+                max_shift_hours=getattr(request, "max_shift_hours", 8),
+            )
+        else:
+            # Use fixed block scheduling
+            shifts = service.generate_demand_aware_schedule(
+                request.start_date,
+                request.end_date,
+                request.location_id,
+                demand_lookback_days=getattr(request, "demand_lookback_days", 90),
+                buffer_percentage=getattr(request, "buffer_percentage", 10.0),
+                respect_availability=getattr(request, "respect_availability", True),
+                max_hours_per_week=getattr(request, "max_hours_per_week", 40),
+                min_hours_between_shifts=getattr(request, "min_hours_between_shifts", 8),
+            )
     else:
         shifts = service.generate_schedule_from_templates(
             request.start_date,
@@ -517,9 +533,18 @@ async def generate_schedule(
     
     db.commit()
     
+    # Determine strategy name
+    if getattr(request, "use_historical_demand", False):
+        if getattr(request, "use_flexible_shifts", False):
+            strategy = "flexible_demand"
+        else:
+            strategy = "demand_aware"
+    else:
+        strategy = "templates"
+    
     return {
         "message": "Schedule generated",
-        "strategy": "demand_aware" if getattr(request, "use_historical_demand", False) else "templates",
+        "strategy": strategy,
         "shifts_created": len(shifts),
         "start_date": request.start_date,
         "end_date": request.end_date

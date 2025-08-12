@@ -256,6 +256,9 @@ class ScheduleGenerationRequest(BaseModel):
     use_historical_demand: bool = False
     demand_lookback_days: int = 90
     buffer_percentage: float = 10.0
+    use_flexible_shifts: bool = False
+    min_shift_hours: int = 4
+    max_shift_hours: int = 8
     
 
 class SchedulePublishRequest(BaseModel):
