@@ -10,9 +10,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 
 from core.database import SessionLocal
+from modules.customers.models import Customer
 from ..models.priority_models import (
     QueuePriorityConfig, OrderPriorityScore, PriorityMetrics,
-    PriorityProfile
+    PriorityProfile, PriorityAdjustmentLog
 )
 from ..models.queue_models import (
     OrderQueue, QueueItem, QueueStatus, QueueItemStatus, QueueMetrics
@@ -214,21 +215,22 @@ def _calculate_metrics_for_queue(
         if item.queued_at and item.completed_at:
             wait_time = (item.completed_at - item.queued_at).total_seconds() / 60
             wait_times.append(wait_time)
-            
-            # Check if order was completed on time
+
+            # Fetch related order once
             order = db.query(Order).filter(Order.id == item.order_id).first()
-            if order and order.estimated_delivery_time:
-                if item.completed_at <= order.estimated_delivery_time:
-                    on_time_count += 1
-                    
-                    # Check VIP orders
-                    if order.customer_id:
-                        customer = db.query(Customer).filter(
-                            Customer.id == order.customer_id
-                        ).first()
-                        if customer and customer.vip_status:
-                            vip_orders_total += 1
-                            vip_orders_on_time += 1
+
+            # Determine VIP status (count every VIP order)
+            if order and order.customer_id:
+                customer = db.query(Customer).filter(Customer.id == order.customer_id).first()
+                if customer and customer.vip_status:
+                    vip_orders_total += 1
+                    # Check if completed on time
+                    if order.estimated_delivery_time and item.completed_at <= order.estimated_delivery_time:
+                        vip_orders_on_time += 1
+
+            # Overall on-time count (regardless of VIP)
+            if order and order.estimated_delivery_time and item.completed_at <= order.estimated_delivery_time:
+                on_time_count += 1
     
     # Calculate fairness metrics
     priority_scores = db.query(OrderPriorityScore).join(QueueItem).filter(
@@ -504,8 +506,3 @@ class PriorityMonitor:
             
         finally:
             db.close()
-
-
-# Import for Customer model
-from modules.customers.models import Customer
-from ..models.priority_models import PriorityAdjustmentLog

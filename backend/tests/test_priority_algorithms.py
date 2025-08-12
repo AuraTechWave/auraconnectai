@@ -88,7 +88,7 @@ def priority_rules(db_session):
             "base_minutes": 15,
             "penalty_per_minute": 2
         },
-        score_type=PriorityScoreType.LINEAR
+        score_type=PriorityScoreType.WAIT_TIME
     )
     db_session.add(prep_rule)
     rules.append(prep_rule)
@@ -105,7 +105,7 @@ def priority_rules(db_session):
             "grace_minutes": 10,
             "critical_minutes": 30
         },
-        score_type=PriorityScoreType.LINEAR
+        score_type=PriorityScoreType.WAIT_TIME
     )
     db_session.add(delivery_rule)
     rules.append(delivery_rule)
@@ -127,7 +127,7 @@ def priority_rules(db_session):
                 "vip": 100
             }
         },
-        score_type=PriorityScoreType.LINEAR
+        score_type=PriorityScoreType.WAIT_TIME
     )
     db_session.add(vip_rule)
     rules.append(vip_rule)
@@ -144,7 +144,7 @@ def priority_rules(db_session):
             "min_value": 0,
             "max_value": 200
         },
-        score_type=PriorityScoreType.LINEAR
+        score_type=PriorityScoreType.WAIT_TIME
     )
     db_session.add(value_rule)
     rules.append(value_rule)

@@ -45,10 +45,14 @@ class PriorityScoreType(enum.Enum):
     GROUP_SIZE = "group_size"
     SPECIAL_NEEDS = "special_needs"
     CUSTOM = "custom"
-    LINEAR = "linear"          # Linear scaling
-    EXPONENTIAL = "exponential"  # Exponential scaling
-    LOGARITHMIC = "logarithmic"  # Logarithmic scaling
-    STEP = "step"             # Step function
+
+
+class PriorityScalingFunction(enum.Enum):
+    """Score scaling/transform functions applied after base value calculation"""
+    LINEAR = "linear"
+    EXPONENTIAL = "exponential"
+    LOGARITHMIC = "logarithmic"
+    STEP = "step"
 
 
 class PriorityRule(Base, TimestampMixin):

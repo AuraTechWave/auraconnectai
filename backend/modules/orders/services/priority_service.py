@@ -225,7 +225,8 @@ class PriorityService:
         
         # Calculate wait time
         if rule.score_type == PriorityScoreType.WAIT_TIME:
-            wait_time = (datetime.utcnow() - queue_item.created_at).total_seconds() / 60
+            reference_time = queue_item.queued_at or queue_item.created_at
+            wait_time = (datetime.utcnow() - reference_time).total_seconds() / 60
             return wait_time
         
         # Calculate order value
@@ -583,7 +584,7 @@ class PriorityService:
                 "queue_item_id": item.id,
                 "priority_score": priority_score.total_score if priority_score else 0.0,
                 "priority_tier": priority_score.priority_tier if priority_score else "medium",
-                "wait_time_minutes": (datetime.utcnow() - item.created_at).total_seconds() / 60
+                "wait_time_minutes": (datetime.utcnow() - (item.queued_at or item.created_at)).total_seconds() / 60
             })
         
         return sequence
