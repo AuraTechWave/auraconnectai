@@ -48,37 +48,60 @@ class AttendanceOptimizer:
         Returns:
             List of DailyHoursSummary objects
         """
-        query = self.db.query(
-            cast(AttendanceLog.check_in, Date).label('work_date'),
-            func.sum(
-                func.extract('epoch', AttendanceLog.check_out - AttendanceLog.check_in) / 3600
-            ).label('total_hours'),
-            func.count(AttendanceLog.id).label('shifts_count'),
-            func.min(AttendanceLog.check_in).label('first_check_in'),
-            func.max(AttendanceLog.check_out).label('last_check_out')
-        ).filter(
-            AttendanceLog.staff_id == staff_id,
-            AttendanceLog.check_in >= datetime.combine(start_date, datetime.min.time()),
-            AttendanceLog.check_in < datetime.combine(end_date, datetime.min.time()),
-            AttendanceLog.check_out.isnot(None)
-        ).group_by(
-            cast(AttendanceLog.check_in, Date)
-        ).order_by(
-            cast(AttendanceLog.check_in, Date)
-        )
-        
-        results = query.all()
-        
-        return [
-            DailyHoursSummary(
-                work_date=result.work_date,
-                total_hours=Decimal(str(result.total_hours or 0)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
-                shifts_count=result.shifts_count,
-                first_check_in=result.first_check_in,
-                last_check_out=result.last_check_out
+        try:
+            # Validate inputs
+            if not isinstance(staff_id, int) or staff_id <= 0:
+                raise ValueError(f"Invalid staff_id: {staff_id}")
+            
+            if not isinstance(start_date, date) or not isinstance(end_date, date):
+                raise ValueError("start_date and end_date must be date objects")
+            
+            if start_date >= end_date:
+                raise ValueError("start_date must be before end_date")
+            
+            # Check for reasonable date range (prevent excessive queries)
+            if (end_date - start_date).days > 365:
+                logger.warning(f"Large date range requested: {start_date} to {end_date} for staff {staff_id}")
+            
+            query = self.db.query(
+                cast(AttendanceLog.check_in, Date).label('work_date'),
+                func.sum(
+                    func.extract('epoch', AttendanceLog.check_out - AttendanceLog.check_in) / 3600
+                ).label('total_hours'),
+                func.count(AttendanceLog.id).label('shifts_count'),
+                func.min(AttendanceLog.check_in).label('first_check_in'),
+                func.max(AttendanceLog.check_out).label('last_check_out')
+            ).filter(
+                AttendanceLog.staff_id == staff_id,
+                AttendanceLog.check_in >= datetime.combine(start_date, datetime.min.time()),
+                AttendanceLog.check_in < datetime.combine(end_date, datetime.min.time()),
+                AttendanceLog.check_out.isnot(None)
+            ).group_by(
+                cast(AttendanceLog.check_in, Date)
+            ).order_by(
+                cast(AttendanceLog.check_in, Date)
             )
-            for result in results
-        ]
+            
+            results = query.all()
+            
+            daily_summaries = [
+                DailyHoursSummary(
+                    work_date=result.work_date,
+                    total_hours=Decimal(str(result.total_hours or 0)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP),
+                    shifts_count=result.shifts_count,
+                    first_check_in=result.first_check_in,
+                    last_check_out=result.last_check_out
+                )
+                for result in results
+            ]
+            
+            logger.debug(f"Retrieved {len(daily_summaries)} daily summaries for staff {staff_id}")
+            return daily_summaries
+            
+        except Exception as e:
+            logger.error(f"Error getting daily hours for staff {staff_id}: {e}")
+            # Return empty list on error to prevent downstream failures
+            return []
     
     def calculate_overtime_efficiently(
         self, 

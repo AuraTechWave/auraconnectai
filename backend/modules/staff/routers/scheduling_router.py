@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
+from fastapi_limiter.depends import RateLimiter
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import List, Optional
 from datetime import datetime, date, timedelta
 import logging
+import re
 
 from core.database import get_db
 from core.auth import get_current_user
@@ -27,6 +30,69 @@ from ..enums.scheduling_enums import ShiftStatus, SwapStatus
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def add_security_headers(response: Response):
+    """Add security headers to response."""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+
+
+def validate_location_id(location_id: int) -> bool:
+    """Validate location ID format and range."""
+    return isinstance(location_id, int) and location_id > 0
+
+
+def validate_staff_id(staff_id: int) -> bool:
+    """Validate staff ID format and range."""
+    return isinstance(staff_id, int) and staff_id > 0
+
+
+def validate_date_range(start_date: date, end_date: date) -> bool:
+    """Validate date range is reasonable."""
+    if start_date >= end_date:
+        return False
+    
+    # Prevent queries for more than 1 year
+    if (end_date - start_date).days > 365:
+        return False
+    
+    return True
+
+
+def sanitize_description(description: str) -> str:
+    """Sanitize description text to prevent injection attacks."""
+    if not description:
+        return ""
+    
+    # Remove potentially dangerous characters
+    sanitized = re.sub(r'[<>"\']', '', description)
+    
+    # Limit length
+    return sanitized[:500] if len(sanitized) > 500 else sanitized
+
+
+def validate_overtime_rules_input(rules: dict) -> List[str]:
+    """Validate overtime rules input format."""
+    errors = []
+    
+    if not isinstance(rules, dict):
+        errors.append("Rules must be a dictionary")
+        return errors
+    
+    allowed_keys = {
+        'daily_threshold', 'weekly_threshold', 'overtime_multiplier',
+        'double_time_threshold', 'double_time_multiplier'
+    }
+    
+    for key in rules.keys():
+        if key not in allowed_keys:
+            errors.append(f"Unknown rule key: {key}")
+    
+    return errors
 
 
 # Shift Template Endpoints
@@ -659,7 +725,8 @@ async def get_staff_schedule_summary_by_id(
 async def get_overtime_rules(
     location: str = Query("default"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
+    response: Response = None
 ):
     """Get current overtime rules configuration"""
     # Check permission
@@ -670,10 +737,18 @@ async def get_overtime_rules(
     )
     
     config_manager = ConfigManager(db)
-    return config_manager.get_overtime_rules(location)
+    rules, cache_key = config_manager.get_overtime_rules_with_cache_key(location)
+    
+    # Add security headers
+    if response:
+        add_security_headers(response)
+        response.headers["ETag"] = f'"{cache_key}"'
+        response.headers["Cache-Control"] = "public, max-age=300"  # 5 minutes
+    
+    return rules
 
 
-@router.put("/overtime/rules")
+@router.put("/overtime/rules", dependencies=[Depends(RateLimiter(times=10, seconds=60))])
 async def update_overtime_rules(
     rules: dict,
     location: str = Query("default"),
@@ -689,8 +764,29 @@ async def update_overtime_rules(
         db
     )
     
+    # Validate input format
+    input_errors = validate_overtime_rules_input(rules)
+    if input_errors:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": "Invalid overtime rules format",
+                "errors": input_errors
+            }
+        )
+    
+    # Sanitize description
+    sanitized_description = sanitize_description(description)
+    
+    # Validate location format
+    if not isinstance(location, str) or len(location.strip()) == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Location must be a non-empty string"
+        )
+    
     config_manager = ConfigManager(db)
-    errors = config_manager.update_overtime_rules(rules, location, description)
+    errors = config_manager.update_overtime_rules(rules, location, sanitized_description)
     
     if errors:
         raise HTTPException(
@@ -707,7 +803,7 @@ async def update_overtime_rules(
     }
 
 
-@router.post("/overtime/validate")
+@router.post("/overtime/validate", dependencies=[Depends(RateLimiter(times=20, seconds=60))])
 async def validate_overtime_rules(
     rules: dict,
     db: Session = Depends(get_db),
@@ -721,6 +817,14 @@ async def validate_overtime_rules(
         db
     )
     
+    # Validate input format
+    input_errors = validate_overtime_rules_input(rules)
+    if input_errors:
+        return {
+            "valid": False,
+            "errors": input_errors
+        }
+    
     config_manager = ConfigManager(db)
     errors = config_manager.validate_overtime_rules(rules)
     
@@ -730,7 +834,7 @@ async def validate_overtime_rules(
     }
 
 
-@router.get("/overtime/analytics")
+@router.get("/overtime/analytics", dependencies=[Depends(RateLimiter(times=30, seconds=60))])
 async def get_overtime_analytics(
     start_date: date = Query(...),
     end_date: date = Query(...),
@@ -746,6 +850,27 @@ async def get_overtime_analytics(
         "view_overtime_analytics",
         db
     )
+    
+    # Validate date range
+    if not validate_date_range(start_date, end_date):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date range. End date must be after start date and within 1 year."
+        )
+    
+    # Validate location_id if provided
+    if location_id is not None and not validate_location_id(location_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid location ID"
+        )
+    
+    # Validate staff_id if provided
+    if staff_id is not None and not validate_staff_id(staff_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid staff ID"
+        )
     
     from ..services.attendance_optimizer import AttendanceOptimizer
     from ..utils.hours_calculator import HoursCalculator

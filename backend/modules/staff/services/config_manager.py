@@ -88,6 +88,23 @@ class ConfigManager:
         
         return config
     
+    def get_config_with_cache_key(self, location: str = "default") -> tuple[PayrollConfig, str]:
+        """
+        Get payroll configuration with cache key for ETag support.
+        
+        Args:
+            location: Location-specific configuration
+            
+        Returns:
+            Tuple of (PayrollConfig, cache_key)
+        """
+        config = self.get_config(location)
+        
+        # Generate cache key based on config values
+        cache_key = f"config_{location}_{hash(str(config.__dict__))}"
+        
+        return config, cache_key
+    
     def _load_configuration(self, location: str) -> PayrollConfig:
         """Load configuration from database and environment variables."""
         config = PayrollConfig()
@@ -202,6 +219,21 @@ class ConfigManager:
             "double_time_threshold": config.double_time_threshold,
             "double_time_multiplier": config.double_time_multiplier
         }
+    
+    def get_overtime_rules_with_cache_key(self, location: str = "default") -> tuple[Dict[str, Decimal], str]:
+        """
+        Get overtime rules with cache key for ETag support.
+        
+        Args:
+            location: Location-specific configuration
+            
+        Returns:
+            Tuple of (overtime_rules, cache_key)
+        """
+        rules = self.get_overtime_rules(location)
+        cache_key = f"overtime_rules_{location}_{hash(str(rules))}"
+        
+        return rules, cache_key
     
     def update_overtime_rules(
         self, 
