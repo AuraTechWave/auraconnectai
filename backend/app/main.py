@@ -32,6 +32,7 @@ from modules.orders.routes.order_split_routes import router as order_split_route
 from modules.orders.routes.routing_rules_routes import router as routing_rules_router
 from modules.orders.routes.queue_routes import router as queue_router
 from modules.orders.routes.queue_analytics_routes import router as queue_analytics_router
+from modules.orders.routes.priority_routes import router as priority_router
 
 # ========== Kitchen Display System (KDS) ==========
 from modules.kds.routes.kds_routes import router as kds_router
@@ -137,6 +138,7 @@ from modules.orders.tasks.sync_tasks import start_sync_scheduler, stop_sync_sche
 from modules.orders.tasks.webhook_retry_task import start_webhook_retry_scheduler, stop_webhook_retry_scheduler
 from modules.orders.tasks.pricing_rule_tasks import start_pricing_rule_worker, stop_pricing_rule_worker
 from modules.orders.tasks.queue_tasks import start_queue_monitor, stop_queue_monitor
+from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -235,6 +237,7 @@ app.include_router(order_split_router)
 app.include_router(routing_rules_router)
 app.include_router(queue_router)
 app.include_router(queue_analytics_router)
+app.include_router(priority_router)
 
 # Kitchen Display System
 app.include_router(kds_router)
@@ -349,6 +352,8 @@ async def startup_event():
     await start_pricing_rule_worker()
     # Start queue monitor
     await start_queue_monitor()
+    # Start priority monitor
+    await start_priority_monitor()
 
 
 @app.on_event("shutdown")
@@ -362,6 +367,8 @@ async def shutdown_event():
     await stop_pricing_rule_worker()
     # Stop queue monitor
     await stop_queue_monitor()
+    # Stop priority monitor
+    await stop_priority_monitor()
 
 
 @app.get("/")
