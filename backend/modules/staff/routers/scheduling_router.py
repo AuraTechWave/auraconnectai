@@ -287,12 +287,38 @@ async def get_shift_breaks(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all breaks for a shift"""
-    breaks = db.query(ShiftBreak).filter(ShiftBreak.shift_id == shift_id).all()
-    return breaks
+    """Retrieve all breaks for a given shift."""
+    shift = db.query(EnhancedShift).filter(EnhancedShift.id == shift_id).first()
+    if not shift:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    return shift.breaks
 
 
-# Availability Management Endpoints
+@router.get("/breaks", response_model=List[ShiftBreakResponse])
+async def list_breaks(
+    staff_id: Optional[int] = None,
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """List breaks optionally filtered by staff and date range for compliance monitoring."""
+    query = db.query(ShiftBreak).join(EnhancedShift, ShiftBreak.shift_id == EnhancedShift.id)
+
+    # Filter by staff if provided
+    if staff_id:
+        query = query.filter(EnhancedShift.staff_id == staff_id)
+
+    # Filter by date range using shift date
+    if start_date:
+        query = query.filter(EnhancedShift.date >= start_date)
+    if end_date:
+        query = query.filter(EnhancedShift.date <= end_date)
+
+    return query.all()
+
+
+# Availability Management
 @router.post("/availability", response_model=AvailabilityResponse)
 async def create_availability(
     availability: AvailabilityCreate,
