@@ -497,6 +497,7 @@ async def generate_schedule(
             request.start_date,
             request.end_date,
             request.location_id,
+            demand_lookback_days=getattr(request, "demand_lookback_days", 90),
             buffer_percentage=getattr(request, "buffer_percentage", 10.0),
             respect_availability=getattr(request, "respect_availability", True),
             max_hours_per_week=getattr(request, "max_hours_per_week", 40),

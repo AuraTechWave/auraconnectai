@@ -544,6 +544,7 @@ class SchedulingService:
         start_date: date,
         end_date: date,
         location_id: int,
+        demand_lookback_days: int = 90,
         buffer_percentage: float = 10.0,
         respect_availability: bool = True,
         max_hours_per_week: float = 40,
@@ -560,7 +561,7 @@ class SchedulingService:
         current_date = start_date
         while current_date <= end_date:
             # Estimate peak hourly demand using recent history
-            peak_orders = self._estimate_peak_orders(current_date, location_id)
+            peak_orders = self._estimate_peak_orders(current_date, location_id, demand_lookback_days)
             role_requirements = self._map_orders_to_role_requirements(peak_orders, location_id)
             # Build three canonical shifts
             shift_blocks = [
@@ -599,18 +600,20 @@ class SchedulingService:
             current_date += timedelta(days=1)
         return generated
 
-    def _estimate_peak_orders(self, target_date: date, location_id: int) -> int:
-        """Estimate peak hourly orders using historical data for same DOW over last 90 days."""
-        lookback_start = target_date - timedelta(days=90)
-        dow = target_date.weekday()
-        # Count orders per hour for matching DOW
+    def _estimate_peak_orders(self, target_date: date, location_id: int, demand_lookback_days: int) -> int:
+        """Estimate peak hourly orders using historical data for the same day-of-week over a configurable lookback window, filtered by location."""
+        lookback_start = target_date - timedelta(days=demand_lookback_days)
+        dow_iso = target_date.isoweekday()  # 1=Mon .. 7=Sun
+        # Count orders per hour for matching DOW and location
         rows = self.db.query(
             func.extract('hour', Order.created_at).label('hour'),
             func.count(Order.id).label('cnt')
         ).filter(
             func.date(Order.created_at) >= lookback_start,
             func.date(Order.created_at) < target_date,
-            func.extract('dow', Order.created_at) == dow,
+            func.extract('isodow', Order.created_at) == dow_iso,
+            Order.staff_id == StaffMember.id,
+            StaffMember.restaurant_id == location_id,
             Order.status.in_(['completed', 'paid'])
         ).group_by('hour').all()
         if not rows:
