@@ -1,7 +1,7 @@
 # backend/modules/customers/models/customer_models.py
 
-from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime, 
-                        Float, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint, Table)
+from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
+                        Float, Numeric, Text, Boolean, JSON, Enum as SQLEnum, Index, UniqueConstraint, Table)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from core.database import Base
@@ -89,6 +89,8 @@ class Customer(Base, TimestampMixin):
     last_order_date = Column(DateTime, nullable=True)
     total_orders = Column(Integer, default=0)
     total_spent = Column(Float, default=0.0)
+    # Customer Lifetime Value (cumulative spending over customer lifespan)
+    lifetime_value = Column(Numeric(12, 2), nullable=False, default=0)
     average_order_value = Column(Float, default=0.0)
     
     # Metadata

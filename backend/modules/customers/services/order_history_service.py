@@ -382,7 +382,9 @@ class OrderHistoryService:
         if order_stats.total_orders:
             customer.total_orders = order_stats.total_orders
             customer.total_spent = float(order_stats.total_spent) if order_stats.total_spent else 0
-            customer.average_order_value = customer.total_spent / customer.total_orders
+            # Keep lifetime_value in sync with total_spent for now
+            customer.lifetime_value = customer.total_spent
+            customer.average_order_value = customer.total_spent / customer.total_orders if customer.total_orders else 0
             customer.first_order_date = order_stats.first_order_date
             customer.last_order_date = order_stats.last_order_date
         
