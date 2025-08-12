@@ -16,6 +16,8 @@ from ..enums.scheduling_enums import (
 from ..schemas.scheduling_schemas import (
     ScheduleConflict, StaffingAnalytics
 )
+from modules.orders.models.order_models import Order
+from ..models.scheduling_models import ShiftRequirement
 
 logger = logging.getLogger(__name__)
 
@@ -536,6 +538,156 @@ class SchedulingService:
         self.cache_analytics(location_id, start_date, end_date, analytics)
         
         return analytics
+    
+    def generate_demand_aware_schedule(
+        self,
+        start_date: date,
+        end_date: date,
+        location_id: int,
+        buffer_percentage: float = 10.0,
+        respect_availability: bool = True,
+        max_hours_per_week: float = 40,
+        min_hours_between_shifts: int = 8,
+    ) -> List[EnhancedShift]:
+        """Generate schedule using historical demand to determine staffing levels per role.
+
+        Simple heuristic:
+        - Use historical orders per hour for the same DOW over a lookback window to estimate peak load
+        - Map predicted peak orders to minimum staff per role via productivity ratios
+        - Create morning/lunch/dinner shifts per day and assign available qualified staff
+        """
+        generated: List[EnhancedShift] = []
+        current_date = start_date
+        while current_date <= end_date:
+            # Estimate peak hourly demand using recent history
+            peak_orders = self._estimate_peak_orders(current_date, location_id)
+            role_requirements = self._map_orders_to_role_requirements(peak_orders, location_id)
+            # Build three canonical shifts
+            shift_blocks = [
+                (time(6, 0), time(14, 0)),
+                (time(10, 0), time(18, 0)),
+                (time(16, 0), time(23, 59)),
+            ]
+            for start_t, end_t in shift_blocks:
+                for role_id, required in role_requirements.items():
+                    required_with_buffer = max(0, int(round(required * (1 + buffer_percentage / 100.0))))
+                    for _ in range(required_with_buffer):
+                        shift_start = datetime.combine(current_date, start_t)
+                        shift_end = datetime.combine(current_date, end_t)
+                        # Overnight handling for last block if needed
+                        if shift_end <= shift_start:
+                            shift_end = shift_end + timedelta(days=1)
+                        staff_member = self._pick_best_staff_for_shift(
+                            shift_start, shift_end, role_id, location_id,
+                            respect_availability, max_hours_per_week, min_hours_between_shifts
+                        )
+                        if not staff_member:
+                            continue
+                        shift = EnhancedShift(
+                            location_id=location_id,
+                            role_id=role_id,
+                            date=current_date,
+                            start_time=shift_start,
+                            end_time=shift_end,
+                            status=ShiftStatus.DRAFT,
+                        )
+                        shift.staff_id = staff_member.id
+                        shift.estimated_cost = self.calculate_labor_cost(
+                            staff_member.id, shift_start, shift_end
+                        )
+                        generated.append(shift)
+            current_date += timedelta(days=1)
+        return generated
+
+    def _estimate_peak_orders(self, target_date: date, location_id: int) -> int:
+        """Estimate peak hourly orders using historical data for same DOW over last 90 days."""
+        lookback_start = target_date - timedelta(days=90)
+        dow = target_date.weekday()
+        # Count orders per hour for matching DOW
+        rows = self.db.query(
+            func.extract('hour', Order.created_at).label('hour'),
+            func.count(Order.id).label('cnt')
+        ).filter(
+            func.date(Order.created_at) >= lookback_start,
+            func.date(Order.created_at) < target_date,
+            func.extract('dow', Order.created_at) == dow,
+            Order.status.in_(['completed', 'paid'])
+        ).group_by('hour').all()
+        if not rows:
+            return 0
+        peak = max(r.cnt for r in rows)
+        return int(peak)
+
+    def _map_orders_to_role_requirements(self, peak_orders: int, location_id: int) -> Dict[int, int]:
+        """Translate peak orders to per-role required counts using simple productivity ratios.
+        Returns a dict of role_id -> required_count.
+        """
+        if peak_orders <= 0:
+            return {}
+        # Productivity assumptions (orders per hour per person)
+        productivity = {
+            'Manager': 100,
+            'Chef': 15,
+            'Server': 12,
+            'Dishwasher': 35,
+        }
+        # Minimum floor regardless of demand
+        minimums = {
+            'Manager': 1,
+            'Chef': 1,
+            'Server': 2,
+            'Dishwasher': 1,
+        }
+        # Map role names to ids for the location
+        role_name_to_id = {}
+        from ..models.staff_models import Role
+        roles = self.db.query(Role).filter(Role.restaurant_id == location_id).all()
+        for r in roles:
+            role_name_to_id[r.name] = r.id
+        required: Dict[int, int] = {}
+        for role_name, prod in productivity.items():
+            base = int((peak_orders + prod - 1) // prod)  # ceiling division
+            base = max(base, minimums.get(role_name, 0))
+            role_id = role_name_to_id.get(role_name)
+            if role_id:
+                required[role_id] = base
+        return required
+
+    def _pick_best_staff_for_shift(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        role_id: Optional[int],
+        location_id: int,
+        respect_availability: bool,
+        max_hours_per_week: float,
+        min_hours_between_shifts: int,
+    ) -> Optional[StaffMember]:
+        """Choose staff who matches role, passes availability/conflicts, and has lowest weekly hours so far."""
+        query = self.db.query(StaffMember).filter(
+            StaffMember.status == "active",
+            StaffMember.role_id == role_id,
+            StaffMember.restaurant_id == location_id,
+        )
+        candidates = query.all()
+        viable: List[Tuple[StaffMember, float]] = []
+        for staff in candidates:
+            if respect_availability:
+                ok, _ = self.check_availability(staff.id, start_time, end_time)
+                if not ok:
+                    continue
+            conflicts = self.detect_conflicts(staff.id, start_time, end_time)
+            if any(c.severity == "error" for c in conflicts):
+                continue
+            # weekly hours so far
+            week_hours = self._calculate_weekly_hours(staff.id, start_time.date())
+            if week_hours >= max_hours_per_week:
+                continue
+            viable.append((staff, week_hours))
+        if not viable:
+            return None
+        viable.sort(key=lambda x: x[1])
+        return viable[0][0]
     
     # Validation methods
     def validate_shift_times(self, start_time: datetime, end_time: datetime) -> bool:

@@ -481,7 +481,7 @@ async def generate_schedule(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Generate schedule from templates (Manager/Admin only)"""
+    """Generate schedule from templates or historical demand (Manager/Admin only)"""
     # Check permission
     SchedulingPermissions.require_permission(
         current_user["sub"],
@@ -492,12 +492,23 @@ async def generate_schedule(
     
     service = SchedulingService(db)
     
-    shifts = service.generate_schedule_from_templates(
-        request.start_date,
-        request.end_date,
-        request.location_id,
-        request.auto_assign
-    )
+    if getattr(request, "use_historical_demand", False):
+        shifts = service.generate_demand_aware_schedule(
+            request.start_date,
+            request.end_date,
+            request.location_id,
+            buffer_percentage=getattr(request, "buffer_percentage", 10.0),
+            respect_availability=getattr(request, "respect_availability", True),
+            max_hours_per_week=getattr(request, "max_hours_per_week", 40),
+            min_hours_between_shifts=getattr(request, "min_hours_between_shifts", 8),
+        )
+    else:
+        shifts = service.generate_schedule_from_templates(
+            request.start_date,
+            request.end_date,
+            request.location_id,
+            request.auto_assign
+        )
     
     # Save generated shifts
     for shift in shifts:
@@ -507,6 +518,7 @@ async def generate_schedule(
     
     return {
         "message": "Schedule generated",
+        "strategy": "demand_aware" if getattr(request, "use_historical_demand", False) else "templates",
         "shifts_created": len(shifts),
         "start_date": request.start_date,
         "end_date": request.end_date
