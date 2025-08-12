@@ -79,6 +79,7 @@ from modules.menu.routes.inventory_routes import router as menu_inventory_router
 from modules.menu.routes.versioning_routes import router as menu_versioning_router
 from modules.menu.routes.recipe_routes import router as recipe_router
 from modules.menu.routes.recipe_routes_optimized import router as recipe_router_optimized
+from modules.menu.routes.recommendation_routes import router as menu_recommendation_router
 
 # ========== Inventory Management ==========
 from modules.inventory.routes.inventory_routes import router as inventory_management_router
@@ -282,6 +283,7 @@ app.include_router(menu_inventory_router)
 app.include_router(menu_versioning_router)
 app.include_router(recipe_router, prefix="/api/v1/menu", tags=["Recipe Management"])
 app.include_router(recipe_router_optimized, prefix="/api/v1/menu", tags=["Recipe Management - Optimized"])
+app.include_router(menu_recommendation_router, prefix="/api/v1", tags=["Menu Recommendations"])
 
 # Inventory Management
 app.include_router(inventory_management_router)
