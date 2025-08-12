@@ -19,13 +19,14 @@ from ..services.async_processing import (
 
 from ..services.sales_report_service import SalesReportService
 from ..services.realtime_metrics_service import realtime_metrics_service
+from ..services.menu_performance_service import MenuPerformanceService
 from ..services.dashboard_widgets_service import dashboard_widgets_service
 from ..schemas.analytics_schemas import (
     SalesFilterRequest, SalesSummaryResponse, SalesDetailResponse,
     StaffPerformanceResponse, ProductPerformanceResponse, PaginatedSalesResponse,
     SalesReportRequest, ReportExecutionResponse, DashboardMetricsResponse,
     ReportTemplateRequest, ReportTemplateResponse, SalesComparisonRequest,
-    SalesComparisonResponse
+    SalesComparisonResponse, MenuPerformanceResponse
 )
 from ..schemas.realtime_schemas import (
     RealtimeDashboardResponse, WidgetConfiguration, DashboardLayout
@@ -1063,4 +1064,44 @@ async def invalidate_widget_cache(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to invalidate widget cache"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Menu Performance Analytics Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/menu/performance", response_model=List[MenuPerformanceResponse])
+async def get_menu_performance(
+    # Date range filters
+    date_from: Optional[date] = Query(None, description="Start date for the report"),
+    date_to: Optional[date] = Query(None, description="End date for the report"),
+    # Entity filters
+    menu_item_ids: Optional[List[int]] = Query(None, description="Filter by specific menu items"),
+    category_ids: Optional[List[int]] = Query(None, description="Filter by menu categories"),
+    # Pagination
+    page: int = Query(1, ge=1, description="Page number for pagination"),
+    per_page: int = Query(50, ge=1, le=1000, description="Items per page"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_analytics_permission(AnalyticsPermission.VIEW_PRODUCT_REPORTS))
+):
+    """Retrieve menu item performance analytics including profitability metrics."""
+
+    try:
+        filters = SalesFilterRequest(
+            date_from=date_from,
+            date_to=date_to,
+            product_ids=menu_item_ids,
+            category_ids=category_ids,
+        )
+
+        service = MenuPerformanceService(db)
+        return service.generate_menu_performance_report(filters, page=page, per_page=per_page)
+
+    except Exception as e:
+        logger.error(f"Error generating menu performance report: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate menu performance analytics"
         )
