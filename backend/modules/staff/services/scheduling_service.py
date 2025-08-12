@@ -8,7 +8,7 @@ from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability, 
     ShiftSwap, ShiftBreak, SchedulePublication
 )
-from ..models.staff_models import StaffMember
+from ..models.staff_models import StaffMember, Role
 from ..enums.scheduling_enums import (
     ShiftStatus, AvailabilityStatus, SwapStatus, 
     RecurrenceType, DayOfWeek
@@ -555,32 +555,59 @@ class SchedulingService:
         Simple heuristic:
         - Use historical orders per hour for the same DOW over a lookback window to estimate peak load
         - Map predicted peak orders to minimum staff per role via productivity ratios
-        - Create morning/lunch/dinner shifts per day and assign available qualified staff
+        - Create non-overlapping shifts per day and assign available qualified staff
         """
         generated: List[EnhancedShift] = []
+        # Track assigned shifts during generation to properly calculate weekly hours
+        assigned_shifts_by_staff: Dict[int, List[Tuple[datetime, datetime]]] = {}
+        
         current_date = start_date
         while current_date <= end_date:
-            # Estimate peak hourly demand using recent history
-            peak_orders = self._estimate_peak_orders(current_date, location_id, demand_lookback_days)
-            role_requirements = self._map_orders_to_role_requirements(peak_orders, location_id)
-            # Build three canonical shifts
+            # Estimate hourly demand using recent history
+            hourly_demand = self._estimate_peak_orders(current_date, location_id, demand_lookback_days)
+            hourly_role_requirements = self._map_orders_to_role_requirements(hourly_demand, location_id)
+            
+            # Create non-overlapping shift blocks to avoid conflicts
             shift_blocks = [
-                (time(6, 0), time(14, 0)),
-                (time(10, 0), time(18, 0)),
-                (time(16, 0), time(23, 59)),
+                (time(6, 0), time(14, 0)),   # Morning shift
+                (time(14, 0), time(22, 0)),  # Afternoon/Evening shift
+                (time(22, 0), time(6, 0)),   # Night shift (overnight)
             ]
+            
             for start_t, end_t in shift_blocks:
-                for role_id, required in role_requirements.items():
+                # Calculate the peak requirement for this shift block
+                shift_start_hour = start_t.hour
+                shift_end_hour = end_t.hour
+                
+                # Handle overnight shift
+                if shift_end_hour <= shift_start_hour:
+                    shift_end_hour += 24
+                
+                # Find peak demand within this shift block
+                peak_requirements = {}
+                for hour in range(shift_start_hour, shift_end_hour):
+                    actual_hour = hour % 24
+                    if actual_hour in hourly_role_requirements:
+                        for role_id, required in hourly_role_requirements[actual_hour].items():
+                            if role_id not in peak_requirements:
+                                peak_requirements[role_id] = 0
+                            peak_requirements[role_id] = max(peak_requirements[role_id], required)
+                
+                # Create shifts based on peak requirements
+                for role_id, required in peak_requirements.items():
                     required_with_buffer = max(0, int(round(required * (1 + buffer_percentage / 100.0))))
                     for _ in range(required_with_buffer):
                         shift_start = datetime.combine(current_date, start_t)
                         shift_end = datetime.combine(current_date, end_t)
-                        # Overnight handling for last block if needed
-                        if shift_end <= shift_start:
+                        
+                        # Handle overnight shift
+                        if end_t <= start_t:
                             shift_end = shift_end + timedelta(days=1)
-                        staff_member = self._pick_best_staff_for_shift(
+                        
+                        staff_member = self._pick_best_staff_for_shift_with_tracking(
                             shift_start, shift_end, role_id, location_id,
-                            respect_availability, max_hours_per_week, min_hours_between_shifts
+                            respect_availability, max_hours_per_week, min_hours_between_shifts,
+                            assigned_shifts_by_staff
                         )
                         if not staff_member:
                             continue
@@ -597,8 +624,201 @@ class SchedulingService:
                             staff_member.id, shift_start, shift_end
                         )
                         generated.append(shift)
+                        
+                        # Track this assignment for future calculations
+                        if staff_member.id not in assigned_shifts_by_staff:
+                            assigned_shifts_by_staff[staff_member.id] = []
+                        assigned_shifts_by_staff[staff_member.id].append((shift_start, shift_end))
+            
             current_date += timedelta(days=1)
         return generated
+    
+    def generate_flexible_demand_schedule(
+        self,
+        start_date: date,
+        end_date: date,
+        location_id: int,
+        demand_lookback_days: int = 90,
+        buffer_percentage: float = 10.0,
+        respect_availability: bool = True,
+        max_hours_per_week: float = 40,
+        min_hours_between_shifts: int = 8,
+        min_shift_hours: int = 4,
+        max_shift_hours: int = 8,
+    ) -> List[EnhancedShift]:
+        """Generate schedule with flexible shifts that better match actual demand patterns.
+        
+        This method creates shifts that start and end based on actual demand peaks,
+        rather than using fixed shift blocks.
+        """
+        generated: List[EnhancedShift] = []
+        assigned_shifts_by_staff: Dict[int, List[Tuple[datetime, datetime]]] = {}
+        
+        current_date = start_date
+        while current_date <= end_date:
+            # Get hourly demand for this day
+            hourly_demand = self._estimate_peak_orders(current_date, location_id, demand_lookback_days)
+            hourly_role_requirements = self._map_orders_to_role_requirements(hourly_demand, location_id)
+            
+            # Find demand peaks and create shifts around them
+            for role_id in self._get_all_role_ids(location_id):
+                shifts_created = self._create_shifts_for_role_on_date(
+                    current_date, role_id, location_id, hourly_role_requirements,
+                    assigned_shifts_by_staff, respect_availability, max_hours_per_week,
+                    min_hours_between_shifts, buffer_percentage, min_shift_hours, max_shift_hours
+                )
+                generated.extend(shifts_created)
+            
+            current_date += timedelta(days=1)
+        
+        return generated
+    
+    def _get_all_role_ids(self, location_id: int) -> List[int]:
+        """Get all role IDs for a location"""
+        roles = self.db.query(Role).filter(Role.restaurant_id == location_id).all()
+        return [role.id for role in roles]
+    
+    def _create_shifts_for_role_on_date(
+        self,
+        target_date: date,
+        role_id: int,
+        location_id: int,
+        hourly_role_requirements: Dict[int, Dict[int, int]],
+        assigned_shifts_by_staff: Dict[int, List[Tuple[datetime, datetime]]],
+        respect_availability: bool,
+        max_hours_per_week: float,
+        min_hours_between_shifts: int,
+        buffer_percentage: float,
+        min_shift_hours: int,
+        max_shift_hours: int,
+    ) -> List[EnhancedShift]:
+        """Create shifts for a specific role on a specific date based on demand patterns"""
+        shifts = []
+        
+        # Get requirements for this role across all hours
+        role_requirements = {}
+        for hour, requirements in hourly_role_requirements.items():
+            if role_id in requirements:
+                role_requirements[hour] = requirements[role_id]
+        
+        if not role_requirements:
+            return shifts
+        
+        # Find continuous periods where staff is needed
+        active_hours = []
+        for hour in range(24):
+            required = role_requirements.get(hour, 0)
+            if required > 0:
+                active_hours.append(hour)
+        
+        if not active_hours:
+            return shifts
+        
+        # Group consecutive hours into shift periods
+        shift_periods = self._group_hours_into_shifts(active_hours, min_shift_hours, max_shift_hours)
+        
+        # Create shifts for each period
+        for start_hour, end_hour in shift_periods:
+            # Find peak requirement in this period
+            peak_required = 0
+            for hour in range(start_hour, end_hour + 1):
+                required = role_requirements.get(hour, 0)
+                peak_required = max(peak_required, required)
+            
+            if peak_required <= 0:
+                continue
+            
+            # Apply buffer
+            required_with_buffer = max(0, int(round(peak_required * (1 + buffer_percentage / 100.0))))
+            
+            # Create shifts
+            for _ in range(required_with_buffer):
+                shift_start = datetime.combine(target_date, time(start_hour, 0))
+                shift_end = datetime.combine(target_date, time(end_hour, 0))
+                
+                # Handle overnight shift
+                if end_hour <= start_hour:
+                    shift_end = shift_end + timedelta(days=1)
+                
+                staff_member = self._pick_best_staff_for_shift_with_tracking(
+                    shift_start, shift_end, role_id, location_id,
+                    respect_availability, max_hours_per_week, min_hours_between_shifts,
+                    assigned_shifts_by_staff
+                )
+                if not staff_member:
+                    continue
+                
+                shift = EnhancedShift(
+                    location_id=location_id,
+                    role_id=role_id,
+                    date=target_date,
+                    start_time=shift_start,
+                    end_time=shift_end,
+                    status=ShiftStatus.DRAFT,
+                )
+                shift.staff_id = staff_member.id
+                shift.estimated_cost = self.calculate_labor_cost(
+                    staff_member.id, shift_start, shift_end
+                )
+                shifts.append(shift)
+                
+                # Track this assignment
+                if staff_member.id not in assigned_shifts_by_staff:
+                    assigned_shifts_by_staff[staff_member.id] = []
+                assigned_shifts_by_staff[staff_member.id].append((shift_start, shift_end))
+        
+        return shifts
+    
+    def _group_hours_into_shifts(
+        self,
+        active_hours: List[int],
+        min_shift_hours: int,
+        max_shift_hours: int
+    ) -> List[Tuple[int, int]]:
+        """Group consecutive active hours into shift periods"""
+        if not active_hours:
+            return []
+        
+        shifts = []
+        current_start = active_hours[0]
+        current_end = active_hours[0]
+        
+        for i in range(1, len(active_hours)):
+            hour = active_hours[i]
+            
+            # Check if this hour is consecutive
+            if hour == current_end + 1:
+                current_end = hour
+            else:
+                # End current shift if it meets minimum requirements
+                if current_end - current_start + 1 >= min_shift_hours:
+                    shifts.append((current_start, current_end))
+                
+                # Start new shift
+                current_start = hour
+                current_end = hour
+        
+        # Add final shift
+        if current_end - current_start + 1 >= min_shift_hours:
+            shifts.append((current_start, current_end))
+        
+        # Split long shifts if they exceed max_shift_hours
+        final_shifts = []
+        for start, end in shifts:
+            duration = end - start + 1
+            if duration <= max_shift_hours:
+                final_shifts.append((start, end))
+            else:
+                # Split into multiple shifts
+                num_shifts = (duration + max_shift_hours - 1) // max_shift_hours
+                shift_duration = duration // num_shifts
+                
+                for i in range(num_shifts):
+                    shift_start = start + (i * shift_duration)
+                    shift_end = min(end, shift_start + shift_duration - 1)
+                    final_shifts.append((shift_start, shift_end))
+        
+        return final_shifts
 
     def _estimate_peak_orders(self, target_date: date, location_id: int, demand_lookback_days: int) -> int:
         """Estimate peak hourly orders using historical data for the same day-of-week over a configurable lookback window, filtered by location."""
@@ -608,14 +828,15 @@ class SchedulingService:
         rows = self.db.query(
             func.extract('hour', Order.created_at).label('hour'),
             func.count(Order.id).label('cnt')
+        ).join(
+            StaffMember, Order.staff_id == StaffMember.id
         ).filter(
             func.date(Order.created_at) >= lookback_start,
             func.date(Order.created_at) < target_date,
             func.extract('isodow', Order.created_at) == dow_iso,
-            Order.staff_id == StaffMember.id,
             StaffMember.restaurant_id == location_id,
             Order.status.in_(['completed', 'paid'])
-        ).group_by('hour').all()
+        ).group_by(func.extract('hour', Order.created_at)).all()
         if not rows:
             return 0
         peak = max(r.cnt for r in rows)
@@ -682,6 +903,205 @@ class SchedulingService:
             return None
         viable.sort(key=lambda x: x[1])
         return viable[0][0]
+    
+    def _pick_best_staff_for_shift_with_tracking(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        role_id: Optional[int],
+        location_id: int,
+        respect_availability: bool,
+        max_hours_per_week: float,
+        min_hours_between_shifts: int,
+        assigned_shifts_by_staff: Dict[int, List[Tuple[datetime, datetime]]]
+    ) -> Optional[StaffMember]:
+        """Choose staff who matches role, passes availability/conflicts, and has lowest weekly hours so far.
+        
+        This version properly handles min_hours_between_shifts and tracks assigned shifts during generation.
+        """
+        query = self.db.query(StaffMember).filter(
+            StaffMember.status == "active",
+            StaffMember.role_id == role_id,
+            StaffMember.restaurant_id == location_id,
+        )
+        candidates = query.all()
+        viable: List[Tuple[StaffMember, float]] = []
+        
+        for staff in candidates:
+            if respect_availability:
+                ok, _ = self.check_availability(staff.id, start_time, end_time)
+                if not ok:
+                    continue
+            
+            # Check conflicts with existing shifts using custom rest period
+            conflicts = self._detect_conflicts_with_custom_rest(
+                staff.id, start_time, end_time, min_hours_between_shifts
+            )
+            if any(c.severity == "error" for c in conflicts):
+                continue
+            
+            # Check conflicts with shifts assigned during this generation
+            if staff.id in assigned_shifts_by_staff:
+                generation_conflicts = self._check_generation_conflicts(
+                    start_time, end_time, assigned_shifts_by_staff[staff.id], min_hours_between_shifts
+                )
+                if generation_conflicts:
+                    continue
+            
+            # Calculate total weekly hours including existing shifts and newly assigned shifts
+            existing_hours = self._calculate_weekly_hours(staff.id, start_time.date())
+            generation_hours = self._calculate_generation_hours(
+                staff.id, start_time.date(), assigned_shifts_by_staff.get(staff.id, [])
+            )
+            shift_hours = (end_time - start_time).total_seconds() / 3600
+            total_weekly_hours = existing_hours + generation_hours + shift_hours
+            
+            if total_weekly_hours > max_hours_per_week:
+                continue
+                
+            viable.append((staff, total_weekly_hours))
+        
+        if not viable:
+            return None
+        viable.sort(key=lambda x: x[1])
+        return viable[0][0]
+    
+    def _detect_conflicts_with_custom_rest(
+        self, 
+        staff_id: int, 
+        start_time: datetime, 
+        end_time: datetime,
+        min_rest_hours: int,
+        exclude_shift_id: Optional[int] = None
+    ) -> List[ScheduleConflict]:
+        """Detect scheduling conflicts for a staff member with custom rest period"""
+        conflicts = []
+        
+        # Check for overlapping shifts
+        overlap_query = self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.staff_id == staff_id,
+                EnhancedShift.status != ShiftStatus.CANCELLED,
+                or_(
+                    and_(
+                        EnhancedShift.start_time <= start_time,
+                        EnhancedShift.end_time > start_time
+                    ),
+                    and_(
+                        EnhancedShift.start_time < end_time,
+                        EnhancedShift.end_time >= end_time
+                    ),
+                    and_(
+                        EnhancedShift.start_time >= start_time,
+                        EnhancedShift.end_time <= end_time
+                    )
+                )
+            )
+        )
+        
+        if exclude_shift_id:
+            overlap_query = overlap_query.filter(EnhancedShift.id != exclude_shift_id)
+        
+        overlapping_shifts = overlap_query.all()
+        
+        if overlapping_shifts:
+            conflicts.append(ScheduleConflict(
+                conflict_type="overlap",
+                severity="error",
+                shift_ids=[shift.id for shift in overlapping_shifts],
+                description="Shift overlaps with existing shifts",
+                resolution_suggestions=[
+                    "Adjust shift times to avoid overlap",
+                    "Cancel or reschedule one of the conflicting shifts"
+                ]
+            ))
+        
+        # Check minimum rest period between shifts using custom parameter
+        rest_check_start = start_time - timedelta(hours=min_rest_hours)
+        rest_check_end = end_time + timedelta(hours=min_rest_hours)
+        
+        nearby_shifts = self.db.query(EnhancedShift).filter(
+            and_(
+                EnhancedShift.staff_id == staff_id,
+                EnhancedShift.status != ShiftStatus.CANCELLED,
+                or_(
+                    and_(
+                        EnhancedShift.end_time > rest_check_start,
+                        EnhancedShift.end_time <= start_time
+                    ),
+                    and_(
+                        EnhancedShift.start_time >= end_time,
+                        EnhancedShift.start_time < rest_check_end
+                    )
+                )
+            )
+        ).all()
+        
+        for shift in nearby_shifts:
+            if shift.end_time <= start_time:
+                rest_period = (start_time - shift.end_time).total_seconds() / 3600
+            else:
+                rest_period = (shift.start_time - end_time).total_seconds() / 3600
+            
+            if rest_period < min_rest_hours:
+                conflicts.append(ScheduleConflict(
+                    conflict_type="insufficient_rest",
+                    severity="warning",
+                    shift_ids=[shift.id],
+                    description=f"Less than {min_rest_hours} hours rest between shifts",
+                    resolution_suggestions=[
+                        f"Ensure at least {min_rest_hours} hours between shifts",
+                        "Consider assigning shift to another staff member"
+                    ]
+                ))
+        
+        return conflicts
+    
+    def _check_generation_conflicts(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        assigned_shifts: List[Tuple[datetime, datetime]],
+        min_rest_hours: int
+    ) -> bool:
+        """Check for conflicts with shifts assigned during the current generation run"""
+        for shift_start, shift_end in assigned_shifts:
+            # Check for overlap
+            if (shift_start <= start_time < shift_end or
+                shift_start < end_time <= shift_end or
+                (start_time <= shift_start and end_time >= shift_end)):
+                return True
+            
+            # Check for insufficient rest period
+            if shift_end <= start_time:
+                rest_period = (start_time - shift_end).total_seconds() / 3600
+            else:
+                rest_period = (shift_start - end_time).total_seconds() / 3600
+            
+            if rest_period < min_rest_hours:
+                return True
+        
+        return False
+    
+    def _calculate_generation_hours(
+        self,
+        staff_id: int,
+        reference_date: date,
+        assigned_shifts: List[Tuple[datetime, datetime]]
+    ) -> float:
+        """Calculate hours from shifts assigned during the current generation run"""
+        # Find start of week (Monday)
+        start_of_week = reference_date - timedelta(days=reference_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        total_hours = 0
+        for shift_start, shift_end in assigned_shifts:
+            # Only count shifts in the same week as reference_date
+            if start_of_week <= shift_start.date() <= end_of_week:
+                duration = (shift_end - shift_start).total_seconds() / 3600
+                total_hours += duration
+        
+        return total_hours
     
     # Validation methods
     def validate_shift_times(self, start_time: datetime, end_time: datetime) -> bool:

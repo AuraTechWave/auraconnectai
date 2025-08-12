@@ -1,79 +1,85 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict
-from datetime import datetime, date, time
-from ..enums.scheduling_enums import ShiftStatus, ShiftType, RecurrenceType, DayOfWeek, AvailabilityStatus, SwapStatus, BreakType
+from typing import List, Optional, Dict
+from datetime import date, datetime, time
+from enum import Enum
+
+from ..enums.scheduling_enums import ShiftStatus, SwapStatus
 
 
-# Shift Template Schemas
 class ShiftTemplateCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    role_id: Optional[int] = None
+    name: str = Field(..., min_length=1, max_length=100)
+    role_id: int
     location_id: int
     start_time: time
     end_time: time
-    recurrence_type: RecurrenceType = RecurrenceType.NONE
-    recurrence_days: Optional[List[DayOfWeek]] = None
-    min_staff: int = 1
-    max_staff: Optional[int] = None
-    preferred_staff: Optional[int] = None
-    estimated_hourly_rate: Optional[float] = None
-    
+    days_of_week: List[int] = Field(..., min_items=1, max_items=7)  # 0=Monday, 6=Sunday
+    is_active: bool = True
+    min_staff: int = Field(1, ge=1)
+    max_staff: int = Field(1, ge=1)
+    hourly_rate: Optional[float] = None
+    description: Optional[str] = None
+
+    @validator('end_time')
+    def validate_end_time(cls, v, values):
+        if 'start_time' in values and v <= values['start_time']:
+            raise ValueError('End time must be after start time')
+        return v
+
+    @validator('max_staff')
+    def validate_max_staff(cls, v, values):
+        if 'min_staff' in values and v < values['min_staff']:
+            raise ValueError('Max staff cannot be less than min staff')
+        return v
+
 
 class ShiftTemplateUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
     role_id: Optional[int] = None
     location_id: Optional[int] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
-    recurrence_type: Optional[RecurrenceType] = None
-    recurrence_days: Optional[List[DayOfWeek]] = None
-    min_staff: Optional[int] = None
-    max_staff: Optional[int] = None
-    preferred_staff: Optional[int] = None
-    estimated_hourly_rate: Optional[float] = None
+    days_of_week: Optional[List[int]] = Field(None, min_items=1, max_items=7)
     is_active: Optional[bool] = None
+    min_staff: Optional[int] = Field(None, ge=1)
+    max_staff: Optional[int] = Field(None, ge=1)
+    hourly_rate: Optional[float] = None
+    description: Optional[str] = None
 
 
 class ShiftTemplateResponse(BaseModel):
     id: int
     name: str
-    description: Optional[str]
-    role_id: Optional[int]
+    role_id: int
     location_id: int
     start_time: time
     end_time: time
-    recurrence_type: RecurrenceType
-    recurrence_days: Optional[List[DayOfWeek]]
-    min_staff: int
-    max_staff: Optional[int]
-    preferred_staff: Optional[int]
-    estimated_hourly_rate: Optional[float]
+    days_of_week: List[int]
     is_active: bool
+    min_staff: int
+    max_staff: int
+    hourly_rate: Optional[float]
+    description: Optional[str]
     created_at: datetime
-    updated_at: datetime
-    
+    updated_at: Optional[datetime]
+
     class Config:
         orm_mode = True
 
 
-# Enhanced Shift Schemas
 class ShiftCreate(BaseModel):
     staff_id: int
-    role_id: Optional[int] = None
+    role_id: int
     location_id: int
     date: date
-    start_time: datetime
-    end_time: datetime
-    shift_type: ShiftType = ShiftType.REGULAR
-    template_id: Optional[int] = None
+    start_time: time
+    end_time: time
+    status: ShiftStatus = ShiftStatus.DRAFT
     hourly_rate: Optional[float] = None
     notes: Optional[str] = None
-    color: Optional[str] = None
-    
+    template_id: Optional[int] = None
+
     @validator('end_time')
-    def validate_times(cls, v, values):
+    def validate_end_time(cls, v, values):
         if 'start_time' in values and v <= values['start_time']:
             raise ValueError('End time must be after start time')
         return v
@@ -84,52 +90,44 @@ class ShiftUpdate(BaseModel):
     role_id: Optional[int] = None
     location_id: Optional[int] = None
     date: Optional[date] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    shift_type: Optional[ShiftType] = None
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
     status: Optional[ShiftStatus] = None
     hourly_rate: Optional[float] = None
     notes: Optional[str] = None
-    color: Optional[str] = None
 
 
 class ShiftResponse(BaseModel):
     id: int
     staff_id: int
-    staff_name: Optional[str]
-    role_id: Optional[int]
-    role_name: Optional[str]
+    role_id: int
     location_id: int
     date: date
-    start_time: datetime
-    end_time: datetime
-    shift_type: ShiftType
+    start_time: time
+    end_time: time
     status: ShiftStatus
-    template_id: Optional[int]
     hourly_rate: Optional[float]
-    estimated_cost: Optional[float]
-    actual_cost: Optional[float]
     notes: Optional[str]
-    color: Optional[str]
+    template_id: Optional[int]
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime]
     published_at: Optional[datetime]
-    breaks: List['ShiftBreakResponse'] = []
-    
+    estimated_cost: Optional[float]
+
     class Config:
         orm_mode = True
 
 
-# Break Schemas
 class ShiftBreakCreate(BaseModel):
     shift_id: int
-    break_type: BreakType
-    start_time: datetime
-    end_time: datetime
+    start_time: time
+    end_time: time
+    break_type: str = "lunch"  # lunch, rest, other
     is_paid: bool = False
-    
+    notes: Optional[str] = None
+
     @validator('end_time')
-    def validate_break_times(cls, v, values):
+    def validate_end_time(cls, v, values):
         if 'start_time' in values and v <= values['start_time']:
             raise ValueError('Break end time must be after start time')
         return v
@@ -138,87 +136,78 @@ class ShiftBreakCreate(BaseModel):
 class ShiftBreakResponse(BaseModel):
     id: int
     shift_id: int
-    break_type: BreakType
-    start_time: datetime
-    end_time: datetime
-    duration_minutes: int
+    start_time: time
+    end_time: time
+    break_type: str
     is_paid: bool
-    
+    notes: Optional[str]
+    created_at: datetime
+
     class Config:
         orm_mode = True
 
 
-# Availability Schemas
 class AvailabilityCreate(BaseModel):
     staff_id: int
-    day_of_week: Optional[DayOfWeek] = None
-    specific_date: Optional[date] = None
+    day_of_week: int = Field(..., ge=0, le=6)  # 0=Monday, 6=Sunday
     start_time: time
     end_time: time
-    status: AvailabilityStatus = AvailabilityStatus.AVAILABLE
-    max_hours_per_day: Optional[float] = None
-    preferred_shifts: Optional[List[int]] = None
-    effective_from: Optional[datetime] = None
-    effective_until: Optional[datetime] = None
+    is_available: bool = True
+    priority: int = Field(1, ge=1, le=5)  # 1=lowest, 5=highest
     notes: Optional[str] = None
-    
-    @validator('specific_date')
-    def validate_availability_type(cls, v, values):
-        if v is not None and values.get('day_of_week') is not None:
-            raise ValueError('Cannot specify both day_of_week and specific_date')
-        if v is None and values.get('day_of_week') is None:
-            raise ValueError('Must specify either day_of_week or specific_date')
+
+    @validator('end_time')
+    def validate_end_time(cls, v, values):
+        if 'start_time' in values and v <= values['start_time']:
+            raise ValueError('End time must be after start time')
         return v
 
 
 class AvailabilityUpdate(BaseModel):
+    day_of_week: Optional[int] = Field(None, ge=0, le=6)
     start_time: Optional[time] = None
     end_time: Optional[time] = None
-    status: Optional[AvailabilityStatus] = None
-    max_hours_per_day: Optional[float] = None
-    preferred_shifts: Optional[List[int]] = None
-    effective_until: Optional[datetime] = None
+    is_available: Optional[bool] = None
+    priority: Optional[int] = Field(None, ge=1, le=5)
     notes: Optional[str] = None
 
 
 class AvailabilityResponse(BaseModel):
     id: int
     staff_id: int
-    staff_name: Optional[str]
-    day_of_week: Optional[DayOfWeek]
-    specific_date: Optional[date]
+    day_of_week: int
     start_time: time
     end_time: time
-    status: AvailabilityStatus
-    max_hours_per_day: Optional[float]
-    preferred_shifts: Optional[List[int]]
-    effective_from: datetime
-    effective_until: Optional[datetime]
+    is_available: bool
+    priority: int
     notes: Optional[str]
     created_at: datetime
-    updated_at: datetime
-    
+    updated_at: Optional[datetime]
+
     class Config:
         orm_mode = True
 
 
-# Shift Swap Schemas
 class ShiftSwapRequest(BaseModel):
+    requester_id: int
     from_shift_id: int
     to_shift_id: Optional[int] = None
     to_staff_id: Optional[int] = None
-    reason: Optional[str] = None
-    
-    @validator('to_staff_id')
+    reason: str = Field(..., min_length=1, max_length=500)
+    preferred_dates: Optional[List[date]] = None
+
+    @validator('to_shift_id', 'to_staff_id')
     def validate_swap_target(cls, v, values):
-        if v is None and values.get('to_shift_id') is None:
+        if 'to_shift_id' not in values and 'to_staff_id' not in values:
             raise ValueError('Must specify either to_shift_id or to_staff_id')
         return v
 
 
 class ShiftSwapApproval(BaseModel):
-    status: SwapStatus
+    swap_id: int
+    approved: bool
     manager_notes: Optional[str] = None
+    alternative_shift_id: Optional[int] = None
 
 
 class ShiftSwapResponse(BaseModel):
@@ -256,6 +245,9 @@ class ScheduleGenerationRequest(BaseModel):
     use_historical_demand: bool = False
     demand_lookback_days: int = 90
     buffer_percentage: float = 10.0
+    use_flexible_shifts: bool = False
+    min_shift_hours: int = 4
+    max_shift_hours: int = 8
     
 
 class SchedulePublishRequest(BaseModel):
