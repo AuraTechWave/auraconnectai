@@ -68,8 +68,8 @@ class ShiftSwapService:
         """Check if swap meets a specific rule's criteria"""
         
         # Check advance notice
-        # Combine shift date and start time to create a timezone-aware datetime
-        shift_datetime = datetime.combine(from_shift.date, from_shift.start_time)
+        # from_shift.start_time is already a datetime object
+        shift_datetime = from_shift.start_time
         if shift_datetime.tzinfo is None:
             shift_datetime = shift_datetime.replace(tzinfo=timezone.utc)
         hours_until_shift = (shift_datetime - datetime.now(timezone.utc)).total_seconds() / 3600
@@ -80,8 +80,8 @@ class ShiftSwapService:
             return False, f"Too far in advance (max {rule.max_advance_notice_hours} hours)"
         
         # Check blackout dates
-        # Convert datetime to date if needed
-        shift_date = from_shift.date if isinstance(from_shift.date, date) else from_shift.date.date()
+        # from_shift.date is a datetime object, extract the date part
+        shift_date = from_shift.date.date() if hasattr(from_shift.date, 'date') else from_shift.date
         if shift_date in rule.blackout_dates:
             return False, "Shift date is in blackout period"
         
