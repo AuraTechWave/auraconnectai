@@ -5,6 +5,7 @@ This module provides efficient attendance data processing and overtime calculati
 using SQL aggregation to minimize database queries and improve performance.
 """
 
+import logging
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, date, timedelta
 from typing import List, Dict, Optional
@@ -13,6 +14,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, Date, and_, or_
 
 from ..models.attendance_models import AttendanceLog
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -282,7 +285,11 @@ class AttendanceOptimizer:
         self, 
         staff_ids: List[int], 
         start_date: date, 
-        end_date: date
+        end_date: date,
+        daily_overtime_threshold: Decimal = Decimal('8.0'),
+        weekly_overtime_threshold: Decimal = Decimal('40.0'),
+        double_time_threshold: Decimal = Decimal('12.0'),
+        double_time_weekly_threshold: Decimal = Decimal('60.0')
     ) -> Dict[int, Dict[str, any]]:
         """
         Calculate hours for multiple staff members efficiently.
@@ -291,6 +298,10 @@ class AttendanceOptimizer:
             staff_ids: List of staff member IDs
             start_date: Start date for the period
             end_date: End date for the period
+            daily_overtime_threshold: Hours per day before daily OT
+            weekly_overtime_threshold: Hours per week before weekly OT
+            double_time_threshold: Hours per day before double time
+            double_time_weekly_threshold: Hours per week before double time
             
         Returns:
             Dictionary mapping staff_id to hours breakdown
@@ -352,7 +363,13 @@ class AttendanceOptimizer:
             ]
             
             # Calculate overtime
-            overtime_breakdown = self.calculate_overtime_efficiently(daily_summaries)
+            overtime_breakdown = self.calculate_overtime_efficiently(
+                daily_summaries,
+                daily_overtime_threshold,
+                weekly_overtime_threshold,
+                double_time_threshold,
+                double_time_weekly_threshold
+            )
             
             batch_results[staff_id] = {
                 'total_hours': overtime_breakdown['total_hours'],

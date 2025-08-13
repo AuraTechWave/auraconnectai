@@ -73,20 +73,31 @@ class ConfigManager:
         """
         import time
         
-        # Check cache validity
-        if (self._config_cache is not None and 
-            self._cache_timestamp is not None and 
-            time.time() - self._cache_timestamp < self.cache_ttl):
-            return self._config_cache
-        
-        # Load fresh configuration
-        config = self._load_configuration(location)
-        
-        # Update cache
-        self._config_cache = config
-        self._cache_timestamp = time.time()
-        
-        return config
+        try:
+            # Validate location parameter
+            if not isinstance(location, str) or len(location.strip()) == 0:
+                logger.warning(f"Invalid location parameter: {location}, using default")
+                location = "default"
+            
+            # Check cache validity
+            if (self._config_cache is not None and 
+                self._cache_timestamp is not None and 
+                time.time() - self._cache_timestamp < self.cache_ttl):
+                return self._config_cache
+            
+            # Load fresh configuration
+            config = self._load_configuration(location)
+            
+            # Update cache
+            self._config_cache = config
+            self._cache_timestamp = time.time()
+            
+            return config
+            
+        except Exception as e:
+            logger.error(f"Error getting configuration for location {location}: {e}")
+            # Return default configuration on error
+            return PayrollConfig()
     
     def get_config_with_cache_key(self, location: str = "default") -> tuple[PayrollConfig, str]:
         """
@@ -119,6 +130,12 @@ class ConfigManager:
         config.overtime_multiplier = Decimal(
             os.getenv('PAYROLL_OT_MULTIPLIER', str(config.overtime_multiplier))
         )
+        config.double_time_threshold = Decimal(
+            os.getenv('PAYROLL_DOUBLE_TIME_THRESHOLD', str(config.double_time_threshold))
+        )
+        config.double_time_multiplier = Decimal(
+            os.getenv('PAYROLL_DOUBLE_TIME_MULTIPLIER', str(config.double_time_multiplier))
+        )
         
         # Load database configurations
         db_configs = self.db.query(PayrollConfiguration).filter(
@@ -142,6 +159,10 @@ class ConfigManager:
                 config.weekly_overtime_threshold = Decimal(str(config_value.get("threshold", config.weekly_overtime_threshold)))
             elif db_config.config_key == "overtime_multiplier":
                 config.overtime_multiplier = Decimal(str(config_value.get("multiplier", config.overtime_multiplier)))
+            elif db_config.config_key == "double_time_threshold":
+                config.double_time_threshold = Decimal(str(config_value.get("threshold", config.double_time_threshold)))
+            elif db_config.config_key == "double_time_multiplier":
+                config.double_time_multiplier = Decimal(str(config_value.get("multiplier", config.double_time_multiplier)))
         
         elif db_config.config_type == PayrollConfigurationType.BENEFIT_PRORATION:
             if db_config.config_key == "monthly_to_biweekly_factor":
