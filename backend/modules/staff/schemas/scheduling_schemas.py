@@ -189,7 +189,6 @@ class AvailabilityResponse(BaseModel):
 
 
 class ShiftSwapRequest(BaseModel):
-    requester_id: int
     from_shift_id: int = Field(..., gt=0, description="ID of the shift to swap from")
     to_shift_id: Optional[int] = Field(None, gt=0, description="ID of the shift to swap with")
     to_staff_id: Optional[int] = Field(None, gt=0, description="ID of the staff to assign shift to")
@@ -218,9 +217,11 @@ class ShiftSwapRequest(BaseModel):
     
     @validator('to_staff_id')
     def validate_swap_target(cls, v, values):
-        if 'to_shift_id' not in values and 'to_staff_id' not in values:
+        # Check if both are None or both are set
+        to_shift_id = values.get('to_shift_id')
+        if v is None and to_shift_id is None:
             raise ValueError('Must specify either to_shift_id or to_staff_id')
-        if v is not None and values.get('to_shift_id') is not None:
+        if v is not None and to_shift_id is not None:
             raise ValueError('Cannot specify both to_shift_id and to_staff_id')
         return v
     
@@ -233,7 +234,7 @@ class ShiftSwapRequest(BaseModel):
 
 class ShiftSwapApproval(BaseModel):
     swap_id: int
-    approved: bool
+    status: SwapStatus
     manager_notes: Optional[str] = None
     rejection_reason: Optional[str] = None
     alternative_shift_id: Optional[int] = None

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import List, Dict, Optional, Tuple
 from contextlib import contextmanager
 import logging
@@ -68,7 +68,11 @@ class ShiftSwapService:
         """Check if swap meets a specific rule's criteria"""
         
         # Check advance notice
-        hours_until_shift = (from_shift.start_time - datetime.now(timezone.utc)).total_seconds() / 3600
+        # Combine shift date and start time to create a timezone-aware datetime
+        shift_datetime = datetime.combine(from_shift.date, from_shift.start_time)
+        if shift_datetime.tzinfo is None:
+            shift_datetime = shift_datetime.replace(tzinfo=timezone.utc)
+        hours_until_shift = (shift_datetime - datetime.now(timezone.utc)).total_seconds() / 3600
         if hours_until_shift < rule.min_advance_notice_hours:
             return False, f"Insufficient advance notice (requires {rule.min_advance_notice_hours} hours)"
         
@@ -76,7 +80,9 @@ class ShiftSwapService:
             return False, f"Too far in advance (max {rule.max_advance_notice_hours} hours)"
         
         # Check blackout dates
-        if from_shift.date in rule.blackout_dates:
+        # Convert datetime to date if needed
+        shift_date = from_shift.date if isinstance(from_shift.date, date) else from_shift.date.date()
+        if shift_date in rule.blackout_dates:
             return False, "Shift date is in blackout period"
         
         # Check staff tenure
@@ -228,7 +234,7 @@ class ShiftSwapService:
         # Update swap status
         swap.status = SwapStatus.APPROVED
         swap.approved_by_id = approver_id
-        swap.approved_at = datetime.utcnow()
+        swap.approved_at = datetime.now(timezone.utc)
         swap.approval_level = "manager"
         
         if notes:
@@ -261,7 +267,7 @@ class ShiftSwapService:
         # Update swap status
         swap.status = SwapStatus.REJECTED
         swap.approved_by_id = approver_id
-        swap.approved_at = datetime.utcnow()
+        swap.approved_at = datetime.now(timezone.utc)
         swap.rejection_reason = reason
         
         # Send notifications
@@ -347,7 +353,14 @@ class ShiftSwapService:
         approval_times = []
         for swap in swaps:
             if swap.status == SwapStatus.APPROVED and swap.approved_at:
-                time_diff = (swap.approved_at - swap.created_at).total_seconds() / 3600
+                # Ensure both datetimes are timezone-aware for comparison
+                approved_at = swap.approved_at
+                created_at = swap.created_at
+                if approved_at.tzinfo is None:
+                    approved_at = approved_at.replace(tzinfo=timezone.utc)
+                if created_at.tzinfo is None:
+                    created_at = created_at.replace(tzinfo=timezone.utc)
+                time_diff = (approved_at - created_at).total_seconds() / 3600
                 approval_times.append(time_diff)
         
         avg_approval_time = sum(approval_times) / len(approval_times) if approval_times else None
@@ -406,21 +419,21 @@ class ShiftSwapService:
         swap.requester_notified = True
         if swap.to_staff_id:
             swap.to_staff_notified = True
-        swap.notification_sent_at = datetime.utcnow()
+        swap.notification_sent_at = datetime.now(timezone.utc)
         logger.info(f"Approval notification sent for swap {swap.id}")
     
     def _send_rejection_notification(self, swap: ShiftSwap):
         """Send notification for rejected swap"""
         # TODO: Implement actual notification sending
         swap.requester_notified = True
-        swap.notification_sent_at = datetime.utcnow()
+        swap.notification_sent_at = datetime.now(timezone.utc)
         logger.info(f"Rejection notification sent for swap {swap.id}")
     
     def _send_approval_request_notification(self, swap: ShiftSwap):
         """Send notification to managers for approval"""
         # TODO: Implement actual notification sending
         swap.manager_notified = True
-        swap.notification_sent_at = datetime.utcnow()
+        swap.notification_sent_at = datetime.now(timezone.utc)
         logger.info(f"Approval request notification sent for swap {swap.id}")
     
     def _send_cancellation_notification(self, swap: ShiftSwap):
@@ -429,5 +442,5 @@ class ShiftSwapService:
         if swap.to_staff_id:
             swap.to_staff_notified = True
         swap.manager_notified = True
-        swap.notification_sent_at = datetime.utcnow()
+        swap.notification_sent_at = datetime.now(timezone.utc)
         logger.info(f"Cancellation notification sent for swap {swap.id}")
