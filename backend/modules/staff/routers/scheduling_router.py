@@ -287,12 +287,150 @@ async def get_shift_breaks(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all breaks for a shift"""
-    breaks = db.query(ShiftBreak).filter(ShiftBreak.shift_id == shift_id).all()
-    return breaks
+    """Retrieve all breaks for a given shift."""
+    # Maintain backward compatibility: return empty list if shift doesn't exist
+    shift = db.query(EnhancedShift).filter(EnhancedShift.id == shift_id).first()
+    if not shift:
+        return []  # Return empty list for backward compatibility instead of 404
+    
+    # Check if user has permission to view this shift's breaks
+    # Note: get_current_user returns a User object but we access it as dict for consistency
+    # The User.id field maps to current_user["id"] when serialized
+    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    user_staff = db.query(StaffMember).filter(
+        StaffMember.user_id == user_id
+    ).first()
+    
+    # Check if user is admin (from roles) - include payroll_manager
+    user_roles = current_user.get("roles", []) if isinstance(current_user, dict) else current_user.roles
+    is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
+    
+    if not user_staff:
+        # If user has no StaffMember record, deny access unless they're an admin
+        if not is_admin:
+            # Return empty list for backward compatibility (not 403)
+            return []
+        # Admin without StaffMember record can view breaks
+    else:
+        # User has StaffMember record - check permissions
+        if shift.staff_id != user_staff.id and not is_admin:
+            # Not their shift and not admin - check management permissions
+            try:
+                # Use same pattern as other endpoints for consistency
+                auth_user_id = current_user.get("sub", user_id) if isinstance(current_user, dict) else user_id
+                SchedulingPermissions.require_permission(
+                    auth_user_id,
+                    "view_analytics",
+                    db,
+                    location_id=shift.location_id
+                )
+            except HTTPException:
+                # If no management permission, return empty list (backward compatible)
+                return []
+    
+    return shift.breaks if shift.breaks else []
 
 
-# Availability Management Endpoints
+@router.get("/breaks", response_model=List[ShiftBreakResponse])
+async def list_breaks(
+    staff_id: Optional[int] = None,
+    location_id: Optional[int] = None,
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """List breaks optionally filtered by staff and date range for compliance monitoring.
+    
+    Access control:
+    - Regular staff can only view their own breaks
+    - Managers can view breaks for their location
+    - Admins can view all breaks (with optional location filter)
+    """
+    
+    # Handle both dict and User object for compatibility
+    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    user_roles = current_user.get("roles", []) if isinstance(current_user, dict) else current_user.roles
+    is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
+    
+    # Get current user's staff record
+    user_staff = db.query(StaffMember).filter(
+        StaffMember.user_id == user_id
+    ).first()
+    
+    # Start building the query
+    query = db.query(ShiftBreak).join(EnhancedShift, ShiftBreak.shift_id == EnhancedShift.id)
+    
+    if not user_staff:
+        # User has no StaffMember record
+        if not is_admin:
+            # Non-admin users without StaffMember record are denied access
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User not authorized to view break records"
+            )
+        
+        # Admin without StaffMember record can view all breaks
+        # Apply optional filters for admin
+        if location_id:
+            query = query.filter(EnhancedShift.location_id == location_id)
+        if staff_id:
+            query = query.filter(EnhancedShift.staff_id == staff_id)
+    else:
+        # User has StaffMember record - check their role
+        user_role = user_staff.role.name.lower() if user_staff.role else "staff"
+        
+        # Admin role takes precedence (even if they have a StaffMember record)
+        if is_admin or user_role == "admin":
+            # Admins can see all breaks, optionally filtered by location
+            if location_id:
+                query = query.filter(EnhancedShift.location_id == location_id)
+            # If staff_id is provided, filter by it
+            if staff_id:
+                query = query.filter(EnhancedShift.staff_id == staff_id)
+        elif user_role == "manager":
+            # Managers can only see breaks for their restaurant/location
+            query = query.join(StaffMember, EnhancedShift.staff_id == StaffMember.id)
+            query = query.filter(StaffMember.restaurant_id == user_staff.restaurant_id)
+            
+            # If location_id is provided, ensure it matches their restaurant
+            if location_id and location_id != user_staff.restaurant_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot view breaks for other locations"
+                )
+            
+            # If staff_id is provided, ensure that staff belongs to their restaurant
+            if staff_id:
+                target_staff = db.query(StaffMember).filter(
+                    StaffMember.id == staff_id,
+                    StaffMember.restaurant_id == user_staff.restaurant_id
+                ).first()
+                if not target_staff:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Cannot view breaks for staff from other locations"
+                    )
+                query = query.filter(EnhancedShift.staff_id == staff_id)
+        else:
+            # Regular staff can only see their own breaks
+            if staff_id and staff_id != user_staff.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot view other staff members' breaks"
+                )
+            query = query.filter(EnhancedShift.staff_id == user_staff.id)
+
+    # Apply date range filters
+    if start_date:
+        query = query.filter(EnhancedShift.date >= start_date)
+    if end_date:
+        query = query.filter(EnhancedShift.date <= end_date)
+
+    return query.all()
+
+
+# Availability Management
 @router.post("/availability", response_model=AvailabilityResponse)
 async def create_availability(
     availability: AvailabilityCreate,
