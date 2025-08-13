@@ -18,7 +18,8 @@ from core.inventory_schemas import (
     InventoryDashboardStats, InventoryAnalytics, UsageReportParams,
     BulkAdjustmentRequest, BulkInventoryUpdate,
     AdjustmentType, AlertPriority, AlertStatus,
-    WasteEventCreate, WasteEventResponse
+    WasteEventCreate, WasteEventResponse,
+    PurchaseOrder
 )
 from core.inventory_models import WasteReason
 from core.auth import require_permission, User
@@ -87,6 +88,20 @@ async def get_low_stock_items(
 ):
     """Get items that are below their reorder threshold"""
     return inventory_service.get_low_stock_items()
+
+
+@router.post("/auto-reorder", response_model=List[PurchaseOrder], status_code=status.HTTP_201_CREATED)
+async def auto_reorder_low_stock_items(
+    inventory_service: InventoryService = Depends(get_inventory_service),
+    current_user: User = Depends(require_permission("inventory:create"))
+):
+    """Automatically create draft purchase orders for all low-stock items.
+
+    The service groups low-stock inventory by vendor and generates a draft
+    purchase order for each vendor.  The newly created purchase orders are
+    returned so the caller can review and send them.
+    """
+    return inventory_service.auto_create_purchase_orders_for_low_stock(current_user.id)
 
 
 @router.get("/dashboard", response_model=InventoryDashboardStats)

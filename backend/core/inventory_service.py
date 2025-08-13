@@ -468,7 +468,10 @@ class InventoryService:
         ).scalar() or 0
         
         po.subtotal = total
-        po.total_amount = total + po.tax_amount + po.shipping_cost
+        # Handle None values for tax_amount and shipping_cost
+        tax_amount = po.tax_amount if po.tax_amount is not None else 0.0
+        shipping_cost = po.shipping_cost if po.shipping_cost is not None else 0.0
+        po.total_amount = total + tax_amount + shipping_cost
         self.db.commit()
 
     # Inventory Counting
@@ -513,6 +516,84 @@ class InventoryService:
         self.db.refresh(count_item)
         
         return count_item
+
+    # ------------------------------------------------------------
+    # Automated Re-order (Re-stock) Logic
+    # ------------------------------------------------------------
+    def auto_create_purchase_orders_for_low_stock(self, user_id: int = 0):
+        """Automatically generate purchase orders for any inventory items
+        that are currently below their reorder threshold.
+
+        The algorithm performs the following steps:
+
+        1. Fetch all low-stock items (using the helper already available).
+        2. Group the items by their upstream vendor (``vendor_id``).
+           • Items without a vendor are skipped – the business can manually
+             review those.
+        3. For every vendor group, create a *draft* purchase order using the
+           existing :py:meth:`create_purchase_order` helper.
+        4. Populate the newly created PO with :py:meth:`add_item_to_purchase_order`.
+           • ``quantity_ordered`` is derived from the item’s ``reorder_quantity``
+             field when provided; otherwise it defaults to the difference
+             between the current quantity and the threshold (minimum 1).
+           • ``unit_cost`` falls back to ``cost_per_unit`` if present, or 0.
+        5. Return the list of created purchase orders so the caller (route,
+           background task, etc.) can present them to the user.
+
+        NOTE: This helper purposefully does *not* check for pre-existing open
+        purchase orders.  That behaviour can be layered on later if required.
+        """
+
+        created_purchase_orders: List[PurchaseOrder] = []
+
+        low_stock_items = self.get_low_stock_items()
+
+        # Group items by vendor
+        vendor_map: Dict[int, List[Inventory]] = {}
+        for item in low_stock_items:
+            if not item.vendor_id:
+                # Cannot auto-reorder items without a vendor association
+                continue
+            vendor_map.setdefault(item.vendor_id, []).append(item)
+
+        for vendor_id, items in vendor_map.items():
+            po_data = {
+                "vendor_id": vendor_id,
+                "tax_amount": 0.0,
+                "shipping_cost": 0.0,
+                "subtotal": 0.0,
+                "total_amount": 0.0
+            }
+
+            # Create draft PO (status defaults to "draft")
+            po = self.create_purchase_order(po_data, user_id=user_id)
+
+            for inv_item in items:
+                # Determine quantity to order
+                if inv_item.reorder_quantity and inv_item.reorder_quantity > 0:
+                    qty_to_order = inv_item.reorder_quantity
+                else:
+                    # Order enough to reach the threshold again at minimum
+                    qty_to_order = max(inv_item.threshold - inv_item.quantity, 1)
+
+                unit_cost = inv_item.cost_per_unit or 0.0
+
+                po_item_data = {
+                    "inventory_id": inv_item.id,
+                    "quantity_ordered": qty_to_order,
+                    "unit_cost": unit_cost,
+                    "unit": inv_item.unit,
+                    "total_cost": unit_cost * qty_to_order,
+                }
+
+                # Utilise existing helper to attach item and recalc totals
+                self.add_item_to_purchase_order(po.id, po_item_data)
+
+            # Refresh PO totals and state
+            self.db.refresh(po)
+            created_purchase_orders.append(po)
+
+        return created_purchase_orders
 
     # Helper Methods
     def create_adjustment(self,
