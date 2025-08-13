@@ -206,7 +206,7 @@ class MenuVersioningService:
         
         return rollback_version
     
-    def compare_versions(self, request: VersionComparisonRequest) -> MenuVersionComparison:
+    def compare_versions(self, request: VersionComparisonRequest, user_id: Optional[int] = None) -> MenuVersionComparison:
         """Compare two menu versions and return differences"""
         
         from_version = self.db.query(MenuVersion).filter(MenuVersion.id == request.from_version_id).first()
@@ -220,7 +220,7 @@ class MenuVersioningService:
             and_(
                 MenuVersionComparison.from_version_id == request.from_version_id,
                 MenuVersionComparison.to_version_id == request.to_version_id,
-                or_(MenuVersionComparison.expires_at == None, MenuVersionComparison.expires_at > datetime.now(timezone.utc))
+                or_(MenuVersionComparison.expires_at.is_(None), MenuVersionComparison.expires_at > datetime.now(timezone.utc))
             )
         ).first()
         
@@ -236,7 +236,7 @@ class MenuVersioningService:
             to_version_id=request.to_version_id,
             comparison_data=comparison.dict(),
             summary=comparison.summary,
-            generated_by=1  # TODO: Get actual user ID
+            generated_by=user_id if user_id else 0  # Use provided user ID or default to system user
         )
         self.db.add(cache_entry)
         self.db.commit()
@@ -285,7 +285,7 @@ class MenuVersioningService:
     def get_versions(self, page: int = 1, size: int = 20, version_type: Optional[VersionType] = None) -> Tuple[List[MenuVersion], int]:
         """Get paginated list of versions"""
         
-        query = self.db.query(MenuVersion).filter(MenuVersion.deleted_at == None)
+        query = self.db.query(MenuVersion).filter(MenuVersion.deleted_at.is_(None))
         
         if version_type:
             query = query.filter(MenuVersion.version_type == version_type)
@@ -351,7 +351,7 @@ class MenuVersioningService:
     def _snapshot_categories(self, version_id: int, include_inactive: bool, audit_entries: List[MenuAuditLog]) -> List[MenuCategoryVersion]:
         """Create category snapshots for version"""
         
-        query = self.db.query(MenuCategory).filter(MenuCategory.deleted_at == None)
+        query = self.db.query(MenuCategory).filter(MenuCategory.deleted_at.is_(None))
         if not include_inactive:
             query = query.filter(MenuCategory.is_active == True)
         
@@ -380,7 +380,7 @@ class MenuVersioningService:
     def _snapshot_items(self, version_id: int, include_inactive: bool, audit_entries: List[MenuAuditLog]) -> List[MenuItemVersion]:
         """Create item snapshots for version"""
         
-        query = self.db.query(MenuItem).filter(MenuItem.deleted_at == None)
+        query = self.db.query(MenuItem).filter(MenuItem.deleted_at.is_(None))
         if not include_inactive:
             query = query.filter(MenuItem.is_active == True)
         
@@ -420,7 +420,7 @@ class MenuVersioningService:
     def _snapshot_modifiers(self, version_id: int, include_inactive: bool, audit_entries: List[MenuAuditLog]) -> List[ModifierGroupVersion]:
         """Create modifier snapshots for version"""
         
-        query = self.db.query(ModifierGroup).filter(ModifierGroup.deleted_at == None)
+        query = self.db.query(ModifierGroup).filter(ModifierGroup.deleted_at.is_(None))
         if not include_inactive:
             query = query.filter(ModifierGroup.is_active == True)
         
@@ -449,7 +449,7 @@ class MenuVersioningService:
             # Snapshot individual modifiers
             modifier_query = self.db.query(Modifier).filter(
                 Modifier.modifier_group_id == group.id,
-                Modifier.deleted_at == None
+                Modifier.deleted_at.is_(None)
             )
             if not include_inactive:
                 modifier_query = modifier_query.filter(Modifier.is_active == True)
@@ -780,13 +780,49 @@ class MenuVersioningService:
             generated_at=datetime.now(timezone.utc),
         )
 
+    def _bulk_change_items(self, request: BulkChangeRequest, audit_entries: List[MenuAuditLog], user_id: int) -> Dict[str, Any]:
+        """Apply bulk changes to menu items"""
+        results = {"updated": 0, "errors": []}
+        
+        items = self.db.query(MenuItem).filter(
+            MenuItem.id.in_(request.entity_ids),
+            MenuItem.deleted_at.is_(None)
+        ).all()
+        
+        for item in items:
+            try:
+                old_values = {k: getattr(item, k) for k in request.changes.keys() if hasattr(item, k)}
+                
+                for field, value in request.changes.items():
+                    if hasattr(item, field):
+                        setattr(item, field, value)
+                
+                audit_entries.append(MenuAuditLog(
+                    action="bulk_update",
+                    entity_type="menu_item",
+                    entity_id=item.id,
+                    entity_name=item.name,
+                    change_type=ChangeType.UPDATE,
+                    old_values=old_values,
+                    new_values=request.changes,
+                    changed_fields=list(request.changes.keys()),
+                    change_summary=f"Bulk update: {request.change_reason}",
+                    user_id=user_id
+                ))
+                
+                results["updated"] += 1
+            except Exception as e:
+                results["errors"].append(f"Item {item.id}: {str(e)}")
+        
+        return results
+
     def _bulk_change_categories(self, request: BulkChangeRequest, audit_entries: List[MenuAuditLog], user_id: int) -> Dict[str, Any]:
         """Apply bulk changes to menu categories"""
         results = {"updated": 0, "errors": []}
 
         categories = self.db.query(MenuCategory).filter(
             MenuCategory.id.in_(request.entity_ids),
-            MenuCategory.deleted_at == None,
+            MenuCategory.deleted_at.is_(None),
         ).all()
 
         for category in categories:
@@ -825,7 +861,7 @@ class MenuVersioningService:
         # For now we try groups first and fall back to modifiers.
         groups = self.db.query(ModifierGroup).filter(
             ModifierGroup.id.in_(request.entity_ids),
-            ModifierGroup.deleted_at == None,
+            ModifierGroup.deleted_at.is_(None),
         ).all()
 
         for group in groups:
@@ -858,7 +894,7 @@ class MenuVersioningService:
         if remaining_ids:
             modifiers = self.db.query(Modifier).filter(
                 Modifier.id.in_(remaining_ids),
-                Modifier.deleted_at == None,
+                Modifier.deleted_at.is_(None),
             ).all()
 
             for modifier in modifiers:
