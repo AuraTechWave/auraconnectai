@@ -161,6 +161,9 @@ class InventoryService:
                                  unit_cost: Optional[float] = None,
                                  reference_type: Optional[str] = None,
                                  reference_id: Optional[str] = None,
+                                 batch_number: Optional[str] = None,
+                                 expiration_date: Optional[datetime] = None,
+                                 location: Optional[str] = None,
                                  notes: Optional[str] = None) -> InventoryAdjustment:
         """Adjust inventory quantity with full audit trail"""
         item = self.get_inventory_by_id(inventory_id)
@@ -189,6 +192,9 @@ class InventoryService:
             unit_cost=unit_cost,
             reference_type=reference_type,
             reference_id=reference_id,
+            batch_number=batch_number,
+            expiration_date=expiration_date,
+            location=location,
             notes=notes,
             quantity_before=old_quantity,
             quantity_after=new_quantity
@@ -607,6 +613,9 @@ class InventoryService:
                          unit_cost: Optional[float] = None,
                          reference_type: Optional[str] = None,
                          reference_id: Optional[str] = None,
+                         batch_number: Optional[str] = None,
+                         expiration_date: Optional[datetime] = None,
+                         location: Optional[str] = None,
                          notes: Optional[str] = None) -> InventoryAdjustment:
         """Create inventory adjustment record"""
         inventory_item = self.get_inventory_by_id(inventory_id)
@@ -632,6 +641,9 @@ class InventoryService:
             total_cost=(unit_cost or inventory_item.cost_per_unit or 0) * abs(quantity_adjusted),
             reference_type=reference_type,
             reference_id=reference_id,
+            batch_number=batch_number,
+            expiration_date=expiration_date,
+            location=location,
             reason=reason,
             notes=notes,
             created_by=user_id
