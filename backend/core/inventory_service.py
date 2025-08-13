@@ -468,7 +468,10 @@ class InventoryService:
         ).scalar() or 0
         
         po.subtotal = total
-        po.total_amount = total + po.tax_amount + po.shipping_cost
+        # Handle None values for tax_amount and shipping_cost
+        tax_amount = po.tax_amount if po.tax_amount is not None else 0.0
+        shipping_cost = po.shipping_cost if po.shipping_cost is not None else 0.0
+        po.total_amount = total + tax_amount + shipping_cost
         self.db.commit()
 
     # Inventory Counting
@@ -554,7 +557,13 @@ class InventoryService:
             vendor_map.setdefault(item.vendor_id, []).append(item)
 
         for vendor_id, items in vendor_map.items():
-            po_data = {"vendor_id": vendor_id}
+            po_data = {
+                "vendor_id": vendor_id,
+                "tax_amount": 0.0,
+                "shipping_cost": 0.0,
+                "subtotal": 0.0,
+                "total_amount": 0.0
+            }
 
             # Create draft PO (status defaults to "draft")
             po = self.create_purchase_order(po_data, user_id=user_id)
