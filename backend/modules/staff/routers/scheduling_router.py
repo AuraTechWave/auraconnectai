@@ -8,7 +8,7 @@ import logging
 import re
 
 from core.database import get_db
-from core.auth import get_current_user, User
+from core.auth import get_current_user
 from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability,
     ShiftSwap, ShiftBreak, SchedulePublication
@@ -285,7 +285,7 @@ async def add_shift_break(
 async def get_shift_breaks(
     shift_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Retrieve all breaks for a given shift."""
     # Maintain backward compatibility: return empty list if shift doesn't exist
@@ -294,13 +294,15 @@ async def get_shift_breaks(
         return []  # Return empty list for backward compatibility instead of 404
     
     # Check if user has permission to view this shift's breaks
-    # Use current_user.id (not "sub" or "user_id")
+    # Note: get_current_user returns a User object but we access it as dict for consistency
+    # The User.id field maps to current_user["id"] when serialized
+    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
     user_staff = db.query(StaffMember).filter(
-        StaffMember.user_id == current_user.id
+        StaffMember.user_id == user_id
     ).first()
     
-    # Check if user is admin (from User model roles) - include payroll_manager
-    user_roles = current_user.roles if hasattr(current_user, 'roles') else []
+    # Check if user is admin (from roles) - include payroll_manager
+    user_roles = current_user.get("roles", []) if isinstance(current_user, dict) else current_user.roles
     is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
     
     if not user_staff:
@@ -314,8 +316,10 @@ async def get_shift_breaks(
         if shift.staff_id != user_staff.id and not is_admin:
             # Not their shift and not admin - check management permissions
             try:
+                # Use same pattern as other endpoints for consistency
+                auth_user_id = current_user.get("sub", user_id) if isinstance(current_user, dict) else user_id
                 SchedulingPermissions.require_permission(
-                    current_user.id,
+                    auth_user_id,
                     "view_analytics",
                     db,
                     location_id=shift.location_id
@@ -334,7 +338,7 @@ async def list_breaks(
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """List breaks optionally filtered by staff and date range for compliance monitoring.
     
@@ -344,13 +348,14 @@ async def list_breaks(
     - Admins can view all breaks (with optional location filter)
     """
     
-    # Check if user is admin from User model roles - consistent with other endpoint
-    user_roles = current_user.roles if hasattr(current_user, 'roles') else []
+    # Handle both dict and User object for compatibility
+    user_id = current_user.get("id") if isinstance(current_user, dict) else current_user.id
+    user_roles = current_user.get("roles", []) if isinstance(current_user, dict) else current_user.roles
     is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
     
-    # Get current user's staff record - use current_user.id
+    # Get current user's staff record
     user_staff = db.query(StaffMember).filter(
-        StaffMember.user_id == current_user.id
+        StaffMember.user_id == user_id
     ).first()
     
     # Start building the query
