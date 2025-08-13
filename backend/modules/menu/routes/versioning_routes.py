@@ -137,7 +137,7 @@ async def compare_versions(
     service = MenuVersioningService(db)
     
     try:
-        comparison = service.compare_versions(request)
+        comparison = service.compare_versions(request, current_user.id)
         return comparison
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -176,19 +176,19 @@ async def get_version_stats(
     from core.menu_versioning_models import MenuVersion, MenuAuditLog
     
     # Get basic counts
-    total_versions = db.query(MenuVersion).filter(MenuVersion.deleted_at == None).count()
+    total_versions = db.query(MenuVersion).filter(MenuVersion.deleted_at.is_(None)).count()
     published_versions = db.query(MenuVersion).filter(
         MenuVersion.is_published == True,
-        MenuVersion.deleted_at == None
+        MenuVersion.deleted_at.is_(None)
     ).count()
     draft_versions = db.query(MenuVersion).filter(
         MenuVersion.is_published == False,
-        MenuVersion.deleted_at == None
+        MenuVersion.deleted_at.is_(None)
     ).count()
     scheduled_versions = db.query(MenuVersion).filter(
-        MenuVersion.scheduled_publish_at != None,
+        MenuVersion.scheduled_publish_at.isnot(None),
         MenuVersion.is_published == False,
-        MenuVersion.deleted_at == None
+        MenuVersion.deleted_at.is_(None)
     ).count()
     
     # Get active version
@@ -286,7 +286,8 @@ async def delete_version(
     current_user: User = Depends(require_permission("menu:delete"))
 ):
     """Soft delete a menu version"""
-    version = db.query(MenuVersion).filter(MenuVersion.id == version_id).first()
+    from core.menu_versioning_models import MenuVersion as MenuVersionModel
+    version = db.query(MenuVersionModel).filter(MenuVersionModel.id == version_id).first()
     
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
