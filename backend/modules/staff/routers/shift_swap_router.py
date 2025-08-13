@@ -70,7 +70,7 @@ async def request_shift_swap(
         raise InvalidSwapRequestException(reason)
     
     # Create swap request
-    swap_data = swap_request.dict(exclude={'urgency', 'preferred_response_by'})
+    swap_data = swap_request.dict(exclude={'urgency', 'preferred_response_by', 'preferred_dates'})
     db_swap = ShiftSwap(
         requester_id=current_user["user_id"],
         **swap_data
