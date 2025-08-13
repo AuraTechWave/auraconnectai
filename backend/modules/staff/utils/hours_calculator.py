@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from ..models.attendance_models import AttendanceLog
 from ..services.attendance_optimizer import AttendanceOptimizer, DailyHoursSummary
+from ..services.config_manager import ConfigManager
 
 
 @dataclass
@@ -40,6 +41,7 @@ class HoursCalculator:
     def __init__(self, db: Session):
         self.db = db
         self.optimizer = AttendanceOptimizer(db)
+        self.config_manager = ConfigManager(db)
     
     def calculate_hours_for_period(
         self, 
@@ -78,10 +80,12 @@ class HoursCalculator:
         )
         
         # Calculate overtime efficiently
+        # Fetch dynamic overtime rules from configuration manager
+        overtime_rules = self.config_manager.get_overtime_rules()
         overtime_breakdown = self.optimizer.calculate_overtime_efficiently(
             daily_summaries,
-            daily_overtime_threshold=Decimal('8.0'),
-            weekly_overtime_threshold=Decimal('40.0')
+            daily_overtime_threshold=overtime_rules['daily_threshold'],
+            weekly_overtime_threshold=overtime_rules['weekly_threshold']
         )
         
         return HoursBreakdown(
@@ -132,19 +136,24 @@ class HoursCalculator:
         # Calculate regular vs overtime hours
         # Rule: Over 8 hours per day = daily overtime
         # Rule: Over 40 hours per week = weekly overtime
+        # Fetch overtime thresholds
+        overtime_rules = self.config_manager.get_overtime_rules()
+        daily_threshold = overtime_rules['daily_threshold']
+        weekly_threshold = overtime_rules['weekly_threshold']
+
         regular_hours = Decimal('0.00')
         overtime_hours = Decimal('0.00')
         
         for day_hours in daily_hours:
-            if day_hours > Decimal('8.0'):
-                regular_hours += Decimal('8.0')
-                overtime_hours += day_hours - Decimal('8.0')
+            if day_hours > daily_threshold:
+                regular_hours += daily_threshold
+                overtime_hours += day_hours - daily_threshold
             else:
                 regular_hours += day_hours
         
-        # Adjust for weekly overtime (40+ hours)
-        if total_hours > Decimal('40.0'):
-            weekly_overtime = total_hours - Decimal('40.0')
+        # Adjust for weekly overtime
+        if total_hours > weekly_threshold:
+            weekly_overtime = total_hours - weekly_threshold
             if weekly_overtime > overtime_hours:
                 # Convert some regular hours to overtime
                 additional_overtime = weekly_overtime - overtime_hours
@@ -205,11 +214,12 @@ class HoursCalculator:
         for staff_id in staff_ids:
             if staff_id in batch_results:
                 total_hours = batch_results[staff_id]['total_hours']
-                
-                # Apply simple overtime rules for batch processing
-                if total_hours > Decimal('40.0'):
-                    regular_hours = Decimal('40.0')
-                    overtime_hours = total_hours - Decimal('40.0')
+                # Apply overtime rules for batch processing (weekly only)
+                overtime_rules = self.config_manager.get_overtime_rules()
+                weekly_threshold = overtime_rules['weekly_threshold']
+                if total_hours > weekly_threshold:
+                    regular_hours = weekly_threshold
+                    overtime_hours = total_hours - weekly_threshold
                 else:
                     regular_hours = total_hours
                     overtime_hours = Decimal('0.00')
