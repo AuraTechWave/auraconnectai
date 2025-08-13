@@ -427,7 +427,58 @@ async def get_vendor_analytics(
             PurchaseOrder.vendor_id == vendor_id
         ).subquery().c.inventory_id
     ))).scalar() or 0
-    
+
+    # --- New supplier performance metrics ---
+    # Average delivery time (days) between order date and actual delivery date for completed orders
+    delivery_deltas = [
+        (po.actual_delivery_date - po.order_date).days
+        for po in completed_orders
+        if po.actual_delivery_date
+    ]
+    avg_delivery_days = sum(delivery_deltas) / len(delivery_deltas) if delivery_deltas else 0
+
+    # Average quality rating across all received PO items
+    quality_query = inventory_service.db.query(func.avg(PurchaseOrderItem.quality_rating)).join(PurchaseOrder).filter(
+        PurchaseOrder.vendor_id == vendor_id
+    )
+    if start_dt:
+        quality_query = quality_query.filter(PurchaseOrder.order_date >= start_dt)
+    if end_dt:
+        quality_query = quality_query.filter(PurchaseOrder.order_date <= end_dt)
+    avg_quality_rating = quality_query.scalar() or 0
+
+    # Count of quality issues (quality rating <= 2)
+    quality_issue_query = inventory_service.db.query(func.count(PurchaseOrderItem.id)).join(PurchaseOrder).filter(
+        PurchaseOrder.vendor_id == vendor_id,
+        PurchaseOrderItem.quality_rating <= 2
+    )
+    if start_dt:
+        quality_issue_query = quality_issue_query.filter(PurchaseOrder.order_date >= start_dt)
+    if end_dt:
+        quality_issue_query = quality_issue_query.filter(PurchaseOrder.order_date <= end_dt)
+    quality_issues_count = quality_issue_query.scalar() or 0
+
+    # Average price change percentage across items (max vs. min unit cost)
+    cost_subquery = inventory_service.db.query(
+        PurchaseOrderItem.inventory_id,
+        func.min(PurchaseOrderItem.unit_cost).label("min_cost"),
+        func.max(PurchaseOrderItem.unit_cost).label("max_cost")
+    ).join(PurchaseOrder).filter(
+        PurchaseOrder.vendor_id == vendor_id
+    )
+    if start_dt:
+        cost_subquery = cost_subquery.filter(PurchaseOrder.order_date >= start_dt)
+    if end_dt:
+        cost_subquery = cost_subquery.filter(PurchaseOrder.order_date <= end_dt)
+    cost_subquery = cost_subquery.group_by(PurchaseOrderItem.inventory_id).subquery()
+
+    avg_price_change_percent = inventory_service.db.query(
+        func.avg(
+            ((cost_subquery.c.max_cost - cost_subquery.c.min_cost) / func.nullif(cost_subquery.c.min_cost, 0)) * 100
+        )
+    ).scalar() or 0
+    # --- End new metrics ---
+
     return {
         "vendor": {
             "id": vendor.id,
@@ -448,7 +499,12 @@ async def get_vendor_analytics(
             "active_inventory_items": len([
                 item for item in vendor.inventory_items 
                 if item.is_active and not item.deleted_at
-            ]) if hasattr(vendor, 'inventory_items') else 0
+            ]) if hasattr(vendor, 'inventory_items') else 0,
+            # New metrics
+            "average_delivery_days": round(avg_delivery_days, 2),
+            "average_quality_rating": round(avg_quality_rating, 2) if avg_quality_rating else 0,
+            "quality_issues": quality_issues_count,
+            "average_price_change_percent": round(avg_price_change_percent, 2) if avg_price_change_percent else 0
         }
     }
 
