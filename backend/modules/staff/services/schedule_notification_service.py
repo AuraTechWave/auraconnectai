@@ -371,9 +371,9 @@ class ScheduleNotificationService:
                     )
                     email_tasks.append(
                         self.notification_service.send_notification(
-                            to=staff.email,
+                            recipient=staff.email,
                             subject=f"Your Schedule for {start_date.strftime('%b %d')} - {end_date.strftime('%b %d')}",
-                            html_content=email_content,
+                            message=email_content,
                             channel="email"
                         )
                     )
@@ -484,9 +484,9 @@ class ScheduleNotificationService:
                 
                 try:
                     await self.notification_service.send_notification(
-                        staff.phone,
-                        "Schedule Published",
-                        message,
+                        recipient=staff.phone,
+                        subject="Schedule Published",
+                        message=message,
                         channel="sms"
                     )
                     sent_count += 1
@@ -524,13 +524,18 @@ class ScheduleNotificationService:
                     "end_date": end_date.isoformat()
                 }
                 
-                try:
-                    await self.notification_service.send_notification(
-                        device_tokens, title, body, data, channel="push"
-                    )
-                    sent_count += 1
-                except Exception as e:
-                    logger.error(f"Push notification failed for {staff.name}: {e}")
+                # Send to each device token individually
+                for token in device_tokens:
+                    try:
+                        await self.notification_service.send_notification(
+                            recipient=token,
+                            subject=title,
+                            message=body,
+                            channel="push"
+                        )
+                        sent_count += 1
+                    except Exception as e:
+                        logger.error(f"Push notification failed for {staff.name} (token: {token[:10]}...): {e}")
         
         return sent_count
     
@@ -595,7 +600,10 @@ class ScheduleNotificationService:
                 
                 try:
                     await self.notification_service.send_notification(
-                        staff.email, subject, body, channel="email"
+                        recipient=staff.email,
+                        subject=subject,
+                        message=body,
+                        channel="email"
                     )
                     sent_count += 1
                 except Exception as e:
@@ -607,15 +615,18 @@ class ScheduleNotificationService:
                     title = "Schedule Updated"
                     body = f"Your schedule has been updated. {len(schedules)} shifts affected."
                     
-                    try:
-                        await self.notification_service.send_notification(
-                            device_tokens, title, body,
-                            {"type": "schedule_updated", "shift_count": len(schedules)},
-                            channel="push"
-                        )
-                        sent_count += 1
-                    except Exception as e:
-                        logger.error(f"Update push failed for {staff.name}: {e}")
+                    # Send to each device token individually
+                    for token in device_tokens:
+                        try:
+                            await self.notification_service.send_notification(
+                                recipient=token,
+                                subject=title,
+                                message=body,
+                                channel="push"
+                            )
+                            sent_count += 1
+                        except Exception as e:
+                            logger.error(f"Update push failed for {staff.name} (token: {token[:10]}...): {e}")
         
         return sent_count
     
@@ -659,11 +670,17 @@ class ScheduleNotificationService:
             title = "Shift Reminder"
             body = f"Your shift starts at {shift.start_time.strftime('%I:%M %p')} today"
             
-            await self.notification_service.send_notification(
-                device_tokens, title, body,
-                {"type": "shift_reminder", "shift_id": shift.id},
-                channel="push"
-            )
+            # Send to each device token individually
+            for token in device_tokens:
+                try:
+                    await self.notification_service.send_notification(
+                        recipient=token,
+                        subject=title,
+                        message=body,
+                        channel="push"
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send shift reminder to {staff.name} (token: {token[:10]}...): {e}")
         
         # Send SMS if configured
         if staff.phone and staff.notification_preferences.get("sms_reminders", False):
@@ -673,9 +690,9 @@ class ScheduleNotificationService:
                 f"Don't forget to clock in!"
             )
             await self.notification_service.send_notification(
-                staff.phone,
-                "Shift Reminder",
-                message,
+                recipient=staff.phone,
+                subject="Shift Reminder",
+                message=message,
                 channel="sms"
             )
 
