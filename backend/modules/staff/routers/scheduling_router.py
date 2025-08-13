@@ -8,7 +8,7 @@ import logging
 import re
 
 from core.database import get_db
-from core.auth import get_current_user
+from core.auth import get_current_user, User
 from ..models.scheduling_models import (
     EnhancedShift, ShiftTemplate, StaffAvailability,
     ShiftSwap, ShiftBreak, SchedulePublication
@@ -285,7 +285,7 @@ async def add_shift_break(
 async def get_shift_breaks(
     shift_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """Retrieve all breaks for a given shift."""
     # Maintain backward compatibility: return empty list if shift doesn't exist
@@ -294,13 +294,14 @@ async def get_shift_breaks(
         return []  # Return empty list for backward compatibility instead of 404
     
     # Check if user has permission to view this shift's breaks
+    # Use current_user.id (not "sub" or "user_id")
     user_staff = db.query(StaffMember).filter(
-        StaffMember.user_id == current_user["sub"]
+        StaffMember.user_id == current_user.id
     ).first()
     
-    # Check if user is admin (from JWT roles)
-    user_roles = current_user.get("roles", [])
-    is_admin = "admin" in user_roles or "system_admin" in user_roles
+    # Check if user is admin (from User model roles) - include payroll_manager
+    user_roles = current_user.roles if hasattr(current_user, 'roles') else []
+    is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
     
     if not user_staff:
         # If user has no StaffMember record, deny access unless they're an admin
@@ -314,7 +315,7 @@ async def get_shift_breaks(
             # Not their shift and not admin - check management permissions
             try:
                 SchedulingPermissions.require_permission(
-                    current_user["sub"],
+                    current_user.id,
                     "view_analytics",
                     db,
                     location_id=shift.location_id
@@ -333,7 +334,7 @@ async def list_breaks(
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """List breaks optionally filtered by staff and date range for compliance monitoring.
     
@@ -343,13 +344,13 @@ async def list_breaks(
     - Admins can view all breaks (with optional location filter)
     """
     
-    # Check if user is admin from JWT token roles
-    user_roles = current_user.get("roles", [])
-    is_admin = "admin" in user_roles or "system_admin" in user_roles or "payroll_manager" in user_roles
+    # Check if user is admin from User model roles - consistent with other endpoint
+    user_roles = current_user.roles if hasattr(current_user, 'roles') else []
+    is_admin = any(role in user_roles for role in ["admin", "system_admin", "payroll_manager"])
     
-    # Get current user's staff record
+    # Get current user's staff record - use current_user.id
     user_staff = db.query(StaffMember).filter(
-        StaffMember.user_id == current_user["sub"]
+        StaffMember.user_id == current_user.id
     ).first()
     
     # Start building the query
