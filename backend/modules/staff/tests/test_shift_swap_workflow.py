@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from sqlalchemy.orm import Session
 from unittest.mock import Mock, patch
 
@@ -12,6 +12,11 @@ from modules.staff.enums.scheduling_enums import (
 )
 from modules.staff.services.shift_swap_service import ShiftSwapService
 from modules.core.models import Restaurant, Location
+from .factories import (
+    RestaurantFactory, LocationFactory, RoleFactory,
+    StaffMemberFactory, ShiftFactory, SwapApprovalRuleFactory,
+    ShiftSwapFactory
+)
 
 
 class TestShiftSwapWorkflow:
@@ -25,51 +30,34 @@ class TestShiftSwapWorkflow:
     @pytest.fixture
     def test_restaurant(self):
         """Create test restaurant"""
-        return Restaurant(
-            id=1,
-            name="Test Restaurant",
-            created_at=datetime.utcnow()
-        )
+        return RestaurantFactory().create()
     
     @pytest.fixture
     def test_location(self, test_restaurant):
         """Create test location"""
-        return Location(
-            id=1,
-            name="Main Location",
-            restaurant_id=test_restaurant.id,
-            restaurant=test_restaurant
-        )
+        return LocationFactory(restaurant=test_restaurant).create()
     
     @pytest.fixture
     def test_role(self):
         """Create test role"""
-        return Role(
-            id=1,
-            name="Server",
-            restaurant_id=1
-        )
+        return RoleFactory().create()
     
     @pytest.fixture
     def test_staff(self, test_role):
         """Create test staff members"""
-        staff1 = StaffMember(
+        staff1 = StaffMemberFactory(
             id=1,
             name="John Doe",
-            role_id=test_role.id,
             role=test_role,
-            restaurant_id=1,
-            created_at=datetime.utcnow() - timedelta(days=120)  # 4 months tenure
-        )
+            tenure_days=120  # 4 months tenure
+        ).create()
         
-        staff2 = StaffMember(
+        staff2 = StaffMemberFactory(
             id=2,
             name="Jane Smith",
-            role_id=test_role.id,
             role=test_role,
-            restaurant_id=1,
-            created_at=datetime.utcnow() - timedelta(days=180)  # 6 months tenure
-        )
+            tenure_days=180  # 6 months tenure
+        ).create()
         
         return staff1, staff2
     
@@ -77,27 +65,7 @@ class TestShiftSwapWorkflow:
     def test_shifts(self, test_staff, test_location, test_role):
         """Create test shifts"""
         staff1, staff2 = test_staff
-        tomorrow = datetime.utcnow() + timedelta(days=1)
-        
-        shift1 = EnhancedShift(
-            id=1,
-            staff_id=staff1.id,
-            staff_member=staff1,
-            role_id=test_role.id,
-            role=test_role,
-            location_id=test_location.id,
-            location=test_location,
-            date=tomorrow.date(),
-            start_time=tomorrow.replace(hour=9, minute=0),
-            end_time=tomorrow.replace(hour=17, minute=0),
-            shift_type=ShiftType.REGULAR,
-            status=ShiftStatus.SCHEDULED
-        )
-        
-        shift2 = EnhancedShift(
-            id=2,
-            staff_id=staff2.id,
-            staff_member=staff2,
+        return ShiftFactory.create_pair(staff1, staff2, test_location, test_role)
             role_id=test_role.id,
             role=test_role,
             location_id=test_location.id,
@@ -133,24 +101,12 @@ class TestShiftSwapWorkflow:
     @pytest.fixture
     def approval_rule(self, test_restaurant):
         """Create test approval rule"""
-        return SwapApprovalRule(
-            id=1,
+        return SwapApprovalRuleFactory(
             restaurant_id=test_restaurant.id,
-            restaurant=test_restaurant,
             rule_name="Standard Auto-Approval",
-            is_active=True,
             priority=10,
-            max_hours_difference=2.0,
-            same_role_required=True,
-            same_location_required=True,
-            min_advance_notice_hours=24,
-            min_tenure_days=90,
-            max_swaps_per_month=3,
-            no_recent_violations=True,
-            requires_manager_approval=False,
-            requires_both_staff_consent=True,
-            approval_timeout_hours=48
-        )
+            requires_manager_approval=False
+        ).create()
     
     def test_auto_approval_eligible(self, db_session, test_swap, approval_rule):
         """Test auto-approval eligibility check"""
@@ -169,7 +125,7 @@ class TestShiftSwapWorkflow:
     def test_auto_approval_insufficient_notice(self, db_session, test_swap, approval_rule):
         """Test auto-approval fails with insufficient notice"""
         # Setup - shift starting in 12 hours
-        test_swap.from_shift.start_time = datetime.utcnow() + timedelta(hours=12)
+        test_swap.from_shift.start_time = datetime.now(timezone.utc) + timedelta(hours=12)
         service = ShiftSwapService(db_session)
         db_session.query(SwapApprovalRule).filter.return_value.order_by.return_value.all.return_value = [approval_rule]
         

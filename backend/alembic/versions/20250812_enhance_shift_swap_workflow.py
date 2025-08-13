@@ -73,13 +73,17 @@ def upgrade():
     op.create_index('idx_swap_approval_rules_priority', 'swap_approval_rules', ['restaurant_id', 'priority'], unique=False)
     
     # Create indexes for shift_swaps
-    op.create_index('idx_shift_swaps_pending', 'shift_swaps', ['status'], unique=False, postgresql_where=sa.text("status = 'pending'"))
+    op.create_index('idx_shift_swaps_pending', 'shift_swaps', ['status'], unique=False, 
+                    postgresql_where="status = 'pending'")
     op.create_index('idx_shift_swaps_auto_approval', 'shift_swaps', ['auto_approval_eligible'], unique=False)
     op.create_index('idx_shift_swaps_deadline', 'shift_swaps', ['response_deadline'], unique=False)
+    # Add composite index for monthly swap limit queries
+    op.create_index('idx_shift_swaps_requester_created', 'shift_swaps', ['requester_id', 'created_at'], unique=False)
 
 
 def downgrade():
     # Drop indexes
+    op.drop_index('idx_shift_swaps_requester_created', table_name='shift_swaps')
     op.drop_index('idx_shift_swaps_deadline', table_name='shift_swaps')
     op.drop_index('idx_shift_swaps_auto_approval', table_name='shift_swaps')
     op.drop_index('idx_shift_swaps_pending', table_name='shift_swaps')

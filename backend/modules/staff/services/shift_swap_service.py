@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
+from contextlib import contextmanager
 import logging
 
 from ..models.scheduling_models import (
@@ -12,6 +13,7 @@ from ..enums.scheduling_enums import (
     ShiftStatus, SwapStatus, AvailabilityStatus
 )
 from .scheduling_service import SchedulingService
+from ..config.shift_swap_config import shift_swap_config
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class ShiftSwapService:
         """Check if swap meets a specific rule's criteria"""
         
         # Check advance notice
-        hours_until_shift = (from_shift.start_time - datetime.utcnow()).total_seconds() / 3600
+        hours_until_shift = (from_shift.start_time - datetime.now(timezone.utc)).total_seconds() / 3600
         if hours_until_shift < rule.min_advance_notice_hours:
             return False, f"Insufficient advance notice (requires {rule.min_advance_notice_hours} hours)"
         
@@ -79,13 +81,13 @@ class ShiftSwapService:
         
         # Check staff tenure
         requester = swap.requester
-        requester_tenure_days = (datetime.utcnow() - requester.created_at).days
+        requester_tenure_days = (datetime.now(timezone.utc) - requester.created_at.replace(tzinfo=timezone.utc)).days
         if requester_tenure_days < rule.min_tenure_days:
             return False, f"Insufficient tenure (requires {rule.min_tenure_days} days)"
         
         # Check monthly swap limit
         if rule.max_swaps_per_month > 0:
-            month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             swap_count = self.db.query(ShiftSwap).filter(
                 and_(
                     ShiftSwap.requester_id == swap.requester_id,
@@ -122,8 +124,12 @@ class ShiftSwapService:
         
         # Check peak hours restriction
         if rule.peak_hours_restricted:
-            # Define peak hours (e.g., 11:00-14:00, 17:00-20:00)
-            peak_ranges = [(11, 14), (17, 20)]
+            # Get peak hours from rule configuration or use defaults
+            peak_ranges = (
+                rule.peak_hour_ranges 
+                if hasattr(rule, 'peak_hour_ranges') and rule.peak_hour_ranges 
+                else shift_swap_config.DEFAULT_PEAK_HOURS
+            )
             shift_hour = from_shift.start_time.hour
             
             for start_hour, end_hour in peak_ranges:
@@ -144,46 +150,51 @@ class ShiftSwapService:
     ) -> ShiftSwap:
         """Process a new swap request and check for auto-approval"""
         
-        swap = self.db.query(ShiftSwap).filter(ShiftSwap.id == swap_id).first()
-        if not swap:
-            raise ValueError("Swap request not found")
-        
-        # Check auto-approval eligibility
-        eligible, reason = self.check_auto_approval_eligibility(swap, restaurant_id)
-        
-        swap.auto_approval_eligible = eligible
-        swap.auto_approval_reason = reason
-        
-        if eligible:
-            # Auto-approve the swap
-            swap.status = SwapStatus.APPROVED
-            swap.approved_at = datetime.utcnow()
-            swap.approval_level = "auto"
+        try:
+            swap = self.db.query(ShiftSwap).filter(ShiftSwap.id == swap_id).first()
+            if not swap:
+                raise ValueError("Swap request not found")
             
-            # Execute the swap
-            self._execute_swap(swap)
+            logger.info(f"Processing swap request {swap_id} for restaurant {restaurant_id}")
+        
+            # Check auto-approval eligibility
+            eligible, reason = self.check_auto_approval_eligibility(swap, restaurant_id)
             
-            # Send notifications
-            self._send_approval_notification(swap)
-        else:
-            # Set response deadline based on urgency
-            if hasattr(swap, 'urgency'):
-                if swap.urgency == "urgent":
-                    deadline_hours = 24
-                elif swap.urgency == "flexible":
-                    deadline_hours = 72
-                else:
-                    deadline_hours = 48
+            swap.auto_approval_eligible = eligible
+            swap.auto_approval_reason = reason
+            
+            if eligible:
+                logger.info(f"Swap {swap_id} is eligible for auto-approval: {reason}")
+                # Auto-approve the swap
+                swap.status = SwapStatus.APPROVED
+                swap.approved_at = datetime.now(timezone.utc)
+                swap.approval_level = "auto"
+                
+                # Execute the swap
+                self._execute_swap(swap)
+                
+                # Send notifications
+                self._send_approval_notification(swap)
+                logger.info(f"Swap {swap_id} auto-approved and executed")
             else:
-                deadline_hours = 48
+                logger.info(f"Swap {swap_id} requires manual approval: {reason}")
+                # Set response deadline based on urgency
+                urgency = getattr(swap, 'urgency', 'normal')
+                deadline_hours = shift_swap_config.get_deadline_hours(urgency)
+                
+                swap.response_deadline = datetime.now(timezone.utc) + timedelta(hours=deadline_hours)
+                logger.debug(f"Set response deadline for swap {swap_id} to {deadline_hours} hours ({urgency} urgency)")
+                
+                # Send notifications to managers
+                self._send_approval_request_notification(swap)
             
-            swap.response_deadline = datetime.utcnow() + timedelta(hours=deadline_hours)
-            
-            # Send notifications to managers
-            self._send_approval_request_notification(swap)
-        
-        self.db.commit()
-        return swap
+            self.db.commit()
+            logger.info(f"Swap request {swap_id} processing completed")
+            return swap
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error processing swap request {swap_id}: {str(e)}")
+            raise
     
     def _execute_swap(self, swap: ShiftSwap):
         """Execute an approved swap"""

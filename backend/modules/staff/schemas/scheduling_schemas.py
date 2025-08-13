@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from enum import Enum
 
-from ..enums.scheduling_enums import ShiftStatus, SwapStatus
+from ..enums.scheduling_enums import ShiftStatus, SwapStatus, ShiftType, RecurrenceType, DayOfWeek, AvailabilityStatus, BreakType
 
 
 class ShiftTemplateCreate(BaseModel):
@@ -190,18 +190,44 @@ class AvailabilityResponse(BaseModel):
 
 class ShiftSwapRequest(BaseModel):
     requester_id: int
-    from_shift_id: int
-    to_shift_id: Optional[int] = None
-    to_staff_id: Optional[int] = None
+    from_shift_id: int = Field(..., gt=0, description="ID of the shift to swap from")
+    to_shift_id: Optional[int] = Field(None, gt=0, description="ID of the shift to swap with")
+    to_staff_id: Optional[int] = Field(None, gt=0, description="ID of the staff to assign shift to")
     reason: str = Field(..., min_length=1, max_length=500)
-    urgency: Optional[str] = "normal"  # "urgent", "normal", "flexible"
+    urgency: Optional[str] = Field("normal", regex="^(urgent|normal|flexible)$", description="Urgency level of swap request")
     preferred_dates: Optional[List[date]] = None
     preferred_response_by: Optional[datetime] = None
     
-    @validator('to_shift_id', 'to_staff_id')
+    @validator('from_shift_id')
+    def validate_from_shift_id(cls, v):
+        if v <= 0:
+            raise ValueError('from_shift_id must be a positive integer')
+        return v
+    
+    @validator('to_shift_id')
+    def validate_to_shift_id(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('to_shift_id must be a positive integer')
+        return v
+    
+    @validator('to_staff_id')
+    def validate_to_staff_id(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError('to_staff_id must be a positive integer')
+        return v
+    
+    @validator('to_staff_id')
     def validate_swap_target(cls, v, values):
         if 'to_shift_id' not in values and 'to_staff_id' not in values:
             raise ValueError('Must specify either to_shift_id or to_staff_id')
+        if v is not None and values.get('to_shift_id') is not None:
+            raise ValueError('Cannot specify both to_shift_id and to_staff_id')
+        return v
+    
+    @validator('preferred_response_by')
+    def validate_response_deadline(cls, v):
+        if v is not None and v <= datetime.now(timezone.utc):
+            raise ValueError('preferred_response_by must be in the future')
         return v
 
 

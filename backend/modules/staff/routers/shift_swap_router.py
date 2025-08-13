@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from typing import List, Optional
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 
 from core.database import get_db
 from core.auth import get_current_user
@@ -19,6 +19,12 @@ from ..services.shift_swap_service import ShiftSwapService
 from ..services.scheduling_service import SchedulingService
 from ..enums.scheduling_enums import SwapStatus
 from ..utils.permissions import SchedulingPermissions
+from ..config.shift_swap_config import shift_swap_config
+from ..exceptions.shift_swap_exceptions import (
+    ShiftNotFoundException,
+    UnauthorizedSwapException,
+    InvalidSwapRequestException
+)
 
 router = APIRouter()
 
@@ -47,10 +53,10 @@ async def request_shift_swap(
     ).first()
     
     if not from_shift:
-        raise HTTPException(status_code=404, detail="Shift not found")
+        raise ShiftNotFoundException(swap_request.from_shift_id)
     
     if from_shift.staff_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Can only swap your own shifts")
+        raise UnauthorizedSwapException()
     
     # Validate the swap request
     service = SchedulingService(db)
@@ -61,7 +67,7 @@ async def request_shift_swap(
     )
     
     if not valid:
-        raise HTTPException(status_code=400, detail=reason)
+        raise InvalidSwapRequestException(reason)
     
     # Create swap request
     db_swap = ShiftSwap(
@@ -72,12 +78,10 @@ async def request_shift_swap(
     # Set response deadline based on urgency
     if swap_request.preferred_response_by:
         db_swap.response_deadline = swap_request.preferred_response_by
-    elif swap_request.urgency == "urgent":
-        db_swap.response_deadline = datetime.utcnow() + timedelta(hours=24)
-    elif swap_request.urgency == "flexible":
-        db_swap.response_deadline = datetime.utcnow() + timedelta(hours=72)
     else:
-        db_swap.response_deadline = datetime.utcnow() + timedelta(hours=48)
+        urgency = getattr(swap_request, 'urgency', 'normal')
+        deadline_hours = shift_swap_config.get_deadline_hours(urgency)
+        db_swap.response_deadline = datetime.now(timezone.utc) + timedelta(hours=deadline_hours)
     
     db.add(db_swap)
     db.commit()
