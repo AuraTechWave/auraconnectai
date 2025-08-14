@@ -4,6 +4,7 @@ from fastapi.security import HTTPBearer
 from typing import Optional
 from core.exceptions import register_exception_handlers
 from core.tenant_context import TenantIsolationMiddleware
+from core.rate_limiter import RateLimitMiddleware
 from app.startup import run_startup_checks
 
 # ========== Authentication & Authorization ==========
@@ -208,7 +209,11 @@ app = FastAPI(
 # Register exception handlers for consistent error responses
 register_exception_handlers(app)
 
-# CRITICAL: Add tenant isolation middleware BEFORE CORS
+# CRITICAL: Add rate limiting middleware FIRST
+# This protects against DDoS and abuse before other processing
+app.add_middleware(RateLimitMiddleware)
+
+# Add tenant isolation middleware BEFORE CORS
 # This ensures tenant context is established for all requests
 app.add_middleware(TenantIsolationMiddleware)
 
