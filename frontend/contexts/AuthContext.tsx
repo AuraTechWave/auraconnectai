@@ -5,7 +5,7 @@
  * across the entire application.
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { authService } from '../services/authService';
 import { tokenManager } from '../services/tokenManager';
 
@@ -51,6 +51,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use useRef to maintain timer reference across re-renders
+  // This prevents memory leaks by ensuring the timer persists and can be properly cleared
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize auth state from stored tokens
   useEffect(() => {
@@ -101,9 +105,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       setIsLoading(true);
+      
+      // Clear any refresh timer first
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
       
       // Call backend logout endpoint if needed
       await authService.logout();
@@ -114,15 +124,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear user state
       setUser(null);
       
-      // Clear any refresh timer
-      clearTokenRefreshTimer();
-      
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   const register = async (email: string, password: string, name: string) => {
     try {
@@ -175,15 +182,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshToken = async () => {
+  const clearError = () => {
+    setError(null);
+  };
+
+  const clearTokenRefreshTimer = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
+
+  const refreshToken = useCallback(async () => {
     try {
-      const refreshToken = tokenManager.getRefreshToken();
+      const currentRefreshToken = tokenManager.getRefreshToken();
       
-      if (!refreshToken) {
+      if (!currentRefreshToken) {
         throw new Error('No refresh token available');
       }
       
-      const response = await authService.refreshToken(refreshToken);
+      const response = await authService.refreshToken(currentRefreshToken);
       
       // Update tokens
       tokenManager.setTokens(response.access_token, response.refresh_token);
@@ -193,22 +211,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(response.user);
       }
       
+      // Set up next refresh cycle
+      // Clear existing timer
+      clearTokenRefreshTimer();
+      
+      // Set up new timer (refresh 5 minutes before expiry)
+      const expiresIn = tokenManager.getTokenExpiry();
+      if (expiresIn > 0) {
+        const refreshIn = Math.max(0, expiresIn - 5 * 60 * 1000); // 5 minutes before expiry
+        refreshTimerRef.current = setTimeout(() => {
+          refreshToken().catch(console.error);
+        }, refreshIn);
+      }
+      
     } catch (err) {
       console.error('Token refresh failed:', err);
       // If refresh fails, logout user
-      await logout();
+      // Clear tokens
+      tokenManager.clearTokens();
+      
+      // Clear user state
+      setUser(null);
+      
+      // Clear any refresh timer
+      clearTokenRefreshTimer();
+      
       throw err;
     }
-  };
+  }, [clearTokenRefreshTimer]);
 
-  const clearError = () => {
-    setError(null);
-  };
-
-  // Token refresh timer
-  let refreshTimer: NodeJS.Timeout | null = null;
-
-  const setupTokenRefresh = () => {
+  const setupTokenRefresh = useCallback(() => {
     // Clear existing timer
     clearTokenRefreshTimer();
     
@@ -216,18 +248,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const expiresIn = tokenManager.getTokenExpiry();
     if (expiresIn > 0) {
       const refreshIn = Math.max(0, expiresIn - 5 * 60 * 1000); // 5 minutes before expiry
-      refreshTimer = setTimeout(() => {
+      refreshTimerRef.current = setTimeout(() => {
         refreshToken().catch(console.error);
       }, refreshIn);
     }
-  };
-
-  const clearTokenRefreshTimer = () => {
-    if (refreshTimer) {
-      clearTimeout(refreshTimer);
-      refreshTimer = null;
-    }
-  };
+  }, [clearTokenRefreshTimer, refreshToken]);
 
   // Set up token refresh on mount if authenticated
   useEffect(() => {
@@ -238,7 +263,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       clearTokenRefreshTimer();
     };
-  }, [user]);
+  }, [user, setupTokenRefresh, clearTokenRefreshTimer]);
 
   const value: AuthContextType = {
     user,
