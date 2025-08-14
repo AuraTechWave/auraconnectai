@@ -331,13 +331,10 @@ class SalesReportService:
     def _calculate_sales_metrics(self, filters: SalesFilterRequest) -> SalesCalculationResult:
         """Calculate core sales metrics from orders data with tenant isolation"""
         
-        # Build base query from orders with tenant filtering
+        # Build base query from orders
         query = self.db.query(Order).join(OrderItem)
         
-        # Apply tenant filtering to orders
-        query = apply_tenant_filter(query, Order)
-        
-        # Apply filters
+        # Apply all filters including tenant filtering (done once in _apply_order_filters)
         query = self._apply_order_filters(query, filters)
         
         # Calculate aggregated metrics
@@ -371,12 +368,18 @@ class SalesReportService:
             returning_customers=returning_customers
         )
     
-    def _apply_order_filters(self, query, filters: SalesFilterRequest):
-        """Apply filters to order query with tenant validation"""
+    def _apply_order_filters(self, query, filters: SalesFilterRequest, skip_tenant_filter: bool = False):
+        """Apply filters to order query with tenant validation
         
-        # Apply tenant filtering first (if not already applied)
-        # This ensures all queries are tenant-scoped
-        query = apply_tenant_filter(query, Order)
+        Args:
+            query: The SQLAlchemy query to filter
+            filters: The filter request parameters
+            skip_tenant_filter: If True, skip tenant filtering (use when already applied)
+        """
+        
+        # Apply tenant filtering first (only if not already applied)
+        if not skip_tenant_filter:
+            query = apply_tenant_filter(query, Order)
         
         # Date range filters
         if filters.date_from:
@@ -646,10 +649,9 @@ class SalesReportService:
     def _get_total_revenue(self, filters: SalesFilterRequest) -> Decimal:
         """Get total revenue for market share calculations with tenant isolation"""
         
-        query = self.db.query(func.coalesce(func.sum(Order.total_amount), 0))
-        # Apply tenant filtering before other filters
-        query = apply_tenant_filter(query, Order)
-        query = self._apply_order_filters(query.join(OrderItem), filters)
+        query = self.db.query(func.coalesce(func.sum(Order.total_amount), 0)).join(OrderItem)
+        # Apply all filters including tenant (done once in _apply_order_filters)
+        query = self._apply_order_filters(query, filters)
         
         return Decimal(str(query.scalar() or 0))
     
@@ -657,8 +659,7 @@ class SalesReportService:
         """Get total quantity sold for market share calculations with tenant isolation"""
         
         query = self.db.query(func.coalesce(func.sum(OrderItem.quantity), 0)).join(Order)
-        # Apply tenant filtering to orders
-        query = apply_tenant_filter(query, Order)
+        # Apply all filters including tenant (done once in _apply_order_filters)
         query = self._apply_order_filters(query, filters)
         
         return query.scalar() or 0

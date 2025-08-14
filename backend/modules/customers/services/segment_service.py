@@ -91,7 +91,7 @@ class CustomerSegmentService:
         )
         
         # Set tenant fields if they exist on the model
-        if hasattr(CustomerSegment, 'restaurant_id') and context.get('restaurant_id'):
+        if hasattr(CustomerSegment, 'restaurant_id') and context.get('restaurant_id') is not None:
             segment.restaurant_id = context.get('restaurant_id')
         
         self.db.add(segment)
@@ -206,7 +206,7 @@ class CustomerSegmentService:
         if customers:
             # Filter customers by tenant
             context = TenantContext.get()
-            if context and context.get('restaurant_id'):
+            if context and context.get('restaurant_id') is not None:
                 customers = [c for c in customers if 
                            getattr(c, 'restaurant_id', None) == context.get('restaurant_id')]
         

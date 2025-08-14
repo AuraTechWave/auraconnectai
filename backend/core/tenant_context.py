@@ -72,7 +72,7 @@ class TenantContext:
     def require_context():
         """Ensure tenant context is set, raise exception if not"""
         context = _tenant_context.get()
-        if not context or not (context.get('restaurant_id') or context.get('location_id')):
+        if not context or (context.get('restaurant_id') is None and context.get('location_id') is None):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Tenant context not established. Access denied."
@@ -270,9 +270,9 @@ def apply_tenant_filter(query: Query, model_class: Type) -> Query:
     
     filters = []
     for field in fields:
-        if field == 'restaurant_id' and restaurant_id and hasattr(model_class, 'restaurant_id'):
+        if field == 'restaurant_id' and restaurant_id is not None and hasattr(model_class, 'restaurant_id'):
             filters.append(model_class.restaurant_id == restaurant_id)
-        elif field == 'location_id' and location_id and hasattr(model_class, 'location_id'):
+        elif field == 'location_id' and location_id is not None and hasattr(model_class, 'location_id'):
             filters.append(model_class.location_id == location_id)
     
     if filters:
@@ -302,16 +302,16 @@ def validate_tenant_access(entity: Any, raise_on_violation: bool = True) -> bool
     # Check if entity has tenant fields and they match context
     valid = True
     
-    if hasattr(entity, 'restaurant_id') and entity.restaurant_id:
-        if restaurant_id and entity.restaurant_id != restaurant_id:
+    if hasattr(entity, 'restaurant_id') and entity.restaurant_id is not None:
+        if restaurant_id is not None and entity.restaurant_id != restaurant_id:
             valid = False
             logger.warning(
                 f"Tenant violation: Entity {entity.__class__.__name__}:{entity.id if hasattr(entity, 'id') else 'unknown'} "
                 f"restaurant_id {entity.restaurant_id} != context {restaurant_id}"
             )
     
-    if hasattr(entity, 'location_id') and entity.location_id:
-        if location_id and entity.location_id != location_id:
+    if hasattr(entity, 'location_id') and entity.location_id is not None:
+        if location_id is not None and entity.location_id != location_id:
             valid = False
             logger.warning(
                 f"Tenant violation: Entity {entity.__class__.__name__}:{entity.id if hasattr(entity, 'id') else 'unknown'} "

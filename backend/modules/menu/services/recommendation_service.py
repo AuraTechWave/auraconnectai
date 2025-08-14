@@ -138,7 +138,7 @@ class MenuRecommendationService:
         
         # Get tenant context for additional filtering if needed
         context = TenantContext.get()
-        if context and context.get('location_id'):
+        if context and context.get('location_id') is not None:
             # Additional location-based filtering through staff if location context exists
             order_query = order_query.join(
                 StaffMember, 
