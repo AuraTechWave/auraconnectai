@@ -86,7 +86,10 @@ class CustomerSegmentService:
             if field in update_values:
                 setattr(segment, field, update_values[field])
 
-        segment.updated_at = datetime.utcnow()
+        segment.last_updated = datetime.utcnow()
+        # Also update updated_at if it exists from TimestampMixin
+        if hasattr(segment, 'updated_at'):
+            segment.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(segment)
 
@@ -119,7 +122,10 @@ class CustomerSegmentService:
         # For static segments, only update the member count
         if not segment.is_dynamic:
             segment.member_count = len(segment.customers)  # type: ignore[arg-type]
-            segment.updated_at = datetime.utcnow()
+            segment.last_updated = datetime.utcnow()
+            # Also update updated_at if it exists from TimestampMixin
+            if hasattr(segment, 'updated_at'):
+                segment.updated_at = datetime.utcnow()
             self.db.commit()
             self.db.refresh(segment)
             return segment
@@ -130,7 +136,10 @@ class CustomerSegmentService:
         # Replace membership list.
         segment.customers = customers  # type: ignore[assignment]
         segment.member_count = len(customers)
-        segment.updated_at = datetime.utcnow()  # Use updated_at for consistency
+        segment.last_updated = datetime.utcnow()
+        # Also update updated_at if it exists from TimestampMixin
+        if hasattr(segment, 'updated_at'):
+            segment.updated_at = datetime.utcnow()
 
         self.db.commit()
         self.db.refresh(segment)
