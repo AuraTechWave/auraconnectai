@@ -52,15 +52,23 @@ async def export_user_data(current_user: User = Depends(get_current_user)):
     return data_package
 
 
-@router.delete("/delete", status_code=status.HTTP_202_ACCEPTED)
+@router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
 async def request_account_deletion(current_user: User = Depends(get_current_user)):
-    """Request deletion of personal data. For demo, we immediately wipe in-memory data."""
-    # Remove from mock DB
+    """Delete user account and all associated personal data.
+    
+    This performs immediate synchronous deletion. In production, consider
+    implementing async processing with status tracking.
+    """
+    # Mark user as inactive before deletion (for audit trail if needed)
     if current_user.username in MOCK_USERS:
+        MOCK_USERS[current_user.username]["is_active"] = False
+        # Now delete the user record
         del MOCK_USERS[current_user.username]
-    # Remove consents
+    
+    # Remove consent records
     if current_user.id in CONSENT_STORE:
         del CONSENT_STORE[current_user.id]
-    # Mark user inactive (in case downstream still references)
-    current_user.is_active = False
-    return {"detail": "Account deletion processed"}
+    
+    # Return 204 No Content for successful deletion
+    # Note: FastAPI will automatically return empty response with 204
+    return None
