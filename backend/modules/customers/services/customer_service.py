@@ -359,8 +359,8 @@ class CustomerService:
             day_name = day_names[int(dow)]
             preferred_order_days[day_name] = preferred_order_days.get(day_name, 0) + count
         
-        # Calculate lifetime value and churn risk
-        lifetime_value = customer.total_spent
+        # Calculate lifetime value (CLV)
+        lifetime_value = float(customer.lifetime_value) if hasattr(customer, "lifetime_value") and customer.lifetime_value is not None else customer.total_spent
         churn_risk_score = self._calculate_churn_risk(customer)
         
         # Days since last order

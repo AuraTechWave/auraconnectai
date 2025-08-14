@@ -273,7 +273,15 @@ class OrderLoyaltyIntegration:
                 # Update customer balance
                 customer.loyalty_points = max(0, customer.loyalty_points - points_to_reverse)
                 customer.lifetime_points = max(0, customer.lifetime_points - points_to_reverse)
-                customer.total_spent = max(0, customer.total_spent - refund_amount)
+            
+            # Only adjust lifetime_value for refunds, NOT total_spent
+            # total_spent represents the sum of all orders and should remain unchanged
+            # lifetime_value represents the net value after refunds
+            if customer.lifetime_value is None:
+                # Handle existing customers who might have null lifetime_value
+                customer.lifetime_value = float(customer.total_spent) if customer.total_spent else 0.0
+            
+            customer.lifetime_value = max(0, float(customer.lifetime_value) - refund_amount)
             
             self.db.commit()
             
