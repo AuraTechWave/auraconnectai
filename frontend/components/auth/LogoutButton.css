@@ -1,0 +1,324 @@
+/**
+ * Logout Button Styles
+ */
+
+/* Button Variants */
+.logout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-button:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.logout-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.logout-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.logout-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Link Variant */
+.logout-link {
+  color: #ef4444;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logout-link:hover {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.logout-link:focus {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Icon Button Variant */
+.logout-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.logout-icon-button:hover:not(:disabled) {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.logout-icon-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.logout-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.6s linear infinite;
+}
+
+.logout-icon-button .spinner-small {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-color: rgba(239, 68, 68, 0.3);
+  border-top-color: #ef4444;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Confirmation Dialog */
+.logout-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.logout-dialog {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 90%;
+  max-width: 440px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logout-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 0;
+}
+
+.logout-dialog-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dialog-close:hover {
+  background-color: #f3f4f6;
+  color: #1a202c;
+}
+
+.logout-dialog-body {
+  padding: 16px 24px 24px;
+}
+
+.logout-dialog-body p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.logout-dialog-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 0 24px 24px;
+}
+
+.dialog-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialog-button-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.dialog-button-cancel:hover {
+  background-color: #e5e7eb;
+}
+
+.dialog-button-confirm {
+  background-color: #ef4444;
+  color: white;
+}
+
+.dialog-button-confirm:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+}
+
+.dialog-button-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .logout-dialog {
+    width: 95%;
+    margin: 0 10px;
+  }
+
+  .logout-dialog-header {
+    padding: 20px 20px 0;
+  }
+
+  .logout-dialog-body {
+    padding: 12px 20px 20px;
+  }
+
+  .logout-dialog-footer {
+    padding: 0 20px 20px;
+    flex-direction: column-reverse;
+  }
+
+  .dialog-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .logout-dialog {
+    background-color: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .logout-dialog-header h2 {
+    color: #f3f4f6;
+  }
+
+  .logout-dialog-body p {
+    color: #d1d5db;
+  }
+
+  .dialog-close {
+    color: #9ca3af;
+  }
+
+  .dialog-close:hover {
+    background-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .dialog-button-cancel {
+    background-color: #374151;
+    color: #e5e7eb;
+  }
+
+  .dialog-button-cancel:hover {
+    background-color: #4b5563;
+  }
+
+  .logout-icon-button {
+    color: #9ca3af;
+    border-color: #374151;
+  }
+
+  .logout-icon-button:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+}
