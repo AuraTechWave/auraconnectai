@@ -18,6 +18,7 @@ from core.menu_schemas import (
     MenuItemResponse, MenuCategoryResponse, PaginatedResponse
 )
 from core.auth import require_permission, User
+from ..utils.dynamic_pricing_utils import apply_dynamic_pricing
 
 
 router = APIRouter(prefix="/menu", tags=["Menu Management"])
@@ -147,12 +148,24 @@ async def get_menu_items(
         sort_order=sort_order
     )
     
+    # Fetch the raw items from the database.
     items, total = menu_service.get_menu_items(params)
+
+    # Apply dynamic pricing based on current demand / inventory context.
+    adjusted_prices = await apply_dynamic_pricing(items)
+
+    # Convert SQLAlchemy objects → Pydantic models while injecting the new price.
+    pydantic_items: List[MenuItem] = []
+    for item in items:
+        p_item = MenuItem.from_orm(item)
+        p_item.price = adjusted_prices.get(item.id, item.price)
+        pydantic_items.append(p_item)
+
     pages = ceil(total / limit) if total > 0 else 0
     page = (offset // limit) + 1 if limit > 0 else 1
-    
+
     return MenuItemResponse(
-        items=items,
+        items=pydantic_items,
         total=total,
         page=page,
         size=limit,
@@ -173,7 +186,13 @@ async def get_menu_item_by_id(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Menu item not found"
         )
-    return item
+
+    # Apply dynamic pricing to the single item.
+    adjusted_price = (await apply_dynamic_pricing([item])).get(item.id, item.price)
+
+    p_item = MenuItemWithDetails.from_orm(item)
+    p_item.price = adjusted_price
+    return p_item
 
 
 @router.put("/items/{item_id}", response_model=MenuItem)

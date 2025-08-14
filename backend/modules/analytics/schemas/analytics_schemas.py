@@ -408,3 +408,38 @@ class SalesComparisonResponse(BaseModel):
         json_encoders = {
             Decimal: lambda v: float(v)
         }
+
+
+class MenuPerformanceResponse(BaseModel):
+    """Response schema for menu item performance analytics including profitability"""
+
+    menu_item_id: int
+    menu_item_name: Optional[str] = None
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+
+    # Sales performance metrics
+    quantity_sold: int
+    revenue_generated: Decimal
+    average_price: Decimal
+    order_frequency: int  # Number of orders containing this menu item
+
+    # Cost & profitability metrics
+    total_cost: Decimal
+    profit: Decimal
+    profit_margin: Optional[Decimal] = None  # Percentage
+
+    # Rankings
+    popularity_rank: Optional[int] = None
+    revenue_rank: Optional[int] = None
+    profit_rank: Optional[int] = None
+
+    # Time period
+    period_start: date
+    period_end: date
+
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            Decimal: lambda v: float(v)
+        }

@@ -20,6 +20,7 @@ from modules.staff.routes.attendance_routes import router as attendance_router
 from modules.staff.routes.shift_routes import router as shift_router
 from modules.staff.routers.biometric_router import router as biometric_router
 from modules.staff.routers.scheduling_router import router as scheduling_router
+from modules.staff.routers.shift_swap_router import router as shift_swap_router
 from modules.staff.routers.schedule_router import router as schedule_router
 
 # ========== Orders Management ==========
@@ -79,6 +80,7 @@ from modules.menu.routes.inventory_routes import router as menu_inventory_router
 from modules.menu.routes.versioning_routes import router as menu_versioning_router
 from modules.menu.routes.recipe_routes import router as recipe_router
 from modules.menu.routes.recipe_routes_optimized import router as recipe_router_optimized
+from modules.menu.routes.recommendation_routes import router as menu_recommendation_router
 
 # ========== Inventory Management ==========
 from modules.inventory.routes.inventory_routes import router as inventory_management_router
@@ -140,6 +142,9 @@ from modules.orders.tasks.webhook_retry_task import start_webhook_retry_schedule
 from modules.orders.tasks.pricing_rule_tasks import start_pricing_rule_worker, stop_pricing_rule_worker
 from modules.orders.tasks.queue_tasks import start_queue_monitor, stop_queue_monitor
 from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor
+
+# ========== GDPR Compliance ==========
+from modules.gdpr.routes.gdpr_routes import router as gdpr_router
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -226,6 +231,7 @@ app.include_router(attendance_router, prefix="/api/v1/staff", tags=["Staff Atten
 app.include_router(shift_router, prefix="/api/v1/staff", tags=["Staff Shifts"])
 app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biometrics"])
 app.include_router(scheduling_router, prefix="/api/v1/staff", tags=["Staff Scheduling"])
+app.include_router(shift_swap_router, prefix="/api/v1/staff", tags=["Shift Swapping"])
 app.include_router(schedule_router, prefix="/api/v1/staff", tags=["Staff Schedule Management"])
 
 # Orders Management
@@ -283,6 +289,7 @@ app.include_router(menu_inventory_router)
 app.include_router(menu_versioning_router)
 app.include_router(recipe_router, prefix="/api/v1/menu", tags=["Recipe Management"])
 app.include_router(recipe_router_optimized, prefix="/api/v1/menu", tags=["Recipe Management - Optimized"])
+app.include_router(menu_recommendation_router, prefix="/api/v1", tags=["Menu Recommendations"])
 
 # Inventory Management
 app.include_router(inventory_management_router)
@@ -308,6 +315,9 @@ app.include_router(ai_staffing_router, prefix="/api/v1/ai", tags=["AI Staffing R
 # Customer Management
 app.include_router(customer_router)
 app.include_router(customer_segment_router)
+
+# GDPR Compliance
+app.include_router(gdpr_router)
 
 # Reservations & Waitlist (Enhanced System)
 app.include_router(enhanced_reservation_router, prefix="/api/v1", tags=["Reservations"])

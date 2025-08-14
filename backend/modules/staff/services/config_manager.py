@@ -6,12 +6,16 @@ way to manage business rules and calculation parameters.
 """
 
 import os
+import logging
 from decimal import Decimal
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from ...payroll.models.payroll_configuration import PayrollConfiguration, PayrollConfigurationType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -69,20 +73,48 @@ class ConfigManager:
         """
         import time
         
-        # Check cache validity
-        if (self._config_cache is not None and 
-            self._cache_timestamp is not None and 
-            time.time() - self._cache_timestamp < self.cache_ttl):
-            return self._config_cache
+        try:
+            # Validate location parameter
+            if not isinstance(location, str) or len(location.strip()) == 0:
+                logger.warning(f"Invalid location parameter: {location}, using default")
+                location = "default"
+            
+            # Check cache validity
+            if (self._config_cache is not None and 
+                self._cache_timestamp is not None and 
+                time.time() - self._cache_timestamp < self.cache_ttl):
+                return self._config_cache
+            
+            # Load fresh configuration
+            config = self._load_configuration(location)
+            
+            # Update cache
+            self._config_cache = config
+            self._cache_timestamp = time.time()
+            
+            return config
+            
+        except Exception as e:
+            logger.error(f"Error getting configuration for location {location}: {e}")
+            # Return default configuration on error
+            return PayrollConfig()
+    
+    def get_config_with_cache_key(self, location: str = "default") -> tuple[PayrollConfig, str]:
+        """
+        Get payroll configuration with cache key for ETag support.
         
-        # Load fresh configuration
-        config = self._load_configuration(location)
+        Args:
+            location: Location-specific configuration
+            
+        Returns:
+            Tuple of (PayrollConfig, cache_key)
+        """
+        config = self.get_config(location)
         
-        # Update cache
-        self._config_cache = config
-        self._cache_timestamp = time.time()
+        # Generate cache key based on config values
+        cache_key = f"config_{location}_{hash(str(config.__dict__))}"
         
-        return config
+        return config, cache_key
     
     def _load_configuration(self, location: str) -> PayrollConfig:
         """Load configuration from database and environment variables."""
@@ -97,6 +129,12 @@ class ConfigManager:
         )
         config.overtime_multiplier = Decimal(
             os.getenv('PAYROLL_OT_MULTIPLIER', str(config.overtime_multiplier))
+        )
+        config.double_time_threshold = Decimal(
+            os.getenv('PAYROLL_DOUBLE_TIME_THRESHOLD', str(config.double_time_threshold))
+        )
+        config.double_time_multiplier = Decimal(
+            os.getenv('PAYROLL_DOUBLE_TIME_MULTIPLIER', str(config.double_time_multiplier))
         )
         
         # Load database configurations
@@ -121,6 +159,10 @@ class ConfigManager:
                 config.weekly_overtime_threshold = Decimal(str(config_value.get("threshold", config.weekly_overtime_threshold)))
             elif db_config.config_key == "overtime_multiplier":
                 config.overtime_multiplier = Decimal(str(config_value.get("multiplier", config.overtime_multiplier)))
+            elif db_config.config_key == "double_time_threshold":
+                config.double_time_threshold = Decimal(str(config_value.get("threshold", config.double_time_threshold)))
+            elif db_config.config_key == "double_time_multiplier":
+                config.double_time_multiplier = Decimal(str(config_value.get("multiplier", config.double_time_multiplier)))
         
         elif db_config.config_type == PayrollConfigurationType.BENEFIT_PRORATION:
             if db_config.config_key == "monthly_to_biweekly_factor":
@@ -135,6 +177,59 @@ class ConfigManager:
                 config.medicare_additional_threshold_single = Decimal(str(config_value.get("single", config.medicare_additional_threshold_single)))
                 config.medicare_additional_threshold_joint = Decimal(str(config_value.get("joint", config.medicare_additional_threshold_joint)))
     
+    def validate_overtime_rules(self, rules: Dict[str, Any]) -> List[str]:
+        """
+        Validate overtime rules for compliance and reasonableness.
+        
+        Args:
+            rules: Dictionary containing overtime rule values
+            
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors = []
+        
+        # Validate daily overtime threshold
+        daily_threshold = rules.get('daily_threshold', Decimal('8.0'))
+        if not isinstance(daily_threshold, (int, float, Decimal)):
+            errors.append("Daily overtime threshold must be a numeric value")
+        elif daily_threshold < Decimal('4.0') or daily_threshold > Decimal('12.0'):
+            errors.append("Daily overtime threshold should be between 4 and 12 hours")
+        
+        # Validate weekly overtime threshold
+        weekly_threshold = rules.get('weekly_threshold', Decimal('40.0'))
+        if not isinstance(weekly_threshold, (int, float, Decimal)):
+            errors.append("Weekly overtime threshold must be a numeric value")
+        elif weekly_threshold < Decimal('30.0') or weekly_threshold > Decimal('60.0'):
+            errors.append("Weekly overtime threshold should be between 30 and 60 hours")
+        
+        # Validate overtime multiplier
+        ot_multiplier = rules.get('overtime_multiplier', Decimal('1.5'))
+        if not isinstance(ot_multiplier, (int, float, Decimal)):
+            errors.append("Overtime multiplier must be a numeric value")
+        elif ot_multiplier < Decimal('1.0') or ot_multiplier > Decimal('3.0'):
+            errors.append("Overtime multiplier should be between 1.0 and 3.0")
+        
+        # Validate double time threshold
+        double_time_threshold = rules.get('double_time_threshold', Decimal('12.0'))
+        if not isinstance(double_time_threshold, (int, float, Decimal)):
+            errors.append("Double time threshold must be a numeric value")
+        elif double_time_threshold <= daily_threshold:
+            errors.append("Double time threshold must be greater than daily overtime threshold")
+        elif double_time_threshold > Decimal('16.0'):
+            errors.append("Double time threshold should not exceed 16 hours per day")
+        
+        # Validate double time multiplier
+        double_time_multiplier = rules.get('double_time_multiplier', Decimal('2.0'))
+        if not isinstance(double_time_multiplier, (int, float, Decimal)):
+            errors.append("Double time multiplier must be a numeric value")
+        elif double_time_multiplier <= ot_multiplier:
+            errors.append("Double time multiplier must be greater than overtime multiplier")
+        elif double_time_multiplier > Decimal('3.0'):
+            errors.append("Double time multiplier should not exceed 3.0")
+        
+        return errors
+    
     def get_overtime_rules(self, location: str = "default") -> Dict[str, Decimal]:
         """Get overtime calculation rules."""
         config = self.get_config(location)
@@ -145,6 +240,103 @@ class ConfigManager:
             "double_time_threshold": config.double_time_threshold,
             "double_time_multiplier": config.double_time_multiplier
         }
+    
+    def get_overtime_rules_with_cache_key(self, location: str = "default") -> tuple[Dict[str, Decimal], str]:
+        """
+        Get overtime rules with cache key for ETag support.
+        
+        Args:
+            location: Location-specific configuration
+            
+        Returns:
+            Tuple of (overtime_rules, cache_key)
+        """
+        rules = self.get_overtime_rules(location)
+        cache_key = f"overtime_rules_{location}_{hash(str(rules))}"
+        
+        return rules, cache_key
+    
+    def update_overtime_rules(
+        self, 
+        rules: Dict[str, Any], 
+        location: str = "default",
+        description: str = ""
+    ) -> List[str]:
+        """
+        Update overtime rules with validation.
+        
+        Args:
+            rules: Dictionary containing new overtime rule values
+            location: Location for the configuration
+            description: Human-readable description
+            
+        Returns:
+            List of validation error messages (empty if successful)
+        """
+        # Validate the rules first
+        errors = self.validate_overtime_rules(rules)
+        if errors:
+            return errors
+        
+        # Validate location format
+        if not isinstance(location, str) or len(location.strip()) == 0:
+            errors.append("Location must be a non-empty string")
+            return errors
+        
+        try:
+            # Update each rule individually
+            for rule_key, rule_value in rules.items():
+                if rule_key == "daily_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "daily_overtime_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "weekly_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "weekly_overtime_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "overtime_multiplier":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "overtime_multiplier",
+                        {"multiplier": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "double_time_threshold":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "double_time_threshold",
+                        {"threshold": float(rule_value)},
+                        location,
+                        description
+                    )
+                elif rule_key == "double_time_multiplier":
+                    self.update_configuration(
+                        PayrollConfigurationType.OVERTIME_RULES,
+                        "double_time_multiplier",
+                        {"multiplier": float(rule_value)},
+                        location,
+                        description
+                    )
+                else:
+                    logger.warning(f"Unknown overtime rule key: {rule_key}")
+            
+            # Clear cache to force reload
+            self.invalidate_cache()
+            
+        except Exception as e:
+            logger.error(f"Failed to update overtime rules: {e}")
+            errors.append(f"Failed to update configuration: {str(e)}")
+        
+        return errors
     
     def get_benefit_proration_factors(self, location: str = "default") -> Dict[str, Decimal]:
         """Get benefit proration factors for different pay frequencies."""
