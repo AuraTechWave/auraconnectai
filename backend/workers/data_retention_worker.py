@@ -10,7 +10,6 @@ for ops teams to tweak policies.
 from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
@@ -19,6 +18,7 @@ from arq.connections import RedisSettings
 
 from core.session_manager import SessionManager
 from core.database import get_db, SessionLocal
+from core.config_validation import config
 
 # Optional dependencies.  Import lazily so the worker still starts when a
 # given module is disabled / not installed.
@@ -105,7 +105,6 @@ class DataRetentionWorker:  # pylint: disable=too-few-public-methods
 
         start = datetime.utcnow()
 
-        from core.config_validation import config
         retention_days = config.ANALYTICS_RETENTION_DAYS
         service: AnalyticsTaskService = AnalyticsTaskService()  # type: ignore[valid-type]
         # The service method is *async* so we await it here.
@@ -135,8 +134,32 @@ async def shutdown(ctx: Dict[str, Any]):
 
 
 # Worker settings consumed by arq.run_worker
+# Get Redis URL from centralized config with production validation
+def get_redis_dsn():
+    """Get Redis DSN from centralized configuration.
+    
+    This ensures consistency with the main application's Redis configuration
+    and respects production environment requirements.
+    """
+    if config.REDIS_URL:
+        return config.REDIS_URL
+    
+    # In production, config validation would have already failed if REDIS_URL is missing
+    # This fallback is only for development environments
+    if config.ENVIRONMENT != "production":
+        default_url = "redis://localhost:6379"
+        logger.warning(
+            "REDIS_URL not configured, using default %s (development only)",
+            default_url
+        )
+        return default_url
+    
+    # This should never be reached due to config validation
+    raise ValueError("REDIS_URL is required but not configured")
+
+
 WorkerSettings = {
-    "redis_settings": RedisSettings.from_dsn(os.getenv("REDIS_URL", "redis://localhost:6379")),
+    "redis_settings": RedisSettings.from_dsn(get_redis_dsn()),
     "max_jobs": 10,
     "job_timeout": 300,
     "keep_result": 3600,  # 1h
