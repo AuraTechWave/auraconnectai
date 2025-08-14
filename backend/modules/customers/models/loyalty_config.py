@@ -215,7 +215,7 @@ DEFAULT_TIER_CONFIGS = [
     {
         "tier_name": "silver",
         "tier_order": 2,
-        "min_lifetime_points": 1000,
+        "min_lifetime_points": 2000,
         "display_name": "Silver",
         "description": "For regular customers",
         "benefits": {"point_multiplier": 1.2, "birthday_bonus": 100},
@@ -224,7 +224,7 @@ DEFAULT_TIER_CONFIGS = [
     {
         "tier_name": "gold",
         "tier_order": 3,
-        "min_lifetime_points": 2500,
+        "min_lifetime_points": 5000,
         "min_total_spent": 500.0,
         "display_name": "Gold",
         "description": "For valued customers",
@@ -234,7 +234,7 @@ DEFAULT_TIER_CONFIGS = [
     {
         "tier_name": "platinum",
         "tier_order": 4,
-        "min_lifetime_points": 5000,
+        "min_lifetime_points": 10000,
         "min_total_spent": 1000.0,
         "min_orders": 20,
         "display_name": "Platinum",
@@ -245,7 +245,7 @@ DEFAULT_TIER_CONFIGS = [
     {
         "tier_name": "vip",
         "tier_order": 5,
-        "min_lifetime_points": 10000,
+        "min_lifetime_points": 20000,
         "min_total_spent": 2500.0,
         "min_orders": 50,
         "min_months_active": 12,
