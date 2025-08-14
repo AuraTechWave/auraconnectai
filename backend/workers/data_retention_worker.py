@@ -13,13 +13,12 @@ import logging
 import os
 from datetime import datetime, timedelta
 from typing import Dict, Any
-from contextlib import closing
 
 from arq import cron
 from arq.connections import RedisSettings
 
 from core.session_manager import SessionManager
-from core.database import get_db
+from core.database import get_db, SessionLocal
 
 # Optional dependencies.  Import lazily so the worker still starts when a
 # given module is disabled / not installed.
@@ -73,22 +72,15 @@ class DataRetentionWorker:  # pylint: disable=too-few-public-methods
 
         start = datetime.utcnow()
 
-        # Run synchronous database operations in async context
-        # Use a helper to properly exhaust the generator and ensure cleanup
-        biometric_cnt = 0
-        audit_cnt = 0
-        
-        # Create a helper function to properly use the generator
-        def run_cleanup():
-            nonlocal biometric_cnt, audit_cnt
-            # This will properly iterate through the generator ensuring finally block runs
-            for db in get_db():
-                service = BiometricService(db)  # type: ignore[call-arg]
-                biometric_cnt, audit_cnt = service.cleanup_expired_data()
-                break  # Only need one iteration
-        
-        # Run the synchronous operation
-        run_cleanup()
+        # Create a database session with proper cleanup
+        # Using SessionLocal directly ensures we have full control over the session lifecycle
+        db = SessionLocal()
+        try:
+            service = BiometricService(db)  # type: ignore[call-arg]
+            biometric_cnt, audit_cnt = service.cleanup_expired_data()
+        finally:
+            # Ensure the session is properly closed
+            db.close()
 
         logger.info(
             "Removed %s biometric records and %s audit entries", biometric_cnt, audit_cnt
