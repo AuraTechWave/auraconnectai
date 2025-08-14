@@ -72,9 +72,13 @@ class DataRetentionWorker:  # pylint: disable=too-few-public-methods
 
         start = datetime.utcnow()
 
-        async with get_db() as db:  # type: ignore[attr-defined]
+        # Use synchronous context manager since get_db() is not async
+        db = next(get_db())
+        try:
             service = BiometricService(db)  # type: ignore[call-arg]
             biometric_cnt, audit_cnt = service.cleanup_expired_data()
+        finally:
+            db.close()
 
         logger.info(
             "Removed %s biometric records and %s audit entries", biometric_cnt, audit_cnt
