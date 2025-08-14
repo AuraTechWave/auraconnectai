@@ -380,10 +380,16 @@ class OrderHistoryService:
         
         # Update customer stats
         if order_stats.total_orders:
+            # Calculate the difference in refunds (lifetime_value might be less than total_spent due to refunds)
+            refund_adjustments = float(customer.lifetime_value) - float(customer.total_spent) if customer.lifetime_value is not None else 0
+            
             customer.total_orders = order_stats.total_orders
             customer.total_spent = float(order_stats.total_spent) if order_stats.total_spent else 0
-            # Keep lifetime_value in sync with total_spent for now
-            customer.lifetime_value = customer.total_spent
+            
+            # Preserve refund adjustments by applying them to the new total_spent
+            # If refund_adjustments is negative, it means there were refunds
+            customer.lifetime_value = customer.total_spent + refund_adjustments
+            
             customer.average_order_value = customer.total_spent / customer.total_orders if customer.total_orders else 0
             customer.first_order_date = order_stats.first_order_date
             customer.last_order_date = order_stats.last_order_date
