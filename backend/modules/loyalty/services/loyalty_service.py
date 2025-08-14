@@ -850,7 +850,9 @@ class LoyaltyService:
         # Legacy static calculation (back-compat)
         lifetime_points = self._get_lifetime_points_earned(customer_id)
 
-        if lifetime_points >= 10000:
+        if lifetime_points >= 20000:
+            return "vip"
+        elif lifetime_points >= 10000:
             return "platinum"
         elif lifetime_points >= 5000:
             return "gold"
@@ -909,10 +911,11 @@ class LoyaltyService:
             "bronze": {"min": 0, "benefits": ["1x points earning"]},
             "silver": {"min": 2000, "benefits": ["1.2x points earning", "Birthday bonus"]},
             "gold": {"min": 5000, "benefits": ["1.5x points earning", "Birthday bonus", "Free delivery"]},
-            "platinum": {"min": 10000, "benefits": ["2x points earning", "Birthday bonus", "Free delivery", "VIP support"]}
+            "platinum": {"min": 10000, "benefits": ["2x points earning", "Birthday bonus", "Free delivery", "VIP support"]},
+            "vip": {"min": 20000, "benefits": ["2.5x points earning", "Birthday bonus", "Free delivery", "VIP support", "Exclusive offers"]}
         }
 
-        tier_order = ["bronze", "silver", "gold", "platinum"]
+        tier_order = ["bronze", "silver", "gold", "platinum", "vip"]
         current_idx = tier_order.index(current_tier)
 
         result = {
