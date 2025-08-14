@@ -13,6 +13,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from typing import Dict, Any
+from contextlib import closing
 
 from arq import cron
 from arq.connections import RedisSettings
@@ -72,13 +73,22 @@ class DataRetentionWorker:  # pylint: disable=too-few-public-methods
 
         start = datetime.utcnow()
 
-        # Use synchronous context manager since get_db() is not async
-        db = next(get_db())
-        try:
-            service = BiometricService(db)  # type: ignore[call-arg]
-            biometric_cnt, audit_cnt = service.cleanup_expired_data()
-        finally:
-            db.close()
+        # Run synchronous database operations in async context
+        # Use a helper to properly exhaust the generator and ensure cleanup
+        biometric_cnt = 0
+        audit_cnt = 0
+        
+        # Create a helper function to properly use the generator
+        def run_cleanup():
+            nonlocal biometric_cnt, audit_cnt
+            # This will properly iterate through the generator ensuring finally block runs
+            for db in get_db():
+                service = BiometricService(db)  # type: ignore[call-arg]
+                biometric_cnt, audit_cnt = service.cleanup_expired_data()
+                break  # Only need one iteration
+        
+        # Run the synchronous operation
+        run_cleanup()
 
         logger.info(
             "Removed %s biometric records and %s audit entries", biometric_cnt, audit_cnt
