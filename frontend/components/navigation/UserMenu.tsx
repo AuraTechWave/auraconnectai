@@ -69,11 +69,40 @@ const UserMenu: React.FC<UserMenuProps> = ({
 
   const getUserInitials = () => {
     if (!user.email) return '?';
-    const parts = user.email.split('@')[0].split('.');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+    
+    // If user has a name, use that for initials
+    if (user.name) {
+      const nameParts = user.name.trim().split(/\s+/).filter(part => part.length > 0);
+      if (nameParts.length >= 2) {
+        return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+      } else if (nameParts.length === 1 && nameParts[0].length > 0) {
+        return nameParts[0].substring(0, 2).toUpperCase();
+      }
     }
-    return user.email[0].toUpperCase();
+    
+    // Fall back to email-based initials
+    const emailLocal = user.email.split('@')[0];
+    
+    // Remove leading/trailing periods and split by period
+    const parts = emailLocal.split('.').filter(part => part.length > 0);
+    
+    if (parts.length >= 2) {
+      // Use first character of first two non-empty parts
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    } else if (parts.length === 1) {
+      // Use first two characters of the single part, or just one if it's short
+      const part = parts[0];
+      return part.length >= 2 ? part.substring(0, 2).toUpperCase() : part[0].toUpperCase();
+    }
+    
+    // Final fallback: use first valid character from email
+    for (let i = 0; i < emailLocal.length; i++) {
+      if (/[a-zA-Z0-9]/.test(emailLocal[i])) {
+        return emailLocal[i].toUpperCase();
+      }
+    }
+    
+    return '?';
   };
 
   const getUserDisplayName = () => {
