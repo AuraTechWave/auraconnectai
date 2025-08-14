@@ -261,7 +261,7 @@ const LoginPage: React.FC = () => {
               <Link to="/auth/forgot-password">Reset your password</Link>
             </li>
             <li>
-              <a href="/support">Contact support</a>
+              <Link to="/support">Contact support</Link>
             </li>
           </ul>
         </div>

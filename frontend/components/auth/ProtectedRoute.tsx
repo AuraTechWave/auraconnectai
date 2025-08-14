@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { tokenManager } from '../../services/tokenManager';
+import './ProtectedRoute.css';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -63,7 +64,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <h1>Access Denied</h1>
           <p>You don't have permission to access this page.</p>
           <p>Required role: {requiredRoles.join(' or ')}</p>
-          <a href="/dashboard">Return to Dashboard</a>
+          <Link to="/dashboard">Return to Dashboard</Link>
         </div>
       );
     }
@@ -81,7 +82,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <h1>Access Denied</h1>
           <p>You don't have the required permissions to access this page.</p>
           <p>Required permissions: {requiredPermissions.join(', ')}</p>
-          <a href="/dashboard">Return to Dashboard</a>
+          <Link to="/dashboard">Return to Dashboard</Link>
         </div>
       );
     }
