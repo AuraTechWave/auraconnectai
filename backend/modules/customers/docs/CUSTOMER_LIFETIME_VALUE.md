@@ -78,6 +78,18 @@ order_history_service.update_customer_order_stats(customer_id=456)
 3. **Handle refunds through the loyalty integration** - Maintains consistency across points and financial metrics
 4. **Monitor the difference between `total_spent` and `lifetime_value`** - This indicates total refunds issued
 
+## Edge Cases and Safeguards
+
+### Data Integrity Rules
+1. **lifetime_value ≤ total_spent** - Always enforced
+2. **lifetime_value ≥ 0** - Never negative
+3. **Null handling** - Automatically initialized from total_spent
+
+### Common Scenarios
+- **Order Cancellations**: When orders are cancelled, total_spent decreases but refund history is preserved
+- **Data Inconsistencies**: Automatically corrected when lifetime_value > total_spent
+- **Large Refunds**: lifetime_value is clamped to 0 if refund exceeds current value
+
 ## Database Schema
 
 ```sql
@@ -94,11 +106,17 @@ CHECK (lifetime_value <= total_spent);
 
 ### Migration for Existing Data
 
-For existing customers with null `lifetime_value`:
+For existing customers with null or inconsistent `lifetime_value`:
 ```sql
+-- Initialize null values
 UPDATE customers 
 SET lifetime_value = COALESCE(total_spent, 0.0)
 WHERE lifetime_value IS NULL;
+
+-- Fix data inconsistencies
+UPDATE customers
+SET lifetime_value = total_spent
+WHERE lifetime_value > total_spent;
 ```
 
 ## Testing

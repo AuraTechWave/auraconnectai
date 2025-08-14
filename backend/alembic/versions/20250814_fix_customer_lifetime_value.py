@@ -33,6 +33,15 @@ def upgrade():
         """)
     )
     
+    # Fix any existing data inconsistencies where lifetime_value > total_spent
+    op.execute(
+        text("""
+            UPDATE customers
+            SET lifetime_value = total_spent
+            WHERE lifetime_value > total_spent
+        """)
+    )
+    
     # Add a check constraint to ensure lifetime_value is never greater than total_spent
     # (refunds can only decrease lifetime_value)
     op.create_check_constraint(

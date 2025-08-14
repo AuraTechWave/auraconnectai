@@ -202,3 +202,69 @@ class TestCLVBugFixes:
         assert mock_customer.total_spent == 150.0  # Unchanged
         assert mock_customer.lifetime_value == 120.0  # 150 - 30
         assert result["success"] is True
+    
+    def test_lifetime_value_never_exceeds_total_spent(self):
+        """Test that lifetime_value is corrected if it exceeds total_spent"""
+        from modules.customers.services.order_history_service import OrderHistoryService
+        
+        mock_db = Mock()
+        
+        # Create customer with data inconsistency (lifetime_value > total_spent)
+        mock_customer = Mock()
+        mock_customer.id = 1
+        mock_customer.total_spent = 100.0
+        mock_customer.lifetime_value = 150.0  # ERROR: Greater than total_spent!
+        mock_customer.total_orders = 2
+        
+        mock_db.query().filter().first.return_value = mock_customer
+        
+        # Mock order stats showing actual total is 200
+        mock_stats = Mock()
+        mock_stats.total_orders = 3
+        mock_stats.total_spent = 200.0
+        mock_stats.first_order_date = Mock()
+        mock_stats.last_order_date = Mock()
+        
+        mock_db.query().filter().first.return_value = mock_stats
+        
+        service = OrderHistoryService(mock_db)
+        result = service.update_customer_order_stats(customer_id=1)
+        
+        # Should correct the inconsistency
+        # total_refunds = max(0, 100 - 150) = 0 (corrected)
+        # lifetime_value = 200 - 0 = 200
+        assert mock_customer.total_spent == 200.0
+        assert mock_customer.lifetime_value == 200.0
+    
+    def test_lifetime_value_with_cancelled_orders(self):
+        """Test CLV calculation when orders are cancelled reducing total_spent"""
+        from modules.customers.services.order_history_service import OrderHistoryService
+        
+        mock_db = Mock()
+        
+        # Customer had $500 in orders, $100 refunded (lifetime_value = 400)
+        # Then $200 of orders were cancelled
+        mock_customer = Mock()
+        mock_customer.id = 1
+        mock_customer.total_spent = 500.0
+        mock_customer.lifetime_value = 400.0  # $100 in refunds
+        mock_customer.total_orders = 5
+        
+        mock_db.query().filter().first.return_value = mock_customer
+        
+        # New stats show only $300 in completed orders (after cancellations)
+        mock_stats = Mock()
+        mock_stats.total_orders = 3
+        mock_stats.total_spent = 300.0  # Less than previous due to cancellations
+        mock_stats.first_order_date = Mock()
+        mock_stats.last_order_date = Mock()
+        
+        mock_db.query().filter().first.return_value = mock_stats
+        
+        service = OrderHistoryService(mock_db)
+        result = service.update_customer_order_stats(customer_id=1)
+        
+        # total_refunds = 500 - 400 = 100
+        # new lifetime_value = max(0, min(300, 300 - 100)) = 200
+        assert mock_customer.total_spent == 300.0
+        assert mock_customer.lifetime_value == 200.0  # 300 - 100 (preserved refunds)

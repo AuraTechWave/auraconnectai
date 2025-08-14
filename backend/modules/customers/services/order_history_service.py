@@ -388,18 +388,25 @@ class OrderHistoryService:
                 # For existing customers without lifetime_value, initialize it to total_spent
                 customer.lifetime_value = float(customer.total_spent) if customer.total_spent else 0
             
-            # Calculate refunds as the difference between current lifetime_value and current total_spent
+            # Calculate refunds as the difference between current total_spent and lifetime_value
             # This represents the total amount refunded to the customer
             current_lifetime_value = float(customer.lifetime_value)
             current_total_spent = float(customer.total_spent) if customer.total_spent else 0
-            total_refunds = current_total_spent - current_lifetime_value
+            
+            # Safeguard: lifetime_value should never exceed total_spent
+            if current_lifetime_value > current_total_spent:
+                logger.warning(f"Data inconsistency for customer {customer.id}: lifetime_value ({current_lifetime_value}) > total_spent ({current_total_spent}). Correcting...")
+                current_lifetime_value = current_total_spent
+            
+            # Calculate total refunds (should always be >= 0)
+            total_refunds = max(0, current_total_spent - current_lifetime_value)
             
             # Update total_spent to the newly calculated value
             customer.total_spent = new_total_spent
             
             # Apply the refund history to the new total_spent
-            # lifetime_value = total_spent - total_refunds
-            customer.lifetime_value = new_total_spent - total_refunds
+            # Ensure lifetime_value is between 0 and total_spent
+            customer.lifetime_value = max(0, min(new_total_spent, new_total_spent - total_refunds))
             
             customer.average_order_value = customer.total_spent / customer.total_orders if customer.total_orders else 0
             customer.first_order_date = order_stats.first_order_date

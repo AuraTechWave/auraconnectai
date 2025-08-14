@@ -121,8 +121,8 @@ class TestCLVRefundIntegration:
         services['loyalty'].handle_partial_refund(order1.id, 75.0)
         
         db.refresh(test_customer)
-        assert test_customer.total_spent == 275.0
-        assert test_customer.lifetime_value == 275.0
+        assert test_customer.total_spent == 350.0  # Should remain unchanged
+        assert test_customer.lifetime_value == 275.0  # $350 - $75
         
         # Create third order ($100)
         order3, total3 = self.create_order(
@@ -207,7 +207,7 @@ class TestCLVRefundIntegration:
         
         db.refresh(test_customer)
         assert test_customer.total_spent == 0.0  # No completed orders
-        assert test_customer.lifetime_value == -30.0  # Preserves the refund adjustment
+        assert test_customer.lifetime_value == 0.0  # Can't be negative, even with refunds
     
     def test_clv_calculation_performance(
         self,

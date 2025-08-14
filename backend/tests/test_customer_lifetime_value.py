@@ -157,9 +157,9 @@ class TestCustomerLifetimeValue:
         
         db.refresh(customer)
         
-        # Verify adjustments
-        assert customer.total_spent == 50.0  # $80 - $30
-        assert customer.lifetime_value == 50.0  # Should also be adjusted
+        # Verify adjustments - total_spent should NOT change
+        assert customer.total_spent == 80.0  # Should remain unchanged
+        assert customer.lifetime_value == 50.0  # $80 - $30
         assert customer.loyalty_points == 50  # 80 - (80 * 0.375) = 50
         assert refund_result["success"] is True
         assert refund_result["points_adjusted"] == 30  # 30 points reversed
@@ -208,8 +208,8 @@ class TestCustomerLifetimeValue:
         loyalty_integration.handle_partial_refund(order1.id, 40.0)
         
         db.refresh(customer)
-        assert customer.total_spent == 110.0  # $150 - $40
-        assert customer.lifetime_value == 110.0
+        assert customer.total_spent == 150.0  # Should remain unchanged
+        assert customer.lifetime_value == 110.0  # $150 - $40
         
         # Update stats to ensure refund is preserved
         order_history_service.update_customer_order_stats(customer.id)
@@ -252,8 +252,8 @@ class TestCustomerLifetimeValue:
         
         db.refresh(customer)
         
-        # Verify values don't go negative
-        assert customer.total_spent == 0.0  # max(0, 50 - 100) = 0
+        # Verify total_spent unchanged and lifetime_value doesn't go negative
+        assert customer.total_spent == 50.0  # Should remain unchanged
         assert customer.lifetime_value == 0.0  # max(0, 50 - 100) = 0
         assert refund_result["success"] is True
     
