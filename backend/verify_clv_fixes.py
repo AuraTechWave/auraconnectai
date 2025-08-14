@@ -28,7 +28,8 @@ for i, line in enumerate(lines):
     if "Always adjust total_spent and lifetime_value" in line:
         print("Fixed code (lines 277-279):")
         print("".join(lines[i-1:i+3]))
-        print("\nFix: Moved customer.total_spent and lifetime_value updates outside the points conditional.")
+        print("\nFix: Only lifetime_value is reduced by refunds. total_spent remains unchanged.")
+        print("     Added null safety check for existing customers without lifetime_value.")
         break
 
 print("\n2. Bug Fix #2: CLV Preserves Refund Adjustments")

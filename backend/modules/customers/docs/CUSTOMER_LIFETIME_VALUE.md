@@ -6,8 +6,8 @@ Customer Lifetime Value (CLV) represents the total monetary value a customer bri
 
 ## Key Fields
 
-- **`total_spent`**: The sum of all completed/delivered orders. This is recalculated from order data and represents gross revenue.
-- **`lifetime_value`**: The net value after accounting for refunds and adjustments. This is the true CLV metric.
+- **`total_spent`**: The sum of all completed/delivered orders. This is recalculated from order data and represents gross revenue. **This value is NEVER reduced by refunds.**
+- **`lifetime_value`**: The net value after accounting for refunds and adjustments. This is the true CLV metric. Calculated as: `total_spent - total_refunds`
 
 ## Calculation Logic
 
@@ -19,15 +19,15 @@ When an order is completed:
 
 ### Partial Refunds
 When a partial refund is processed:
-1. The refund amount is deducted from both `total_spent` and `lifetime_value`
+1. The refund amount is deducted ONLY from `lifetime_value` (NOT from `total_spent`)
 2. Loyalty points are proportionally reversed if applicable
-3. The adjustment is preserved separately from order totals
+3. The difference between `total_spent` and `lifetime_value` represents total refunds issued
 
 ### Statistics Update
 When `update_customer_order_stats()` is called:
 1. `total_spent` is recalculated from all completed/delivered orders
-2. Any existing refund adjustments (difference between `lifetime_value` and `total_spent`) are preserved
-3. `lifetime_value` is updated as: `new_total_spent + preserved_refund_adjustments`
+2. The total refunds are calculated as: `current_total_spent - current_lifetime_value`
+3. `lifetime_value` is updated as: `new_total_spent - total_refunds`
 
 ## Implementation Details
 
@@ -38,9 +38,10 @@ When `update_customer_order_stats()` is called:
 **Fix**: Moved `total_spent` and `lifetime_value` adjustments outside the points conditional block.
 
 ```python
-# Always adjust financial metrics for any refund
-customer.total_spent = max(0, customer.total_spent - refund_amount)
-customer.lifetime_value = max(0, customer.lifetime_value - refund_amount)
+# Only adjust lifetime_value for refunds, NOT total_spent
+if customer.lifetime_value is None:
+    customer.lifetime_value = float(customer.total_spent) if customer.total_spent else 0.0
+customer.lifetime_value = max(0, float(customer.lifetime_value) - refund_amount)
 ```
 
 #### Bug 2: CLV Overwrites Refund Adjustments
@@ -48,10 +49,12 @@ customer.lifetime_value = max(0, customer.lifetime_value - refund_amount)
 **Fix**: Calculate and preserve refund adjustments when updating statistics.
 
 ```python
-# Preserve refund adjustments
-refund_adjustments = float(customer.lifetime_value) - float(customer.total_spent)
-customer.total_spent = calculated_total
-customer.lifetime_value = customer.total_spent + refund_adjustments
+# Calculate total refunds from the difference
+total_refunds = current_total_spent - current_lifetime_value
+# Update total_spent from orders
+customer.total_spent = new_total_spent
+# Apply refunds to get lifetime_value
+customer.lifetime_value = new_total_spent - total_refunds
 ```
 
 ## Usage Examples
@@ -80,9 +83,22 @@ order_history_service.update_customer_order_stats(customer_id=456)
 ```sql
 -- Customer table relevant fields
 lifetime_value NUMERIC(12, 2) NOT NULL DEFAULT 0,  -- Net value after refunds
-total_spent FLOAT DEFAULT 0.0,                      -- Gross order totals
+total_spent FLOAT DEFAULT 0.0,                      -- Gross order totals (never reduced)
 total_orders INTEGER DEFAULT 0,
 average_order_value FLOAT DEFAULT 0.0
+
+-- Check constraint to ensure data integrity
+ALTER TABLE customers ADD CONSTRAINT ck_lifetime_value_not_greater_than_total_spent 
+CHECK (lifetime_value <= total_spent);
+```
+
+### Migration for Existing Data
+
+For existing customers with null `lifetime_value`:
+```sql
+UPDATE customers 
+SET lifetime_value = COALESCE(total_spent, 0.0)
+WHERE lifetime_value IS NULL;
 ```
 
 ## Testing

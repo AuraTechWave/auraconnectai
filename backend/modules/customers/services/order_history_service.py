@@ -380,15 +380,26 @@ class OrderHistoryService:
         
         # Update customer stats
         if order_stats.total_orders:
-            # Calculate the difference in refunds (lifetime_value might be less than total_spent due to refunds)
-            refund_adjustments = float(customer.lifetime_value) - float(customer.total_spent) if customer.lifetime_value is not None else 0
-            
             customer.total_orders = order_stats.total_orders
-            customer.total_spent = float(order_stats.total_spent) if order_stats.total_spent else 0
+            new_total_spent = float(order_stats.total_spent) if order_stats.total_spent else 0
             
-            # Preserve refund adjustments by applying them to the new total_spent
-            # If refund_adjustments is negative, it means there were refunds
-            customer.lifetime_value = customer.total_spent + refund_adjustments
+            # Handle null safety for lifetime_value
+            if customer.lifetime_value is None:
+                # For existing customers without lifetime_value, initialize it to total_spent
+                customer.lifetime_value = float(customer.total_spent) if customer.total_spent else 0
+            
+            # Calculate refunds as the difference between current lifetime_value and current total_spent
+            # This represents the total amount refunded to the customer
+            current_lifetime_value = float(customer.lifetime_value)
+            current_total_spent = float(customer.total_spent) if customer.total_spent else 0
+            total_refunds = current_total_spent - current_lifetime_value
+            
+            # Update total_spent to the newly calculated value
+            customer.total_spent = new_total_spent
+            
+            # Apply the refund history to the new total_spent
+            # lifetime_value = total_spent - total_refunds
+            customer.lifetime_value = new_total_spent - total_refunds
             
             customer.average_order_value = customer.total_spent / customer.total_orders if customer.total_orders else 0
             customer.first_order_date = order_stats.first_order_date

@@ -49,9 +49,9 @@ class TestCLVBugFixes:
         service = OrderLoyaltyIntegration(mock_db)
         result = service.handle_partial_refund(order_id=123, refund_amount=30.0)
         
-        # Verify the bug fix: total_spent and lifetime_value should be updated
+        # Verify the bug fix: only lifetime_value should be updated, NOT total_spent
         # even though no points were reversed
-        assert mock_customer.total_spent == 70.0  # 100 - 30
+        assert mock_customer.total_spent == 100.0  # Should remain unchanged
         assert mock_customer.lifetime_value == 70.0  # 100 - 30
         assert result["success"] is True
         assert result["points_adjusted"] == 0
@@ -132,9 +132,9 @@ class TestCLVBugFixes:
         # Try to refund more than the current values
         result = service.handle_partial_refund(order_id=123, refund_amount=50.0)
         
-        # Values should be clamped to zero
-        assert mock_customer.total_spent == 0.0
-        assert mock_customer.lifetime_value == 0.0
+        # Only lifetime_value should be affected, and clamped to zero
+        assert mock_customer.total_spent == 20.0  # Should remain unchanged
+        assert mock_customer.lifetime_value == 0.0  # Clamped to zero
         assert result["success"] is True
     
     def test_clv_calculation_with_multiple_refunds(self):
@@ -173,3 +173,32 @@ class TestCLVBugFixes:
         assert mock_customer.total_spent == 600.0
         assert mock_customer.lifetime_value == 500.0
         assert mock_customer.average_order_value == 100.0  # 600 / 6
+    
+    def test_null_lifetime_value_handling(self):
+        """Test handling of customers with null lifetime_value"""
+        from modules.loyalty.services.order_integration import OrderLoyaltyIntegration
+        
+        mock_db = Mock()
+        
+        # Customer with null lifetime_value (existing customer)
+        mock_customer = Mock()
+        mock_customer.id = 1
+        mock_customer.total_spent = 150.0
+        mock_customer.lifetime_value = None  # Null value
+        mock_customer.loyalty_points = 100
+        
+        mock_order = Mock()
+        mock_order.id = 123
+        mock_order.customer_id = 1
+        mock_order.order_items = []
+        
+        mock_db.query().filter().first.side_effect = [mock_order, mock_customer]
+        mock_db.query().filter().all.return_value = []
+        
+        service = OrderLoyaltyIntegration(mock_db)
+        result = service.handle_partial_refund(order_id=123, refund_amount=30.0)
+        
+        # Should initialize lifetime_value from total_spent, then apply refund
+        assert mock_customer.total_spent == 150.0  # Unchanged
+        assert mock_customer.lifetime_value == 120.0  # 150 - 30
+        assert result["success"] is True
