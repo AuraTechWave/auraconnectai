@@ -29,6 +29,11 @@ class EnvironmentConfig(BaseSettings):
     SESSION_SECRET: str = Field(default="dev-secret-change-in-production", env="SESSION_SECRET")
     SESSION_EXPIRE_MINUTES: int = Field(default=30, env="SESSION_EXPIRE_MINUTES")
     
+    # Data-retention settings (security / compliance)
+    DATA_RETENTION_DAYS: int = Field(default=365, env="DATA_RETENTION_DAYS")
+    BIOMETRIC_RETENTION_DAYS: int = Field(default=730, env="BIOMETRIC_RETENTION_DAYS")
+    ANALYTICS_RETENTION_DAYS: int = Field(default=365, env="ANALYTICS_RETENTION_DAYS")
+    
     # Security settings
     SECRET_KEY: str = Field(default="dev-secret-key-change-in-production", env="SECRET_KEY")
     ALLOW_INSECURE_HTTP: bool = Field(default=True, env="ALLOW_INSECURE_HTTP")
