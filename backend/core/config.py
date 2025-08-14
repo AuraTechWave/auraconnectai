@@ -46,9 +46,12 @@ class Settings(BaseSettings):
     default_benefit_proration_factor: float = 0.46
     tax_calculation_timeout_seconds: int = 30
     
-    # Redis Configuration (for production job tracking)
+    # Redis Configuration (for production job tracking and rate limiting)
     redis_url: Optional[str] = None
-    redis_password: Optional[str] = None
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWORD: Optional[str] = None
     
     # Email Configuration
     smtp_server: Optional[str] = None
