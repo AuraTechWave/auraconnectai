@@ -14,6 +14,7 @@ from core.database import get_db
 from core.auth import get_current_user, User
 from ..schemas.customer_schemas import (
     CustomerSegmentCreate,
+    CustomerSegmentUpdate,
     CustomerSegment as CustomerSegmentSchema,
     Customer as CustomerSchema,
 )
@@ -71,18 +72,18 @@ def get_segment(
 @router.put("/{segment_id}", response_model=CustomerSegmentSchema)
 def update_segment(
     segment_id: int,
-    segment_update: CustomerSegmentCreate,
+    segment_update: CustomerSegmentUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Update an existing segment.
 
-    The same schema is reused for create and update – only provided fields are
-    applied.
+    Uses CustomerSegmentUpdate schema for partial updates - only provided fields are applied.
     """
     service = CustomerSegmentService(db)
     try:
-        return service.update_segment(segment_id, segment_update.model_dump(exclude_unset=True))
+        # Use dict() with exclude_unset for Pydantic v1 compatibility
+        return service.update_segment(segment_id, segment_update.dict(exclude_unset=True))
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
