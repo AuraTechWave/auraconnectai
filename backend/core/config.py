@@ -52,7 +52,6 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     REDIS_PASSWORD: Optional[str] = None
-    redis_password: Optional[str] = None
     
     # Email Configuration
     smtp_server: Optional[str] = None
