@@ -275,6 +275,24 @@ class RateLimiter:
             
         except redis.RedisError as e:
             logger.error(f"Error resetting limits: {e}")
+    
+    def get_rate_limit_headers(self, metadata: Dict[str, Any]) -> Dict[str, str]:
+        """Generate rate limit headers for response"""
+        headers = {}
+        
+        if "limit" in metadata:
+            headers["X-RateLimit-Limit"] = str(metadata["limit"])
+        
+        if "remaining" in metadata:
+            headers["X-RateLimit-Remaining"] = str(metadata["remaining"])
+        
+        if "reset" in metadata and metadata["reset"]:
+            headers["X-RateLimit-Reset"] = str(metadata["reset"])
+        
+        if metadata.get("blocked"):
+            headers["X-RateLimit-Blocked"] = "true"
+        
+        return headers
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -466,13 +484,13 @@ def rate_limit(
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Rate limit exceeded",
-                    headers=rate_limiter._get_rate_limit_headers(metadata)
+                    headers=rate_limiter.get_rate_limit_headers(metadata)
                 )
             
             # Add headers to response
             response = await func(request, *args, **kwargs)
             if isinstance(response, Response):
-                for key, value in rate_limiter._get_rate_limit_headers(metadata).items():
+                for key, value in rate_limiter.get_rate_limit_headers(metadata).items():
                     response.headers[key] = value
             
             return response

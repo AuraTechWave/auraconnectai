@@ -153,6 +153,27 @@ class TestRateLimiter:
         # Verify keys were deleted
         mock_redis.pipeline.assert_called()
         mock_redis.delete.assert_called()
+    
+    def test_get_rate_limit_headers(self, rate_limiter):
+        """Test rate limit header generation in RateLimiter"""
+        metadata = {
+            "limit": 100,
+            "remaining": 75,
+            "reset": 1234567890,
+            "blocked": False
+        }
+        
+        headers = rate_limiter.get_rate_limit_headers(metadata)
+        
+        assert headers["X-RateLimit-Limit"] == "100"
+        assert headers["X-RateLimit-Remaining"] == "75"
+        assert headers["X-RateLimit-Reset"] == "1234567890"
+        assert "X-RateLimit-Blocked" not in headers
+        
+        # Test with blocked
+        metadata["blocked"] = True
+        headers = rate_limiter.get_rate_limit_headers(metadata)
+        assert headers["X-RateLimit-Blocked"] == "true"
 
 
 class TestRateLimitMiddleware:
@@ -333,7 +354,7 @@ class TestRateLimitDecorator:
                 "limit": 10,
                 "remaining": 9
             })
-            mock_limiter._get_rate_limit_headers.return_value = {}
+            mock_limiter.get_rate_limit_headers.return_value = {}
             
             result = await test_endpoint(request)
             assert result == {"status": "ok"}
@@ -360,7 +381,7 @@ class TestRateLimitDecorator:
                 "limit": 10,
                 "remaining": 0
             })
-            mock_limiter._get_rate_limit_headers.return_value = {
+            mock_limiter.get_rate_limit_headers.return_value = {
                 "X-RateLimit-Limit": "10",
                 "X-RateLimit-Remaining": "0"
             }
