@@ -16,15 +16,20 @@ the majority of marketing use-cases.  New criteria can be added centrally in
 
 from datetime import datetime
 from typing import Any, Dict, List, Sequence
+import logging
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
+
+from core.tenant_context import TenantContext, apply_tenant_filter, validate_tenant_access, CrossTenantAccessLogger
 
 from ..models.customer_models import Customer, CustomerSegment
 from ..schemas.customer_schemas import (
     CustomerSegmentCreate,
     CustomerSegment as CustomerSegmentSchema,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CustomerSegmentService:
@@ -36,22 +41,47 @@ class CustomerSegmentService:
 
     def __init__(self, db: Session):
         self.db: Session = db
+        self.access_logger = CrossTenantAccessLogger(db)
 
     # ------------------------------------------------------------------
     # Public CRUD helpers
     # ------------------------------------------------------------------
 
     def list_segments(self) -> List[CustomerSegment]:
-        return self.db.query(CustomerSegment).all()
+        """List all segments for the current tenant"""
+        query = self.db.query(CustomerSegment)
+        # Apply tenant filtering
+        query = apply_tenant_filter(query, CustomerSegment)
+        return query.all()
 
     def get_segment(self, segment_id: int) -> CustomerSegment | None:
-        return (
-            self.db.query(CustomerSegment)
-            .filter(CustomerSegment.id == segment_id)
-            .first()
-        )
+        """Get a segment by ID with tenant validation"""
+        query = self.db.query(CustomerSegment).filter(CustomerSegment.id == segment_id)
+        # Apply tenant filtering
+        query = apply_tenant_filter(query, CustomerSegment)
+        segment = query.first()
+        
+        if segment:
+            # Validate tenant access
+            if not validate_tenant_access(segment, raise_on_violation=False):
+                context = TenantContext.get()
+                if context:
+                    self.access_logger.log_access_attempt(
+                        requested_tenant_id=context.get('restaurant_id'),
+                        actual_tenant_id=getattr(segment, 'restaurant_id', None),
+                        resource_type='CustomerSegment',
+                        resource_id=segment_id,
+                        action='read',
+                        success=False
+                    )
+                return None
+        
+        return segment
 
     def create_segment(self, data: CustomerSegmentCreate) -> CustomerSegment:
+        """Create a segment with automatic tenant assignment"""
+        context = TenantContext.require_context()
+        
         segment = CustomerSegment(
             name=data.name,
             description=data.description,
@@ -59,6 +89,11 @@ class CustomerSegmentService:
             is_dynamic=data.is_dynamic,
             is_active=True,
         )
+        
+        # Set tenant fields if they exist on the model
+        if hasattr(CustomerSegment, 'restaurant_id') and context.get('restaurant_id') is not None:
+            segment.restaurant_id = context.get('restaurant_id')
+        
         self.db.add(segment)
         self.db.commit()
         self.db.refresh(segment)
@@ -72,9 +107,13 @@ class CustomerSegmentService:
         segment_id: int,
         update_values: Dict[str, Any],
     ) -> CustomerSegment:
+        """Update segment with tenant validation"""
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
+        
+        # Validate tenant access before update
+        validate_tenant_access(segment)
 
         for field in (
             "name",
@@ -99,9 +138,14 @@ class CustomerSegmentService:
         return segment
 
     def delete_segment(self, segment_id: int) -> None:
+        """Delete segment with tenant validation"""
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
+        
+        # Validate tenant access before deletion
+        validate_tenant_access(segment)
+        
         self.db.delete(segment)
         self.db.commit()
 
@@ -118,6 +162,9 @@ class CustomerSegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
+        
+        # Validate tenant access
+        validate_tenant_access(segment)
 
         # For static segments, only update the member count
         if not segment.is_dynamic:
@@ -146,17 +193,31 @@ class CustomerSegmentService:
         return segment
 
     def get_segment_customers(self, segment_id: int) -> Sequence[Customer]:
+        """Get customers in a segment with tenant validation"""
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
-        return segment.customers  # type: ignore[return-value]
+        
+        # Validate tenant access
+        validate_tenant_access(segment)
+        
+        # Additional filtering of customers to ensure they belong to current tenant
+        customers = segment.customers  # type: ignore[assignment]
+        if customers:
+            # Filter customers by tenant
+            context = TenantContext.get()
+            if context and context.get('restaurant_id') is not None:
+                customers = [c for c in customers if 
+                           getattr(c, 'restaurant_id', None) == context.get('restaurant_id')]
+        
+        return customers  # type: ignore[return-value]
 
     # ------------------------------------------------------------------
     # Internal utilities
     # ------------------------------------------------------------------
 
     def _filter_customers(self, criteria: Dict[str, Any]) -> List[Customer]:
-        """Return *all* customers matching *criteria*.
+        """Return *all* customers matching *criteria* within current tenant.
 
         The current implementation supports the following optional keys:
         - ``tier``:            List[str]
@@ -169,6 +230,9 @@ class CustomerSegmentService:
         """
 
         query = self.db.query(Customer).filter(Customer.deleted_at.is_(None))
+        
+        # Apply tenant filtering to ensure we only get customers for current tenant
+        query = apply_tenant_filter(query, Customer)
 
         if tier := criteria.get("tier"):
             query = query.filter(Customer.tier.in_(tier))

@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc, asc, text, case
 from dataclasses import dataclass
 
+from core.tenant_context import TenantContext, apply_tenant_filter, validate_tenant_access, CrossTenantAccessLogger
+
 from ..models.analytics_models import (
     SalesAnalyticsSnapshot, ReportTemplate, ReportExecution, 
     SalesMetric, AggregationPeriod, ReportType
@@ -40,16 +42,20 @@ class SalesCalculationResult:
 
 
 class SalesReportService:
-    """Service for generating sales reports and analytics"""
+    """Service for generating sales reports and analytics with tenant isolation"""
     
     def __init__(self, db: Session):
         self.db = db
+        self.access_logger = CrossTenantAccessLogger(db)
     
     def generate_sales_summary(
         self, 
         filters: SalesFilterRequest
     ) -> SalesSummaryResponse:
-        """Generate a comprehensive sales summary report"""
+        """Generate a comprehensive sales summary report with tenant isolation"""
+        
+        # Ensure tenant context is established
+        TenantContext.require_context()
         
         try:
             # Get current period data
@@ -323,12 +329,12 @@ class SalesReportService:
     # Private helper methods
     
     def _calculate_sales_metrics(self, filters: SalesFilterRequest) -> SalesCalculationResult:
-        """Calculate core sales metrics from orders data"""
+        """Calculate core sales metrics from orders data with tenant isolation"""
         
         # Build base query from orders
         query = self.db.query(Order).join(OrderItem)
         
-        # Apply filters
+        # Apply all filters including tenant filtering (done once in _apply_order_filters)
         query = self._apply_order_filters(query, filters)
         
         # Calculate aggregated metrics
@@ -362,8 +368,18 @@ class SalesReportService:
             returning_customers=returning_customers
         )
     
-    def _apply_order_filters(self, query, filters: SalesFilterRequest):
-        """Apply filters to order query"""
+    def _apply_order_filters(self, query, filters: SalesFilterRequest, skip_tenant_filter: bool = False):
+        """Apply filters to order query with tenant validation
+        
+        Args:
+            query: The SQLAlchemy query to filter
+            filters: The filter request parameters
+            skip_tenant_filter: If True, skip tenant filtering (use when already applied)
+        """
+        
+        # Apply tenant filtering first (only if not already applied)
+        if not skip_tenant_filter:
+            query = apply_tenant_filter(query, Order)
         
         # Date range filters
         if filters.date_from:
@@ -371,9 +387,17 @@ class SalesReportService:
         if filters.date_to:
             query = query.filter(Order.created_at <= filters.date_to + timedelta(days=1))
         
-        # Staff filters
+        # Staff filters with tenant validation
         if filters.staff_ids:
-            query = query.filter(Order.staff_id.in_(filters.staff_ids))
+            # Validate staff IDs belong to current tenant
+            staff_query = self.db.query(StaffMember.id)
+            staff_query = apply_tenant_filter(staff_query, StaffMember)
+            valid_staff_ids = [s[0] for s in staff_query.filter(StaffMember.id.in_(filters.staff_ids)).all()]
+            if valid_staff_ids:
+                query = query.filter(Order.staff_id.in_(valid_staff_ids))
+            else:
+                # Return empty result if no valid staff IDs
+                query = query.filter(False)
         
         # Product filters
         if filters.product_ids:
@@ -383,9 +407,18 @@ class SalesReportService:
         if filters.category_ids:
             query = query.filter(Order.category_id.in_(filters.category_ids))
         
-        # Customer filters
+        # Customer filters with tenant validation
         if filters.customer_ids:
-            query = query.filter(Order.customer_id.in_(filters.customer_ids))
+            # Validate customer IDs belong to current tenant
+            from modules.customers.models.customer_models import Customer
+            customer_query = self.db.query(Customer.id)
+            customer_query = apply_tenant_filter(customer_query, Customer)
+            valid_customer_ids = [c[0] for c in customer_query.filter(Customer.id.in_(filters.customer_ids)).all()]
+            if valid_customer_ids:
+                query = query.filter(Order.customer_id.in_(valid_customer_ids))
+            else:
+                # Return empty result if no valid customer IDs
+                query = query.filter(False)
         
         # Order value filters
         if filters.min_order_value:
@@ -400,9 +433,12 @@ class SalesReportService:
         return query
     
     def _build_snapshots_query(self, filters: SalesFilterRequest):
-        """Build query for sales analytics snapshots"""
+        """Build query for sales analytics snapshots with tenant filtering"""
         
         query = self.db.query(SalesAnalyticsSnapshot)
+        
+        # Apply tenant filtering first
+        query = apply_tenant_filter(query, SalesAnalyticsSnapshot)
         
         # Apply filters
         if filters.date_from:
@@ -422,16 +458,21 @@ class SalesReportService:
         return query
     
     def _build_staff_performance_query(self, filters: SalesFilterRequest):
-        """Build staff performance query with rankings"""
+        """Build staff performance query with rankings and tenant isolation"""
         
-        # Subquery for staff metrics
-        staff_metrics = self.db.query(
+        # Subquery for staff metrics with tenant filtering
+        staff_metrics_query = self.db.query(
             SalesAnalyticsSnapshot.staff_id,
             func.sum(SalesAnalyticsSnapshot.total_orders).label('orders_handled'),
             func.sum(SalesAnalyticsSnapshot.total_revenue).label('total_revenue'),
             func.avg(SalesAnalyticsSnapshot.average_order_value).label('average_order_value'),
             func.avg(SalesAnalyticsSnapshot.average_processing_time).label('average_processing_time')
-        ).filter(
+        )
+        
+        # Apply tenant filtering to the subquery
+        staff_metrics_query = apply_tenant_filter(staff_metrics_query, SalesAnalyticsSnapshot)
+        
+        staff_metrics = staff_metrics_query.filter(
             SalesAnalyticsSnapshot.staff_id.isnot(None)
         )
         
@@ -447,7 +488,7 @@ class SalesReportService:
         
         staff_metrics = staff_metrics.group_by(SalesAnalyticsSnapshot.staff_id).subquery()
         
-        # Main query with rankings
+        # Main query with rankings and tenant-filtered staff
         query = self.db.query(
             staff_metrics.c.staff_id,
             StaffMember.name.label('staff_name'),
@@ -460,21 +501,29 @@ class SalesReportService:
             text('NULL as total_hours')  # Placeholder for hours calculation
         ).join(
             StaffMember, staff_metrics.c.staff_id == StaffMember.id
-        ).order_by(desc(staff_metrics.c.total_revenue))
+        )
+        
+        # Apply tenant filtering to staff members
+        query = apply_tenant_filter(query, StaffMember)
+        query = query.order_by(desc(staff_metrics.c.total_revenue))
         
         return query
     
     def _build_product_performance_query(self, filters: SalesFilterRequest):
-        """Build product performance query"""
+        """Build product performance query with tenant isolation"""
         
-        # Product metrics from order items
-        product_metrics = self.db.query(
+        # Product metrics from order items with tenant-filtered orders
+        product_metrics_query = self.db.query(
             OrderItem.menu_item_id.label('product_id'),
             func.sum(OrderItem.quantity).label('quantity_sold'),
             func.sum(OrderItem.price * OrderItem.quantity).label('revenue_generated'),
             func.avg(OrderItem.price).label('average_price'),
             func.count(func.distinct(OrderItem.order_id)).label('order_frequency')
         ).join(Order)
+        
+        # Apply tenant filtering to orders
+        product_metrics_query = apply_tenant_filter(product_metrics_query, Order)
+        product_metrics = product_metrics_query
         
         # Apply filters through Order join
         if filters.date_from:
@@ -483,7 +532,25 @@ class SalesReportService:
             product_metrics = product_metrics.filter(Order.created_at <= filters.date_to + timedelta(days=1))
         
         if filters.staff_ids:
-            product_metrics = product_metrics.filter(Order.staff_id.in_(filters.staff_ids))
+            # Validate staff IDs belong to current tenant
+            staff_query = self.db.query(StaffMember.id)
+            staff_query = apply_tenant_filter(staff_query, StaffMember)
+            valid_staff_ids = [s[0] for s in staff_query.filter(StaffMember.id.in_(filters.staff_ids)).all()]
+            if valid_staff_ids:
+                product_metrics = product_metrics.filter(Order.staff_id.in_(valid_staff_ids))
+            else:
+                # Log potential cross-tenant access attempt
+                context = TenantContext.get()
+                if context:
+                    for staff_id in filters.staff_ids:
+                        self.access_logger.log_access_attempt(
+                            requested_tenant_id=context.get('restaurant_id'),
+                            actual_tenant_id=None,  # Unknown
+                            resource_type='StaffMember',
+                            resource_id=staff_id,
+                            action='filter',
+                            success=False
+                        )
         
         if filters.product_ids:
             product_metrics = product_metrics.filter(OrderItem.menu_item_id.in_(filters.product_ids))
@@ -580,18 +647,20 @@ class SalesReportService:
         return ((current - previous) / previous) * 100
     
     def _get_total_revenue(self, filters: SalesFilterRequest) -> Decimal:
-        """Get total revenue for market share calculations"""
+        """Get total revenue for market share calculations with tenant isolation"""
         
-        query = self.db.query(func.coalesce(func.sum(Order.total_amount), 0))
-        query = self._apply_order_filters(query.join(OrderItem), filters)
+        query = self.db.query(func.coalesce(func.sum(Order.total_amount), 0)).join(OrderItem)
+        # Apply all filters including tenant (done once in _apply_order_filters)
+        query = self._apply_order_filters(query, filters)
         
         return Decimal(str(query.scalar() or 0))
     
     def _get_total_quantity(self, filters: SalesFilterRequest) -> int:
-        """Get total quantity sold for market share calculations"""
+        """Get total quantity sold for market share calculations with tenant isolation"""
         
-        query = self.db.query(func.coalesce(func.sum(OrderItem.quantity), 0))
-        query = self._apply_order_filters(query.join(Order), filters)
+        query = self.db.query(func.coalesce(func.sum(OrderItem.quantity), 0)).join(Order)
+        # Apply all filters including tenant (done once in _apply_order_filters)
+        query = self._apply_order_filters(query, filters)
         
         return query.scalar() or 0
     

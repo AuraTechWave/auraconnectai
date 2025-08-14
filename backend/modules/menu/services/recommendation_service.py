@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_
 
 from core.menu_models import MenuItem
+from core.tenant_context import TenantContext, apply_tenant_filter, validate_tenant_access, CrossTenantAccessLogger
 from modules.orders.models.order_models import Order, OrderItem
 from modules.staff.models.staff_models import StaffMember
 
@@ -23,6 +24,7 @@ class MenuRecommendationService:
 
     def __init__(self, db: Session):
         self.db = db
+        self.access_logger = CrossTenantAccessLogger(db)
 
     # ---------------------------------------------------------------------
     # Public helpers
@@ -33,7 +35,6 @@ class MenuRecommendationService:
         customer_id: Optional[int] = None,
         max_results: int = 5,
         last_n_orders: int = 50,
-        tenant_ids: Optional[List[int]] = None,
     ) -> List[Tuple[MenuItem, int]]:
         """Return a ranked list of ``MenuItem`` objects with their corresponding score.
 
@@ -42,7 +43,8 @@ class MenuRecommendationService:
             max_results: Maximum number of items to return.
             last_n_orders: Number of most recent orders to inspect when calculating
                 popularity.
-            tenant_ids: List of tenant IDs to scope the query to (for multi-tenant isolation).
+        
+        Note: Tenant isolation is automatically enforced via TenantContext.
         """
         if max_results <= 0:
             return []
@@ -56,8 +58,7 @@ class MenuRecommendationService:
             customer_ranked = self._aggregate_popularity(
                 customer_id=customer_id, 
                 last_n_orders=last_n_orders, 
-                limit=max_results,
-                tenant_ids=tenant_ids
+                limit=max_results
             )
 
         # ------------------------------------------------------------------
@@ -69,8 +70,7 @@ class MenuRecommendationService:
             global_ranked = self._aggregate_popularity(
                 customer_id=None, 
                 last_n_orders=last_n_orders, 
-                limit=max_results * 2,  # grab a few extras
-                tenant_ids=tenant_ids
+                limit=max_results * 2  # grab a few extras
             )
 
         # ------------------------------------------------------------------
@@ -88,20 +88,35 @@ class MenuRecommendationService:
         if not combined:
             return []
 
-        # Fetch MenuItem objects preserving ranking order
-        # Note: MenuItems are implicitly tenant-scoped since they come from 
-        # tenant-scoped orders. In a fully multi-tenant system, MenuItem 
-        # should have explicit tenant/location fields for additional validation.
+        # Fetch MenuItem objects preserving ranking order with tenant filtering
+        # Apply tenant context to ensure we only get items for current tenant
+        menu_query = self.db.query(MenuItem).filter(
+            MenuItem.id.in_([mid for mid, _ in combined])
+        )
+        menu_query = apply_tenant_filter(menu_query, MenuItem)
+        
         id_to_item: Dict[int, MenuItem] = {
-            item.id: item for item in self.db.query(MenuItem).filter(
-                MenuItem.id.in_([mid for mid, _ in combined])
-            ).all()
+            item.id: item for item in menu_query.all()
         }
         results: List[Tuple[MenuItem, int]] = []
         for menu_id, score in combined:
             item = id_to_item.get(menu_id)
-            if item:  # Item may have been deleted
-                results.append((item, score))
+            if item:  # Item may have been deleted or filtered by tenant
+                # Additional validation to ensure item belongs to current tenant
+                if validate_tenant_access(item, raise_on_violation=False):
+                    results.append((item, score))
+                else:
+                    # Log cross-tenant access attempt
+                    context = TenantContext.get()
+                    if context:
+                        self.access_logger.log_access_attempt(
+                            requested_tenant_id=context.get('restaurant_id'),
+                            actual_tenant_id=getattr(item, 'restaurant_id', None),
+                            resource_type='MenuItem',
+                            resource_id=item.id,
+                            action='read',
+                            success=False
+                        )
         return results
 
     # ------------------------------------------------------------------
@@ -113,20 +128,23 @@ class MenuRecommendationService:
         customer_id: Optional[int],
         last_n_orders: int,
         limit: int,
-        tenant_ids: Optional[List[int]] = None,
     ) -> List[Tuple[int, int]]:
-        """Return menu item popularity [(menu_id, count), ...] with tenant scoping"""
-        # Build base query for orders with tenant scoping
+        """Return menu item popularity [(menu_id, count), ...] with automatic tenant scoping"""
+        # Build base query for orders with automatic tenant scoping
         order_query = self.db.query(Order.id)
         
-        # Apply tenant scoping through staff's location_id if tenant_ids provided
-        if tenant_ids:
-            # Join with StaffMember to filter by location (tenant)
+        # Apply tenant filtering based on current context
+        order_query = apply_tenant_filter(order_query, Order)
+        
+        # Get tenant context for additional filtering if needed
+        context = TenantContext.get()
+        if context and context.get('location_id') is not None:
+            # Additional location-based filtering through staff if location context exists
             order_query = order_query.join(
                 StaffMember, 
                 Order.staff_id == StaffMember.id
             ).filter(
-                StaffMember.location_id.in_(tenant_ids)
+                StaffMember.location_id == context.get('location_id')
             )
         
         # Apply customer filter if specified

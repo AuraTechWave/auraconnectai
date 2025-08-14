@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from typing import Optional
 from core.exceptions import register_exception_handlers
+from core.tenant_context import TenantIsolationMiddleware
 from app.startup import run_startup_checks
 
 # ========== Authentication & Authorization ==========
@@ -206,6 +207,10 @@ app = FastAPI(
 
 # Register exception handlers for consistent error responses
 register_exception_handlers(app)
+
+# CRITICAL: Add tenant isolation middleware BEFORE CORS
+# This ensures tenant context is established for all requests
+app.add_middleware(TenantIsolationMiddleware)
 
 # CORS middleware for frontend integration
 app.add_middleware(
