@@ -105,6 +105,7 @@ from modules.ai_recommendations.routers.staffing_router import router as ai_staf
 
 # ========== Customer Management ==========
 from modules.customers.routers.customer_router import router as customer_router
+from modules.customers.routers.segment_router import router as customer_segment_router
 # Old reservation router - replaced by enhanced reservation system
 # from app.api.v1.endpoints.reservations import router as reservation_router
 
@@ -313,6 +314,8 @@ app.include_router(ai_staffing_router, prefix="/api/v1/ai", tags=["AI Staffing R
 
 # Customer Management
 app.include_router(customer_router)
+app.include_router(customer_segment_router)
+
 # GDPR Compliance
 app.include_router(gdpr_router)
 

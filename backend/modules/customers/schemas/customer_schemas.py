@@ -376,6 +376,15 @@ class CustomerSegmentCreate(BaseModel):
     is_dynamic: bool = False
 
 
+class CustomerSegmentUpdate(BaseModel):
+    """Schema for updating a customer segment - all fields optional"""
+    name: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = None
+    criteria: Optional[Dict[str, Any]] = None
+    is_dynamic: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+
 class CustomerSegment(CustomerSegmentCreate):
     """Schema for segment response"""
     id: int
