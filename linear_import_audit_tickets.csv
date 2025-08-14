@@ -1,0 +1,302 @@
+Title,Description,Priority,Labels,Estimate,Status,Assignee
+"Fix Database Session Management in Background Workers","Background workers (notification_worker.py, data_retention_worker.py) incorrectly use `async with get_db()` which causes database session cleanup failures and potential connection leaks.
+
+**Affected Files:**
+- backend/workers/notification_worker.py
+- backend/workers/data_retention_worker.py
+
+**Issue:** Using async context manager with synchronous get_db() function
+
+**Solution:** Use SessionLocal() directly with try/finally blocks
+
+**Acceptance Criteria:**
+- Replace async context managers with proper synchronous session handling
+- Add unit tests for worker database operations
+- Verify no connection leaks in monitoring
+
+**Severity:** CRITICAL - Causes connection pool exhaustion","Urgent","Bug, Critical, Backend, Audit","4","Backlog",""
+"Implement Comprehensive Tenant Isolation","Multiple endpoints and queries don't properly filter by restaurant_id/location_id, creating potential data leakage between tenants.
+
+**Affected Areas:**
+- Menu recommendation service
+- Customer segmentation queries
+- Analytics aggregations
+- Report generation
+
+**Security Impact:** CRITICAL - Potential data breach between different restaurant accounts
+
+**Acceptance Criteria:**
+- Audit all database queries for tenant filtering
+- Add middleware to enforce tenant context
+- Create integration tests for multi-tenant scenarios
+- Add logging for cross-tenant access attempts","Urgent","Security, Critical, Backend, Audit","16","Backlog",""
+"Add Rate Limiting to Public API Endpoints","API endpoints lack rate limiting, making them vulnerable to abuse and DDoS attacks.
+
+**Requirements:**
+- Implement Redis-based rate limiting middleware
+- Configure per-endpoint rate limits
+- Add IP-based and user-based limits
+- Implement rate limit headers (X-RateLimit-*)
+- Create bypass mechanism for admin users
+
+**Acceptance Criteria:**
+- Install and configure slowapi
+- Add rate limiting decorator to all endpoints
+- Configure Redis for distributed rate limiting
+- Add monitoring and alerting","Urgent","Security, Critical, Backend, Audit","8","Backlog",""
+"Build Frontend Authentication System","Frontend completely lacks authentication UI and JWT token management.
+
+**Components Needed:**
+1. Login Page (email/password form, validation, error handling)
+2. Logout Flow (clear tokens, redirect, clear state)
+3. Password Reset (request form, email verification, new password)
+4. Protected Routes (HOC for route protection, redirect logic)
+5. Token Management (httpOnly cookies, automatic refresh, expiry handling)
+
+**Acceptance Criteria:**
+- Create login page with form validation
+- Implement logout functionality
+- Add password reset flow
+- Build protected route HOC
+- Implement token refresh mechanism
+- Add session persistence
+- Create user profile component","Urgent","Frontend, Critical, Audit","40","Backlog",""
+"Standardize API Response Format","API responses are inconsistent across endpoints.
+
+**Current Issues:**
+- Some return {data: {...}}, others return direct objects
+- Pagination uses different parameter names
+- Error responses are inconsistent
+
+**Proposed Standard:**
+{success: true, data: {...}, meta: {pagination: {...}}, errors: []}
+
+**Acceptance Criteria:**
+- Define standard response envelope
+- Update all endpoints to use consistent format
+- Standardize pagination parameters
+- Update API documentation
+- Add response interceptor","High","Backend, Tech Debt, Audit","24","Backlog",""
+"Create Dashboard UI Components","Build comprehensive dashboard with real-time metrics.
+
+**Components:**
+- Metric Cards (revenue, orders, customers, AOV)
+- Charts (sales trend, category breakdown, hourly sales)
+- Real-time Updates (WebSocket, live order feed, kitchen status)
+
+**Acceptance Criteria:**
+- Create responsive grid layout
+- Implement metric cards
+- Add chart components
+- Integrate WebSocket for real-time updates
+- Add date range selector
+- Implement loading states
+- Create empty state designs","High","Frontend, Audit","40","Backlog",""
+"Complete Mobile Offline Sync Implementation","Mobile offline sync mechanism is incomplete.
+
+**Missing Features:**
+- Conflict resolution UI
+- Sync queue management
+- Network state handling
+- Retry mechanism
+- Manual sync trigger
+
+**Acceptance Criteria:**
+- Implement conflict resolution strategies
+- Add sync queue management
+- Create sync status UI indicators
+- Handle network state changes
+- Implement retry with exponential backoff
+- Add manual sync trigger
+- Create conflict resolution UI","High","Mobile, Audit","40","Backlog",""
+"Fix N+1 Query Performance Issues","Multiple endpoints have N+1 query problems.
+
+**Affected Endpoints:**
+- /api/v1/orders - Loading customer for each order
+- /api/v1/customers - Loading orders for each customer
+- /api/v1/menu/items - Loading category for each item
+- /api/v1/staff/schedules - Loading staff for each shift
+
+**Acceptance Criteria:**
+- Add eager loading with joinedload/selectinload
+- Implement query result caching
+- Add database query logging in development
+- Create performance tests
+- Document query optimization patterns","High","Performance, Backend, Audit","16","Backlog",""
+"Implement Order Management UI","Create comprehensive order management system.
+
+**Features:**
+- Order list with filters and search
+- Order detail view with timeline
+- Status update functionality
+- Payment processing
+- Print functionality
+- Bulk actions
+
+**Acceptance Criteria:**
+- Create order list component
+- Add filtering and search
+- Build order detail view
+- Add status update workflow
+- Integrate payment processing
+- Add print functionality","Medium","Frontend, Audit","40","Backlog",""
+"Create Comprehensive Integration Test Suite","Build integration tests for critical flows.
+
+**Test Scenarios:**
+- Order Processing (create, payment, status, kitchen, complete)
+- User Authentication (registration, login, refresh, logout, reset)
+- Inventory Management (updates, alerts, PO, waste)
+
+**Acceptance Criteria:**
+- Setup test database
+- Create test fixtures
+- Write order flow tests
+- Write auth flow tests
+- Write inventory tests
+- Achieve 70% coverage
+- Setup CI/CD integration","Medium","Testing, Audit","40","Backlog",""
+"Implement Redis Caching Strategy","Add caching layer for frequently accessed data.
+
+**Caching Targets:**
+- Menu items and categories (1 hour)
+- User permissions (5 minutes)
+- Restaurant settings (10 minutes)
+- Analytics aggregations (5 minutes)
+
+**Acceptance Criteria:**
+- Setup Redis connection pool
+- Add caching decorators
+- Implement cache invalidation
+- Add cache warming
+- Monitor cache hit rates
+- Document caching patterns","Medium","Performance, Backend, Audit","24","Backlog",""
+"Build Staff Management Interface","Create staff scheduling and management interface.
+
+**Components:**
+- Staff List (role filtering, search, quick actions)
+- Schedule Calendar (monthly/weekly views, drag-drop, conflict detection)
+- Time Management (clock in/out, breaks, overtime)
+
+**Acceptance Criteria:**
+- Create staff list component
+- Build calendar view
+- Add shift management
+- Implement time tracking
+- Add payroll summary
+- Create reports","Medium","Frontend, Audit","40","Backlog",""
+"Standardize Code Conventions","Inconsistent naming conventions and code styles across the codebase.
+
+**Issues:**
+- Mixed async/sync patterns
+- Inconsistent naming (camelCase vs snake_case)
+- Different error handling approaches
+- Varied logging levels
+
+**Acceptance Criteria:**
+- Define coding standards document
+- Configure linters and formatters
+- Update all code to match standards
+- Setup pre-commit hooks
+- Add code review checklist","Low","Tech Debt, Audit","40","Backlog",""
+"Remove Unused Code and Clean Technical Debt","Remove obsolete code and outdated migrations.
+
+**Areas:**
+- backend/modules/insights/ - placeholder code
+- Old migration files from 2024
+- Commented-out code blocks
+- Duplicate code across modules
+
+**Acceptance Criteria:**
+- Identify and remove unused modules
+- Clean up old migration files
+- Remove commented-out code
+- Update import statements
+- Run full test suite to verify","Low","Tech Debt, Backend, Audit","16","Backlog",""
+"Create Comprehensive API Documentation","Complete API and system documentation.
+
+**Deliverables:**
+- Complete OpenAPI specifications
+- Code comments and docstrings
+- Developer setup guide
+- Deployment documentation
+- Troubleshooting guide
+
+**Acceptance Criteria:**
+- Document all endpoints
+- Add code comments
+- Create setup guide
+- Write deployment docs
+- Add troubleshooting section","Low","Documentation, Audit","40","Backlog",""
+"Implement Equipment Maintenance Tracking","Equipment module has only basic CRUD, missing maintenance features.
+
+**Features:**
+- Maintenance schedules
+- Service history tracking
+- Breakdown alerts
+- Cost tracking
+- Vendor management
+
+**Acceptance Criteria:**
+- Create maintenance schedule model
+- Add service history tracking
+- Implement alert system
+- Add cost tracking
+- Create maintenance reports","Low","Backend, Feature","24","Backlog",""
+"Add SMS Integration for Notifications","Missing SMS confirmation for reservations and notifications.
+
+**Requirements:**
+- Twilio/SMS provider integration
+- Template management
+- Delivery tracking
+- Opt-in/opt-out management
+
+**Acceptance Criteria:**
+- Integrate SMS provider
+- Create message templates
+- Add delivery tracking
+- Implement opt-out system
+- Add cost tracking","Low","Backend, Feature","16","Backlog",""
+"Complete Kitchen Display System","KDS module is incomplete.
+
+**Missing Features:**
+- Real-time order display
+- Station routing
+- Order timing
+- Completion tracking
+- Performance metrics
+
+**Acceptance Criteria:**
+- Create KDS UI
+- Implement WebSocket updates
+- Add station routing
+- Track order timing
+- Generate performance reports","Low","Backend, Frontend, Feature","40","Backlog",""
+"Create Settings Configuration Interface","Settings module missing configuration UI.
+
+**Components:**
+- Restaurant settings
+- User preferences
+- System configuration
+- Integration settings
+- Feature flags
+
+**Acceptance Criteria:**
+- Build settings UI
+- Add validation
+- Implement save/reset
+- Add feature flags
+- Create audit log","Low","Frontend, Feature","24","Backlog",""
+"Implement Table Real-time Status Updates","Table management lacks real-time status.
+
+**Features:**
+- Live occupancy status
+- Reservation integration
+- Turn time tracking
+- Heat map visualization
+
+**Acceptance Criteria:**
+- Add WebSocket updates
+- Create status indicators
+- Implement turn time tracking
+- Build heat map view
+- Add analytics","Low","Backend, Frontend, Feature","24","Backlog",""
