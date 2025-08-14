@@ -116,16 +116,21 @@ class CustomerSegmentService:
         if not segment:
             raise ValueError("Segment not found")
 
-        # Static segments are managed manually; do not touch relations.
+        # For static segments, only update the member count
         if not segment.is_dynamic:
+            segment.member_count = len(segment.customers)  # type: ignore[arg-type]
+            segment.updated_at = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(segment)
             return segment
 
+        # For dynamic segments, re-evaluate membership
         customers = self._filter_customers(segment.criteria or {})
 
         # Replace membership list.
         segment.customers = customers  # type: ignore[assignment]
         segment.member_count = len(customers)
-        segment.last_updated = datetime.utcnow()
+        segment.updated_at = datetime.utcnow()  # Use updated_at for consistency
 
         self.db.commit()
         self.db.refresh(segment)

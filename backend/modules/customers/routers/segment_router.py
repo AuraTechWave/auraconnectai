@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from core.database import get_db
+from core.auth import get_current_user, User
 from ..schemas.customer_schemas import (
     CustomerSegmentCreate,
     CustomerSegment as CustomerSegmentSchema,
@@ -18,7 +19,7 @@ from ..schemas.customer_schemas import (
 )
 from ..services.segment_service import CustomerSegmentService
 
-router = APIRouter(prefix="/customers/segments", tags=["Customer Segments"])
+router = APIRouter(prefix="/api/v1/customers/segments", tags=["Customer Segments"])
 
 
 # ---------------------------------------------------------------------------
@@ -27,7 +28,10 @@ router = APIRouter(prefix="/customers/segments", tags=["Customer Segments"])
 
 
 @router.get("/", response_model=List[CustomerSegmentSchema])
-def list_segments(db: Session = Depends(get_db)):
+def list_segments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Return all customer segments."""
     service = CustomerSegmentService(db)
     return service.list_segments()
@@ -38,7 +42,11 @@ def list_segments(db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     response_model=CustomerSegmentSchema,
 )
-def create_segment(segment: CustomerSegmentCreate, db: Session = Depends(get_db)):
+def create_segment(
+    segment: CustomerSegmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Create a new customer segment and evaluate its membership."""
     service = CustomerSegmentService(db)
     try:
@@ -48,7 +56,11 @@ def create_segment(segment: CustomerSegmentCreate, db: Session = Depends(get_db)
 
 
 @router.get("/{segment_id}", response_model=CustomerSegmentSchema)
-def get_segment(segment_id: int, db: Session = Depends(get_db)):
+def get_segment(
+    segment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     service = CustomerSegmentService(db)
     seg = service.get_segment(segment_id)
     if not seg:
@@ -61,6 +73,7 @@ def update_segment(
     segment_id: int,
     segment_update: CustomerSegmentCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update an existing segment.
 
@@ -75,7 +88,11 @@ def update_segment(
 
 
 @router.delete("/{segment_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_segment(segment_id: int, db: Session = Depends(get_db)):
+def delete_segment(
+    segment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     service = CustomerSegmentService(db)
     try:
         service.delete_segment(segment_id)
@@ -89,7 +106,11 @@ def delete_segment(segment_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{segment_id}/evaluate", response_model=CustomerSegmentSchema)
-def evaluate_segment(segment_id: int, db: Session = Depends(get_db)):
+def evaluate_segment(
+    segment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Trigger re-evaluation of a *dynamic* segment."""
     service = CustomerSegmentService(db)
     try:
@@ -99,7 +120,11 @@ def evaluate_segment(segment_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{segment_id}/customers", response_model=List[CustomerSchema])
-def list_segment_customers(segment_id: int, db: Session = Depends(get_db)):
+def list_segment_customers(
+    segment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     service = CustomerSegmentService(db)
     try:
         return service.get_segment_customers(segment_id)
