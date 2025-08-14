@@ -1,0 +1,1 @@
+from .routes.gdpr_routes import router as gdpr_router

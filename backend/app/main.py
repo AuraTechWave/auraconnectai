@@ -142,6 +142,9 @@ from modules.orders.tasks.pricing_rule_tasks import start_pricing_rule_worker, s
 from modules.orders.tasks.queue_tasks import start_queue_monitor, stop_queue_monitor
 from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor
 
+# ========== GDPR Compliance ==========
+from modules.gdpr.routes.gdpr_routes import router as gdpr_router
+
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
     title="AuraConnect AI - Restaurant Management API",
@@ -310,6 +313,8 @@ app.include_router(ai_staffing_router, prefix="/api/v1/ai", tags=["AI Staffing R
 
 # Customer Management
 app.include_router(customer_router)
+# GDPR Compliance
+app.include_router(gdpr_router)
 
 # Reservations & Waitlist (Enhanced System)
 app.include_router(enhanced_reservation_router, prefix="/api/v1", tags=["Reservations"])
