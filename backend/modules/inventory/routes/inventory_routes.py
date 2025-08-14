@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from math import ceil
 from datetime import date, datetime
+import logging
 
 from core.database import get_db
 from core.inventory_service import InventoryService
@@ -25,6 +26,7 @@ from core.auth import require_permission, User
 from modules.menu.services.recipe_service import RecipeService
 from modules.menu.schemas.recipe_schemas import RecipeCostAnalysis
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/inventory", tags=["Inventory Management"])
 
@@ -883,11 +885,15 @@ async def get_recipe_cost_analysis(
         # Propagate not-found and other HTTP errors directly.
         raise exc
     except Exception as exc:
-        # Wrap any unexpected error so the client receives a consistent
-        # response structure.
+        # Log the actual error details for debugging
+        logger.error(
+            f"Error calculating cost for recipe {recipe_id}: {exc}",
+            exc_info=True
+        )
+        # Return a generic error message to avoid leaking internal details
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error calculating recipe cost: {str(exc)}",
+            detail="Failed to calculate recipe cost. Please try again later.",
         ) from exc
 
     return cost_analysis
