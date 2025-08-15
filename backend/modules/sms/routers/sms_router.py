@@ -103,17 +103,38 @@ async def update_message_status(
     current_user = Depends(get_current_user)
 ):
     """Manually update message status"""
+    from modules.sms.models.sms_models import SMSMessage
+    
+    # First, get the message to find its provider_message_id
+    message = db.query(SMSMessage).filter(SMSMessage.id == message_id).first()
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    # If there's no provider_message_id, update the status directly
+    if not message.provider_message_id:
+        message.status = status_update.status
+        if status_update.delivered_at:
+            message.delivered_at = status_update.delivered_at
+        if status_update.failed_at:
+            message.failed_at = status_update.failed_at
+        if status_update.error_message:
+            message.provider_error = status_update.error_message
+        db.commit()
+        db.refresh(message)
+        return {"success": True, "message": "Status updated directly"}
+    
+    # Use the provider_message_id for the service call
     sms_service = SMSService(db)
-    message = sms_service.update_message_status(
-        provider_message_id=str(message_id),
+    updated_message = sms_service.update_message_status(
+        provider_message_id=message.provider_message_id,
         status=status_update.status,
         delivered_at=status_update.delivered_at,
         failed_at=status_update.failed_at,
         error_message=status_update.error_message
     )
     
-    if not message:
-        raise HTTPException(status_code=404, detail="Message not found")
+    if not updated_message:
+        raise HTTPException(status_code=404, detail="Message not found by provider ID")
     
     return {"success": True, "message": "Status updated"}
 

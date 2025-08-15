@@ -116,13 +116,18 @@ class CostTrackingService:
         total_cost = outbound_cost + inbound_cost + phone_number_cost
         
         # Check if cost record exists for this period
-        existing_cost = self.db.query(SMSCost).filter(
+        query = self.db.query(SMSCost).filter(
             and_(
                 SMSCost.billing_period_start == start_date,
-                SMSCost.billing_period_end == end_date,
-                SMSCost.provider == provider if provider else True
+                SMSCost.billing_period_end == end_date
             )
-        ).first()
+        )
+        
+        # Add provider filter only if provider is specified
+        if provider:
+            query = query.filter(SMSCost.provider == provider)
+        
+        existing_cost = query.first()
         
         if existing_cost:
             # Update existing record
