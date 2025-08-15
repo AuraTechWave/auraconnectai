@@ -13,10 +13,25 @@ export const DashboardScreen: React.FC = () => {
   const { isOnline, queueSize } = useOffline();
 
   const metrics = [
-    { title: 'Today\'s Sales', value: '$2,345', icon: 'cash-multiple', color: '#10b981' },
+    {
+      title: "Today's Sales",
+      value: '$2,345',
+      icon: 'cash-multiple',
+      color: '#10b981',
+    },
     { title: 'Active Orders', value: '12', icon: 'receipt', color: '#3b82f6' },
-    { title: 'Staff on Duty', value: '8', icon: 'account-group', color: '#8b5cf6' },
-    { title: 'Menu Items', value: '156', icon: 'food-variant', color: '#f59e0b' },
+    {
+      title: 'Staff on Duty',
+      value: '8',
+      icon: 'account-group',
+      color: '#8b5cf6',
+    },
+    {
+      title: 'Menu Items',
+      value: '156',
+      icon: 'food-variant',
+      color: '#f59e0b',
+    },
   ];
 
   return (

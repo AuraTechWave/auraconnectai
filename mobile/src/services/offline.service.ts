@@ -51,15 +51,21 @@ class OfflineService {
     };
   }
 
-  public async queueRequest(request: Omit<QueuedRequest, 'id' | 'timestamp' | 'retryCount'>) {
+  public async queueRequest(
+    request: Omit<QueuedRequest, 'id' | 'timestamp' | 'retryCount'>,
+  ) {
     const queue = this.getQueue();
-    
+
     // Check queue size limit
     if (queue.length >= OFFLINE_CONFIG.MAX_QUEUE_SIZE) {
-      showToast('warning', 'Queue Full', 'Offline queue is full. Please sync when online.');
+      showToast(
+        'warning',
+        'Queue Full',
+        'Offline queue is full. Please sync when online.',
+      );
       return;
     }
-    
+
     const queuedRequest: QueuedRequest = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -69,13 +75,19 @@ class OfflineService {
 
     // Encrypt sensitive data if enabled
     if (OFFLINE_CONFIG.ENCRYPT_QUEUE && queuedRequest.config.data) {
-      queuedRequest.config.data = encryptionService.encrypt(queuedRequest.config.data);
+      queuedRequest.config.data = encryptionService.encrypt(
+        queuedRequest.config.data,
+      );
     }
 
     queue.push(queuedRequest);
     this.saveQueue(queue);
 
-    showToast('info', 'Offline', `Request queued (${queue.length}/${OFFLINE_CONFIG.MAX_QUEUE_SIZE})`);
+    showToast(
+      'info',
+      'Offline',
+      `Request queued (${queue.length}/${OFFLINE_CONFIG.MAX_QUEUE_SIZE})`,
+    );
   }
 
   public async syncOfflineQueue() {
@@ -99,20 +111,20 @@ class OfflineService {
     // Process in batches
     for (let i = 0; i < queue.length; i += batchSize) {
       const batch = queue.slice(i, i + batchSize);
-      
+
       await Promise.all(
         batch.map(async request => {
           try {
             await this.executeRequest(request);
           } catch (error) {
             request.retryCount++;
-            
+
             // Keep request in queue if retry count is below threshold
             if (request.retryCount < OFFLINE_CONFIG.MAX_RETRY_COUNT) {
               failedRequests.push(request);
             }
           }
-        })
+        }),
       );
     }
 
@@ -134,7 +146,7 @@ class OfflineService {
 
   private async executeRequest(request: QueuedRequest) {
     const { method, url, data, params } = request.config;
-    
+
     // Decrypt data if it was encrypted
     let decryptedData = data;
     if (OFFLINE_CONFIG.ENCRYPT_QUEUE && data) {

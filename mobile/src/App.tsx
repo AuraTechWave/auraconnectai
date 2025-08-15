@@ -32,17 +32,17 @@ const App: React.FC = () => {
   useEffect(() => {
     // Hide splash screen after app loads
     SplashScreen.hide();
-    
+
     // Initialize sync manager
     syncManager.initialize().catch(error => {
       console.error('Failed to initialize sync manager:', error);
     });
-    
+
     // Initialize notification service
     notificationService.initialize().catch(error => {
       console.error('Failed to initialize notification service:', error);
     });
-    
+
     return () => {
       // Cleanup on app unmount
       syncManager.destroy();

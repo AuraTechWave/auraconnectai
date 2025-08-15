@@ -19,14 +19,16 @@ describe('Offline Service', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock MMKV storage
     mockStorage = {
       getString: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
     };
-    (MMKV as jest.MockedClass<typeof MMKV>).mockImplementation(() => mockStorage);
+    (MMKV as jest.MockedClass<typeof MMKV>).mockImplementation(
+      () => mockStorage,
+    );
 
     // Mock NetInfo
     mockNetInfo = {
@@ -51,7 +53,9 @@ describe('Offline Service', () => {
       };
 
       mockStorage.getString.mockReturnValue(null);
-      (encryptionService.encrypt as jest.Mock).mockReturnValue('encrypted-data');
+      (encryptionService.encrypt as jest.Mock).mockReturnValue(
+        'encrypted-data',
+      );
 
       await offlineService.queueRequest(request);
 
@@ -68,12 +72,15 @@ describe('Offline Service', () => {
 
     it('should enforce queue size limit', async () => {
       // Create a full queue
-      const fullQueue = Array.from({ length: OFFLINE_CONFIG.MAX_QUEUE_SIZE }, (_, i) => ({
-        id: i.toString(),
-        timestamp: new Date().toISOString(),
-        config: { method: 'GET', url: `/test${i}` },
-        retryCount: 0,
-      }));
+      const fullQueue = Array.from(
+        { length: OFFLINE_CONFIG.MAX_QUEUE_SIZE },
+        (_, i) => ({
+          id: i.toString(),
+          timestamp: new Date().toISOString(),
+          config: { method: 'GET', url: `/test${i}` },
+          retryCount: 0,
+        }),
+      );
 
       mockStorage.getString.mockReturnValue(JSON.stringify(fullQueue));
 
@@ -106,12 +113,14 @@ describe('Offline Service', () => {
       };
 
       mockStorage.getString.mockReturnValue(null);
-      (encryptionService.encrypt as jest.Mock).mockReturnValue('encrypted-sensitive-data');
+      (encryptionService.encrypt as jest.Mock).mockReturnValue(
+        'encrypted-sensitive-data',
+      );
 
       await offlineService.queueRequest(request);
 
       expect(encryptionService.encrypt).toHaveBeenCalledWith(sensitiveData);
-      
+
       const savedQueue = JSON.parse(mockStorage.set.mock.calls[0][1]);
       expect(savedQueue[0].config.data).toBe('encrypted-sensitive-data');
     });
@@ -119,7 +128,9 @@ describe('Offline Service', () => {
     it('should clear queue', () => {
       offlineService.clearQueue();
 
-      expect(mockStorage.delete).toHaveBeenCalledWith(STORAGE_KEYS.OFFLINE_QUEUE);
+      expect(mockStorage.delete).toHaveBeenCalledWith(
+        STORAGE_KEYS.OFFLINE_QUEUE,
+      );
     });
 
     it('should return correct queue size', () => {
@@ -153,8 +164,9 @@ describe('Offline Service', () => {
       ];
 
       mockStorage.getString.mockReturnValue(JSON.stringify(queue));
-      (encryptionService.decrypt as jest.Mock)
-        .mockReturnValueOnce({ original: 'data1' });
+      (encryptionService.decrypt as jest.Mock).mockReturnValueOnce({
+        original: 'data1',
+      });
       (apiClient.post as jest.Mock).mockResolvedValue({ data: 'success' });
       (apiClient.get as jest.Mock).mockResolvedValue({ data: 'success' });
 
@@ -165,10 +177,9 @@ describe('Offline Service', () => {
         { original: 'data1' },
         { params: undefined },
       );
-      expect(apiClient.get).toHaveBeenCalledWith(
-        '/api/test2',
-        { params: { id: 1 } },
-      );
+      expect(apiClient.get).toHaveBeenCalledWith('/api/test2', {
+        params: { id: 1 },
+      });
       expect(mockStorage.set).toHaveBeenCalledWith(
         STORAGE_KEYS.OFFLINE_QUEUE,
         '[]',
@@ -191,7 +202,9 @@ describe('Offline Service', () => {
       ];
 
       mockStorage.getString.mockReturnValue(JSON.stringify(queue));
-      (apiClient.post as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (apiClient.post as jest.Mock).mockRejectedValue(
+        new Error('Network error'),
+      );
 
       await offlineService.syncOfflineQueue();
 
@@ -217,7 +230,9 @@ describe('Offline Service', () => {
       ];
 
       mockStorage.getString.mockReturnValue(JSON.stringify(queue));
-      (apiClient.post as jest.Mock).mockRejectedValue(new Error('Network error'));
+      (apiClient.post as jest.Mock).mockRejectedValue(
+        new Error('Network error'),
+      );
 
       await offlineService.syncOfflineQueue();
 
@@ -243,7 +258,7 @@ describe('Offline Service', () => {
 
       // Verify all requests were made
       expect(apiClient.get).toHaveBeenCalledTimes(queueSize);
-      
+
       // Verify empty queue was saved
       expect(mockStorage.set).toHaveBeenCalledWith(
         STORAGE_KEYS.OFFLINE_QUEUE,
@@ -257,7 +272,7 @@ describe('Offline Service', () => {
 
       // Start first sync
       const firstSync = offlineService.syncOfflineQueue();
-      
+
       // Try to start second sync immediately
       await offlineService.syncOfflineQueue();
 
@@ -272,16 +287,18 @@ describe('Offline Service', () => {
 
   describe('Network Monitoring', () => {
     it('should trigger sync when coming online', async () => {
-      const queue = [{ id: '1', config: { method: 'GET', url: '/test' }, retryCount: 0 }];
+      const queue = [
+        { id: '1', config: { method: 'GET', url: '/test' }, retryCount: 0 },
+      ];
       mockStorage.getString.mockReturnValue(JSON.stringify(queue));
       (apiClient.get as jest.Mock).mockResolvedValue({ data: 'success' });
 
       // Simulate going offline then online
       const service = require('@services/offline.service').offlineService;
-      
+
       // Trigger network change to offline
       mockNetInfo.callback({ isConnected: false });
-      
+
       // Then back online
       mockNetInfo.callback({ isConnected: true });
 

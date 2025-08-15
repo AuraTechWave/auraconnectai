@@ -29,11 +29,15 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onPress }) => {
   const getSyncIcon = () => {
     switch (order.syncStatus) {
       case 'pending':
-        return <Icon name="cloud-upload-outline" size={20} color={colors.warning} />;
+        return (
+          <Icon name="cloud-upload-outline" size={20} color={colors.warning} />
+        );
       case 'conflict':
         return <Icon name="alert-circle" size={20} color={colors.error} />;
       case 'synced':
-        return <Icon name="cloud-check-outline" size={20} color={colors.success} />;
+        return (
+          <Icon name="cloud-check-outline" size={20} color={colors.success} />
+        );
       default:
         return null;
     }
@@ -60,13 +64,12 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onPress }) => {
     <TouchableOpacity
       style={styles.orderItem}
       onPress={() => onPress(order)}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <View style={styles.orderHeader}>
         <Text style={styles.orderNumber}>Order #{order.orderNumber}</Text>
         {getSyncIcon()}
       </View>
-      
+
       <View style={styles.orderContent}>
         <View style={styles.orderInfo}>
           <Text style={styles.customerName}>
@@ -76,17 +79,15 @@ const OrderItem: React.FC<OrderItemProps> = ({ order, onPress }) => {
             {format(new Date(order.createdAt), 'MMM dd, h:mm a')}
           </Text>
         </View>
-        
+
         <View style={styles.orderStats}>
           <Text style={[styles.orderStatus, { color: getStatusColor() }]}>
             {order.status.toUpperCase()}
           </Text>
-          <Text style={styles.orderTotal}>
-            ${order.totalAmount.toFixed(2)}
-          </Text>
+          <Text style={styles.orderTotal}>${order.totalAmount.toFixed(2)}</Text>
         </View>
       </View>
-      
+
       {order.notes && (
         <Text style={styles.orderNotes} numberOfLines={1}>
           Note: {order.notes}
@@ -121,9 +122,12 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
     }
   }, [sync, isOffline]);
 
-  const handleOrderPress = useCallback((order: Order) => {
-    navigation.navigate('OrderDetails', { orderId: order.id });
-  }, [navigation]);
+  const handleOrderPress = useCallback(
+    (order: Order) => {
+      navigation.navigate('OrderDetails', { orderId: order.id });
+    },
+    [navigation],
+  );
 
   const handleCreateOrder = useCallback(() => {
     navigation.navigate('CreateOrder');
@@ -146,9 +150,7 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
     <View style={styles.header}>
       <Text style={styles.title}>Orders</Text>
       <View style={styles.headerStats}>
-        <Text style={styles.statsText}>
-          {collectionStats.total} total
-        </Text>
+        <Text style={styles.statsText}>{collectionStats.total} total</Text>
         {collectionStats.pending > 0 && (
           <Text style={[styles.statsText, { color: colors.warning }]}>
             {collectionStats.pending} pending
@@ -178,7 +180,7 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <SyncStatusBar onPress={handleSyncPress} />
-      
+
       <FlatList
         data={orders}
         keyExtractor={item => item.id}
@@ -196,15 +198,14 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
           />
         }
       />
-      
+
       <TouchableOpacity
         style={styles.fab}
         onPress={handleCreateOrder}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         <Icon name="plus" size={24} color={colors.white} />
       </TouchableOpacity>
-      
+
       <SyncProgressModal
         visible={showSyncModal}
         onClose={() => setShowSyncModal(false)}
@@ -217,10 +218,7 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
 const enhance = withObservables([''], () => ({
   orders: database.collections
     .get('orders')
-    .query(
-      Q.where('is_deleted', false),
-      Q.sortBy('created_at', Q.desc),
-    )
+    .query(Q.where('is_deleted', false), Q.sortBy('created_at', Q.desc))
     .observe(),
 }));
 

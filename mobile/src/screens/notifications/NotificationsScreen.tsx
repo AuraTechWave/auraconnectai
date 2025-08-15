@@ -49,14 +49,20 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     };
 
     // Listen for new notifications
-    notificationService.on('notificationDisplayed', handleNotificationDisplayed);
+    notificationService.on(
+      'notificationDisplayed',
+      handleNotificationDisplayed,
+    );
 
     // Listen for navigation events
     notificationService.on('navigateToOrder', handleNavigateToOrder);
 
     // Return cleanup function
     return () => {
-      notificationService.off('notificationDisplayed', handleNotificationDisplayed);
+      notificationService.off(
+        'notificationDisplayed',
+        handleNotificationDisplayed,
+      );
       notificationService.off('navigateToOrder', handleNavigateToOrder);
     };
   };
@@ -65,7 +71,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     try {
       const stored = await notificationService.getStoredNotifications();
       setNotifications(stored);
-      
+
       const unread = stored.filter(n => !n.read).length;
       setUnreadCount(unread);
     } catch (error) {
@@ -79,11 +85,19 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     setRefreshing(false);
   }, []);
 
-  const handleNotificationPress = useCallback((notification: StoredNotification) => {
-    if (notification.data.type.includes('order_') && notification.data.orderId) {
-      navigation.navigate('OrderDetails', { orderId: notification.data.orderId });
-    }
-  }, [navigation]);
+  const handleNotificationPress = useCallback(
+    (notification: StoredNotification) => {
+      if (
+        notification.data.type.includes('order_') &&
+        notification.data.orderId
+      ) {
+        navigation.navigate('OrderDetails', {
+          orderId: notification.data.orderId,
+        });
+      }
+    },
+    [navigation],
+  );
 
   const handleMarkAsRead = useCallback(async (notificationId: string) => {
     await notificationService.markNotificationAsRead(notificationId);
@@ -135,15 +149,13 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
         {unreadCount > 0 && (
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={handleMarkAllAsRead}
-          >
+            onPress={handleMarkAllAsRead}>
             <Icon name="check-all" size={24} color={colors.primary} />
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={styles.headerButton}
-          onPress={() => setShowSettings(true)}
-        >
+          onPress={() => setShowSettings(true)}>
           <Icon name="cog" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
@@ -155,7 +167,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
       <Icon name="bell-off-outline" size={64} color={colors.textSecondary} />
       <Text style={styles.emptyText}>No notifications yet</Text>
       <Text style={styles.emptySubtext}>
-        You'll receive notifications for order updates and important announcements
+        You'll receive notifications for order updates and important
+        announcements
       </Text>
     </View>
   );
@@ -164,10 +177,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     if (notifications.length === 0) return null;
 
     return (
-      <TouchableOpacity
-        style={styles.clearButton}
-        onPress={handleClearAll}
-      >
+      <TouchableOpacity style={styles.clearButton} onPress={handleClearAll}>
         <Icon name="trash-can-outline" size={20} color={colors.error} />
         <Text style={styles.clearButtonText}>Clear All</Text>
       </TouchableOpacity>
@@ -178,7 +188,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
     <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
         data={notifications}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <NotificationItem
             notification={item}

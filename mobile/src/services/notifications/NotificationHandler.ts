@@ -67,7 +67,9 @@ export class NotificationHandler {
     }
   }
 
-  private async handleOrderNotification(data: OrderNotificationData): Promise<void> {
+  private async handleOrderNotification(
+    data: OrderNotificationData,
+  ): Promise<void> {
     try {
       // Update local database if order exists
       const ordersCollection = database.collections.get('orders');
@@ -107,7 +109,10 @@ export class NotificationHandler {
   }
 
   private showOrderStatusToast(data: OrderNotificationData): void {
-    const messages: Record<string, { title: string; message: string; type: any }> = {
+    const messages: Record<
+      string,
+      { title: string; message: string; type: any }
+    > = {
       [NotificationType.ORDER_CREATED]: {
         title: 'New Order',
         message: `Order #${data.orderNumber} from ${data.customerName}`,
@@ -160,7 +165,11 @@ export class NotificationHandler {
     try {
       // Implement customer notification logic
       logger.info('Notifying customer for order', orderId);
-      showToast('success', 'Customer Notified', 'Notification sent to customer');
+      showToast(
+        'success',
+        'Customer Notified',
+        'Notification sent to customer',
+      );
     } catch (error) {
       logger.error('Failed to notify customer', error);
       showToast('error', 'Error', 'Failed to notify customer');
@@ -184,7 +193,11 @@ export class NotificationHandler {
           });
         });
 
-        showToast('success', 'Order Accepted', `Order #${order.orderNumber} accepted`);
+        showToast(
+          'success',
+          'Order Accepted',
+          `Order #${order.orderNumber} accepted`,
+        );
       }
     } catch (error) {
       logger.error('Failed to accept order', error);
@@ -209,7 +222,11 @@ export class NotificationHandler {
           });
         });
 
-        showToast('warning', 'Order Rejected', `Order #${order.orderNumber} rejected`);
+        showToast(
+          'warning',
+          'Order Rejected',
+          `Order #${order.orderNumber} rejected`,
+        );
       }
     } catch (error) {
       logger.error('Failed to reject order', error);

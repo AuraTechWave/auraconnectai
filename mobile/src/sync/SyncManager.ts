@@ -61,21 +61,24 @@ export class SyncManager extends EventEmitter {
 
   async initialize(): Promise<void> {
     logger.info('Initializing sync manager');
-    
+
     // Check initial network state
     const netState = await NetInfo.fetch();
     this.updateState({ isOnline: netState.isConnected ?? false });
-    
+
     // Start periodic sync if online
     if (this.state.isOnline) {
       this.startPeriodicSync();
     }
-    
+
     // Update pending changes count
     await this.updatePendingChangesCount();
   }
 
-  async sync(options?: { force?: boolean; syncType?: 'push' | 'pull' | 'full' }): Promise<void> {
+  async sync(options?: {
+    force?: boolean;
+    syncType?: 'push' | 'pull' | 'full';
+  }): Promise<void> {
     if (this.state.status === 'syncing' && !options?.force) {
       logger.warn('Sync already in progress');
       return;
@@ -87,15 +90,19 @@ export class SyncManager extends EventEmitter {
       return;
     }
 
-    this.updateState({ status: 'syncing', error: null, progress: { current: 0, total: 100, message: 'Starting sync...' } });
+    this.updateState({
+      status: 'syncing',
+      error: null,
+      progress: { current: 0, total: 100, message: 'Starting sync...' },
+    });
 
     try {
       // First, process any queued operations
       await this.syncQueue.processQueue();
-      
+
       // Then perform the sync
       const stats = await this.syncEngine.sync(options || {});
-      
+
       // Update state with results
       this.updateState({
         status: 'idle',
@@ -103,13 +110,12 @@ export class SyncManager extends EventEmitter {
         error: null,
         progress: null,
       });
-      
+
       // Update pending changes count
       await this.updatePendingChangesCount();
-      
+
       logger.info('Sync completed', stats);
       this.emit('syncComplete', stats);
-      
     } catch (error) {
       logger.error('Sync failed', error);
       this.updateState({
@@ -133,9 +139,9 @@ export class SyncManager extends EventEmitter {
       ...operation,
       priority: operation.priority || 'normal',
     });
-    
+
     this.updateState({ queueSize: this.syncQueue.getQueueSize() });
-    
+
     // Try to sync immediately if online
     if (this.state.isOnline && this.state.status === 'idle') {
       this.sync().catch(error => {
@@ -148,9 +154,9 @@ export class SyncManager extends EventEmitter {
     this.networkListener = NetInfo.addEventListener(state => {
       const wasOffline = !this.state.isOnline;
       const isOnline = state.isConnected ?? false;
-      
+
       this.updateState({ isOnline });
-      
+
       if (wasOffline && isOnline) {
         logger.info('Network reconnected, triggering sync');
         showToast('success', 'Online', 'Syncing changes...');
@@ -175,9 +181,9 @@ export class SyncManager extends EventEmitter {
         startOnBoot: true,
         enableHeadless: true,
       },
-      async (taskId) => {
+      async taskId => {
         logger.info('Background sync triggered', { taskId });
-        
+
         try {
           await this.sync();
           BackgroundFetch.finish(taskId);
@@ -186,7 +192,7 @@ export class SyncManager extends EventEmitter {
           BackgroundFetch.finish(taskId);
         }
       },
-      (taskId) => {
+      taskId => {
         logger.error('Background fetch failed to start', { taskId });
         BackgroundFetch.finish(taskId);
       },
@@ -199,7 +205,7 @@ export class SyncManager extends EventEmitter {
     }
 
     logger.info('Starting periodic sync');
-    
+
     this.syncTimer = BackgroundTimer.setInterval(() => {
       if (this.state.isOnline && this.state.status === 'idle') {
         this.sync().catch(error => {
@@ -219,23 +225,30 @@ export class SyncManager extends EventEmitter {
 
   private async updatePendingChangesCount(): Promise<void> {
     let count = 0;
-    const collections = ['orders', 'order_items', 'staff', 'shifts', 'menu_items', 'customers'];
-    
+    const collections = [
+      'orders',
+      'order_items',
+      'staff',
+      'shifts',
+      'menu_items',
+      'customers',
+    ];
+
     for (const collectionName of collections) {
       const collection = database.collections.get(collectionName);
-      const pendingRecords = await collection.query(
-        Q.where('sync_status', Q.oneOf(['pending', 'conflict'])),
-      ).fetchCount();
+      const pendingRecords = await collection
+        .query(Q.where('sync_status', Q.oneOf(['pending', 'conflict'])))
+        .fetchCount();
       count += pendingRecords;
     }
-    
+
     this.updateState({ pendingChanges: count });
   }
 
   private updateState(updates: Partial<SyncState>): void {
     const previousState = { ...this.state };
     this.state = { ...this.state, ...updates };
-    
+
     // Emit state change event
     this.emit('stateChange', this.state, previousState);
   }
@@ -247,10 +260,9 @@ export class SyncManager extends EventEmitter {
       if (lastSync && lastSync.length > 0) {
         this.updateState({ lastSync: lastSync[0].completedAt || null });
       }
-      
+
       // Load queue size
       this.updateState({ queueSize: this.syncQueue.getQueueSize() });
-      
     } catch (error) {
       logger.error('Failed to load sync state', error);
     }
@@ -282,18 +294,18 @@ export class SyncManager extends EventEmitter {
     return this.syncQueue.getStats();
   }
 
-  async getSyncHistory(limit: number = 10): Promise<SyncLog[]> {
+  async getSyncHistory(limit = 10): Promise<SyncLog[]> {
     return await SyncLog.recentSyncs(limit).fetch();
   }
 
   destroy(): void {
     this.stopPeriodicSync();
-    
+
     if (this.networkListener) {
       this.networkListener();
       this.networkListener = null;
     }
-    
+
     BackgroundFetch.stop();
     this.removeAllListeners();
   }

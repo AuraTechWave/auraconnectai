@@ -36,7 +36,7 @@ export default class Shift extends BaseModel {
 
   get isLate(): boolean {
     if (!this.actualStart) return false;
-    return this.actualStart > this.startTime + (15 * 60 * 1000); // 15 minutes grace
+    return this.actualStart > this.startTime + 15 * 60 * 1000; // 15 minutes grace
   }
 
   @writer async clockOut(notes?: string) {

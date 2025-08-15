@@ -8,23 +8,27 @@ import SyncLog from '@database/models/SyncLog';
 import { ConflictResolver } from './ConflictResolver';
 import { SyncQueue } from './SyncQueue';
 import { SyncErrorHandler } from './errors/SyncErrorHandler';
-import type { 
-  PullRequest, 
-  PullResponse, 
-  PushRequest, 
+import type {
+  PullRequest,
+  PullResponse,
+  PushRequest,
   PushResponse,
   SyncError,
   SyncResult,
   SyncCollectionChanges,
   SyncAcceptedItem,
-  SyncRejectedItem
+  SyncRejectedItem,
 } from '@types/sync.types';
 
 export interface SyncConfig {
   pullUrl: string;
   pushUrl: string;
   batchSize: number;
-  conflictStrategy: 'server_wins' | 'client_wins' | 'last_write_wins' | 'manual';
+  conflictStrategy:
+    | 'server_wins'
+    | 'client_wins'
+    | 'last_write_wins'
+    | 'manual';
 }
 
 export interface SyncStats {
@@ -38,10 +42,10 @@ export interface SyncStats {
 export class SyncEngine {
   private static instance: SyncEngine;
   private isSyncing = false;
-  private lastSyncTimestamp: number = 0;
+  private lastSyncTimestamp = 0;
   private conflictResolver: ConflictResolver;
   private syncQueue: SyncQueue;
-  
+
   private config: SyncConfig = {
     pullUrl: '/api/sync/pull',
     pushUrl: '/api/sync/push',
@@ -62,7 +66,9 @@ export class SyncEngine {
     return SyncEngine.instance;
   }
 
-  async sync(options: { force?: boolean; syncType?: 'push' | 'pull' | 'full' } = {}): Promise<SyncStats> {
+  async sync(
+    options: { force?: boolean; syncType?: 'push' | 'pull' | 'full' } = {},
+  ): Promise<SyncStats> {
     const { force = false, syncType = 'full' } = options;
 
     if (this.isSyncing && !force) {
@@ -72,10 +78,10 @@ export class SyncEngine {
 
     this.isSyncing = true;
     const startTime = Date.now();
-    
+
     // Create sync log
     const syncLog = await this.createSyncLog(syncType);
-    
+
     const stats: SyncStats = {
       pushed: 0,
       pulled: 0,
@@ -85,7 +91,10 @@ export class SyncEngine {
     };
 
     try {
-      logger.info('Starting sync', { syncType, lastSync: this.lastSyncTimestamp });
+      logger.info('Starting sync', {
+        syncType,
+        lastSync: this.lastSyncTimestamp,
+      });
 
       if (syncType === 'pull' || syncType === 'full') {
         const pullStats = await this.pull();
@@ -107,8 +116,11 @@ export class SyncEngine {
       await this.completeSyncLog(syncLog, stats);
 
       logger.info('Sync completed successfully', stats);
-      showToast('success', 'Sync Complete', `↓${stats.pulled} ↑${stats.pushed}`);
-
+      showToast(
+        'success',
+        'Sync Complete',
+        `↓${stats.pulled} ↑${stats.pushed}`,
+      );
     } catch (error) {
       stats.errors++;
       logger.error('Sync failed', error);
@@ -133,7 +145,9 @@ export class SyncEngine {
         schemaVersion: 1,
       };
 
-      const response = await apiClient.get<PullResponse>(this.config.pullUrl, { params });
+      const response = await apiClient.get<PullResponse>(this.config.pullUrl, {
+        params,
+      });
       const { changes, timestamp } = response.data;
 
       // Process changes through WatermelonDB sync
@@ -142,11 +156,12 @@ export class SyncEngine {
         pullChanges: async () => {
           // Transform server data to WatermelonDB format
           const transformedChanges = this.transformServerChanges(changes);
-          
+
           // Detect and resolve conflicts
-          const conflictResults = await this.conflictResolver.detectConflicts(transformedChanges);
+          const conflictResults =
+            await this.conflictResolver.detectConflicts(transformedChanges);
           conflicts = conflictResults.conflicts.length;
-          
+
           return {
             changes: conflictResults.resolved,
             timestamp,
@@ -159,15 +174,14 @@ export class SyncEngine {
       });
 
       pulled = this.countChanges(changes);
-      
     } catch (error) {
       const syncError = SyncErrorHandler.handleError(error);
       logger.error('Pull sync failed', syncError);
-      
+
       if (syncError.retryable) {
         await SyncErrorHandler.recoverFromError(syncError);
       }
-      
+
       throw syncError;
     }
 
@@ -181,7 +195,7 @@ export class SyncEngine {
     try {
       // Get all pending changes
       const pendingChanges = await this.collectPendingChanges();
-      
+
       if (Object.keys(pendingChanges).length === 0) {
         logger.debug('No pending changes to push');
         return { pushed: 0, conflicts: 0 };
@@ -196,17 +210,24 @@ export class SyncEngine {
           lastPulledAt: this.lastSyncTimestamp,
         };
 
-        const response = await apiClient.post<PushResponse>(this.config.pushUrl, request);
-        const { accepted, rejected, conflicts: serverConflicts } = response.data;
+        const response = await apiClient.post<PushResponse>(
+          this.config.pushUrl,
+          request,
+        );
+        const {
+          accepted,
+          rejected,
+          conflicts: serverConflicts,
+        } = response.data;
 
         // Update local records with server IDs
         await this.updateSyncedRecords(accepted);
-        
+
         // Handle rejections and conflicts
         if (rejected.length > 0) {
           await this.handleRejections(rejected);
         }
-        
+
         if (serverConflicts.length > 0) {
           conflicts += serverConflicts.length;
           await this.conflictResolver.resolveConflicts(serverConflicts);
@@ -214,15 +235,14 @@ export class SyncEngine {
 
         pushed += accepted.length;
       }
-
     } catch (error) {
       const syncError = SyncErrorHandler.handleError(error);
       logger.error('Push sync failed', syncError);
-      
+
       if (syncError.retryable) {
         await SyncErrorHandler.recoverFromError(syncError);
       }
-      
+
       throw syncError;
     }
 
@@ -231,13 +251,20 @@ export class SyncEngine {
 
   private async collectPendingChanges(): Promise<SyncCollectionChanges> {
     const changes: SyncCollectionChanges = {};
-    const collections = ['orders', 'order_items', 'staff', 'shifts', 'menu_items', 'customers'];
+    const collections = [
+      'orders',
+      'order_items',
+      'staff',
+      'shifts',
+      'menu_items',
+      'customers',
+    ];
 
     for (const collectionName of collections) {
       const collection = database.collections.get(collectionName);
-      const pendingRecords = await collection.query(
-        Q.where('sync_status', Q.oneOf(['pending', 'conflict'])),
-      ).fetch();
+      const pendingRecords = await collection
+        .query(Q.where('sync_status', Q.oneOf(['pending', 'conflict'])))
+        .fetch();
 
       if (pendingRecords.length > 0) {
         changes[collectionName] = {
@@ -248,7 +275,7 @@ export class SyncEngine {
 
         for (const record of pendingRecords) {
           const data = this.serializeRecord(record);
-          
+
           if (record.isDeleted) {
             changes[collectionName].deleted.push(data);
           } else if (record.serverId) {
@@ -278,16 +305,18 @@ export class SyncEngine {
 
     for (const [collection, records] of Object.entries(changes)) {
       transformed[collection] = {
-        created: records.created?.map((r: any) => ({
-          ...r,
-          id: r.localId || r.id,
-          serverId: r.id,
-        })) || [],
-        updated: records.updated?.map((r: any) => ({
-          ...r,
-          id: r.localId || r.id,
-          serverId: r.id,
-        })) || [],
+        created:
+          records.created?.map((r: any) => ({
+            ...r,
+            id: r.localId || r.id,
+            serverId: r.id,
+          })) || [],
+        updated:
+          records.updated?.map((r: any) => ({
+            ...r,
+            id: r.localId || r.id,
+            serverId: r.id,
+          })) || [],
         deleted: records.deleted || [],
       };
     }
@@ -301,11 +330,7 @@ export class SyncEngine {
     let currentSize = 0;
 
     for (const [collection, data] of Object.entries(changes)) {
-      const allRecords = [
-        ...data.created,
-        ...data.updated,
-        ...data.deleted,
-      ];
+      const allRecords = [...data.created, ...data.updated, ...data.deleted];
 
       for (const record of allRecords) {
         if (!currentBatch[collection]) {
@@ -347,7 +372,7 @@ export class SyncEngine {
       for (const item of accepted) {
         const { collection: collectionName, localId, serverId } = item;
         const collection = database.collections.get(collectionName);
-        
+
         try {
           const record = await collection.find(localId);
           await record.markAsSynced(serverId);
@@ -364,12 +389,15 @@ export class SyncEngine {
       // Mark as conflict for manual resolution
       const { collection: collectionName, localId, reason } = rejection;
       const collection = database.collections.get(collectionName);
-      
+
       try {
         const record = await collection.find(localId);
         await record.markAsConflict();
       } catch (error) {
-        logger.error('Failed to mark rejection as conflict', { localId, error });
+        logger.error('Failed to mark rejection as conflict', {
+          localId,
+          error,
+        });
       }
     }
   }
@@ -417,11 +445,13 @@ export class SyncEngine {
         log.recordsPushed = stats.pushed;
         log.recordsPulled = stats.pulled;
         log.conflictsResolved = stats.conflicts;
-        log.errors = [{
-          message: error.message || 'Unknown error',
-          code: error.code,
-          timestamp: Date.now(),
-        }];
+        log.errors = [
+          {
+            message: error.message || 'Unknown error',
+            code: error.code,
+            timestamp: Date.now(),
+          },
+        ];
       });
     });
   }

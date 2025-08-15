@@ -1,13 +1,15 @@
-import messaging, { FirebaseMessagingTypes } from '@react-native-firebase/messaging';
-import notifee, { 
-  AndroidImportance, 
+import messaging, {
+  FirebaseMessagingTypes,
+} from '@react-native-firebase/messaging';
+import notifee, {
+  AndroidImportance,
   AndroidStyle,
   EventType,
   Notification,
   NotificationAndroid,
   NotificationIOS,
   TimestampTrigger,
-  TriggerType
+  TriggerType,
 } from '@notifee/react-native';
 import PushNotification from 'react-native-push-notification';
 import { Platform } from 'react-native';
@@ -113,17 +115,19 @@ export class NotificationService extends EventEmitter {
     const token = await NotificationErrorHandler.withRetry(
       async () => messaging().getToken(),
       {
-        onError: (error) => NotificationErrorHandler.handleTokenRegistrationError(error),
-        onRetry: (attempt) => logger.debug(`Retrying FCM token fetch, attempt ${attempt}`),
-      }
+        onError: error =>
+          NotificationErrorHandler.handleTokenRegistrationError(error),
+        onRetry: attempt =>
+          logger.debug(`Retrying FCM token fetch, attempt ${attempt}`),
+      },
     );
 
     if (token) {
       this.fcmToken = token;
       await SecureNotificationStorage.saveFCMToken(token);
-      
+
       // Listen for token refresh
-      messaging().onTokenRefresh(async (newToken) => {
+      messaging().onTokenRefresh(async newToken => {
         this.fcmToken = newToken;
         await SecureNotificationStorage.saveFCMToken(newToken);
         this.emit('tokenRefresh', newToken);
@@ -177,16 +181,16 @@ export class NotificationService extends EventEmitter {
 
   private configureLocalNotifications(): void {
     PushNotification.configure({
-      onRegister: (token) => {
+      onRegister: token => {
         logger.debug('Local notification token', token);
       },
 
-      onNotification: (notification) => {
+      onNotification: notification => {
         logger.debug('Local notification received', notification);
         this.notificationHandler.handleLocalNotification(notification);
       },
 
-      onAction: (notification) => {
+      onAction: notification => {
         logger.debug('Notification action', notification);
         this.notificationHandler.handleNotificationAction(notification);
       },
@@ -248,7 +252,8 @@ export class NotificationService extends EventEmitter {
       return;
     }
 
-    const notification = this.createNotificationFromRemoteMessage(remoteMessage);
+    const notification =
+      this.createNotificationFromRemoteMessage(remoteMessage);
     await this.displayNotification(notification);
   }
 
@@ -267,14 +272,10 @@ export class NotificationService extends EventEmitter {
 
     // Use factory for order notifications
     if (data?.type && data.type.includes('order_')) {
-      return NotificationFactory.createOrderNotification(
-        data.type,
-        data,
-        {
-          title: notification?.title || 'AuraConnect',
-          body: notification?.body || '',
-        }
-      );
+      return NotificationFactory.createOrderNotification(data.type, data, {
+        title: notification?.title || 'AuraConnect',
+        body: notification?.body || '',
+      });
     }
 
     // Use factory for other notification types
@@ -283,9 +284,19 @@ export class NotificationService extends EventEmitter {
     const body = notification?.body || '';
 
     if (data?.type === 'promotion') {
-      return NotificationFactory.createPromotionNotification(id, title, body, data);
+      return NotificationFactory.createPromotionNotification(
+        id,
+        title,
+        body,
+        data,
+      );
     } else if (data?.type === 'system_update') {
-      return NotificationFactory.createSystemNotification(id, title, body, data);
+      return NotificationFactory.createSystemNotification(
+        id,
+        title,
+        body,
+        data,
+      );
     }
 
     // Default notification for unknown types
@@ -304,7 +315,6 @@ export class NotificationService extends EventEmitter {
       },
     };
   }
-
 
   async displayNotification(notification: Notification): Promise<void> {
     try {
@@ -351,7 +361,9 @@ export class NotificationService extends EventEmitter {
     }
   }
 
-  private async handleNotificationPress(notification?: Notification): Promise<void> {
+  private async handleNotificationPress(
+    notification?: Notification,
+  ): Promise<void> {
     if (!notification) return;
 
     const { data } = notification;
@@ -385,19 +397,23 @@ export class NotificationService extends EventEmitter {
     }
   }
 
-  private shouldShowNotification(remoteMessage: FirebaseMessagingTypes.RemoteMessage): boolean {
+  private shouldShowNotification(
+    remoteMessage: FirebaseMessagingTypes.RemoteMessage,
+  ): boolean {
     if (!this.preferences.enabled) return false;
 
     const { data } = remoteMessage;
-    if (data?.type === 'order_update' && !this.preferences.orderUpdates) return false;
-    if (data?.type === 'promotion' && !this.preferences.promotions) return false;
+    if (data?.type === 'order_update' && !this.preferences.orderUpdates)
+      return false;
+    if (data?.type === 'promotion' && !this.preferences.promotions)
+      return false;
 
     // Check do not disturb
     if (this.preferences.doNotDisturb.enabled) {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       const { startTime, endTime } = this.preferences.doNotDisturb;
-      
+
       if (startTime <= endTime) {
         if (currentTime >= startTime && currentTime <= endTime) return false;
       } else {
@@ -418,9 +434,13 @@ export class NotificationService extends EventEmitter {
         logger.info('Device token registered');
       },
       {
-        onError: (error) => logger.error('Failed to register device token after retries', error),
-        onRetry: (attempt) => logger.debug(`Retrying device token registration, attempt ${attempt}`),
-      }
+        onError: error =>
+          logger.error('Failed to register device token after retries', error),
+        onRetry: attempt =>
+          logger.debug(
+            `Retrying device token registration, attempt ${attempt}`,
+          ),
+      },
     );
   }
 
@@ -435,7 +455,9 @@ export class NotificationService extends EventEmitter {
     }
   }
 
-  async savePreferences(preferences: Partial<NotificationPreferences>): Promise<void> {
+  async savePreferences(
+    preferences: Partial<NotificationPreferences>,
+  ): Promise<void> {
     try {
       this.preferences = { ...this.preferences, ...preferences };
       await SecureNotificationStorage.savePreferences(this.preferences);
@@ -449,7 +471,8 @@ export class NotificationService extends EventEmitter {
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
   ): Promise<void> {
     try {
-      const notifications = await SecureNotificationStorage.getNotificationHistory();
+      const notifications =
+        await SecureNotificationStorage.getNotificationHistory();
       notifications.unshift({
         id: remoteMessage.messageId || Date.now().toString(),
         title: remoteMessage.notification?.title || '',
@@ -462,13 +485,19 @@ export class NotificationService extends EventEmitter {
       await SecureNotificationStorage.saveNotificationHistory(notifications);
       await SecureNotificationStorage.trimNotificationHistory();
     } catch (error) {
-      NotificationErrorHandler.handleNotificationError(error, 'storeNotification');
+      NotificationErrorHandler.handleNotificationError(
+        error,
+        'storeNotification',
+      );
     }
   }
 
-  private async storeNotificationLocally(notification: Notification): Promise<void> {
+  private async storeNotificationLocally(
+    notification: Notification,
+  ): Promise<void> {
     try {
-      const notifications = await SecureNotificationStorage.getNotificationHistory();
+      const notifications =
+        await SecureNotificationStorage.getNotificationHistory();
       notifications.unshift({
         id: notification.id || Date.now().toString(),
         title: notification.title || '',
@@ -481,7 +510,10 @@ export class NotificationService extends EventEmitter {
       await SecureNotificationStorage.saveNotificationHistory(notifications);
       await SecureNotificationStorage.trimNotificationHistory();
     } catch (error) {
-      NotificationErrorHandler.handleNotificationError(error, 'storeNotificationLocally');
+      NotificationErrorHandler.handleNotificationError(
+        error,
+        'storeNotificationLocally',
+      );
     }
   }
 
@@ -492,8 +524,8 @@ export class NotificationService extends EventEmitter {
   async markNotificationAsRead(notificationId: string): Promise<void> {
     try {
       const notifications = await this.getStoredNotifications();
-      const updated = notifications.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
+      const updated = notifications.map(n =>
+        n.id === notificationId ? { ...n, read: true } : n,
       );
       await SecureNotificationStorage.saveNotificationHistory(updated);
     } catch (error) {

@@ -1,4 +1,10 @@
-import { field, relation, json, writer, Q } from '@nozbe/watermelondb/decorators';
+import {
+  field,
+  relation,
+  json,
+  writer,
+  Q,
+} from '@nozbe/watermelondb/decorators';
 import BaseModel from './BaseModel';
 
 interface MenuModifier {

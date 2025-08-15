@@ -1,8 +1,19 @@
-import { field, children, relation, writer } from '@nozbe/watermelondb/decorators';
+import {
+  field,
+  children,
+  relation,
+  writer,
+} from '@nozbe/watermelondb/decorators';
 import { Q } from '@nozbe/watermelondb';
 import BaseModel from './BaseModel';
 
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'preparing'
+  | 'ready'
+  | 'delivered'
+  | 'cancelled';
 export type OrderType = 'dine_in' | 'takeout' | 'delivery';
 export type PaymentStatus = 'pending' | 'paid' | 'partial' | 'refunded';
 
@@ -84,9 +95,7 @@ export default class Order extends BaseModel {
   }
 
   static pendingSync() {
-    return this.query(
-      Q.where('sync_status', Q.oneOf(['pending', 'conflict'])),
-    );
+    return this.query(Q.where('sync_status', Q.oneOf(['pending', 'conflict'])));
   }
 
   static forDate(date: Date) {
@@ -96,7 +105,10 @@ export default class Order extends BaseModel {
     endOfDay.setHours(23, 59, 59, 999);
 
     return this.query(
-      Q.where('created_at', Q.between(startOfDay.getTime(), endOfDay.getTime())),
+      Q.where(
+        'created_at',
+        Q.between(startOfDay.getTime(), endOfDay.getTime()),
+      ),
       Q.where('is_deleted', false),
     );
   }

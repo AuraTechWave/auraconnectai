@@ -66,11 +66,11 @@ class Logger {
     // Handle objects
     if (typeof data === 'object') {
       const sanitized: any = {};
-      
+
       for (const [key, value] of Object.entries(data)) {
         // Check if key is sensitive
         const lowerKey = key.toLowerCase();
-        
+
         if (REDACTED_FIELDS.includes(lowerKey)) {
           sanitized[key] = '[REDACTED]';
         } else if (SENSITIVE_PATTERNS.some(pattern => pattern.test(key))) {
@@ -79,7 +79,7 @@ class Logger {
           sanitized[key] = this.sanitizeData(value);
         }
       }
-      
+
       return sanitized;
     }
 
@@ -91,7 +91,11 @@ class Logger {
       return '[MASKED]';
     }
     const visibleChars = 4;
-    return str.substring(0, visibleChars) + '*'.repeat(8) + str.substring(str.length - visibleChars);
+    return (
+      str.substring(0, visibleChars) +
+      '*'.repeat(8) +
+      str.substring(str.length - visibleChars)
+    );
   }
 
   private maskValue(value: any): any {
@@ -107,16 +111,20 @@ class Logger {
     return '[MASKED]';
   }
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+  ): string {
     const timestamp = new Date().toISOString();
     const sanitizedContext = context ? this.sanitizeData(context) : undefined;
-    
+
     let formatted = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
-    
+
     if (sanitizedContext && Object.keys(sanitizedContext).length > 0) {
       formatted += `\n${JSON.stringify(sanitizedContext, null, 2)}`;
     }
-    
+
     return formatted;
   }
 
@@ -142,11 +150,13 @@ class Logger {
     if (this.shouldLog('error')) {
       const errorContext = {
         ...context,
-        error: error ? {
-          message: error.message,
-          stack: error.stack,
-          ...this.sanitizeData(error),
-        } : undefined,
+        error: error
+          ? {
+              message: error.message,
+              stack: error.stack,
+              ...this.sanitizeData(error),
+            }
+          : undefined,
       };
       console.error(this.formatMessage('error', message, errorContext));
     }
@@ -162,7 +172,9 @@ class Logger {
       headers: this.sanitizeData(config.headers),
       params: this.sanitizeData(config.params),
       // Don't log request body by default
-      data: SECURITY_CONFIG.LOG_SENSITIVE_DATA ? this.sanitizeData(config.data) : '[BODY_HIDDEN]',
+      data: SECURITY_CONFIG.LOG_SENSITIVE_DATA
+        ? this.sanitizeData(config.data)
+        : '[BODY_HIDDEN]',
     };
 
     this.debug('Network Request', sanitizedConfig);
@@ -176,7 +188,9 @@ class Logger {
       statusText: response.statusText,
       headers: this.sanitizeData(response.headers),
       // Don't log response data by default
-      data: SECURITY_CONFIG.LOG_SENSITIVE_DATA ? this.sanitizeData(response.data) : '[DATA_HIDDEN]',
+      data: SECURITY_CONFIG.LOG_SENSITIVE_DATA
+        ? this.sanitizeData(response.data)
+        : '[DATA_HIDDEN]',
     };
 
     this.debug('Network Response', sanitizedResponse);

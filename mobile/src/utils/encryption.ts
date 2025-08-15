@@ -38,7 +38,7 @@ class EncryptionService {
 
   encryptSensitiveFields(data: any, fields: string[]): any {
     const clonedData = { ...data };
-    
+
     fields.forEach(field => {
       if (clonedData[field] !== undefined) {
         clonedData[field] = this.encrypt(clonedData[field]);
@@ -50,7 +50,7 @@ class EncryptionService {
 
   decryptSensitiveFields(data: any, fields: string[]): any {
     const clonedData = { ...data };
-    
+
     fields.forEach(field => {
       if (clonedData[field] !== undefined) {
         try {

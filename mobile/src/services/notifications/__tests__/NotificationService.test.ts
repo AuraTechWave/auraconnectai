@@ -22,10 +22,12 @@ describe('NotificationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = NotificationService.getInstance();
-    
+
     // Setup default mocks
     (messaging as jest.MockedFunction<any>).mockReturnValue({
-      requestPermission: jest.fn().mockResolvedValue(messaging.AuthorizationStatus.AUTHORIZED),
+      requestPermission: jest
+        .fn()
+        .mockResolvedValue(messaging.AuthorizationStatus.AUTHORIZED),
       getToken: jest.fn().mockResolvedValue('test-fcm-token'),
       onMessage: jest.fn(),
       setBackgroundMessageHandler: jest.fn(),
@@ -38,52 +40,70 @@ describe('NotificationService', () => {
     (notifee.onBackgroundEvent as jest.Mock).mockResolvedValue(undefined);
 
     (NotificationErrorHandler.withRetry as jest.Mock).mockImplementation(
-      async (operation) => operation()
+      async operation => operation(),
     );
 
-    (SecureNotificationStorage.getPreferences as jest.Mock).mockResolvedValue(null);
-    (SecureNotificationStorage.saveFCMToken as jest.Mock).mockResolvedValue(undefined);
-    (SecureNotificationStorage.getNotificationHistory as jest.Mock).mockResolvedValue([]);
-    (SecureNotificationStorage.saveNotificationHistory as jest.Mock).mockResolvedValue(undefined);
+    (SecureNotificationStorage.getPreferences as jest.Mock).mockResolvedValue(
+      null,
+    );
+    (SecureNotificationStorage.saveFCMToken as jest.Mock).mockResolvedValue(
+      undefined,
+    );
+    (
+      SecureNotificationStorage.getNotificationHistory as jest.Mock
+    ).mockResolvedValue([]);
+    (
+      SecureNotificationStorage.saveNotificationHistory as jest.Mock
+    ).mockResolvedValue(undefined);
   });
 
   describe('initialization', () => {
     it('should initialize successfully with permissions', async () => {
       Platform.OS = 'ios';
-      
+
       await service.initialize();
 
       expect(messaging().requestPermission).toHaveBeenCalled();
       expect(messaging().getToken).toHaveBeenCalled();
-      expect(SecureNotificationStorage.saveFCMToken).toHaveBeenCalledWith('test-fcm-token');
-      expect(logger.info).toHaveBeenCalledWith('Notification service initialized successfully');
+      expect(SecureNotificationStorage.saveFCMToken).toHaveBeenCalledWith(
+        'test-fcm-token',
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        'Notification service initialized successfully',
+      );
     });
 
     it('should not initialize twice', async () => {
       await service.initialize();
       jest.clearAllMocks();
-      
+
       await service.initialize();
 
       expect(messaging().requestPermission).not.toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalledWith('Notification service already initialized');
+      expect(logger.debug).toHaveBeenCalledWith(
+        'Notification service already initialized',
+      );
     });
 
     it('should handle permission denial gracefully', async () => {
       Platform.OS = 'ios';
       (messaging as jest.MockedFunction<any>).mockReturnValue({
-        requestPermission: jest.fn().mockResolvedValue(messaging.AuthorizationStatus.DENIED),
+        requestPermission: jest
+          .fn()
+          .mockResolvedValue(messaging.AuthorizationStatus.DENIED),
       });
 
       await service.initialize();
 
-      expect(logger.warn).toHaveBeenCalledWith('Notification permission denied');
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Notification permission denied',
+      );
       expect(messaging().getToken).not.toHaveBeenCalled();
     });
 
     it('should create Android notification channels', async () => {
       Platform.OS = 'android';
-      
+
       await service.initialize();
 
       expect(notifee.createChannel).toHaveBeenCalledTimes(3);
@@ -91,7 +111,7 @@ describe('NotificationService', () => {
         expect.objectContaining({
           id: 'order_updates',
           name: 'Order Updates',
-        })
+        }),
       );
     });
   });
@@ -112,8 +132,12 @@ describe('NotificationService', () => {
       await service.displayNotification(notification);
 
       expect(notifee.displayNotification).toHaveBeenCalledWith(notification);
-      expect(SecureNotificationStorage.saveNotificationHistory).toHaveBeenCalled();
-      expect(SecureNotificationStorage.trimNotificationHistory).toHaveBeenCalled();
+      expect(
+        SecureNotificationStorage.saveNotificationHistory,
+      ).toHaveBeenCalled();
+      expect(
+        SecureNotificationStorage.trimNotificationHistory,
+      ).toHaveBeenCalled();
     });
 
     it('should emit notificationDisplayed event', async () => {
@@ -133,7 +157,10 @@ describe('NotificationService', () => {
       const notification = { id: 'test-123', title: 'Test', body: 'Body' };
       await service.displayNotification(notification);
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to display notification', error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to display notification',
+        error,
+      );
     });
   });
 
@@ -150,7 +177,9 @@ describe('NotificationService', () => {
       };
 
       const factoryNotification = { id: 'order_123', title: 'New Order' };
-      (NotificationFactory.createOrderNotification as jest.Mock).mockReturnValue(factoryNotification);
+      (
+        NotificationFactory.createOrderNotification as jest.Mock
+      ).mockReturnValue(factoryNotification);
 
       const handler = (messaging().onMessage as jest.Mock).mock.calls[0][0];
       await handler(remoteMessage);
@@ -158,9 +187,11 @@ describe('NotificationService', () => {
       expect(NotificationFactory.createOrderNotification).toHaveBeenCalledWith(
         'order_created',
         { type: 'order_created', orderId: '123' },
-        expect.objectContaining({ title: 'New Order' })
+        expect.objectContaining({ title: 'New Order' }),
       );
-      expect(notifee.displayNotification).toHaveBeenCalledWith(factoryNotification);
+      expect(notifee.displayNotification).toHaveBeenCalledWith(
+        factoryNotification,
+      );
     });
 
     it('should respect notification preferences', async () => {
@@ -257,19 +288,21 @@ describe('NotificationService', () => {
       await service.savePreferences({ sound: false, vibration: false });
 
       expect(SecureNotificationStorage.savePreferences).toHaveBeenCalledWith(
-        expect.objectContaining({ sound: false, vibration: false })
+        expect.objectContaining({ sound: false, vibration: false }),
       );
       expect(listener).toHaveBeenCalled();
     });
 
     it('should return current preferences', () => {
       const prefs = service.getPreferences();
-      
-      expect(prefs).toEqual(expect.objectContaining({
-        enabled: true,
-        orderUpdates: true,
-        promotions: false,
-      }));
+
+      expect(prefs).toEqual(
+        expect.objectContaining({
+          enabled: true,
+          orderUpdates: true,
+          promotions: false,
+        }),
+      );
     });
   });
 
@@ -282,10 +315,13 @@ describe('NotificationService', () => {
       const listener = jest.fn();
       service.on('tokenRefresh', listener);
 
-      const refreshHandler = (messaging().onTokenRefresh as jest.Mock).mock.calls[0][0];
+      const refreshHandler = (messaging().onTokenRefresh as jest.Mock).mock
+        .calls[0][0];
       await refreshHandler('new-token');
 
-      expect(SecureNotificationStorage.saveFCMToken).toHaveBeenCalledWith('new-token');
+      expect(SecureNotificationStorage.saveFCMToken).toHaveBeenCalledWith(
+        'new-token',
+      );
       expect(listener).toHaveBeenCalledWith('new-token');
     });
 
@@ -297,7 +333,7 @@ describe('NotificationService', () => {
         async (operation, options) => {
           await operation();
           return true;
-        }
+        },
       );
 
       await service.initialize();
@@ -313,11 +349,15 @@ describe('NotificationService', () => {
         { id: '1', read: false },
         { id: '2', read: false },
       ];
-      (SecureNotificationStorage.getNotificationHistory as jest.Mock).mockResolvedValue(notifications);
+      (
+        SecureNotificationStorage.getNotificationHistory as jest.Mock
+      ).mockResolvedValue(notifications);
 
       await service.markNotificationAsRead('1');
 
-      expect(SecureNotificationStorage.saveNotificationHistory).toHaveBeenCalledWith([
+      expect(
+        SecureNotificationStorage.saveNotificationHistory,
+      ).toHaveBeenCalledWith([
         { id: '1', read: true },
         { id: '2', read: false },
       ]);
@@ -326,7 +366,9 @@ describe('NotificationService', () => {
     it('should clear notification history', async () => {
       await service.clearNotificationHistory();
 
-      expect(SecureNotificationStorage.saveNotificationHistory).toHaveBeenCalledWith([]);
+      expect(
+        SecureNotificationStorage.saveNotificationHistory,
+      ).toHaveBeenCalledWith([]);
       expect(logger.info).toHaveBeenCalledWith('Notification history cleared');
     });
   });

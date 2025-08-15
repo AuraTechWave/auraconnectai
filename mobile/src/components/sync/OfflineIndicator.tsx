@@ -12,7 +12,7 @@ export const OfflineIndicator: React.FC = () => {
     const unsubscribe = NetInfo.addEventListener(state => {
       const online = state.isConnected ?? false;
       setIsOnline(online);
-      
+
       Animated.timing(slideAnim, {
         toValue: online ? -60 : 0,
         duration: 300,
@@ -30,8 +30,7 @@ export const OfflineIndicator: React.FC = () => {
         {
           transform: [{ translateY: slideAnim }],
         },
-      ]}
-    >
+      ]}>
       <View style={styles.content}>
         <Icon
           name={isOnline ? 'wifi' : 'wifi-off'}

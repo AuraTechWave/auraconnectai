@@ -10,7 +10,13 @@ export interface ConflictInfo {
   localData: any;
   serverData: any;
   type: 'create' | 'update' | 'delete';
-  strategy?: 'server_wins' | 'client_wins' | 'last_write_wins' | 'merge';
+  strategy?:
+    | 'server_wins'
+    | 'client_wins'
+    | 'last_write_wins'
+    | 'merge'
+    | 'manual';
+  manualResolution?: any;
 }
 
 export interface ConflictResult {
@@ -19,7 +25,11 @@ export interface ConflictResult {
 }
 
 export class ConflictResolver {
-  private defaultStrategy: 'server_wins' | 'client_wins' | 'last_write_wins' | 'merge' = 'last_write_wins';
+  private defaultStrategy:
+    | 'server_wins'
+    | 'client_wins'
+    | 'last_write_wins'
+    | 'merge' = 'last_write_wins';
 
   async detectConflicts(changes: any): Promise<ConflictResult> {
     const conflicts: ConflictInfo[] = [];
@@ -35,7 +45,10 @@ export class ConflictResolver {
       // Check for conflicts in updates
       if (data.updated) {
         for (const serverRecord of data.updated) {
-          const conflict = await this.checkUpdateConflict(collection, serverRecord);
+          const conflict = await this.checkUpdateConflict(
+            collection,
+            serverRecord,
+          );
           if (conflict) {
             conflicts.push(conflict);
             // Apply default resolution strategy
@@ -81,17 +94,25 @@ export class ConflictResolver {
     }
   }
 
-  private async checkUpdateConflict(collection: string, serverRecord: any): Promise<ConflictInfo | null> {
+  private async checkUpdateConflict(
+    collection: string,
+    serverRecord: any,
+  ): Promise<ConflictInfo | null> {
     try {
       const dbCollection = database.collections.get(collection);
-      const localRecord = await dbCollection.find(serverRecord.localId || serverRecord.id);
-      
+      const localRecord = await dbCollection.find(
+        serverRecord.localId || serverRecord.id,
+      );
+
       if (!localRecord) {
         return null;
       }
 
       // Check if local record has been modified since last sync
-      if (localRecord.syncStatus === 'pending' || localRecord.syncStatus === 'conflict') {
+      if (
+        localRecord.syncStatus === 'pending' ||
+        localRecord.syncStatus === 'conflict'
+      ) {
         const localData = this.extractRecordData(localRecord);
         return {
           collection,
@@ -110,13 +131,18 @@ export class ConflictResolver {
     return null;
   }
 
-  private async checkDeleteConflict(collection: string, serverId: string): Promise<ConflictInfo | null> {
+  private async checkDeleteConflict(
+    collection: string,
+    serverId: string,
+  ): Promise<ConflictInfo | null> {
     try {
       const dbCollection = database.collections.get(collection);
-      const localRecords = await dbCollection.query(
-        Q.where('server_id', serverId),
-        Q.where('sync_status', Q.oneOf(['pending', 'conflict'])),
-      ).fetch();
+      const localRecords = await dbCollection
+        .query(
+          Q.where('server_id', serverId),
+          Q.where('sync_status', Q.oneOf(['pending', 'conflict'])),
+        )
+        .fetch();
 
       if (localRecords.length > 0) {
         const localRecord = localRecords[0];
@@ -140,39 +166,44 @@ export class ConflictResolver {
 
   private async resolveConflict(conflict: ConflictInfo): Promise<any> {
     const strategy = conflict.strategy || this.defaultStrategy;
-    
+
     switch (strategy) {
       case 'server_wins':
         return conflict.serverData;
-      
+
       case 'client_wins':
         return conflict.localData;
-      
+
       case 'last_write_wins':
         return this.resolveByTimestamp(conflict);
-      
+
       case 'merge':
         return this.mergeConflict(conflict);
-      
+
+      case 'manual':
+        return conflict.manualResolution || conflict.serverData;
+
       default:
         return conflict.serverData;
     }
   }
 
-  private async resolveDeleteConflict(conflict: ConflictInfo): Promise<boolean> {
+  private async resolveDeleteConflict(
+    conflict: ConflictInfo,
+  ): Promise<boolean> {
     const strategy = conflict.strategy || this.defaultStrategy;
-    
+
     switch (strategy) {
       case 'server_wins':
         return true; // Delete the record
-      
+
       case 'client_wins':
         return false; // Keep the record
-      
+
       case 'last_write_wins':
         // If local record was modified after server deletion, keep it
         return conflict.localData.lastModified < Date.now() - 300000; // 5 minutes
-      
+
       default:
         return true;
     }
@@ -180,8 +211,9 @@ export class ConflictResolver {
 
   private resolveByTimestamp(conflict: ConflictInfo): any {
     const localTimestamp = conflict.localData.lastModified || 0;
-    const serverTimestamp = conflict.serverData.lastModified || conflict.serverData.updated_at || 0;
-    
+    const serverTimestamp =
+      conflict.serverData.lastModified || conflict.serverData.updated_at || 0;
+
     if (localTimestamp > serverTimestamp) {
       logger.debug('Conflict resolved: client wins by timestamp', { conflict });
       return conflict.localData;
@@ -196,13 +228,13 @@ export class ConflictResolver {
     switch (conflict.collection) {
       case 'orders':
         return this.mergeOrder(conflict);
-      
+
       case 'menu_items':
         return this.mergeMenuItem(conflict);
-      
+
       case 'customers':
         return this.mergeCustomer(conflict);
-      
+
       default:
         // Default merge: combine fields, preferring non-null values
         return this.defaultMerge(conflict);
@@ -211,14 +243,17 @@ export class ConflictResolver {
 
   private mergeOrder(conflict: ConflictInfo): any {
     const { localData, serverData } = conflict;
-    
+
     // For orders, server status takes precedence
     return {
       ...localData,
       ...serverData,
       status: serverData.status,
       // Preserve local notes if they're newer
-      notes: localData.lastModified > serverData.updated_at ? localData.notes : serverData.notes,
+      notes:
+        localData.lastModified > serverData.updated_at
+          ? localData.notes
+          : serverData.notes,
       // Merge items if both have changes
       items: this.mergeOrderItems(localData.items, serverData.items),
     };
@@ -226,7 +261,7 @@ export class ConflictResolver {
 
   private mergeMenuItem(conflict: ConflictInfo): any {
     const { localData, serverData } = conflict;
-    
+
     // For menu items, server price and availability take precedence
     return {
       ...localData,
@@ -240,7 +275,7 @@ export class ConflictResolver {
 
   private mergeCustomer(conflict: ConflictInfo): any {
     const { localData, serverData } = conflict;
-    
+
     // Merge customer preferences
     return {
       ...serverData,
@@ -252,35 +287,46 @@ export class ConflictResolver {
       // Server loyalty points are authoritative
       loyaltyPoints: serverData.loyaltyPoints,
       // Keep the most recent notes
-      notes: localData.lastModified > serverData.updated_at ? localData.notes : serverData.notes,
+      notes:
+        localData.lastModified > serverData.updated_at
+          ? localData.notes
+          : serverData.notes,
     };
   }
 
   private defaultMerge(conflict: ConflictInfo): any {
     const { localData, serverData } = conflict;
     const merged = { ...serverData };
-    
+
     // Prefer non-null/non-empty values
     for (const key in localData) {
-      if (localData[key] !== null && localData[key] !== undefined && localData[key] !== '') {
-        if (!serverData[key] || serverData[key] === null || serverData[key] === '') {
+      if (
+        localData[key] !== null &&
+        localData[key] !== undefined &&
+        localData[key] !== ''
+      ) {
+        if (
+          !serverData[key] ||
+          serverData[key] === null ||
+          serverData[key] === ''
+        ) {
           merged[key] = localData[key];
         }
       }
     }
-    
+
     return merged;
   }
 
   private mergeOrderItems(localItems: any[], serverItems: any[]): any[] {
     // This is a simplified merge - in production, you'd want more sophisticated logic
     const itemMap = new Map();
-    
+
     // Add server items first
     serverItems?.forEach(item => {
       itemMap.set(item.menuItemId || item.menu_item_id, item);
     });
-    
+
     // Override with local items if they exist
     localItems?.forEach(item => {
       const key = item.menuItemId || item.menu_item_id;
@@ -296,7 +342,7 @@ export class ConflictResolver {
         itemMap.set(key, item);
       }
     });
-    
+
     return Array.from(itemMap.values());
   }
 
@@ -307,22 +353,27 @@ export class ConflictResolver {
     return data;
   }
 
-  setDefaultStrategy(strategy: 'server_wins' | 'client_wins' | 'last_write_wins' | 'merge') {
+  setDefaultStrategy(
+    strategy: 'server_wins' | 'client_wins' | 'last_write_wins' | 'merge',
+  ) {
     this.defaultStrategy = strategy;
   }
 
   async showConflictSummary(conflicts: ConflictInfo[]) {
     if (conflicts.length === 0) return;
-    
-    const summary = conflicts.reduce((acc, conflict) => {
-      acc[conflict.collection] = (acc[conflict.collection] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+
+    const summary = conflicts.reduce(
+      (acc, conflict) => {
+        acc[conflict.collection] = (acc[conflict.collection] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     const message = Object.entries(summary)
       .map(([collection, count]) => `${collection}: ${count}`)
       .join(', ');
-    
+
     showToast('warning', 'Sync Conflicts Resolved', message);
   }
 }

@@ -5,7 +5,12 @@ import NetInfo from '@react-native-community/netinfo';
 import { MMKV } from 'react-native-mmkv';
 
 import { errorService } from './error.service';
-import { API_CONFIG, AUTH_CONFIG, STORAGE_KEYS, DEV_CONFIG } from '@constants/config';
+import {
+  API_CONFIG,
+  AUTH_CONFIG,
+  STORAGE_KEYS,
+  DEV_CONFIG,
+} from '@constants/config';
 import { logger } from '@utils/logger';
 
 const storage = new MMKV();
@@ -167,7 +172,7 @@ class ApiClient {
     // Store request for later sync
     const offlineQueue = storage.getString(STORAGE_KEYS.OFFLINE_QUEUE);
     const queue = offlineQueue ? JSON.parse(offlineQueue) : [];
-    
+
     queue.push({
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
@@ -183,8 +188,7 @@ class ApiClient {
   }
 
   // Public methods
-  get = <T = any>(url: string, config?: any) =>
-    this.client.get<T>(url, config);
+  get = <T = any>(url: string, config?: any) => this.client.get<T>(url, config);
 
   post = <T = any>(url: string, data?: any, config?: any) =>
     this.client.post<T>(url, data, config);

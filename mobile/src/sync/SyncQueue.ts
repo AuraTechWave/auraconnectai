@@ -27,7 +27,9 @@ export class SyncQueue {
     this.setupNetworkListener();
   }
 
-  async add(item: Omit<QueueItem, 'id' | 'timestamp' | 'retryCount'>): Promise<void> {
+  async add(
+    item: Omit<QueueItem, 'id' | 'timestamp' | 'retryCount'>,
+  ): Promise<void> {
     const queueItem: QueueItem = {
       ...item,
       id: this.generateId(),
@@ -37,14 +39,16 @@ export class SyncQueue {
 
     this.queue.push(queueItem);
     await this.saveQueue();
-    
+
     logger.debug('Added item to sync queue', { item: queueItem });
-    
+
     // Try to process immediately if online
     this.processQueue();
   }
 
-  async addBatch(items: Omit<QueueItem, 'id' | 'timestamp' | 'retryCount'>[]): Promise<void> {
+  async addBatch(
+    items: Omit<QueueItem, 'id' | 'timestamp' | 'retryCount'>[],
+  ): Promise<void> {
     const queueItems = items.map(item => ({
       ...item,
       id: this.generateId(),
@@ -54,9 +58,9 @@ export class SyncQueue {
 
     this.queue.push(...queueItems);
     await this.saveQueue();
-    
+
     logger.debug('Added batch to sync queue', { count: items.length });
-    
+
     // Try to process immediately if online
     this.processQueue();
   }
@@ -81,7 +85,7 @@ export class SyncQueue {
 
       while (this.queue.length > 0) {
         const item = this.queue[0];
-        
+
         try {
           await this.processItem(item);
           // Remove successfully processed item
@@ -89,12 +93,14 @@ export class SyncQueue {
           await this.saveQueue();
         } catch (error) {
           logger.error('Failed to process queue item', { item, error });
-          
+
           // Increment retry count
           item.retryCount++;
-          
+
           if (item.retryCount >= SYNC_CONFIG.MAX_RETRY_COUNT) {
-            logger.error('Max retries reached, removing item from queue', { item });
+            logger.error('Max retries reached, removing item from queue', {
+              item,
+            });
             this.queue.shift();
             await this.saveQueue();
             // TODO: Store in dead letter queue
@@ -103,11 +109,12 @@ export class SyncQueue {
             this.queue.shift();
             this.queue.push(item);
             await this.saveQueue();
-            
+
             // Wait before retrying with exponential backoff
             const delay = Math.min(
-              SYNC_CONFIG.RETRY_BASE_DELAY * Math.pow(SYNC_CONFIG.RETRY_BACKOFF_FACTOR, item.retryCount - 1),
-              SYNC_CONFIG.RETRY_MAX_DELAY
+              SYNC_CONFIG.RETRY_BASE_DELAY *
+                Math.pow(SYNC_CONFIG.RETRY_BACKOFF_FACTOR, item.retryCount - 1),
+              SYNC_CONFIG.RETRY_MAX_DELAY,
             );
             await this.delay(delay);
           }
@@ -122,7 +129,7 @@ export class SyncQueue {
     logger.debug('Processing queue item', { item });
 
     const collection = database.collections.get(item.collection);
-    
+
     switch (item.operation) {
       case 'create':
         await database.write(async () => {
@@ -131,7 +138,7 @@ export class SyncQueue {
           });
         });
         break;
-        
+
       case 'update':
         await database.write(async () => {
           const record = await collection.find(item.recordId);
@@ -140,7 +147,7 @@ export class SyncQueue {
           });
         });
         break;
-        
+
       case 'delete':
         await database.write(async () => {
           const record = await collection.find(item.recordId);
@@ -154,10 +161,11 @@ export class SyncQueue {
     this.queue.sort((a, b) => {
       // Priority order: high > normal > low
       const priorityOrder = { high: 0, normal: 1, low: 2 };
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-      
+      const priorityDiff =
+        priorityOrder[a.priority] - priorityOrder[b.priority];
+
       if (priorityDiff !== 0) return priorityDiff;
-      
+
       // If same priority, sort by timestamp (older first)
       return a.timestamp - b.timestamp;
     });
@@ -177,9 +185,9 @@ export class SyncQueue {
           // If parse fails, assume it's encrypted
           queueData = await decrypt(stored);
         }
-        
+
         this.queue = JSON.parse(queueData);
-        
+
         // Clean up expired items
         const now = Date.now();
         this.queue = this.queue.filter(item => {
@@ -190,7 +198,7 @@ export class SyncQueue {
           }
           return true;
         });
-        
+
         logger.debug('Loaded sync queue', { count: this.queue.length });
       }
     } catch (error) {
@@ -208,12 +216,18 @@ export class SyncQueue {
         const lowPriorityItems = this.queue
           .filter(item => item.priority === 'low')
           .sort((a, b) => a.timestamp - b.timestamp);
-        
+
         const itemsToRemove = this.queue.length - SYNC_CONFIG.MAX_QUEUE_SIZE;
         if (lowPriorityItems.length >= itemsToRemove) {
-          const idsToRemove = lowPriorityItems.slice(0, itemsToRemove).map(item => item.id);
-          this.queue = this.queue.filter(item => !idsToRemove.includes(item.id));
-          logger.warn('Queue size limit reached, removed low priority items', { removed: itemsToRemove });
+          const idsToRemove = lowPriorityItems
+            .slice(0, itemsToRemove)
+            .map(item => item.id);
+          this.queue = this.queue.filter(
+            item => !idsToRemove.includes(item.id),
+          );
+          logger.warn('Queue size limit reached, removed low priority items', {
+            removed: itemsToRemove,
+          });
         }
       }
 
@@ -297,8 +311,9 @@ export class SyncQueue {
     for (const item of this.queue) {
       stats.byPriority[item.priority]++;
       stats.byOperation[item.operation]++;
-      stats.byCollection[item.collection] = (stats.byCollection[item.collection] || 0) + 1;
-      
+      stats.byCollection[item.collection] =
+        (stats.byCollection[item.collection] || 0) + 1;
+
       if (!stats.oldestItem || item.timestamp < stats.oldestItem) {
         stats.oldestItem = item.timestamp;
       }

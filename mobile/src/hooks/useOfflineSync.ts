@@ -75,17 +75,15 @@ export const useRecordSyncStatus = (collection: string, recordId: string) => {
 
   useEffect(() => {
     const dbCollection = database.collections.get(collection);
-    
-    const subscription = dbCollection
-      .findAndObserve(recordId)
-      .subscribe(
-        record => {
-          setSyncStatus(record.syncStatus);
-        },
-        error => {
-          console.error('Error observing record sync status:', error);
-        },
-      );
+
+    const subscription = dbCollection.findAndObserve(recordId).subscribe(
+      record => {
+        setSyncStatus(record.syncStatus);
+      },
+      error => {
+        console.error('Error observing record sync status:', error);
+      },
+    );
 
     return () => subscription.unsubscribe();
   }, [collection, recordId]);
@@ -104,14 +102,14 @@ export const useCollectionSync = (collection: string) => {
 
   useEffect(() => {
     const dbCollection = database.collections.get(collection);
-    
+
     const updateStats = async () => {
       const [total, pending, conflicts] = await Promise.all([
         dbCollection.query().fetchCount(),
         dbCollection.query(Q.where('sync_status', 'pending')).fetchCount(),
         dbCollection.query(Q.where('sync_status', 'conflict')).fetchCount(),
       ]);
-      
+
       setStats({
         total,
         pending,
@@ -121,14 +119,14 @@ export const useCollectionSync = (collection: string) => {
     };
 
     updateStats();
-    
+
     // Update stats when sync state changes
     const handleSyncComplete = () => {
       updateStats();
     };
-    
+
     syncManager.on('syncComplete', handleSyncComplete);
-    
+
     return () => {
       syncManager.off('syncComplete', handleSyncComplete);
     };

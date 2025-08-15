@@ -180,10 +180,7 @@ export class OrderNotificationService {
     }
   }
 
-  async notifyOrderDelayed(
-    order: Order,
-    delayReason?: string,
-  ): Promise<void> {
+  async notifyOrderDelayed(order: Order, delayReason?: string): Promise<void> {
     try {
       const notification = {
         id: `order_${order.id}_delayed`,
@@ -228,7 +225,10 @@ export class OrderNotificationService {
         },
       };
 
-      await this.notificationService.scheduleNotification(notification, reminderTime);
+      await this.notificationService.scheduleNotification(
+        notification,
+        reminderTime,
+      );
     } catch (error) {
       logger.error('Failed to schedule order reminder', error);
     }
@@ -309,11 +309,14 @@ export class OrderNotificationService {
   // Subscribe to order changes and send notifications
   subscribeToOrderChanges(): void {
     const ordersCollection = database.collections.get('orders');
-    
-    ordersCollection.query().observe().subscribe(orders => {
-      // This would need more sophisticated logic to track actual changes
-      // For now, this is a placeholder
-      logger.debug('Order collection changed', { count: orders.length });
-    });
+
+    ordersCollection
+      .query()
+      .observe()
+      .subscribe(orders => {
+        // This would need more sophisticated logic to track actual changes
+        // For now, this is a placeholder
+        logger.debug('Order collection changed', { count: orders.length });
+      });
   }
 }

@@ -28,7 +28,10 @@ export class NotificationErrorHandler {
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`Operation failed, attempt ${attempt + 1}/${maxRetries + 1}`, error);
+        logger.warn(
+          `Operation failed, attempt ${attempt + 1}/${maxRetries + 1}`,
+          error,
+        );
 
         if (attempt < maxRetries) {
           onRetry?.(attempt + 1);
@@ -47,17 +50,21 @@ export class NotificationErrorHandler {
 
   static handleTokenRegistrationError(error: Error): void {
     logger.error('FCM token registration failed', error);
-    
+
     // Don't show user-facing error for token registration
     // as it might recover on next app launch
     if (__DEV__) {
-      showToast('warning', 'Notification Setup', 'Push notifications may be delayed');
+      showToast(
+        'warning',
+        'Notification Setup',
+        'Push notifications may be delayed',
+      );
     }
   }
 
   static handleNotificationError(error: Error, context?: string): void {
     logger.error(`Notification error ${context ? `in ${context}` : ''}`, error);
-    
+
     // Only show user-facing errors for critical failures
     if (this.isCriticalError(error)) {
       showToast(
@@ -85,8 +92,8 @@ export class NotificationErrorHandler {
       'SERVICE_NOT_AVAILABLE',
     ];
 
-    return criticalMessages.some(msg => 
-      error.message?.toUpperCase().includes(msg)
+    return criticalMessages.some(msg =>
+      error.message?.toUpperCase().includes(msg),
     );
   }
 
@@ -99,15 +106,21 @@ export class NotificationErrorHandler {
 
     // Remove sensitive data from errors
     const sanitized = { ...error };
-    
+
     // Remove tokens from error messages
     if (sanitized.message) {
-      sanitized.message = sanitized.message.replace(/token:\s*[^\s]+/gi, 'token: [REDACTED]');
+      sanitized.message = sanitized.message.replace(
+        /token:\s*[^\s]+/gi,
+        'token: [REDACTED]',
+      );
     }
-    
+
     // Remove FCM tokens from stack traces
     if (sanitized.stack) {
-      sanitized.stack = sanitized.stack.replace(/[a-zA-Z0-9_-]{100,}/g, '[TOKEN_REDACTED]');
+      sanitized.stack = sanitized.stack.replace(
+        /[a-zA-Z0-9_-]{100,}/g,
+        '[TOKEN_REDACTED]',
+      );
     }
 
     return sanitized;

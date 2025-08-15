@@ -1,4 +1,10 @@
-import { field, children, json, writer, Q } from '@nozbe/watermelondb/decorators';
+import {
+  field,
+  children,
+  json,
+  writer,
+  Q,
+} from '@nozbe/watermelondb/decorators';
 import BaseModel from './BaseModel';
 
 interface CustomerPreferences {
@@ -42,7 +48,9 @@ export default class Customer extends BaseModel {
     });
   }
 
-  @writer async updatePreferences(newPreferences: Partial<CustomerPreferences>) {
+  @writer async updatePreferences(
+    newPreferences: Partial<CustomerPreferences>,
+  ) {
     await this.update(customer => {
       customer.preferences = { ...customer.preferences, ...newPreferences };
       customer.syncStatus = 'pending';
@@ -63,7 +71,7 @@ export default class Customer extends BaseModel {
     );
   }
 
-  static topCustomers(limit: number = 10) {
+  static topCustomers(limit = 10) {
     return this.query(
       Q.where('is_deleted', false),
       Q.sortBy('loyalty_points', Q.desc),

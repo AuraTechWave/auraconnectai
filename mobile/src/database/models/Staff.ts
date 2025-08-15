@@ -1,7 +1,13 @@
 import { field, children, writer, Q } from '@nozbe/watermelondb/decorators';
 import BaseModel from './BaseModel';
 
-export type StaffRole = 'admin' | 'manager' | 'server' | 'chef' | 'cashier' | 'host';
+export type StaffRole =
+  | 'admin'
+  | 'manager'
+  | 'server'
+  | 'chef'
+  | 'cashier'
+  | 'host';
 export type Department = 'front_of_house' | 'kitchen' | 'management' | 'bar';
 
 export default class Staff extends BaseModel {
@@ -36,7 +42,7 @@ export default class Staff extends BaseModel {
   @writer async clockIn() {
     const { shifts } = this.collections.get('shifts');
     const now = Date.now();
-    
+
     await shifts.create(shift => {
       shift.staffId = this.id;
       shift.shiftDate = now;

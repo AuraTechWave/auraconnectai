@@ -1,4 +1,8 @@
-import { Notification, AndroidStyle, AndroidImportance } from '@notifee/react-native';
+import {
+  Notification,
+  AndroidStyle,
+  AndroidImportance,
+} from '@notifee/react-native';
 import { NOTIFICATION_CONFIG } from '@constants/config';
 import { NotificationType, OrderNotificationData } from './types';
 
@@ -28,7 +32,8 @@ export class NotificationFactory {
         channelId: NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
         importance: AndroidImportance.HIGH,
         sound: sound || NOTIFICATION_CONFIG.SOUNDS.ORDER_NOTIFICATION,
-        vibrationPattern: vibrationPattern || NOTIFICATION_CONFIG.VIBRATION_PATTERNS.DEFAULT,
+        vibrationPattern:
+          vibrationPattern || NOTIFICATION_CONFIG.VIBRATION_PATTERNS.DEFAULT,
         pressAction: {
           id: 'default',
           launchActivity: 'default',
@@ -144,7 +149,9 @@ export class NotificationFactory {
     return actions;
   }
 
-  private static getOrderNotificationStyle(data: OrderNotificationData): AndroidStyle | undefined {
+  private static getOrderNotificationStyle(
+    data: OrderNotificationData,
+  ): AndroidStyle | undefined {
     if (data.items) {
       return {
         type: AndroidStyle.BIGTEXT,
@@ -163,31 +170,37 @@ export class NotificationFactory {
     return NOTIFICATION_CONFIG.CHANNELS.SYSTEM;
   }
 
-  static getStatusMessages(): Record<string, { title: string; body: (order: any) => string }> {
+  static getStatusMessages(): Record<
+    string,
+    { title: string; body: (order: any) => string }
+  > {
     return {
       created: {
         title: 'New Order Received',
-        body: (order) => `Order #${order.orderNumber} from ${order.customerName || 'Walk-in Customer'}`,
+        body: order =>
+          `Order #${order.orderNumber} from ${order.customerName || 'Walk-in Customer'}`,
       },
       accepted: {
         title: 'Order Accepted',
-        body: (order) => `Order #${order.orderNumber} has been accepted and will be prepared soon`,
+        body: order =>
+          `Order #${order.orderNumber} has been accepted and will be prepared soon`,
       },
       preparing: {
         title: 'Order Being Prepared',
-        body: (order) => `Order #${order.orderNumber} is now being prepared`,
+        body: order => `Order #${order.orderNumber} is now being prepared`,
       },
       ready: {
         title: '🔔 Order Ready!',
-        body: (order) => `Order #${order.orderNumber} for ${order.customerName || 'Walk-in Customer'} is ready`,
+        body: order =>
+          `Order #${order.orderNumber} for ${order.customerName || 'Walk-in Customer'} is ready`,
       },
       completed: {
         title: 'Order Completed',
-        body: (order) => `Order #${order.orderNumber} has been completed`,
+        body: order => `Order #${order.orderNumber} has been completed`,
       },
       cancelled: {
         title: 'Order Cancelled',
-        body: (order) => `Order #${order.orderNumber} has been cancelled`,
+        body: order => `Order #${order.orderNumber} has been cancelled`,
       },
     };
   }
