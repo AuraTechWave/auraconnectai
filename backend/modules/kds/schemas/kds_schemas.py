@@ -12,6 +12,14 @@ from enum import Enum
 from ..models.kds_models import StationType, StationStatus, DisplayStatus
 
 
+class ItemStatusUpdate(BaseModel):
+    """Schema for updating item status"""
+    
+    status: DisplayStatus
+    staff_id: Optional[int] = None
+    reason: Optional[str] = None
+
+
 class StationCreate(BaseModel):
     """Schema for creating a kitchen station"""
 
@@ -78,6 +86,10 @@ class StationResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# NOTE: KDSOrderItemResponse and KDSWebSocketMessage are defined later in this file
+# with complete field definitions to avoid redefinition issues
 
 
 class KitchenDisplayCreate(BaseModel):
