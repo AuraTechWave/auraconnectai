@@ -5,7 +5,7 @@ Middleware to ensure all API responses follow the standard format.
 """
 
 from fastapi import Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse, FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import json
@@ -53,8 +53,18 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
             # Calculate processing time
             processing_time_ms = (time.time() - start_time) * 1000
             
-            # For streaming responses, return as is
-            if hasattr(response, "body_iterator"):
+            # Check if this is a streaming or file response that should not be wrapped
+            # These responses should be passed through as-is
+            if isinstance(response, (StreamingResponse, FileResponse)):
+                # Add request ID header but don't modify the body
+                response.headers["X-Request-ID"] = request_id
+                return response
+            
+            # Check content type to determine if we should wrap the response
+            content_type = response.headers.get("content-type", "").lower()
+            
+            # Don't wrap non-JSON responses (images, PDFs, etc.)
+            if content_type and not any(ct in content_type for ct in ["application/json", "text/plain", "text/html"]):
                 return response
             
             # Read response body
@@ -65,11 +75,16 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
             # Try to decode JSON response
             try:
                 if body:
-                    response_data = json.loads(body.decode())
+                    # First try JSON decoding
+                    if "application/json" in content_type or not content_type:
+                        response_data = json.loads(body.decode())
+                    else:
+                        # For non-JSON text responses, wrap as string
+                        response_data = body.decode()
                 else:
                     response_data = None
             except (json.JSONDecodeError, UnicodeDecodeError):
-                # Not JSON, return original response
+                # Not JSON or valid text, return original response
                 return Response(
                     content=body,
                     status_code=response.status_code,
@@ -84,7 +99,7 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
                 response_data["meta"]["processing_time_ms"] = processing_time_ms
                 
                 return JSONResponse(
-                    content=response_data,
+                    content=json.loads(json.dumps(response_data, default=str)),
                     status_code=response.status_code,
                     headers=dict(response.headers)
                 )
@@ -111,7 +126,7 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
                 )
             
             return JSONResponse(
-                content=standard_response.model_dump(exclude_none=True),
+                content=json.loads(standard_response.model_dump_json(exclude_none=True)),
                 status_code=response.status_code,
                 headers=dict(response.headers)
             )
@@ -141,7 +156,7 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
             )
             
             return JSONResponse(
-                content=error_response.model_dump(exclude_none=True),
+                content=json.loads(error_response.model_dump_json(exclude_none=True)),
                 status_code=500
             )
     
@@ -178,34 +193,34 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             # Handle validation errors
             return JSONResponse(
                 status_code=422,
-                content=StandardResponse.error(
+                content=json.loads(StandardResponse.error(
                     message="Validation error",
                     code="VALIDATION_ERROR",
                     errors=[ErrorDetail(code="VALIDATION_ERROR", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True)
+                ).model_dump_json(exclude_none=True)))
             )
         except PermissionError as e:
             # Handle permission errors
             return JSONResponse(
                 status_code=403,
-                content=StandardResponse.error(
+                content=json.loads(StandardResponse.error(
                     message="Permission denied",
                     code="FORBIDDEN",
                     errors=[ErrorDetail(code="FORBIDDEN", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True)
+                ).model_dump_json(exclude_none=True)))
             )
         except KeyError as e:
             # Handle missing key errors
             return JSONResponse(
                 status_code=400,
-                content=StandardResponse.error(
+                content=json.loads(StandardResponse.error(
                     message=f"Missing required field: {str(e)}",
                     code="BAD_REQUEST",
                     errors=[ErrorDetail(code="MISSING_FIELD", message=f"Field {str(e)} is required")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True)
+                ).model_dump_json(exclude_none=True)))
             )
         except Exception as e:
             # Handle all other exceptions
@@ -214,10 +229,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             
             return JSONResponse(
                 status_code=500,
-                content=StandardResponse.error(
+                content=json.loads(StandardResponse.error(
                     message="An unexpected error occurred",
                     code="INTERNAL_ERROR",
                     errors=[ErrorDetail(code="INTERNAL_ERROR", message="Internal server error")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True)
+                ).model_dump_json(exclude_none=True)))
             )
