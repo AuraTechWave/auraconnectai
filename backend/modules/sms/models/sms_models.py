@@ -84,6 +84,7 @@ class SMSMessage(Base):
     failed_at = Column(DateTime, nullable=True)
     retry_count = Column(Integer, default=0)
     next_retry_at = Column(DateTime, nullable=True)
+    scheduled_at = Column(DateTime, nullable=True)  # For scheduled messages
     
     # Association with business entities
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True, index=True)

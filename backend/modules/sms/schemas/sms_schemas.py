@@ -64,6 +64,7 @@ class SMSMessageResponse(SMSMessageBase):
     sent_at: Optional[datetime] = None
     delivered_at: Optional[datetime] = None
     failed_at: Optional[datetime] = None
+    scheduled_at: Optional[datetime] = None
     retry_count: int
     created_at: datetime
     updated_at: datetime

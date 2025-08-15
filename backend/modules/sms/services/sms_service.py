@@ -86,7 +86,7 @@ class SMSService:
         
         # Schedule or send immediately
         if request.schedule_at and request.schedule_at > datetime.utcnow():
-            sms_message.metadata = {'scheduled_at': request.schedule_at.isoformat()}
+            sms_message.scheduled_at = request.schedule_at
             self.db.commit()
             logger.info(f"SMS scheduled for {request.schedule_at}: ID {sms_message.id}")
         else:
@@ -204,20 +204,73 @@ class SMSService:
         Returns:
             Number of messages processed
         """
+        current_time = datetime.utcnow()
+        
+        # First, migrate any legacy scheduled messages from metadata to scheduled_at column
+        await self._migrate_legacy_scheduled_messages()
+        
         scheduled_messages = self.db.query(SMSMessage).filter(
             and_(
                 SMSMessage.status == SMSStatus.QUEUED,
-                SMSMessage.metadata['scheduled_at'].astext <= datetime.utcnow().isoformat()
+                SMSMessage.scheduled_at.isnot(None),
+                SMSMessage.scheduled_at <= current_time
             )
         ).all()
         
         count = 0
         for message in scheduled_messages:
+            # Clear the scheduled_at field since we're processing it now
+            message.scheduled_at = None
             await self._send_message(message)
             count += 1
         
         logger.info(f"Processed {count} scheduled messages")
         return count
+    
+    async def _migrate_legacy_scheduled_messages(self) -> int:
+        """
+        Migrate legacy scheduled messages from metadata JSON to scheduled_at column
+        
+        Returns:
+            Number of messages migrated
+        """
+        try:
+            # Find messages with scheduled_at in metadata but no scheduled_at column value
+            messages_to_migrate = self.db.query(SMSMessage).filter(
+                and_(
+                    SMSMessage.status == SMSStatus.QUEUED,
+                    SMSMessage.scheduled_at.is_(None),
+                    SMSMessage.metadata.isnot(None)
+                )
+            ).all()
+            
+            migrated_count = 0
+            for message in messages_to_migrate:
+                if message.metadata and isinstance(message.metadata, dict):
+                    scheduled_at_str = message.metadata.get('scheduled_at')
+                    if scheduled_at_str:
+                        try:
+                            # Parse the ISO format datetime string
+                            scheduled_at = datetime.fromisoformat(scheduled_at_str.replace('Z', '+00:00'))
+                            message.scheduled_at = scheduled_at
+                            
+                            # Remove from metadata to avoid confusion
+                            if 'scheduled_at' in message.metadata:
+                                del message.metadata['scheduled_at']
+                            
+                            migrated_count += 1
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Failed to parse scheduled_at for message {message.id}: {e}")
+            
+            if migrated_count > 0:
+                self.db.commit()
+                logger.info(f"Migrated {migrated_count} legacy scheduled messages")
+            
+            return migrated_count
+            
+        except Exception as e:
+            logger.error(f"Error migrating legacy scheduled messages: {e}")
+            return 0
     
     def update_message_status(
         self,
