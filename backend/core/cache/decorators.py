@@ -93,8 +93,12 @@ def cache(
             
             if tenant_aware:
                 # Try to get tenant_id from various sources
-                tenant_id = kwargs.get('tenant_id') or kwargs.get('restaurant_id')
-                if not tenant_id and args:
+                # Check kwargs first (explicitly check for None to allow 0 as valid ID)
+                if 'tenant_id' in kwargs:
+                    tenant_id = kwargs['tenant_id']
+                elif 'restaurant_id' in kwargs:
+                    tenant_id = kwargs['restaurant_id']
+                elif tenant_id is None and args:
                     # Check if first arg has tenant_id
                     if hasattr(args[0], 'tenant_id'):
                         tenant_id = args[0].tenant_id
@@ -103,8 +107,10 @@ def cache(
             
             if user_aware:
                 # Try to get user_id from various sources
-                user_id = kwargs.get('user_id')
-                if not user_id and args:
+                # Check kwargs first (explicitly check for None to allow 0 as valid ID)
+                if 'user_id' in kwargs:
+                    user_id = kwargs['user_id']
+                elif user_id is None and args:
                     # Check if first arg has user_id
                     if hasattr(args[0], 'user_id'):
                         user_id = args[0].user_id
@@ -301,8 +307,14 @@ def invalidate_cache(cache_types: Union[str, List[str]], pattern: Optional[str] 
                     cache_manager.invalidate_pattern(cache_type, pattern)
                 else:
                     # Try to extract tenant_id for pattern
-                    tenant_id = kwargs.get('tenant_id') or kwargs.get('restaurant_id')
-                    if tenant_id:
+                    # Check explicitly for keys to allow 0 as valid ID
+                    tenant_id = None
+                    if 'tenant_id' in kwargs:
+                        tenant_id = kwargs['tenant_id']
+                    elif 'restaurant_id' in kwargs:
+                        tenant_id = kwargs['restaurant_id']
+                    
+                    if tenant_id is not None:
                         cache_manager.invalidate_pattern(cache_type, f"*t{tenant_id}*")
                     else:
                         logger.warning(f"No pattern specified for cache invalidation of {cache_type}")
