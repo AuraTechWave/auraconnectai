@@ -127,13 +127,16 @@ def setup_query_logging(engine: Engine):
             logger.debug("Query Complete in %.3fs", total_time)
     
     @event.listens_for(Pool, "connect")
-    def receive_connect(dbapi_conn, connection_record):
-        """Enable query timing for SQLite"""
+    def setup_sqlite_pragma(dbapi_conn, connection_record):
+        """Enable foreign keys and optimize SQLite connections"""
         if 'sqlite' in str(engine.url):
-            dbapi_conn.execute("PRAGMA query_only = OFF")
+            # Enable foreign key constraints for SQLite
+            dbapi_conn.execute("PRAGMA foreign_keys = ON")
+            # Optimize SQLite performance
+            dbapi_conn.execute("PRAGMA journal_mode = WAL")
     
     @event.listens_for(engine, "connect")
-    def receive_connect(dbapi_conn, connection_record):
+    def log_new_connection(dbapi_conn, connection_record):
         """Log new database connections"""
         logger.info("New database connection established")
 
