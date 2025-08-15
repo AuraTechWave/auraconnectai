@@ -1,0 +1,80 @@
+[sqlfluff]
+# SQL dialect to use
+dialect = postgres
+
+# Rules to exclude
+exclude_rules = L034, L044
+
+# Maximum line length
+max_line_length = 120
+
+# Indentation
+indent_unit = space
+indent_size = 2
+
+# Comma positioning
+comma_style = trailing
+
+# Capitalization
+capitalisation_policy = upper
+capitalisation_keywords = upper
+capitalisation_functions = upper
+capitalisation_literals = upper
+capitalisation_types = upper
+
+[sqlfluff:rules]
+# Configure specific rules
+
+[sqlfluff:rules:L003]
+# Indentation
+indent_unit = space
+
+[sqlfluff:rules:L010]
+# Keywords should be uppercase
+capitalisation_policy = upper
+
+[sqlfluff:rules:L014]
+# Unquoted identifiers
+unquoted_identifiers = lower
+
+[sqlfluff:rules:L016]
+# Line length
+max_line_length = 120
+
+[sqlfluff:rules:L019]
+# Leading comma style
+comma_style = trailing
+
+[sqlfluff:rules:L030]
+# Function names
+capitalisation_policy = upper
+
+[sqlfluff:rules:L040]
+# NULL & Boolean literals
+capitalisation_policy = upper
+
+[sqlfluff:rules:L042]
+# Subquery style
+multiline_subquery = yes
+
+[sqlfluff:rules:L063]
+# Datatypes
+capitalisation_policy = upper
+
+# File patterns to check
+[sqlfluff:templater]
+unwrap_wrapped_queries = true
+
+[sqlfluff:templater:jinja]
+# If using Jinja templates
+apply_dbt_builtins = false
+
+[sqlfluff:templater:placeholder]
+# Placeholder templating for dynamic SQL
+param_style = colon
+
+# Indentation configuration
+[sqlfluff:indentation]
+indented_joins = true
+indented_using_on = true
+template_blocks_indent = true

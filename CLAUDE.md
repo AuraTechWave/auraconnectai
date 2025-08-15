@@ -194,3 +194,31 @@ This ensures:
 - Created: 2025-08-02T16:49:05.731Z
 - Updated: 2025-08-04T21:00:00.000Z
 - Completed: 2025-08-04T21:00:00.000Z
+- Work on this
+ Standardize Code Conventions
+
+Inconsistent naming conventions and code styles across the codebase.
+
+**Issues:**
+
+* Mixed async/sync patterns
+* Inconsistent naming (camelCase vs snake_case)
+* Different error handling approaches
+* Varied logging levels
+
+**Acceptance Criteria:**
+
+* Define coding standards document
+* Configure linters and formatters
+* Update all code to match standards
+* Setup pre-commit hooks
+* Add code review checklist
+
+## Metadata
+- URL: [https://linear.app/auraconnect/issue/AUR-436/standardize-code-conventions](https://linear.app/auraconnect/issue/AUR-436/standardize-code-conventions)
+- Identifier: AUR-436
+- Status: In Progress
+- Priority: No priority
+- Assignee: Unassigned
+- Created: 2025-08-14T17:15:49.755Z
+- Updated: 2025-08-14T17:24:02.548Z
