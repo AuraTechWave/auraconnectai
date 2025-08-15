@@ -52,8 +52,9 @@ class OrderHistoryService:
         # Get total count before pagination
         total = query.count()
         
-        # Get orders with pagination
-        orders = query.order_by(desc(Order.created_at))\
+        # Get orders with pagination and eager load order_items to avoid N+1
+        orders = query.options(joinedload(Order.order_items))\
+                     .order_by(desc(Order.created_at))\
                      .offset(offset)\
                      .limit(limit)\
                      .all()
@@ -66,7 +67,9 @@ class OrderHistoryService:
         limit: int = 10
     ) -> List[OrderSummary]:
         """Get simplified order summaries for customer profile"""
-        orders = self.db.query(Order).filter(
+        orders = self.db.query(Order).options(
+            joinedload(Order.order_items)  # Fix N+1: Eager load order_items
+        ).filter(
             and_(
                 Order.customer_id == customer_id,
                 Order.deleted_at.is_(None)
@@ -120,12 +123,21 @@ class OrderHistoryService:
             desc('order_count')
         ).limit(limit).all()
         
-        # Get menu item details
+        # Fix N+1: Batch load menu items with eager loading for categories
+        item_ids = [item_id for item_id, _, _ in item_counts]
+        menu_items = self.db.query(MenuItem).options(
+            joinedload(MenuItem.category)  # Eager load category relationship
+        ).filter(
+            MenuItem.id.in_(item_ids)
+        ).all()
+        
+        # Create a mapping for quick lookup
+        menu_item_map = {item.id: item for item in menu_items}
+        
+        # Build favorites list using the pre-loaded items
         favorites = []
         for item_id, order_count, total_quantity in item_counts:
-            menu_item = self.db.query(MenuItem).filter(
-                MenuItem.id == item_id
-            ).first()
+            menu_item = menu_item_map.get(item_id)
             
             if menu_item:
                 favorite = MenuItemSummary(
