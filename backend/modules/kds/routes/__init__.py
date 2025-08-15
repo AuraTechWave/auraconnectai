@@ -12,9 +12,9 @@ from .kds_realtime_routes import router as realtime_router
 # Create main router
 router = APIRouter(tags=["Kitchen Display System"])
 
-# Include sub-routers
-router.include_router(kds_router, prefix="/kds")
-router.include_router(performance_router, prefix="/kds")
-router.include_router(realtime_router, prefix="/kds")
+# Include sub-routers (no prefix needed as they already define full paths)
+router.include_router(kds_router)
+router.include_router(performance_router)
+router.include_router(realtime_router)
 
 __all__ = ["router"]
