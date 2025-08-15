@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from sqlalchemy.orm import Session
 
 from .cache_manager import cache_manager, CacheTTL
-from core.database import get_db
+from core.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -408,22 +408,15 @@ async def warm_cache_async(tenant_id: Optional[int] = None) -> Dict[str, Any]:
     Returns:
         Warming statistics
     """
-    # Properly manage database session
-    db_gen = get_db()
-    db = None
+    # Create a new session for this operation
+    db = SessionLocal()
     
     try:
-        db = next(db_gen)
         warmer = CacheWarmer(db)
         stats = warmer.warm_all(tenant_id, parallel=True)
         return stats
     finally:
-        if db:
-            db.close()
-        try:
-            next(db_gen)  # Trigger generator cleanup
-        except StopIteration:
-            pass
+        db.close()
 
 
 def schedule_cache_warming(tenant_id: Optional[int] = None, interval_minutes: int = 30):
@@ -439,23 +432,16 @@ def schedule_cache_warming(tenant_id: Optional[int] = None, interval_minutes: in
     import threading
     
     def warm_job():
-        # Properly manage database session
-        db_gen = get_db()
-        db = None
+        # Create a new session for this operation
+        db = SessionLocal()
         
         try:
-            db = next(db_gen)
             warmer = CacheWarmer(db)
             warmer.warm_all(tenant_id)
         except Exception as e:
             logger.error(f"Scheduled cache warming failed: {e}")
         finally:
-            if db:
-                db.close()
-            try:
-                next(db_gen)  # Trigger generator cleanup
-            except StopIteration:
-                pass
+            db.close()
     
     # Schedule job
     schedule.every(interval_minutes).minutes.do(warm_job)
