@@ -88,48 +88,8 @@ class StationResponse(BaseModel):
         orm_mode = True
 
 
-class KDSOrderItemResponse(BaseModel):
-    """Response schema for KDS order items"""
-    
-    id: int
-    order_item_id: int
-    station_id: int
-    display_name: str
-    quantity: int
-    modifiers: List[str]
-    special_instructions: Optional[str]
-    status: DisplayStatus
-    sequence_number: Optional[int]
-    received_at: datetime
-    started_at: Optional[datetime]
-    target_time: Optional[datetime]
-    completed_at: Optional[datetime]
-    acknowledged_at: Optional[datetime]
-    priority: int
-    course_number: int
-    fire_time: Optional[datetime]
-    recall_count: int
-    last_recalled_at: Optional[datetime]
-    recall_reason: Optional[str]
-    started_by_id: Optional[int]
-    completed_by_id: Optional[int]
-    
-    # Computed fields
-    wait_time_seconds: int = 0
-    is_late: bool = False
-    
-    class Config:
-        orm_mode = True
-
-
-class KDSWebSocketMessage(BaseModel):
-    """WebSocket message schema"""
-    
-    type: str
-    station_id: Optional[int]
-    item_id: Optional[int]
-    data: Optional[Dict[str, Any]]
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# NOTE: KDSOrderItemResponse and KDSWebSocketMessage are defined later in this file
+# with complete field definitions to avoid redefinition issues
 
 
 class KitchenDisplayCreate(BaseModel):
