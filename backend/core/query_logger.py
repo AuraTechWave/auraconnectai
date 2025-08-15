@@ -49,7 +49,7 @@ class QueryLogger:
         query_handler.setFormatter(logging.Formatter(
             '%(levelname)s [%(asctime)s] Query Performance: %(message)s'
         ))
-        query_logger.addHandler(handler)
+        query_logger.addHandler(query_handler)
         query_logger.setLevel(logging.INFO)
     
     def log_query_stats(self):
