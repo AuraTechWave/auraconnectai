@@ -5,11 +5,11 @@
 from .recipe_cost_tasks import (
     recalculate_recipe_cost_async,
     bulk_recalculate_costs_async,
-    schedule_cost_recalculation
+    schedule_cost_recalculation,
 )
 
 __all__ = [
-    'recalculate_recipe_cost_async',
-    'bulk_recalculate_costs_async',
-    'schedule_cost_recalculation'
+    "recalculate_recipe_cost_async",
+    "bulk_recalculate_costs_async",
+    "schedule_cost_recalculation",
 ]

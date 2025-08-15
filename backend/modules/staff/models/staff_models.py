@@ -1,4 +1,13 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, Boolean, JSON
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Enum,
+    Boolean,
+    JSON,
+)
 from sqlalchemy.orm import relationship
 from core.database import Base
 from ..enums.staff_enums import StaffStatus
@@ -12,7 +21,15 @@ class StaffMember(Base):
     email = Column(String, unique=True)
     phone = Column(String)
     role_id = Column(Integer, ForeignKey("roles.id"))
-    status = Column(Enum(StaffStatus, values_callable=lambda obj: [e.value for e in obj], create_type=False), default=StaffStatus.ACTIVE, nullable=False)
+    status = Column(
+        Enum(
+            StaffStatus,
+            values_callable=lambda obj: [e.value for e in obj],
+            create_type=False,
+        ),
+        default=StaffStatus.ACTIVE,
+        nullable=False,
+    )
     is_active = Column(Boolean, default=True)
     start_date = Column(DateTime)
     photo_url = Column(String)
@@ -22,8 +39,12 @@ class StaffMember(Base):
     employee_payments = relationship("EmployeePayment", back_populates="staff_member")
     pay_policies = relationship("StaffPayPolicy", back_populates="staff_member")
     attendance_logs = relationship("AttendanceLog", back_populates="staff_member")
-    biometric_data = relationship("StaffBiometric", back_populates="staff_member", uselist=False)
-    schedules = relationship("Schedule", foreign_keys="Schedule.staff_id", back_populates="staff")
+    biometric_data = relationship(
+        "StaffBiometric", back_populates="staff_member", uselist=False
+    )
+    schedules = relationship(
+        "Schedule", foreign_keys="Schedule.staff_id", back_populates="staff"
+    )
 
 
 class Role(Base):

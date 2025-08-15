@@ -17,15 +17,19 @@ from core.database import get_db
 from core.auth import get_current_user
 from modules.staff.models.staff_models import StaffMember
 from modules.analytics.schemas.predictive_analytics_schemas import (
-    ForecastComparison, ForecastAccuracyReport,
-    ModelPerformanceReport, PredictionAlert
+    ForecastComparison,
+    ForecastAccuracyReport,
+    ModelPerformanceReport,
+    PredictionAlert,
 )
-from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
+from modules.analytics.services.forecast_monitoring_service import (
+    ForecastMonitoringService,
+)
 from modules.analytics.services.permissions_service import require_analytics_permission
 from modules.analytics.constants import (
     MIN_ACCURACY_THRESHOLD,
     ANOMALY_DETECTION_WINDOW_DAYS,
-    MAX_HISTORICAL_DAYS
+    MAX_HISTORICAL_DAYS,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,6 +38,7 @@ router = APIRouter(prefix="/monitoring", tags=["predictive-monitoring"])
 
 class TrackAccuracyRequest(BaseModel):
     """Request model for tracking forecast accuracy"""
+
     entity_type: str
     entity_id: Optional[int] = None
     predictions: List[Dict[str, Any]]
@@ -44,20 +49,20 @@ class TrackAccuracyRequest(BaseModel):
 async def track_forecast_accuracy(
     request: TrackAccuracyRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> ForecastComparison:
     """
     Track and compare forecast accuracy against actual values.
-    
+
     Args:
         entity_type: Type of entity (product, category, overall)
         entity_id: Specific entity ID (optional)
         predictions: List of predicted values with timestamps
         actuals: List of actual values with timestamps
-        
+
     Returns:
         ForecastComparison with accuracy metrics
-        
+
     Example Response:
         {
             "entity_type": "product",
@@ -83,36 +88,35 @@ async def track_forecast_accuracy(
                 "confidence_interval_accuracy": 0.92
             }
         }
-    
+
     Raises:
         HTTPException: 400 if data mismatch, 403 if unauthorized
     """
     require_analytics_permission(current_user, "view_analytics_reports")
-    
+
     try:
         service = ForecastMonitoringService(db)
         comparison = await service.track_forecast_accuracy(
             entity_type=request.entity_type,
             entity_id=request.entity_id,
             predictions=request.predictions,
-            actuals=request.actuals
+            actuals=request.actuals,
         )
-        
+
         logger.info(
             f"Forecast accuracy tracked for {request.entity_type} {request.entity_id} "
             f"by user {current_user.id}"
         )
-        
+
         return comparison
-        
+
     except ValueError as e:
         logger.warning(f"Invalid accuracy tracking request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Accuracy tracking failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to track forecast accuracy."
+            status_code=500, detail="Failed to track forecast accuracy."
         )
 
 
@@ -123,20 +127,20 @@ async def get_accuracy_report(
     start_date: date = Query(..., description="Report start date"),
     end_date: date = Query(..., description="Report end date"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> ForecastAccuracyReport:
     """
     Generate comprehensive forecast accuracy report.
-    
+
     Args:
         entity_type: Type of entity to analyze
         entity_id: Specific entity (optional)
         start_date: Report period start
         end_date: Report period end
-        
+
     Returns:
         ForecastAccuracyReport with detailed metrics
-        
+
     Example Response:
         {
             "entity_type": "product",
@@ -163,30 +167,29 @@ async def get_accuracy_report(
         }
     """
     require_analytics_permission(current_user, "view_analytics_reports")
-    
+
     # Validate date range
     if (end_date - start_date).days > MAX_HISTORICAL_DAYS:
         raise HTTPException(
             status_code=400,
-            detail=f"Date range cannot exceed {MAX_HISTORICAL_DAYS} days"
+            detail=f"Date range cannot exceed {MAX_HISTORICAL_DAYS} days",
         )
-    
+
     try:
         service = ForecastMonitoringService(db)
         report = await service.generate_accuracy_report(
             entity_type=entity_type,
             entity_id=entity_id,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
         )
-        
+
         return report
-        
+
     except Exception as e:
         logger.error(f"Accuracy report generation failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to generate accuracy report."
+            status_code=500, detail="Failed to generate accuracy report."
         )
 
 
@@ -194,17 +197,17 @@ async def get_accuracy_report(
 async def get_model_performance(
     days: int = Query(30, ge=7, le=365, description="Days of history to analyze"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> ModelPerformanceReport:
     """
     Compare performance across different forecasting models.
-    
+
     Args:
         days: Number of historical days to analyze
-        
+
     Returns:
         ModelPerformanceReport with comparative metrics
-        
+
     Example Response:
         {
             "evaluation_period": {"start": "2024-01-01", "end": "2024-01-31"},
@@ -227,18 +230,17 @@ async def get_model_performance(
         }
     """
     require_analytics_permission(current_user, "view_analytics_reports")
-    
+
     try:
         service = ForecastMonitoringService(db)
         report = await service.compare_model_performance(days=days)
-        
+
         return report
-        
+
     except Exception as e:
         logger.error(f"Model performance report failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to generate model performance report."
+            status_code=500, detail="Failed to generate model performance report."
         )
 
 
@@ -249,23 +251,25 @@ async def get_forecast_anomalies(
         ANOMALY_DETECTION_WINDOW_DAYS,
         ge=1,
         le=30,
-        description="Days to check for anomalies"
+        description="Days to check for anomalies",
     ),
-    min_severity: str = Query("medium", description="Minimum severity: low, medium, high"),
+    min_severity: str = Query(
+        "medium", description="Minimum severity: low, medium, high"
+    ),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> List[PredictionAlert]:
     """
     Detect and retrieve forecast anomalies and accuracy degradations.
-    
+
     Args:
         entity_type: Filter by entity type
         recent_days: Number of recent days to analyze
         min_severity: Minimum alert severity to return
-        
+
     Returns:
         List of prediction alerts
-        
+
     Example Response:
         [
             {
@@ -289,46 +293,42 @@ async def get_forecast_anomalies(
         ]
     """
     require_analytics_permission(current_user, "view_analytics_reports")
-    
+
     try:
         service = ForecastMonitoringService(db)
-        
+
         # Get anomalies for all or specific entity types
         alerts = []
-        
+
         if entity_type:
             entity_alerts = await service.detect_forecast_anomalies(
-                entity_type=entity_type,
-                entity_id=None,
-                recent_days=recent_days
+                entity_type=entity_type, entity_id=None, recent_days=recent_days
             )
             alerts.extend(entity_alerts)
         else:
             # Check all entity types
             for etype in ["product", "category", "overall"]:
                 entity_alerts = await service.detect_forecast_anomalies(
-                    entity_type=etype,
-                    entity_id=None,
-                    recent_days=recent_days
+                    entity_type=etype, entity_id=None, recent_days=recent_days
                 )
                 alerts.extend(entity_alerts)
-        
+
         # Filter by severity
         severity_order = {"low": 1, "medium": 2, "high": 3}
         min_severity_level = severity_order.get(min_severity, 2)
-        
+
         filtered_alerts = [
-            alert for alert in alerts
+            alert
+            for alert in alerts
             if severity_order.get(alert.severity, 0) >= min_severity_level
         ]
-        
+
         return filtered_alerts
-        
+
     except Exception as e:
         logger.error(f"Anomaly detection failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to detect forecast anomalies."
+            status_code=500, detail="Failed to detect forecast anomalies."
         )
 
 
@@ -339,20 +339,20 @@ async def trigger_model_retrain(
     model_type: Optional[str] = None,
     reason: str = Query(..., description="Reason for retraining"),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> dict:
     """
     Trigger model retraining for specific entity.
-    
+
     Args:
         entity_type: Type of entity
         entity_id: Specific entity ID
         model_type: Specific model to retrain
         reason: Reason for retraining
-        
+
     Returns:
         Retraining task information
-        
+
     Example Response:
         {
             "task_id": "retrain-550e8400-e29b-41d4",
@@ -366,29 +366,28 @@ async def trigger_model_retrain(
         }
     """
     require_analytics_permission(current_user, "manage_analytics")
-    
+
     try:
         service = ForecastMonitoringService(db)
-        
+
         # TODO: Implement async task queue for model retraining
         task_info = await service.schedule_model_retrain(
             entity_type=entity_type,
             entity_id=entity_id,
             model_type=model_type,
             reason=reason,
-            triggered_by=current_user.id
+            triggered_by=current_user.id,
         )
-        
+
         logger.info(
             f"Model retraining scheduled for {entity_type} {entity_id} "
             f"by user {current_user.id}: {reason}"
         )
-        
+
         return task_info
-        
+
     except Exception as e:
         logger.error(f"Failed to schedule retraining: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to schedule model retraining."
+            status_code=500, detail="Failed to schedule model retraining."
         )

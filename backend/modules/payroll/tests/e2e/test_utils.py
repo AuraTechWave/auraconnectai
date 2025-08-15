@@ -22,7 +22,7 @@ def setup_database_mocks(mock_db, employees, timesheets, policies):
     employee_query.filter.return_value = employee_query
     employee_query.all.return_value = employees
     employee_query.first.return_value = employees[0] if employees else None
-    
+
     # Mock timesheet queries
     def query_side_effect(model):
         if model == Timesheet:
@@ -36,14 +36,14 @@ def setup_database_mocks(mock_db, employees, timesheets, policies):
             policy_query.first.return_value = policies[0] if policies else None
             return policy_query
         return employee_query
-    
+
     mock_db.query.side_effect = query_side_effect
 
 
 def setup_payroll_calculations(mock_service, employees):
     """Setup standard mock payroll calculations."""
     calculations = []
-    
+
     # Engineer - salaried
     calc1 = Mock()
     calc1.employee_id = 1
@@ -58,7 +58,7 @@ def setup_payroll_calculations(mock_service, employees):
     calc1.retirement_401k = Decimal("276.92")  # 6% + match
     calc1.net_pay = Decimal("2832.54")
     calculations.append(calc1)
-    
+
     # Sales rep - hourly with OT
     calc2 = Mock()
     calc2.employee_id = 2
@@ -74,7 +74,7 @@ def setup_payroll_calculations(mock_service, employees):
     calc2.retirement_401k = Decimal("92.00")
     calc2.net_pay = Decimal("1525.59")
     calculations.append(calc2)
-    
+
     # Support - part-time
     calc3 = Mock()
     calc3.employee_id = 3
@@ -87,14 +87,14 @@ def setup_payroll_calculations(mock_service, employees):
     calc3.medicare = Decimal("11.60")
     calc3.net_pay = Decimal("626.80")
     calculations.append(calc3)
-    
+
     mock_service.calculate_payroll.side_effect = calculations
 
 
 def create_payments_from_results(results, company_setup):
     """Create payment records from calculation results."""
     payments = []
-    
+
     for i, result in enumerate(results):
         payment = Mock(spec=EmployeePayment)
         payment.id = i + 1
@@ -106,7 +106,7 @@ def create_payments_from_results(results, company_setup):
         payment.net_pay = result.net_pay
         payment.status = PaymentStatus.PENDING
         payments.append(payment)
-    
+
     return payments
 
 
@@ -118,7 +118,7 @@ def verify_audit_trail(mock_db, job_id):
         {"action": "employee_processed", "employee_id": 1},
         {"action": "employee_processed", "employee_id": 2},
         {"action": "employee_processed", "employee_id": 3},
-        {"action": "batch_job_completed", "job_id": job_id}
+        {"action": "batch_job_completed", "job_id": job_id},
     ]
     return audit_entries
 
@@ -130,14 +130,14 @@ def create_mock_tax_brackets(filing_status="single"):
             {"min": 0, "max": 11000, "rate": 0.10},
             {"min": 11000, "max": 44725, "rate": 0.12},
             {"min": 44725, "max": 95375, "rate": 0.22},
-            {"min": 95375, "max": 182050, "rate": 0.24}
+            {"min": 95375, "max": 182050, "rate": 0.24},
         ]
     else:  # married_jointly
         return [
             {"min": 0, "max": 22000, "rate": 0.10},
             {"min": 22000, "max": 89450, "rate": 0.12},
             {"min": 89450, "max": 190750, "rate": 0.22},
-            {"min": 190750, "max": 364100, "rate": 0.24}
+            {"min": 190750, "max": 364100, "rate": 0.24},
         ]
 
 
@@ -145,13 +145,15 @@ def calculate_expected_taxes(gross_pay, filing_status="single", allowances=2):
     """Calculate expected tax amounts for verification."""
     # Simplified tax calculation for testing
     annual_gross = gross_pay * 26  # Bi-weekly to annual
-    
+
     # Standard deduction
-    standard_deduction = Decimal("13850.00") if filing_status == "single" else Decimal("27700.00")
-    
+    standard_deduction = (
+        Decimal("13850.00") if filing_status == "single" else Decimal("27700.00")
+    )
+
     # Taxable income
     taxable_income = max(annual_gross - standard_deduction, Decimal("0.00"))
-    
+
     # Federal tax (simplified)
     if filing_status == "single":
         if taxable_income <= 11000:
@@ -163,21 +165,21 @@ def calculate_expected_taxes(gross_pay, filing_status="single", allowances=2):
     else:
         # Married filing jointly rates
         annual_tax = taxable_income * Decimal("0.10")  # Simplified
-    
+
     # Bi-weekly federal tax
     federal_tax = annual_tax / 26
-    
+
     # State tax (simplified - 4% effective rate)
     state_tax = gross_pay * Decimal("0.04")
-    
+
     # FICA taxes
     social_security = gross_pay * Decimal("0.062")
     medicare = gross_pay * Decimal("0.0145")
-    
+
     return {
         "federal_tax": federal_tax,
         "state_tax": state_tax,
         "social_security": social_security,
         "medicare": medicare,
-        "total_taxes": federal_tax + state_tax + social_security + medicare
+        "total_taxes": federal_tax + state_tax + social_security + medicare,
     }

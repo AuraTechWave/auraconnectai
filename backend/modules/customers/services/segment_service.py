@@ -21,7 +21,12 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 
-from core.tenant_context import TenantContext, apply_tenant_filter, validate_tenant_access, CrossTenantAccessLogger
+from core.tenant_context import (
+    TenantContext,
+    apply_tenant_filter,
+    validate_tenant_access,
+    CrossTenantAccessLogger,
+)
 
 from ..models.customer_models import Customer, CustomerSegment
 from ..schemas.customer_schemas import (
@@ -60,28 +65,28 @@ class CustomerSegmentService:
         # Apply tenant filtering
         query = apply_tenant_filter(query, CustomerSegment)
         segment = query.first()
-        
+
         if segment:
             # Validate tenant access
             if not validate_tenant_access(segment, raise_on_violation=False):
                 context = TenantContext.get()
                 if context:
                     self.access_logger.log_access_attempt(
-                        requested_tenant_id=context.get('restaurant_id'),
-                        actual_tenant_id=getattr(segment, 'restaurant_id', None),
-                        resource_type='CustomerSegment',
+                        requested_tenant_id=context.get("restaurant_id"),
+                        actual_tenant_id=getattr(segment, "restaurant_id", None),
+                        resource_type="CustomerSegment",
                         resource_id=segment_id,
-                        action='read',
-                        success=False
+                        action="read",
+                        success=False,
                     )
                 return None
-        
+
         return segment
 
     def create_segment(self, data: CustomerSegmentCreate) -> CustomerSegment:
         """Create a segment with automatic tenant assignment"""
         context = TenantContext.require_context()
-        
+
         segment = CustomerSegment(
             name=data.name,
             description=data.description,
@@ -89,11 +94,14 @@ class CustomerSegmentService:
             is_dynamic=data.is_dynamic,
             is_active=True,
         )
-        
+
         # Set tenant fields if they exist on the model
-        if hasattr(CustomerSegment, 'restaurant_id') and context.get('restaurant_id') is not None:
-            segment.restaurant_id = context.get('restaurant_id')
-        
+        if (
+            hasattr(CustomerSegment, "restaurant_id")
+            and context.get("restaurant_id") is not None
+        ):
+            segment.restaurant_id = context.get("restaurant_id")
+
         self.db.add(segment)
         self.db.commit()
         self.db.refresh(segment)
@@ -111,7 +119,7 @@ class CustomerSegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
-        
+
         # Validate tenant access before update
         validate_tenant_access(segment)
 
@@ -127,7 +135,7 @@ class CustomerSegmentService:
 
         segment.last_updated = datetime.utcnow()
         # Also update updated_at if it exists from TimestampMixin
-        if hasattr(segment, 'updated_at'):
+        if hasattr(segment, "updated_at"):
             segment.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(segment)
@@ -142,10 +150,10 @@ class CustomerSegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
-        
+
         # Validate tenant access before deletion
         validate_tenant_access(segment)
-        
+
         self.db.delete(segment)
         self.db.commit()
 
@@ -162,7 +170,7 @@ class CustomerSegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
-        
+
         # Validate tenant access
         validate_tenant_access(segment)
 
@@ -171,7 +179,7 @@ class CustomerSegmentService:
             segment.member_count = len(segment.customers)  # type: ignore[arg-type]
             segment.last_updated = datetime.utcnow()
             # Also update updated_at if it exists from TimestampMixin
-            if hasattr(segment, 'updated_at'):
+            if hasattr(segment, "updated_at"):
                 segment.updated_at = datetime.utcnow()
             self.db.commit()
             self.db.refresh(segment)
@@ -185,7 +193,7 @@ class CustomerSegmentService:
         segment.member_count = len(customers)
         segment.last_updated = datetime.utcnow()
         # Also update updated_at if it exists from TimestampMixin
-        if hasattr(segment, 'updated_at'):
+        if hasattr(segment, "updated_at"):
             segment.updated_at = datetime.utcnow()
 
         self.db.commit()
@@ -197,19 +205,22 @@ class CustomerSegmentService:
         segment = self.get_segment(segment_id)
         if not segment:
             raise ValueError("Segment not found")
-        
+
         # Validate tenant access
         validate_tenant_access(segment)
-        
+
         # Additional filtering of customers to ensure they belong to current tenant
         customers = segment.customers  # type: ignore[assignment]
         if customers:
             # Filter customers by tenant
             context = TenantContext.get()
-            if context and context.get('restaurant_id') is not None:
-                customers = [c for c in customers if 
-                           getattr(c, 'restaurant_id', None) == context.get('restaurant_id')]
-        
+            if context and context.get("restaurant_id") is not None:
+                customers = [
+                    c
+                    for c in customers
+                    if getattr(c, "restaurant_id", None) == context.get("restaurant_id")
+                ]
+
         return customers  # type: ignore[return-value]
 
     # ------------------------------------------------------------------
@@ -230,7 +241,7 @@ class CustomerSegmentService:
         """
 
         query = self.db.query(Customer).filter(Customer.deleted_at.is_(None))
-        
+
         # Apply tenant filtering to ensure we only get customers for current tenant
         query = apply_tenant_filter(query, Customer)
 

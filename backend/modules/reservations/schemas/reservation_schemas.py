@@ -12,6 +12,7 @@ from enum import Enum
 
 class ReservationStatus(str, Enum):
     """Reservation status enum for schemas"""
+
     PENDING = "pending"
     CONFIRMED = "confirmed"
     SEATED = "seated"
@@ -23,6 +24,7 @@ class ReservationStatus(str, Enum):
 
 class WaitlistStatus(str, Enum):
     """Waitlist status enum for schemas"""
+
     WAITING = "waiting"
     NOTIFIED = "notified"
     CONFIRMED = "confirmed"
@@ -33,6 +35,7 @@ class WaitlistStatus(str, Enum):
 
 class NotificationMethod(str, Enum):
     """Notification method enum for schemas"""
+
     EMAIL = "email"
     SMS = "sms"
     BOTH = "both"
@@ -41,6 +44,7 @@ class NotificationMethod(str, Enum):
 
 class TimeSlot(BaseModel):
     """Time slot for availability"""
+
     time: time
     available: bool
     capacity_remaining: int
@@ -49,6 +53,7 @@ class TimeSlot(BaseModel):
 
 class ReservationBase(BaseModel):
     """Base reservation schema"""
+
     reservation_date: date
     reservation_time: time
     party_size: int = Field(..., ge=1, le=20)
@@ -61,26 +66,28 @@ class ReservationBase(BaseModel):
 
 class ReservationCreate(ReservationBase):
     """Schema for creating a new reservation"""
+
     source: Optional[str] = "website"
-    
-    @field_validator('reservation_date')
+
+    @field_validator("reservation_date")
     @classmethod
     def validate_date(cls, v):
         if v < date.today():
-            raise ValueError('Reservation date cannot be in the past')
+            raise ValueError("Reservation date cannot be in the past")
         return v
-    
-    @field_validator('reservation_time')
+
+    @field_validator("reservation_time")
     @classmethod
     def validate_time(cls, v):
         # Basic validation - actual hours checked against settings
         if v < time(0, 0) or v > time(23, 59):
-            raise ValueError('Invalid time')
+            raise ValueError("Invalid time")
         return v
 
 
 class ReservationUpdate(BaseModel):
     """Schema for updating a reservation"""
+
     reservation_date: Optional[date] = None
     reservation_time: Optional[time] = None
     party_size: Optional[int] = Field(None, ge=1, le=20)
@@ -92,6 +99,7 @@ class ReservationUpdate(BaseModel):
 
 class ReservationResponse(BaseModel):
     """Schema for reservation response"""
+
     id: int
     customer_id: int
     reservation_date: date
@@ -101,25 +109,25 @@ class ReservationResponse(BaseModel):
     status: ReservationStatus
     confirmation_code: str
     source: str
-    
+
     # Table assignment
     table_numbers: Optional[str] = None
-    
+
     # Customer info
     customer_name: str
     customer_email: str
     customer_phone: Optional[str] = None
-    
+
     # Preferences
     special_requests: Optional[str] = None
     dietary_restrictions: List[str] = []
     occasion: Optional[str] = None
     notification_method: NotificationMethod
-    
+
     # Status flags
     reminder_sent: bool = False
     converted_from_waitlist: bool = False
-    
+
     # Timestamps
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -127,17 +135,18 @@ class ReservationResponse(BaseModel):
     seated_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
-    
+
     # Cancellation info
     cancellation_reason: Optional[str] = None
     cancelled_by: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class ReservationListResponse(BaseModel):
     """Schema for list of reservations"""
+
     reservations: List[ReservationResponse]
     total: int
     page: int
@@ -148,6 +157,7 @@ class ReservationListResponse(BaseModel):
 
 class TableAvailability(BaseModel):
     """Table availability for a time slot"""
+
     table_number: str
     section: str
     capacity: int
@@ -157,6 +167,7 @@ class TableAvailability(BaseModel):
 
 class ReservationAvailability(BaseModel):
     """Schema for checking reservation availability"""
+
     date: date
     party_size: int
     time_slots: List[TimeSlot]
@@ -168,18 +179,21 @@ class ReservationAvailability(BaseModel):
 
 class ReservationCancellation(BaseModel):
     """Schema for cancelling a reservation"""
+
     reason: str = Field(..., min_length=1, max_length=500)
     cancelled_by: str = "customer"  # customer, staff, system
 
 
 class ReservationConfirmation(BaseModel):
     """Schema for confirming a reservation"""
+
     confirmed: bool = True
     special_requests_update: Optional[str] = None
 
 
 class WaitlistBase(BaseModel):
     """Base waitlist schema"""
+
     requested_date: date
     requested_time_start: time
     requested_time_end: time
@@ -193,68 +207,70 @@ class WaitlistBase(BaseModel):
 
 class WaitlistCreate(WaitlistBase):
     """Schema for creating waitlist entry"""
-    
-    @field_validator('requested_date')
+
+    @field_validator("requested_date")
     @classmethod
     def validate_date(cls, v):
         if v < date.today():
-            raise ValueError('Requested date cannot be in the past')
+            raise ValueError("Requested date cannot be in the past")
         return v
-    
-    @field_validator('alternative_dates')
+
+    @field_validator("alternative_dates")
     @classmethod
     def validate_alternative_dates(cls, v):
         if v:
             for alt_date in v:
                 if alt_date < date.today():
-                    raise ValueError('Alternative dates cannot be in the past')
+                    raise ValueError("Alternative dates cannot be in the past")
         return v
 
 
 class WaitlistResponse(BaseModel):
     """Schema for waitlist response"""
+
     id: int
     customer_id: int
     requested_date: date
     requested_time_start: time
     requested_time_end: time
     party_size: int
-    
+
     # Flexibility
     flexible_date: bool
     flexible_time: bool
     alternative_dates: List[date]
-    
+
     # Status
     status: WaitlistStatus
     position: Optional[int] = None
     estimated_wait_time: Optional[int] = None  # in minutes
-    
+
     # Customer info
     customer_name: str
     customer_email: str
     customer_phone: Optional[str] = None
-    
+
     # Notification
     notification_method: NotificationMethod
     notified_at: Optional[datetime] = None
     notification_expires_at: Optional[datetime] = None
-    
+
     # Other
     special_requests: Optional[str] = None
     priority: int = 0
-    
+
     # Timestamps
     created_at: datetime
     updated_at: Optional[datetime] = None
     expires_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class WaitlistListResponse(BaseModel):
     """Schema for list of waitlist entries"""
+
     waitlist_entries: List[WaitlistResponse]
     total: int
     page: int
@@ -265,6 +281,7 @@ class WaitlistListResponse(BaseModel):
 
 class ReservationSettingsResponse(BaseModel):
     """Schema for reservation settings"""
+
     advance_booking_days: int
     min_advance_hours: int
     max_party_size: int
@@ -276,13 +293,14 @@ class ReservationSettingsResponse(BaseModel):
     waitlist_enabled: bool
     require_confirmation: bool
     send_reminders: bool
-    
+
     class Config:
         from_attributes = True
 
 
 class StaffReservationUpdate(BaseModel):
     """Schema for staff updating reservations"""
+
     status: Optional[ReservationStatus] = None
     table_numbers: Optional[str] = None
     notes: Optional[str] = Field(None, max_length=500)

@@ -38,6 +38,7 @@ class PaymentMethod(str, Enum):
 
 class PayrollJobStatus(str, Enum):
     """Status values for payroll job tracking."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -47,6 +48,7 @@ class PayrollJobStatus(str, Enum):
 
 class TaxRuleType(str, Enum):
     """Types of tax rules."""
+
     PERCENTAGE = "percentage"
     FIXED_AMOUNT = "fixed_amount"
     BRACKETED = "bracketed"
@@ -55,6 +57,7 @@ class TaxRuleType(str, Enum):
 
 class TaxRuleStatus(str, Enum):
     """Status of tax rules."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     PENDING = "pending"

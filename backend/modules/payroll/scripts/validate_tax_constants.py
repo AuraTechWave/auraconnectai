@@ -28,7 +28,7 @@ VALID_TAX_RATES = {
         "social_security_wage_base": 168600,  # 2024 limit
         "401k_contribution": 23000,  # 2024 limit
         "401k_catch_up": 7500,
-    }
+    },
 }
 
 
@@ -36,11 +36,13 @@ def find_tax_files():
     """Find all Python files that might contain tax constants."""
     payroll_dir = Path(__file__).parent.parent
     tax_files = []
-    
+
     for pattern in ["*tax*.py", "*rate*.py", "*constant*.py"]:
         tax_files.extend(payroll_dir.rglob(pattern))
-    
-    return [f for f in tax_files if "test" not in str(f) and "__pycache__" not in str(f)]
+
+    return [
+        f for f in tax_files if "test" not in str(f) and "__pycache__" not in str(f)
+    ]
 
 
 def validate_tax_rate(value_str, valid_rates):
@@ -55,21 +57,21 @@ def validate_tax_rate(value_str, valid_rates):
 def check_file_for_rates(filepath):
     """Check a file for tax rate constants."""
     issues = []
-    
-    with open(filepath, 'r') as f:
+
+    with open(filepath, "r") as f:
         content = f.read()
-    
+
     # Check for federal tax brackets
-    federal_pattern = r'federal.*tax.*=.*(\d+\.?\d*)'
+    federal_pattern = r"federal.*tax.*=.*(\d+\.?\d*)"
     federal_matches = re.findall(federal_pattern, content, re.IGNORECASE)
     for match in federal_matches:
         rate = float(match)
         if rate < 1:  # Percentage as decimal
             if not validate_tax_rate(match, VALID_TAX_RATES["federal"]["brackets"]):
                 issues.append(f"Invalid federal tax rate: {rate}")
-    
+
     # Check for FICA rates
-    fica_pattern = r'(social_security|medicare).*=.*(\d+\.?\d*)'
+    fica_pattern = r"(social_security|medicare).*=.*(\d+\.?\d*)"
     fica_matches = re.findall(fica_pattern, content, re.IGNORECASE)
     for tax_type, rate_str in fica_matches:
         rate = float(rate_str)
@@ -78,30 +80,32 @@ def check_file_for_rates(filepath):
                 issues.append(f"Invalid Social Security rate: {rate} (expected 0.062)")
             elif "medicare" in tax_type.lower() and rate not in [0.0145, 0.009]:
                 issues.append(f"Invalid Medicare rate: {rate}")
-    
+
     # Check for wage base limits
-    wage_base_pattern = r'wage_base.*=.*(\d+)'
+    wage_base_pattern = r"wage_base.*=.*(\d+)"
     wage_base_matches = re.findall(wage_base_pattern, content, re.IGNORECASE)
     for match in wage_base_matches:
         limit = int(match)
         if limit != VALID_TAX_RATES["limits"]["social_security_wage_base"]:
-            issues.append(f"Invalid SS wage base: {limit} (expected {VALID_TAX_RATES['limits']['social_security_wage_base']})")
-    
+            issues.append(
+                f"Invalid SS wage base: {limit} (expected {VALID_TAX_RATES['limits']['social_security_wage_base']})"
+            )
+
     return issues
 
 
 def main():
     """Main validation function."""
     print("Validating tax constants in payroll module...")
-    
+
     tax_files = find_tax_files()
     all_issues = []
-    
+
     for filepath in tax_files:
         issues = check_file_for_rates(filepath)
         if issues:
             all_issues.extend([(filepath, issue) for issue in issues])
-    
+
     if all_issues:
         print("\n❌ Tax constant validation failed!\n")
         for filepath, issue in all_issues:

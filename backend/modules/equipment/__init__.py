@@ -3,10 +3,20 @@
 
 from .routes import router, router_improved
 from .services import EquipmentService
-from .models import Equipment, MaintenanceRecord, EquipmentStatus, MaintenanceStatus, MaintenanceType
+from .models import (
+    Equipment,
+    MaintenanceRecord,
+    EquipmentStatus,
+    MaintenanceStatus,
+    MaintenanceType,
+)
 from .schemas import (
-    EquipmentCreate, EquipmentUpdate, Equipment as EquipmentSchema,
-    MaintenanceRecordCreate, MaintenanceRecordUpdate, MaintenanceRecord as MaintenanceRecordSchema
+    EquipmentCreate,
+    EquipmentUpdate,
+    Equipment as EquipmentSchema,
+    MaintenanceRecordCreate,
+    MaintenanceRecordUpdate,
+    MaintenanceRecord as MaintenanceRecordSchema,
 )
 
 __all__ = [
@@ -23,5 +33,5 @@ __all__ = [
     "EquipmentSchema",
     "MaintenanceRecordCreate",
     "MaintenanceRecordUpdate",
-    "MaintenanceRecordSchema"
+    "MaintenanceRecordSchema",
 ]

@@ -11,7 +11,7 @@ async def get_db_context() -> AsyncGenerator[Session, None]:
     """
     Async context manager for database sessions.
     Use this for background tasks and non-request contexts.
-    
+
     Example:
         async with get_db_context() as db:
             # Use db session

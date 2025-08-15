@@ -9,11 +9,17 @@ router = APIRouter(prefix="/api/v1/gdpr", tags=["GDPR Compliance"])
 # In-memory consent store. In production, persist to DB.
 CONSENT_STORE: Dict[int, Dict[str, bool]] = {}
 
+
 class ConsentPreferences(BaseModel):
     """User consent preferences."""
-    marketing: bool = Field(..., description="Consent to receive marketing communications")
+
+    marketing: bool = Field(
+        ..., description="Consent to receive marketing communications"
+    )
     analytics: bool = Field(..., description="Consent to analytics tracking")
-    third_party_sharing: bool = Field(..., description="Consent to share data with third parties")
+    third_party_sharing: bool = Field(
+        ..., description="Consent to share data with third parties"
+    )
 
 
 @router.get("/consents", response_model=ConsentPreferences)
@@ -55,7 +61,7 @@ async def export_user_data(current_user: User = Depends(get_current_user)):
 @router.delete("/delete", status_code=status.HTTP_204_NO_CONTENT)
 async def request_account_deletion(current_user: User = Depends(get_current_user)):
     """Delete user account and all associated personal data.
-    
+
     This performs immediate synchronous deletion. In production, consider
     implementing async processing with status tracking.
     """
@@ -64,11 +70,11 @@ async def request_account_deletion(current_user: User = Depends(get_current_user
         MOCK_USERS[current_user.username]["is_active"] = False
         # Now delete the user record
         del MOCK_USERS[current_user.username]
-    
+
     # Remove consent records
     if current_user.id in CONSENT_STORE:
         del CONSENT_STORE[current_user.id]
-    
+
     # Return 204 No Content for successful deletion
     # Note: FastAPI will automatically return empty response with 204
     return None

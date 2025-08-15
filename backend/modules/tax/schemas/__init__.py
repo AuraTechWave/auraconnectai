@@ -5,7 +5,7 @@ from .tax_schemas import (
     TaxCalculationRequest,
     TaxCalculationResponse,
     TaxBreakdownItem,
-    TaxRuleOut
+    TaxRuleOut,
 )
 
 from .tax_jurisdiction_schemas import (
@@ -13,41 +13,35 @@ from .tax_jurisdiction_schemas import (
     TaxJurisdictionCreate,
     TaxJurisdictionUpdate,
     TaxJurisdictionResponse,
-    
     # Tax Rate
     TaxRateCreate,
     TaxRateUpdate,
     TaxRateResponse,
-    
     # Tax Calculation
     TaxCalculationLocation,
     TaxCalculationLineItem,
     EnhancedTaxCalculationRequest,
     EnhancedTaxCalculationResponse,
     TaxCalculationResult,
-    
     # Tax Rules
     TaxRuleCondition,
     TaxRuleAction,
     TaxRuleConfigurationCreate,
     TaxRuleConfigurationResponse,
-    
     # Exemptions
     TaxExemptionCertificateCreate,
     TaxExemptionCertificateVerify,
     TaxExemptionCertificateResponse,
-    
     # Nexus
     TaxNexusCreate,
     TaxNexusUpdate,
-    TaxNexusResponse
+    TaxNexusResponse,
 )
 
 from .tax_compliance_schemas import (
     # Enums
     FilingStatus,
     FilingType,
-    
     # Filing
     TaxFilingCreate,
     TaxFilingUpdate,
@@ -55,26 +49,21 @@ from .tax_compliance_schemas import (
     TaxFilingResponse,
     TaxFilingLineItemCreate,
     TaxFilingLineItemResponse,
-    
     # Remittance
     TaxRemittanceCreate,
     TaxRemittanceResponse,
-    
     # Audit
     TaxAuditLogCreate,
     TaxAuditLogResponse,
-    
     # Templates
     TaxReportTemplateCreate,
     TaxReportTemplateResponse,
-    
     # Reporting
     TaxReportRequest,
     TaxReportResponse,
-    
     # Compliance
     TaxComplianceStatus,
-    TaxComplianceDashboard
+    TaxComplianceDashboard,
 )
 
 __all__ = [
@@ -84,7 +73,6 @@ __all__ = [
     "TaxCalculationResponse",
     "TaxBreakdownItem",
     "TaxRuleOut",
-    
     # Jurisdiction schemas
     "TaxJurisdictionCreate",
     "TaxJurisdictionUpdate",
@@ -107,7 +95,6 @@ __all__ = [
     "TaxNexusCreate",
     "TaxNexusUpdate",
     "TaxNexusResponse",
-    
     # Compliance schemas
     "FilingStatus",
     "FilingType",

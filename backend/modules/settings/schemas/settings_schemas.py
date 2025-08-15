@@ -9,15 +9,15 @@ from datetime import datetime
 from pydantic import BaseModel, Field, validator, root_validator
 import json
 
-from ..models.settings_models import (
-    SettingCategory, SettingType, SettingScope
-)
+from ..models.settings_models import SettingCategory, SettingType, SettingScope
 
 
 # ========== Setting Schemas ==========
 
+
 class SettingBase(BaseModel):
     """Base setting schema"""
+
     key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
     category: SettingCategory
     label: str = Field(..., max_length=200)
@@ -31,20 +31,21 @@ class SettingBase(BaseModel):
 
 class SettingCreate(BaseModel):
     """Create setting request"""
+
     key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
     value: Union[str, int, float, bool, dict, list]
     scope: SettingScope
     restaurant_id: Optional[int] = None
     location_id: Optional[int] = None
     user_id: Optional[int] = None
-    
+
     @root_validator
     def validate_scope_ids(cls, values):
-        scope = values.get('scope')
-        restaurant_id = values.get('restaurant_id')
-        location_id = values.get('location_id')
-        user_id = values.get('user_id')
-        
+        scope = values.get("scope")
+        restaurant_id = values.get("restaurant_id")
+        location_id = values.get("location_id")
+        user_id = values.get("user_id")
+
         if scope == SettingScope.RESTAURANT and not restaurant_id:
             raise ValueError("restaurant_id required for restaurant scope")
         elif scope == SettingScope.LOCATION and not location_id:
@@ -53,12 +54,13 @@ class SettingCreate(BaseModel):
             raise ValueError("user_id required for user scope")
         elif scope == SettingScope.SYSTEM and (restaurant_id or location_id or user_id):
             raise ValueError("No IDs should be provided for system scope")
-        
+
         return values
 
 
 class SettingUpdate(BaseModel):
     """Update setting request"""
+
     value: Union[str, int, float, bool, dict, list]
     description: Optional[str] = None
     validation_rules: Optional[Dict[str, Any]] = None
@@ -67,6 +69,7 @@ class SettingUpdate(BaseModel):
 
 class SettingResponse(BaseModel):
     """Setting response"""
+
     id: int
     key: str
     category: str
@@ -87,11 +90,11 @@ class SettingResponse(BaseModel):
     modified_at: datetime
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
-        
-    @validator('value', pre=True)
+
+    @validator("value", pre=True)
     def parse_value(cls, v, values):
         if isinstance(v, str):
             try:
@@ -103,6 +106,7 @@ class SettingResponse(BaseModel):
 
 class SettingListResponse(BaseModel):
     """Paginated setting list"""
+
     items: List[SettingResponse]
     total: int
     page: int
@@ -112,14 +116,15 @@ class SettingListResponse(BaseModel):
 
 class BulkSettingUpdate(BaseModel):
     """Bulk update settings"""
+
     settings: List[Dict[str, Any]] = Field(..., min_items=1, max_items=50)
-    
+
     class Config:
         schema_extra = {
             "example": {
                 "settings": [
                     {"key": "tax_rate", "value": 8.5},
-                    {"key": "currency", "value": "USD"}
+                    {"key": "currency", "value": "USD"},
                 ]
             }
         }
@@ -127,8 +132,10 @@ class BulkSettingUpdate(BaseModel):
 
 # ========== Setting Definition Schemas ==========
 
+
 class SettingDefinitionCreate(BaseModel):
     """Create setting definition"""
+
     key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
     category: SettingCategory
     scope: SettingScope
@@ -150,6 +157,7 @@ class SettingDefinitionCreate(BaseModel):
 
 class SettingDefinitionResponse(BaseModel):
     """Setting definition response"""
+
     id: int
     key: str
     category: str
@@ -176,15 +184,17 @@ class SettingDefinitionResponse(BaseModel):
     removed_version: Optional[str]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 # ========== Setting Group Schemas ==========
 
+
 class SettingGroupCreate(BaseModel):
     """Create setting group"""
+
     name: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
     label: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -198,6 +208,7 @@ class SettingGroupCreate(BaseModel):
 
 class SettingGroupResponse(BaseModel):
     """Setting group response"""
+
     id: int
     name: str
     label: str
@@ -210,15 +221,17 @@ class SettingGroupResponse(BaseModel):
     is_advanced: bool
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 # ========== Configuration Template Schemas ==========
 
+
 class ConfigurationTemplateCreate(BaseModel):
     """Create configuration template"""
+
     name: str = Field(..., max_length=100)
     label: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -230,6 +243,7 @@ class ConfigurationTemplateCreate(BaseModel):
 
 class ConfigurationTemplateResponse(BaseModel):
     """Configuration template response"""
+
     id: int
     name: str
     label: str
@@ -244,13 +258,14 @@ class ConfigurationTemplateResponse(BaseModel):
     tags: List[str]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 class ApplyTemplateRequest(BaseModel):
     """Apply configuration template request"""
+
     template_id: int
     override_existing: bool = False
     settings_override: Optional[Dict[str, Any]] = {}
@@ -258,8 +273,10 @@ class ApplyTemplateRequest(BaseModel):
 
 # ========== Feature Flag Schemas ==========
 
+
 class FeatureFlagCreate(BaseModel):
     """Create feature flag"""
+
     key: str = Field(..., max_length=100, regex="^[A-Z][A-Z0-9_]*$")
     name: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -276,6 +293,7 @@ class FeatureFlagCreate(BaseModel):
 
 class FeatureFlagUpdate(BaseModel):
     """Update feature flag"""
+
     name: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = None
     is_enabled: Optional[bool] = None
@@ -291,6 +309,7 @@ class FeatureFlagUpdate(BaseModel):
 
 class FeatureFlagResponse(BaseModel):
     """Feature flag response"""
+
     id: int
     key: str
     name: str
@@ -307,13 +326,14 @@ class FeatureFlagResponse(BaseModel):
     tags: List[str]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 class FeatureFlagStatus(BaseModel):
     """Feature flag status for a specific context"""
+
     key: str
     is_enabled: bool
     reason: str  # Why it's enabled/disabled
@@ -322,8 +342,10 @@ class FeatureFlagStatus(BaseModel):
 
 # ========== API Key Schemas ==========
 
+
 class APIKeyCreate(BaseModel):
     """Create API key request"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     scopes: List[str] = Field(..., min_items=1)
@@ -335,6 +357,7 @@ class APIKeyCreate(BaseModel):
 
 class APIKeyResponse(BaseModel):
     """API key response (without actual key)"""
+
     id: int
     key_prefix: str
     name: str
@@ -351,20 +374,23 @@ class APIKeyResponse(BaseModel):
     rate_limit_per_day: Optional[int]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 class APIKeyCreateResponse(APIKeyResponse):
     """API key creation response (includes actual key)"""
+
     api_key: str  # Only returned on creation
 
 
 # ========== Webhook Schemas ==========
 
+
 class WebhookCreate(BaseModel):
     """Create webhook"""
+
     name: str = Field(..., max_length=100)
     url: str = Field(..., max_length=500, regex="^https?://")
     description: Optional[str] = None
@@ -378,6 +404,7 @@ class WebhookCreate(BaseModel):
 
 class WebhookUpdate(BaseModel):
     """Update webhook"""
+
     name: Optional[str] = Field(None, max_length=100)
     url: Optional[str] = Field(None, max_length=500, regex="^https?://")
     description: Optional[str] = None
@@ -392,6 +419,7 @@ class WebhookUpdate(BaseModel):
 
 class WebhookResponse(BaseModel):
     """Webhook response"""
+
     id: int
     name: str
     url: str
@@ -410,19 +438,21 @@ class WebhookResponse(BaseModel):
     failure_count: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
 
 class WebhookTestRequest(BaseModel):
     """Test webhook request"""
+
     event_type: str
     payload: Dict[str, Any]
 
 
 class WebhookTestResponse(BaseModel):
     """Webhook test response"""
+
     success: bool
     status_code: Optional[int]
     response_time_ms: float
@@ -432,8 +462,10 @@ class WebhookTestResponse(BaseModel):
 
 # ========== Setting History Schemas ==========
 
+
 class SettingHistoryResponse(BaseModel):
     """Setting history entry"""
+
     id: int
     setting_key: str
     scope: str
@@ -448,15 +480,17 @@ class SettingHistoryResponse(BaseModel):
     change_reason: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
-    
+
     class Config:
         orm_mode = True
 
 
 # ========== Filters and Search ==========
 
+
 class SettingFilters(BaseModel):
     """Setting filter criteria"""
+
     category: Optional[SettingCategory] = None
     scope: Optional[SettingScope] = None
     restaurant_id: Optional[int] = None

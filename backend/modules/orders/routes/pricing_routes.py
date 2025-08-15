@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from core.database import get_db
-from ..controllers.pricing_controller import (
-    calculate_pricing, apply_dynamic_pricing
-)
+from ..controllers.pricing_controller import calculate_pricing, apply_dynamic_pricing
 from ..schemas.dynamic_pricing_schemas import (
-    BulkPricingRequest, BulkPricingResponse, ApplyDynamicPricingRequest
+    BulkPricingRequest,
+    BulkPricingResponse,
+    ApplyDynamicPricingRequest,
 )
 
 router = APIRouter(prefix="/orders/pricing", tags=["Dynamic Pricing"])
@@ -13,8 +13,7 @@ router = APIRouter(prefix="/orders/pricing", tags=["Dynamic Pricing"])
 
 @router.post("/calculate", response_model=BulkPricingResponse)
 async def calculate_dynamic_prices(
-    request: BulkPricingRequest,
-    db: Session = Depends(get_db)
+    request: BulkPricingRequest, db: Session = Depends(get_db)
 ):
     """
     Calculate dynamic prices for menu items based on AI recommendations.
@@ -31,9 +30,7 @@ async def calculate_dynamic_prices(
 
 @router.put("/{order_id}/apply-dynamic-pricing")
 async def apply_dynamic_pricing_to_order(
-    order_id: int,
-    force_recalculate: bool = False,
-    db: Session = Depends(get_db)
+    order_id: int, force_recalculate: bool = False, db: Session = Depends(get_db)
 ):
     """
     Apply dynamic pricing to an existing order.
@@ -46,7 +43,6 @@ async def apply_dynamic_pricing_to_order(
     Maintains audit trail of original prices and adjustment reasons.
     """
     request = ApplyDynamicPricingRequest(
-        order_id=order_id,
-        force_recalculate=force_recalculate
+        order_id=order_id, force_recalculate=force_recalculate
     )
     return await apply_dynamic_pricing(request, db)

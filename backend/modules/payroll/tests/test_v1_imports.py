@@ -14,48 +14,44 @@ def test_v1_imports():
     from ..routes.v1.batch_processing_routes import router as batch_router
     from ..routes.v1.webhook_routes import router as webhook_router
     from ..routes.v1.audit_routes import router as audit_router
-    
+
     # Test schema imports
     from ..schemas.batch_processing_schemas import (
         BatchPayrollRequest,
         BatchPayrollResponse,
         BatchJobStatus,
-        EmployeePayrollResult
+        EmployeePayrollResult,
     )
-    
+
     from ..schemas.webhook_schemas import (
         WebhookEventType,
         WebhookSubscriptionRequest,
-        WebhookSubscriptionResponse
+        WebhookSubscriptionResponse,
     )
-    
-    from ..schemas.audit_schemas import (
-        AuditEventType,
-        AuditLogEntry,
-        AuditLogFilter
-    )
-    
+
+    from ..schemas.audit_schemas import AuditEventType, AuditLogEntry, AuditLogFilter
+
     # Test service imports
     from ..services.batch_payroll_service import BatchPayrollService
-    
+
     # Test model imports
     from ..models.payroll_configuration import (
         PayrollJobTracking,
-        PayrollWebhookSubscription
+        PayrollWebhookSubscription,
     )
-    
+
     from ..models.payroll_audit import PayrollAuditLog
-    
+
     # Verify routers have expected attributes
-    assert hasattr(v1_router, 'routes')
-    assert hasattr(batch_router, 'routes')
-    assert hasattr(webhook_router, 'routes')
-    assert hasattr(audit_router, 'routes')
-    
+    assert hasattr(v1_router, "routes")
+    assert hasattr(batch_router, "routes")
+    assert hasattr(webhook_router, "routes")
+    assert hasattr(audit_router, "routes")
+
     # Verify enums
     assert WebhookEventType.PAYROLL_STARTED
     assert AuditEventType.PAYROLL_CALCULATED
-    
+
     print("✅ All v1 imports working correctly!")
 
 

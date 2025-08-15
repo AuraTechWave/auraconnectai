@@ -17,7 +17,7 @@ from .payment_routes import router as payment_router
 
 __all__ = [
     "payroll_router",
-    "tax_calculation_router", 
+    "tax_calculation_router",
     "configuration_router",
-    "payment_router"
+    "payment_router",
 ]

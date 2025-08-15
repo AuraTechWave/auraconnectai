@@ -11,10 +11,23 @@ import uuid
 
 from core.database import Base, get_db
 from modules.feedback.models.feedback_models import (
-    Review, Feedback, ReviewAggregate, ReviewTemplate, ReviewInvitation,
-    ReviewMedia, ReviewVote, BusinessResponse, FeedbackResponse,
-    FeedbackCategory, ReviewStatus, FeedbackStatus, ReviewType,
-    FeedbackType, FeedbackPriority, SentimentScore, ReviewSource
+    Review,
+    Feedback,
+    ReviewAggregate,
+    ReviewTemplate,
+    ReviewInvitation,
+    ReviewMedia,
+    ReviewVote,
+    BusinessResponse,
+    FeedbackResponse,
+    FeedbackCategory,
+    ReviewStatus,
+    FeedbackStatus,
+    ReviewType,
+    FeedbackType,
+    FeedbackPriority,
+    SentimentScore,
+    ReviewSource,
 )
 from modules.feedback.services.review_service import ReviewService
 from modules.feedback.services.feedback_service import FeedbackService
@@ -29,8 +42,7 @@ from modules.feedback.services.notification_service import NotificationService
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_feedback.db"
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -57,9 +69,9 @@ def db_session() -> Generator[Session, None, None]:
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
-    
+
     yield session
-    
+
     session.close()
     transaction.rollback()
     connection.close()
@@ -68,9 +80,10 @@ def db_session() -> Generator[Session, None, None]:
 @pytest.fixture
 def override_get_db(db_session: Session):
     """Override the get_db dependency for testing."""
+
     def _override_get_db():
         yield db_session
-    
+
     return _override_get_db
 
 
@@ -78,12 +91,12 @@ def override_get_db(db_session: Session):
 def client(override_get_db):
     """Create a test client."""
     from backend.main import app
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 
@@ -138,7 +151,7 @@ def sample_customer() -> Dict[str, Any]:
         "id": 1,
         "name": "John Doe",
         "email": "john.doe@example.com",
-        "phone": "+1234567890"
+        "phone": "+1234567890",
     }
 
 
@@ -149,7 +162,7 @@ def sample_staff_user() -> Dict[str, Any]:
         "id": 100,
         "name": "Staff Member",
         "email": "staff@company.com",
-        "role": "moderator"
+        "role": "moderator",
     }
 
 
@@ -168,7 +181,7 @@ def sample_review_data() -> Dict[str, Any]:
         "reviewer_name": "John D.",
         "source": ReviewSource.WEBSITE,
         "metadata": {"purchase_verified": True},
-        "tags": ["quality", "recommended"]
+        "tags": ["quality", "recommended"],
     }
 
 
@@ -186,7 +199,7 @@ def sample_feedback_data() -> Dict[str, Any]:
         "priority": FeedbackPriority.MEDIUM,
         "source": ReviewSource.WEBSITE,
         "metadata": {"page": "/settings"},
-        "tags": ["ui", "dark-mode"]
+        "tags": ["ui", "dark-mode"],
     }
 
 
@@ -212,18 +225,20 @@ def sample_review(db_session: Session, sample_review_data: Dict[str, Any]) -> Re
         helpful_votes=5,
         not_helpful_votes=1,
         total_votes=6,
-        helpful_percentage=83.3
+        helpful_percentage=83.3,
     )
-    
+
     db_session.add(review)
     db_session.commit()
     db_session.refresh(review)
-    
+
     return review
 
 
 @pytest.fixture
-def sample_feedback(db_session: Session, sample_feedback_data: Dict[str, Any]) -> Feedback:
+def sample_feedback(
+    db_session: Session, sample_feedback_data: Dict[str, Any]
+) -> Feedback:
     """Create a sample feedback in the database."""
     feedback = Feedback(
         uuid=uuid.uuid4(),
@@ -239,13 +254,13 @@ def sample_feedback(db_session: Session, sample_feedback_data: Dict[str, Any]) -
         status=FeedbackStatus.NEW,
         metadata=sample_feedback_data["metadata"],
         tags=sample_feedback_data["tags"],
-        follow_up_required=False
+        follow_up_required=False,
     )
-    
+
     db_session.add(feedback)
     db_session.commit()
     db_session.refresh(feedback)
-    
+
     return feedback
 
 
@@ -253,7 +268,7 @@ def sample_feedback(db_session: Session, sample_feedback_data: Dict[str, Any]) -
 def multiple_reviews(db_session: Session) -> list[Review]:
     """Create multiple reviews with different ratings and sentiments."""
     reviews = []
-    
+
     # Create reviews with varying characteristics
     review_data = [
         {
@@ -261,45 +276,45 @@ def multiple_reviews(db_session: Session) -> list[Review]:
             "content": "Absolutely amazing product! Exceeded all my expectations. Highly recommend!",
             "sentiment": SentimentScore.VERY_POSITIVE,
             "product_id": 101,
-            "customer_id": 1
+            "customer_id": 1,
         },
         {
             "rating": 4.0,
             "content": "Good product overall. Works well and good value for money.",
             "sentiment": SentimentScore.POSITIVE,
             "product_id": 101,
-            "customer_id": 2
+            "customer_id": 2,
         },
         {
             "rating": 3.0,
             "content": "It's okay. Does what it's supposed to do but nothing special.",
             "sentiment": SentimentScore.NEUTRAL,
             "product_id": 101,
-            "customer_id": 3
+            "customer_id": 3,
         },
         {
             "rating": 2.0,
             "content": "Not very satisfied. The quality could be much better.",
             "sentiment": SentimentScore.NEGATIVE,
             "product_id": 101,
-            "customer_id": 4
+            "customer_id": 4,
         },
         {
             "rating": 1.0,
             "content": "Terrible product. Complete waste of money. Would not recommend.",
             "sentiment": SentimentScore.VERY_NEGATIVE,
             "product_id": 101,
-            "customer_id": 5
+            "customer_id": 5,
         },
         {
             "rating": 4.5,
             "content": "Really good product for a different item. Very satisfied with the purchase.",
             "sentiment": SentimentScore.POSITIVE,
             "product_id": 102,
-            "customer_id": 6
-        }
+            "customer_id": 6,
+        },
     ]
-    
+
     for i, data in enumerate(review_data):
         review = Review(
             uuid=uuid.uuid4(),
@@ -312,17 +327,17 @@ def multiple_reviews(db_session: Session) -> list[Review]:
             status=ReviewStatus.APPROVED,
             source=ReviewSource.WEBSITE,
             is_verified_purchase=True,
-            sentiment_score=data["sentiment"]
+            sentiment_score=data["sentiment"],
         )
-        
+
         db_session.add(review)
         reviews.append(review)
-    
+
     db_session.commit()
-    
+
     for review in reviews:
         db_session.refresh(review)
-    
+
     return reviews
 
 
@@ -330,38 +345,38 @@ def multiple_reviews(db_session: Session) -> list[Review]:
 def multiple_feedback(db_session: Session) -> list[Feedback]:
     """Create multiple feedback items with different types and priorities."""
     feedback_items = []
-    
+
     feedback_data = [
         {
             "type": FeedbackType.COMPLAINT,
             "priority": FeedbackPriority.HIGH,
             "subject": "Product defect",
             "message": "The product I received has a defect and doesn't work properly.",
-            "status": FeedbackStatus.NEW
+            "status": FeedbackStatus.NEW,
         },
         {
             "type": FeedbackType.SUGGESTION,
             "priority": FeedbackPriority.MEDIUM,
             "subject": "Feature request",
             "message": "Please add a search filter option to make finding products easier.",
-            "status": FeedbackStatus.IN_PROGRESS
+            "status": FeedbackStatus.IN_PROGRESS,
         },
         {
             "type": FeedbackType.COMPLIMENT,
             "priority": FeedbackPriority.LOW,
             "subject": "Great service",
             "message": "Excellent customer service! Very helpful and responsive.",
-            "status": FeedbackStatus.RESOLVED
+            "status": FeedbackStatus.RESOLVED,
         },
         {
             "type": FeedbackType.BUG_REPORT,
             "priority": FeedbackPriority.URGENT,
             "subject": "Website error",
             "message": "The checkout page is not working. Getting error 500.",
-            "status": FeedbackStatus.ESCALATED
-        }
+            "status": FeedbackStatus.ESCALATED,
+        },
     ]
-    
+
     for i, data in enumerate(feedback_data):
         feedback = Feedback(
             uuid=uuid.uuid4(),
@@ -374,17 +389,17 @@ def multiple_feedback(db_session: Session) -> list[Feedback]:
             priority=data["priority"],
             status=data["status"],
             source=ReviewSource.WEBSITE,
-            category="general"
+            category="general",
         )
-        
+
         db_session.add(feedback)
         feedback_items.append(feedback)
-    
+
     db_session.commit()
-    
+
     for feedback in feedback_items:
         db_session.refresh(feedback)
-    
+
     return feedback_items
 
 
@@ -400,14 +415,14 @@ def review_template(db_session: Session) -> ReviewTemplate:
         description="Help other customers by sharing your experience with this product",
         custom_questions=[
             {"question": "How would you rate the quality?", "type": "rating"},
-            {"question": "Would you recommend this product?", "type": "boolean"}
+            {"question": "Would you recommend this product?", "type": "boolean"},
         ],
         rating_labels={
             "1": "Very Poor",
             "2": "Poor",
             "3": "Average",
             "4": "Good",
-            "5": "Excellent"
+            "5": "Excellent",
         },
         requires_purchase=True,
         allows_anonymous=False,
@@ -415,13 +430,13 @@ def review_template(db_session: Session) -> ReviewTemplate:
         max_media_files=5,
         auto_request_after_days=7,
         reminder_enabled=True,
-        reminder_days=14
+        reminder_days=14,
     )
-    
+
     db_session.add(template)
     db_session.commit()
     db_session.refresh(template)
-    
+
     return template
 
 
@@ -436,13 +451,13 @@ def feedback_category(db_session: Session) -> FeedbackCategory:
         auto_assign_keywords=["defect", "broken", "not working", "quality"],
         auto_escalate=True,
         escalation_priority=FeedbackPriority.HIGH,
-        escalation_conditions={"keywords": ["broken", "defect"]}
+        escalation_conditions={"keywords": ["broken", "defect"]},
     )
-    
+
     db_session.add(category)
     db_session.commit()
     db_session.refresh(category)
-    
+
     return category
 
 
@@ -479,27 +494,28 @@ def time_range():
 def large_dataset(db_session: Session):
     """Create a large dataset for performance testing."""
     reviews = []
-    
+
     # Create 1000 reviews
     for i in range(1000):
         review = Review(
             uuid=uuid.uuid4(),
             review_type=ReviewType.PRODUCT,
             customer_id=(i % 100) + 1,  # 100 unique customers
-            product_id=(i % 50) + 1,    # 50 unique products
+            product_id=(i % 50) + 1,  # 50 unique products
             title=f"Review {i}",
             content=f"This is review number {i}. " * 10,  # Longer content
             rating=((i % 5) + 1),  # Ratings 1-5
             status=ReviewStatus.APPROVED,
             source=ReviewSource.WEBSITE,
             is_verified_purchase=i % 3 == 0,  # 1/3 verified
-            created_at=datetime.utcnow() - timedelta(days=i % 365)  # Spread over a year
+            created_at=datetime.utcnow()
+            - timedelta(days=i % 365),  # Spread over a year
         )
         reviews.append(review)
-    
+
     db_session.add_all(reviews)
     db_session.commit()
-    
+
     return reviews
 
 
@@ -507,33 +523,39 @@ def large_dataset(db_session: Session):
 @pytest.fixture
 def mock_email_service():
     """Mock email service for testing notifications."""
+
     class MockEmailService:
         def __init__(self):
             self.sent_emails = []
-        
+
         async def send_email(self, to: str, subject: str, content: str):
-            self.sent_emails.append({
-                "to": to,
-                "subject": subject,
-                "content": content,
-                "sent_at": datetime.utcnow()
-            })
+            self.sent_emails.append(
+                {
+                    "to": to,
+                    "subject": subject,
+                    "content": content,
+                    "sent_at": datetime.utcnow(),
+                }
+            )
             return {"success": True, "message_id": f"mock_{len(self.sent_emails)}"}
-    
+
     return MockEmailService()
 
 
 @pytest.fixture
 def mock_sentiment_api():
     """Mock sentiment analysis API."""
+
     def mock_analyze(text: str):
         # Simple mock based on keywords
         text_lower = text.lower()
-        if any(word in text_lower for word in ["excellent", "amazing", "love", "great"]):
+        if any(
+            word in text_lower for word in ["excellent", "amazing", "love", "great"]
+        ):
             return {"sentiment": "positive", "confidence": 0.9}
         elif any(word in text_lower for word in ["terrible", "awful", "hate", "worst"]):
             return {"sentiment": "negative", "confidence": 0.9}
         else:
             return {"sentiment": "neutral", "confidence": 0.6}
-    
+
     return mock_analyze

@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_
 
 from core.menu_models import MenuItem
-from core.tenant_context import TenantContext, apply_tenant_filter, validate_tenant_access, CrossTenantAccessLogger
+from core.tenant_context import (
+    TenantContext,
+    apply_tenant_filter,
+    validate_tenant_access,
+    CrossTenantAccessLogger,
+)
 from modules.orders.models.order_models import Order, OrderItem
 from modules.staff.models.staff_models import StaffMember
 
@@ -43,7 +48,7 @@ class MenuRecommendationService:
             max_results: Maximum number of items to return.
             last_n_orders: Number of most recent orders to inspect when calculating
                 popularity.
-        
+
         Note: Tenant isolation is automatically enforced via TenantContext.
         """
         if max_results <= 0:
@@ -56,9 +61,7 @@ class MenuRecommendationService:
         # ------------------------------------------------------------------
         if customer_id is not None:
             customer_ranked = self._aggregate_popularity(
-                customer_id=customer_id, 
-                last_n_orders=last_n_orders, 
-                limit=max_results
+                customer_id=customer_id, last_n_orders=last_n_orders, limit=max_results
             )
 
         # ------------------------------------------------------------------
@@ -68,9 +71,9 @@ class MenuRecommendationService:
         global_ranked: List[Tuple[int, int]] = []
         if global_needed > 0:
             global_ranked = self._aggregate_popularity(
-                customer_id=None, 
-                last_n_orders=last_n_orders, 
-                limit=max_results * 2  # grab a few extras
+                customer_id=None,
+                last_n_orders=last_n_orders,
+                limit=max_results * 2,  # grab a few extras
             )
 
         # ------------------------------------------------------------------
@@ -94,10 +97,8 @@ class MenuRecommendationService:
             MenuItem.id.in_([mid for mid, _ in combined])
         )
         menu_query = apply_tenant_filter(menu_query, MenuItem)
-        
-        id_to_item: Dict[int, MenuItem] = {
-            item.id: item for item in menu_query.all()
-        }
+
+        id_to_item: Dict[int, MenuItem] = {item.id: item for item in menu_query.all()}
         results: List[Tuple[MenuItem, int]] = []
         for menu_id, score in combined:
             item = id_to_item.get(menu_id)
@@ -110,12 +111,12 @@ class MenuRecommendationService:
                     context = TenantContext.get()
                     if context:
                         self.access_logger.log_access_attempt(
-                            requested_tenant_id=context.get('restaurant_id'),
-                            actual_tenant_id=getattr(item, 'restaurant_id', None),
-                            resource_type='MenuItem',
+                            requested_tenant_id=context.get("restaurant_id"),
+                            actual_tenant_id=getattr(item, "restaurant_id", None),
+                            resource_type="MenuItem",
                             resource_id=item.id,
-                            action='read',
-                            success=False
+                            action="read",
+                            success=False,
                         )
         return results
 
@@ -132,37 +133,36 @@ class MenuRecommendationService:
         """Return menu item popularity [(menu_id, count), ...] with automatic tenant scoping"""
         # Build base query for orders with automatic tenant scoping
         order_query = self.db.query(Order.id)
-        
+
         # Apply tenant filtering based on current context
         order_query = apply_tenant_filter(order_query, Order)
-        
+
         # Get tenant context for additional filtering if needed
         context = TenantContext.get()
-        if context and context.get('location_id') is not None:
+        if context and context.get("location_id") is not None:
             # Additional location-based filtering through staff if location context exists
             order_query = order_query.join(
-                StaffMember, 
-                Order.staff_id == StaffMember.id
-            ).filter(
-                StaffMember.location_id == context.get('location_id')
-            )
-        
+                StaffMember, Order.staff_id == StaffMember.id
+            ).filter(StaffMember.location_id == context.get("location_id"))
+
         # Apply customer filter if specified
         if customer_id is not None:
             order_query = order_query.filter(Order.customer_id == customer_id)
-        
+
         # Get most recent orders
         order_query = order_query.order_by(
             desc(Order.created_at if hasattr(Order, "created_at") else Order.id)
         ).limit(last_n_orders)
-        
+
         recent_order_ids = [oid for (oid,) in order_query.all()]
         if not recent_order_ids:
             return []
 
         # Aggregate popularity from order items
         popularity = (
-            self.db.query(OrderItem.menu_item_id, func.sum(OrderItem.quantity).label("cnt"))
+            self.db.query(
+                OrderItem.menu_item_id, func.sum(OrderItem.quantity).label("cnt")
+            )
             .filter(OrderItem.order_id.in_(recent_order_ids))
             .group_by(OrderItem.menu_item_id)
             .order_by(desc("cnt"))

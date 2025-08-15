@@ -21,19 +21,22 @@ router = APIRouter(prefix="/api/payroll", tags=["Payroll"])
 
 # Include sub-routers
 router.include_router(tax_calculation_router, prefix="/tax", tags=["Payroll Tax"])
-router.include_router(configuration_router, prefix="/config", tags=["Payroll Configuration"])
+router.include_router(
+    configuration_router, prefix="/config", tags=["Payroll Configuration"]
+)
 router.include_router(payment_router, prefix="/payments", tags=["Payroll Payments"])
+
 
 @router.get("/health")
 async def payroll_health_check():
     """
     Health check endpoint for payroll module.
-    
+
     Returns:
         dict: Health status of payroll module
     """
     return {
         "status": "healthy",
         "module": "payroll",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }

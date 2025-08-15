@@ -12,7 +12,7 @@ class CloverAdapter(BasePOSAdapter):
         self.merchant_id = credentials.get("merchant_id")
         self.headers = {
             "Authorization": f"Bearer {credentials.get('access_token')}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     async def push_order(self, order_data: Dict[str, Any]) -> SyncResponse:
@@ -24,7 +24,7 @@ class CloverAdapter(BasePOSAdapter):
                     f"{self.base_url}/merchants/{self.merchant_id}/orders",
                     json=transformed_data,
                     headers=self.headers,
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 return SyncResponse(
@@ -41,7 +41,7 @@ class CloverAdapter(BasePOSAdapter):
                 response = await client.get(
                     f"{self.base_url}/merchants/{self.merchant_id}",
                     headers=self.headers,
-                    timeout=10.0
+                    timeout=10.0,
                 )
                 return response.status_code == 200
             except Exception:
@@ -50,15 +50,13 @@ class CloverAdapter(BasePOSAdapter):
     def transform_order_data(self, order: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "state": "open",
-            "orderType": {
-                "id": "dine_in"
-            },
+            "orderType": {"id": "dine_in"},
             "lineItems": [
                 {
                     "name": f"Menu Item {item['menu_item_id']}",
                     "price": int(item["price"] * 100),
                     "unitQty": item["quantity"],
-                    "note": item.get("notes", "")
+                    "note": item.get("notes", ""),
                 }
                 for item in order.get("items", [])
             ],
@@ -66,7 +64,7 @@ class CloverAdapter(BasePOSAdapter):
                 f"Aura Order #{order['id']} - "
                 f"Table {order.get('table_no', 'N/A')} - "
                 f"Staff {order['staff_id']}"
-            )
+            ),
         }
 
     async def get_vendor_orders(
@@ -83,7 +81,7 @@ class CloverAdapter(BasePOSAdapter):
                     f"{self.base_url}/merchants/{self.merchant_id}/orders",
                     headers=self.headers,
                     params=params,
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -91,22 +89,32 @@ class CloverAdapter(BasePOSAdapter):
                 return {"orders": []}
 
     # Menu synchronization method stubs - Clover integration not fully implemented
-    async def get_menu_categories(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_categories(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
-    async def get_menu_items(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_items(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
-    async def get_modifier_groups(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_modifier_groups(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
     async def get_modifiers(self, modifier_group_id: str) -> List[Dict[str, Any]]:
         return []
 
-    async def create_menu_category(self, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_menu_category(
+        self, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def update_menu_category(self, category_id: str, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_category(
+        self, category_id: str, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
     async def delete_menu_category(self, category_id: str) -> bool:
@@ -115,25 +123,35 @@ class CloverAdapter(BasePOSAdapter):
     async def create_menu_item(self, item_data: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def update_menu_item(self, item_id: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_item(
+        self, item_id: str, item_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
     async def delete_menu_item(self, item_id: str) -> bool:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def create_modifier_group(self, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier_group(
+        self, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def update_modifier_group(self, modifier_group_id: str, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier_group(
+        self, modifier_group_id: str, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
     async def delete_modifier_group(self, modifier_group_id: str) -> bool:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def create_modifier(self, modifier_group_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier(
+        self, modifier_group_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
-    async def update_modifier(self, modifier_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier(
+        self, modifier_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Clover menu sync not implemented")
 
     async def delete_modifier(self, modifier_id: str) -> bool:

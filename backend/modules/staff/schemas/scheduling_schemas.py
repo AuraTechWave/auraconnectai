@@ -3,7 +3,15 @@ from typing import List, Optional, Dict
 from datetime import date, datetime, time, timezone
 from enum import Enum
 
-from ..enums.scheduling_enums import ShiftStatus, SwapStatus, ShiftType, RecurrenceType, DayOfWeek, AvailabilityStatus, BreakType
+from ..enums.scheduling_enums import (
+    ShiftStatus,
+    SwapStatus,
+    ShiftType,
+    RecurrenceType,
+    DayOfWeek,
+    AvailabilityStatus,
+    BreakType,
+)
 
 
 class ShiftTemplateCreate(BaseModel):
@@ -19,16 +27,16 @@ class ShiftTemplateCreate(BaseModel):
     hourly_rate: Optional[float] = None
     description: Optional[str] = None
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_end_time(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
-            raise ValueError('End time must be after start time')
+        if "start_time" in values and v <= values["start_time"]:
+            raise ValueError("End time must be after start time")
         return v
 
-    @validator('max_staff')
+    @validator("max_staff")
     def validate_max_staff(cls, v, values):
-        if 'min_staff' in values and v < values['min_staff']:
-            raise ValueError('Max staff cannot be less than min staff')
+        if "min_staff" in values and v < values["min_staff"]:
+            raise ValueError("Max staff cannot be less than min staff")
         return v
 
 
@@ -78,10 +86,10 @@ class ShiftCreate(BaseModel):
     notes: Optional[str] = None
     template_id: Optional[int] = None
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_end_time(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
-            raise ValueError('End time must be after start time')
+        if "start_time" in values and v <= values["start_time"]:
+            raise ValueError("End time must be after start time")
         return v
 
 
@@ -126,10 +134,10 @@ class ShiftBreakCreate(BaseModel):
     is_paid: bool = False
     notes: Optional[str] = None
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_end_time(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
-            raise ValueError('Break end time must be after start time')
+        if "start_time" in values and v <= values["start_time"]:
+            raise ValueError("Break end time must be after start time")
         return v
 
 
@@ -156,10 +164,10 @@ class AvailabilityCreate(BaseModel):
     priority: int = Field(1, ge=1, le=5)  # 1=lowest, 5=highest
     notes: Optional[str] = None
 
-    @validator('end_time')
+    @validator("end_time")
     def validate_end_time(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
-            raise ValueError('End time must be after start time')
+        if "start_time" in values and v <= values["start_time"]:
+            raise ValueError("End time must be after start time")
         return v
 
 
@@ -190,45 +198,53 @@ class AvailabilityResponse(BaseModel):
 
 class ShiftSwapRequest(BaseModel):
     from_shift_id: int = Field(..., gt=0, description="ID of the shift to swap from")
-    to_shift_id: Optional[int] = Field(None, gt=0, description="ID of the shift to swap with")
-    to_staff_id: Optional[int] = Field(None, gt=0, description="ID of the staff to assign shift to")
+    to_shift_id: Optional[int] = Field(
+        None, gt=0, description="ID of the shift to swap with"
+    )
+    to_staff_id: Optional[int] = Field(
+        None, gt=0, description="ID of the staff to assign shift to"
+    )
     reason: str = Field(..., min_length=1, max_length=500)
-    urgency: Optional[str] = Field("normal", regex="^(urgent|normal|flexible)$", description="Urgency level of swap request")
+    urgency: Optional[str] = Field(
+        "normal",
+        regex="^(urgent|normal|flexible)$",
+        description="Urgency level of swap request",
+    )
     preferred_dates: Optional[List[date]] = None
     preferred_response_by: Optional[datetime] = None
-    
-    @validator('from_shift_id')
+
+    @validator("from_shift_id")
     def validate_from_shift_id(cls, v):
         if v <= 0:
-            raise ValueError('from_shift_id must be a positive integer')
+            raise ValueError("from_shift_id must be a positive integer")
         return v
-    
-    @validator('to_shift_id')
+
+    @validator("to_shift_id")
     def validate_to_shift_id(cls, v):
         if v is not None and v <= 0:
-            raise ValueError('to_shift_id must be a positive integer')
+            raise ValueError("to_shift_id must be a positive integer")
         return v
-    
-    @validator('to_staff_id')
+
+    @validator("to_staff_id")
     def validate_to_staff_id(cls, v):
         if v is not None and v <= 0:
-            raise ValueError('to_staff_id must be a positive integer')
+            raise ValueError("to_staff_id must be a positive integer")
         return v
-    
-    @validator('to_staff_id')
+
+    @validator("to_staff_id")
     def validate_swap_target(cls, v, values):
         # Check if both are None or both are set
-        to_shift_id = values.get('to_shift_id')
+        to_shift_id = values.get("to_shift_id")
         if v is None and to_shift_id is None:
-            raise ValueError('Must specify either to_shift_id or to_staff_id')
+            raise ValueError("Must specify either to_shift_id or to_staff_id")
         if v is not None and to_shift_id is not None:
-            raise ValueError('Cannot specify both to_shift_id and to_staff_id')
+            raise ValueError("Cannot specify both to_shift_id and to_staff_id")
         return v
-    
-    @validator('preferred_response_by')
+
+    @validator("preferred_response_by")
     def validate_response_deadline(cls, v):
         if v is not None and v <= datetime.now(timezone.utc):
-            raise ValueError('preferred_response_by must be in the future')
+            raise ValueError("preferred_response_by must be in the future")
         return v
 
 
@@ -266,7 +282,7 @@ class ShiftSwapResponse(BaseModel):
     manager_notified: bool
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -278,8 +294,8 @@ class ShiftSwapListFilter(BaseModel):
     date_from: Optional[date] = None
     date_to: Optional[date] = None
     pending_approval: Optional[bool] = None
-    
-    
+
+
 class SwapApprovalRuleCreate(BaseModel):
     rule_name: str
     is_active: bool = True
@@ -345,7 +361,7 @@ class SwapApprovalRuleResponse(BaseModel):
     approval_timeout_hours: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -377,7 +393,7 @@ class ScheduleGenerationRequest(BaseModel):
     use_flexible_shifts: bool = False
     min_shift_hours: int = 4
     max_shift_hours: int = 8
-    
+
 
 class SchedulePublishRequest(BaseModel):
     start_date: date
@@ -398,7 +414,7 @@ class SchedulePublishResponse(BaseModel):
     total_hours: float
     estimated_labor_cost: float
     notes: Optional[str]
-    
+
     class Config:
         orm_mode = True
 
@@ -412,7 +428,7 @@ class StaffingAnalytics(BaseModel):
     coverage_percentage: float
     estimated_labor_cost: float
     shifts_by_role: Dict[str, int]
-    
+
 
 class StaffScheduleSummary(BaseModel):
     staff_id: int

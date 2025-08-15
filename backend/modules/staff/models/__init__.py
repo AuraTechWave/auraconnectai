@@ -6,13 +6,13 @@ from .biometric_models import StaffBiometric
 
 __all__ = [
     "StaffMember",
-    "Role", 
+    "Role",
     "Staff",
     "StaffRole",
-    "AttendanceLog", 
+    "AttendanceLog",
     "Shift",
     "Schedule",
     "Payroll",
     "Payslip",
-    "StaffBiometric"
+    "StaffBiometric",
 ]

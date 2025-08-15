@@ -11,9 +11,7 @@ class POSPaymentProvider(ABC):
 
     @abstractmethod
     async def get_payments(
-        self,
-        order_ids: List[int] = None,
-        date_range: Tuple[datetime, datetime] = None
+        self, order_ids: List[int] = None, date_range: Tuple[datetime, datetime] = None
     ) -> List[Dict[str, Any]]:
         """
         Fetch payment records from POS system.
@@ -34,8 +32,9 @@ class POSPaymentProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_payment_by_reference(self, reference: str
-                                       ) -> Optional[Dict[str, Any]]:
+    async def get_payment_by_reference(
+        self, reference: str
+    ) -> Optional[Dict[str, Any]]:
         """Get specific payment by reference ID."""
         pass
 
@@ -55,20 +54,19 @@ class SquarePOSProvider(POSPaymentProvider):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.api_key = config.get('api_key')
-        self.environment = config.get('environment', 'sandbox')
-        self.location_id = config.get('location_id')
+        self.api_key = config.get("api_key")
+        self.environment = config.get("environment", "sandbox")
+        self.location_id = config.get("location_id")
 
     async def get_payments(
-        self,
-        order_ids: List[int] = None,
-        date_range: Tuple[datetime, datetime] = None
+        self, order_ids: List[int] = None, date_range: Tuple[datetime, datetime] = None
     ) -> List[Dict[str, Any]]:
         """Retrieve payments from Square API."""
         return []
 
-    async def get_payment_by_reference(self, reference: str
-                                       ) -> Optional[Dict[str, Any]]:
+    async def get_payment_by_reference(
+        self, reference: str
+    ) -> Optional[Dict[str, Any]]:
         """Get specific payment from Square by reference."""
         return None
 
@@ -78,7 +76,7 @@ class SquarePOSProvider(POSPaymentProvider):
 
     async def get_payment_methods(self) -> List[str]:
         """Get Square supported payment methods."""
-        return ['CARD', 'CASH', 'SQUARE_GIFT_CARD', 'BANK_ACCOUNT']
+        return ["CARD", "CASH", "SQUARE_GIFT_CARD", "BANK_ACCOUNT"]
 
 
 class MockPOSProvider(POSPaymentProvider):
@@ -88,34 +86,35 @@ class MockPOSProvider(POSPaymentProvider):
         super().__init__(config)
 
     async def get_payments(
-        self,
-        order_ids: List[int] = None,
-        date_range: Tuple[datetime, datetime] = None
+        self, order_ids: List[int] = None, date_range: Tuple[datetime, datetime] = None
     ) -> List[Dict[str, Any]]:
         """Return mock payment data for testing."""
         mock_payments = []
         if order_ids:
             for order_id in order_ids:
-                mock_payments.append({
-                    'reference': f'PAY_{order_id}_001',
-                    'order_reference': str(order_id),
-                    'amount': 25.99,
-                    'timestamp': datetime.now(),
-                    'payment_method': 'credit_card',
-                    'status': 'completed'
-                })
+                mock_payments.append(
+                    {
+                        "reference": f"PAY_{order_id}_001",
+                        "order_reference": str(order_id),
+                        "amount": 25.99,
+                        "timestamp": datetime.now(),
+                        "payment_method": "credit_card",
+                        "status": "completed",
+                    }
+                )
         return mock_payments
 
-    async def get_payment_by_reference(self, reference: str
-                                       ) -> Optional[Dict[str, Any]]:
+    async def get_payment_by_reference(
+        self, reference: str
+    ) -> Optional[Dict[str, Any]]:
         """Return mock payment data by reference."""
         return {
-            'reference': reference,
-            'order_reference': '123',
-            'amount': 25.99,
-            'timestamp': datetime.now(),
-            'payment_method': 'credit_card',
-            'status': 'completed'
+            "reference": reference,
+            "order_reference": "123",
+            "amount": 25.99,
+            "timestamp": datetime.now(),
+            "payment_method": "credit_card",
+            "status": "completed",
         }
 
     async def validate_connection(self) -> bool:
@@ -124,4 +123,4 @@ class MockPOSProvider(POSPaymentProvider):
 
     async def get_payment_methods(self) -> List[str]:
         """Get mock payment methods."""
-        return ['credit_card', 'debit_card', 'cash', 'gift_card']
+        return ["credit_card", "debit_card", "cash", "gift_card"]

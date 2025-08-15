@@ -11,6 +11,7 @@ from enum import Enum
 
 class QueueType(str, Enum):
     """Types of order queues"""
+
     KITCHEN = "kitchen"
     BAR = "bar"
     DELIVERY = "delivery"
@@ -23,6 +24,7 @@ class QueueType(str, Enum):
 
 class QueueStatus(str, Enum):
     """Queue operational status"""
+
     ACTIVE = "active"
     PAUSED = "paused"
     CLOSED = "closed"
@@ -31,6 +33,7 @@ class QueueStatus(str, Enum):
 
 class QueueItemStatus(str, Enum):
     """Status of items in queue"""
+
     QUEUED = "queued"
     IN_PREPARATION = "in_preparation"
     READY = "ready"
@@ -43,6 +46,7 @@ class QueueItemStatus(str, Enum):
 # Queue Management Schemas
 class QueueBase(BaseModel):
     """Base schema for queues"""
+
     name: str = Field(..., min_length=1, max_length=100)
     queue_type: QueueType
     display_name: Optional[str] = None
@@ -63,11 +67,13 @@ class QueueBase(BaseModel):
 
 class QueueCreate(QueueBase):
     """Schema for creating a queue"""
+
     pass
 
 
 class QueueUpdate(BaseModel):
     """Schema for updating a queue"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     display_name: Optional[str] = None
     description: Optional[str] = None
@@ -86,6 +92,7 @@ class QueueUpdate(BaseModel):
 
 class QueueResponse(QueueBase):
     """Schema for queue response"""
+
     id: int
     status: QueueStatus
     current_size: int
@@ -101,6 +108,7 @@ class QueueResponse(QueueBase):
 # Queue Item Schemas
 class QueueItemBase(BaseModel):
     """Base schema for queue items"""
+
     order_id: int
     priority: int = Field(0, ge=-100, le=100)
     is_expedited: bool = False
@@ -111,6 +119,7 @@ class QueueItemBase(BaseModel):
 
 class QueueItemCreate(QueueItemBase):
     """Schema for adding item to queue"""
+
     queue_id: int
     estimated_ready_time: Optional[datetime] = None
     hold_until: Optional[datetime] = None
@@ -121,6 +130,7 @@ class QueueItemCreate(QueueItemBase):
 
 class QueueItemUpdate(BaseModel):
     """Schema for updating queue item"""
+
     priority: Optional[int] = Field(None, ge=-100, le=100)
     is_expedited: Optional[bool] = None
     status: Optional[QueueItemStatus] = None
@@ -135,6 +145,7 @@ class QueueItemUpdate(BaseModel):
 
 class QueueItemResponse(QueueItemBase):
     """Schema for queue item response"""
+
     id: int
     queue_id: int
     sequence_number: int
@@ -161,6 +172,7 @@ class QueueItemResponse(QueueItemBase):
 # Queue Operations Schemas
 class MoveItemRequest(BaseModel):
     """Request to move item in queue"""
+
     item_id: int
     new_position: int = Field(..., ge=1)
     reason: Optional[str] = None
@@ -168,12 +180,14 @@ class MoveItemRequest(BaseModel):
 
 class BulkMoveRequest(BaseModel):
     """Request to move multiple items"""
+
     moves: List[Dict[str, int]]  # [{"item_id": 1, "new_position": 5}, ...]
     reason: Optional[str] = None
 
 
 class TransferItemRequest(BaseModel):
     """Request to transfer item between queues"""
+
     item_id: int
     target_queue_id: int
     maintain_priority: bool = True
@@ -182,6 +196,7 @@ class TransferItemRequest(BaseModel):
 
 class ExpediteItemRequest(BaseModel):
     """Request to expedite an item"""
+
     item_id: int
     priority_boost: int = Field(10, ge=1, le=50)
     move_to_front: bool = False
@@ -190,20 +205,22 @@ class ExpediteItemRequest(BaseModel):
 
 class HoldItemRequest(BaseModel):
     """Request to hold an item"""
+
     item_id: int
     hold_until: Optional[datetime] = None
     hold_minutes: Optional[int] = Field(None, ge=1, le=1440)  # Max 24 hours
     reason: str
 
-    @validator('hold_until', always=True)
+    @validator("hold_until", always=True)
     def validate_hold(cls, v, values):
-        if v is None and values.get('hold_minutes') is None:
+        if v is None and values.get("hold_minutes") is None:
             raise ValueError("Either hold_until or hold_minutes must be provided")
         return v
 
 
 class BatchStatusUpdateRequest(BaseModel):
     """Request to update status of multiple items"""
+
     item_ids: List[int]
     new_status: QueueItemStatus
     reason: Optional[str] = None
@@ -212,6 +229,7 @@ class BatchStatusUpdateRequest(BaseModel):
 # Queue Analytics Schemas
 class QueueMetricsRequest(BaseModel):
     """Request for queue metrics"""
+
     queue_id: Optional[int] = None
     start_date: datetime
     end_date: datetime
@@ -220,6 +238,7 @@ class QueueMetricsRequest(BaseModel):
 
 class QueueMetricsResponse(BaseModel):
     """Queue performance metrics"""
+
     queue_id: int
     queue_name: str
     period: Dict[str, datetime]
@@ -231,6 +250,7 @@ class QueueMetricsResponse(BaseModel):
 
 class QueueStatusSummary(BaseModel):
     """Current queue status summary"""
+
     queue_id: int
     queue_name: str
     status: QueueStatus
@@ -248,6 +268,7 @@ class QueueStatusSummary(BaseModel):
 # Sequence Rule Schemas
 class SequenceRuleBase(BaseModel):
     """Base schema for sequence rules"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     is_active: bool = True
@@ -261,11 +282,13 @@ class SequenceRuleBase(BaseModel):
 
 class SequenceRuleCreate(SequenceRuleBase):
     """Schema for creating sequence rule"""
+
     queue_id: int
 
 
 class SequenceRuleUpdate(BaseModel):
     """Schema for updating sequence rule"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     is_active: Optional[bool] = None
@@ -279,6 +302,7 @@ class SequenceRuleUpdate(BaseModel):
 
 class SequenceRuleResponse(SequenceRuleBase):
     """Schema for sequence rule response"""
+
     id: int
     queue_id: int
     created_at: datetime
@@ -291,6 +315,7 @@ class SequenceRuleResponse(SequenceRuleBase):
 # Display Configuration Schemas
 class DisplayConfigBase(BaseModel):
     """Base schema for display configuration"""
+
     name: str = Field(..., min_length=1, max_length=100)
     display_type: str = Field(..., regex="^(customer|kitchen|pickup)$")
     queues_shown: List[int]
@@ -313,11 +338,13 @@ class DisplayConfigBase(BaseModel):
 
 class DisplayConfigCreate(DisplayConfigBase):
     """Schema for creating display config"""
+
     pass
 
 
 class DisplayConfigResponse(DisplayConfigBase):
     """Schema for display config response"""
+
     id: int
     ip_address: Optional[str]
     last_active: Optional[datetime]
@@ -331,6 +358,7 @@ class DisplayConfigResponse(DisplayConfigBase):
 # WebSocket Messages
 class QueueUpdateMessage(BaseModel):
     """WebSocket message for queue updates"""
+
     event_type: str  # item_added, item_updated, item_removed, queue_updated
     queue_id: int
     item_id: Optional[int] = None
@@ -340,6 +368,7 @@ class QueueUpdateMessage(BaseModel):
 
 class QueueSubscriptionRequest(BaseModel):
     """Request to subscribe to queue updates"""
+
     queue_ids: List[int]
     event_types: List[str] = ["all"]
     include_metrics: bool = False

@@ -32,17 +32,23 @@ class BasePOSAdapter(ABC):
 
     # Menu synchronization methods
     @abstractmethod
-    async def get_menu_categories(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_categories(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         """Get menu categories from POS system"""
         pass
 
     @abstractmethod
-    async def get_menu_items(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_items(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         """Get menu items from POS system"""
         pass
 
     @abstractmethod
-    async def get_modifier_groups(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_modifier_groups(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         """Get modifier groups from POS system"""
         pass
 
@@ -52,12 +58,16 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def create_menu_category(self, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_menu_category(
+        self, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create a new menu category in POS system"""
         pass
 
     @abstractmethod
-    async def update_menu_category(self, category_id: str, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_category(
+        self, category_id: str, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update an existing menu category in POS system"""
         pass
 
@@ -72,7 +82,9 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def update_menu_item(self, item_id: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_item(
+        self, item_id: str, item_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update an existing menu item in POS system"""
         pass
 
@@ -82,12 +94,16 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def create_modifier_group(self, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier_group(
+        self, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create a new modifier group in POS system"""
         pass
 
     @abstractmethod
-    async def update_modifier_group(self, modifier_group_id: str, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier_group(
+        self, modifier_group_id: str, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update an existing modifier group in POS system"""
         pass
 
@@ -97,12 +113,16 @@ class BasePOSAdapter(ABC):
         pass
 
     @abstractmethod
-    async def create_modifier(self, modifier_group_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier(
+        self, modifier_group_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Create a new modifier in POS system"""
         pass
 
     @abstractmethod
-    async def update_modifier(self, modifier_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier(
+        self, modifier_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update an existing modifier in POS system"""
         pass
 
@@ -111,14 +131,16 @@ class BasePOSAdapter(ABC):
         """Delete a modifier from POS system"""
         pass
 
-    def transform_category_to_pos(self, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_category_to_pos(
+        self, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform AuraConnect category format to POS-specific format"""
         # Default implementation - can be overridden by specific adapters
         return {
             "name": category_data.get("name", ""),
             "description": category_data.get("description", ""),
             "display_order": category_data.get("display_order", 0),
-            "is_active": category_data.get("is_active", True)
+            "is_active": category_data.get("is_active", True),
         }
 
     def transform_item_to_pos(self, item_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -131,10 +153,12 @@ class BasePOSAdapter(ABC):
             "category_id": item_data.get("category_id"),
             "sku": item_data.get("sku", ""),
             "is_active": item_data.get("is_active", True),
-            "is_available": item_data.get("is_available", True)
+            "is_available": item_data.get("is_available", True),
         }
 
-    def transform_modifier_group_to_pos(self, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_modifier_group_to_pos(
+        self, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform AuraConnect modifier group format to POS-specific format"""
         # Default implementation - can be overridden by specific adapters
         return {
@@ -143,10 +167,12 @@ class BasePOSAdapter(ABC):
             "selection_type": modifier_group_data.get("selection_type", "single"),
             "min_selections": modifier_group_data.get("min_selections", 0),
             "max_selections": modifier_group_data.get("max_selections"),
-            "is_required": modifier_group_data.get("is_required", False)
+            "is_required": modifier_group_data.get("is_required", False),
         }
 
-    def transform_modifier_to_pos(self, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_modifier_to_pos(
+        self, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform AuraConnect modifier format to POS-specific format"""
         # Default implementation - can be overridden by specific adapters
         return {
@@ -155,10 +181,12 @@ class BasePOSAdapter(ABC):
             "price_adjustment": modifier_data.get("price_adjustment", 0.0),
             "price_type": modifier_data.get("price_type", "fixed"),
             "is_active": modifier_data.get("is_active", True),
-            "is_available": modifier_data.get("is_available", True)
+            "is_available": modifier_data.get("is_available", True),
         }
 
-    def transform_category_from_pos(self, pos_category_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_category_from_pos(
+        self, pos_category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform POS category format to AuraConnect format"""
         # Default implementation - should be overridden by specific adapters
         return pos_category_data
@@ -168,12 +196,16 @@ class BasePOSAdapter(ABC):
         # Default implementation - should be overridden by specific adapters
         return pos_item_data
 
-    def transform_modifier_group_from_pos(self, pos_modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_modifier_group_from_pos(
+        self, pos_modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform POS modifier group format to AuraConnect format"""
         # Default implementation - should be overridden by specific adapters
         return pos_modifier_group_data
 
-    def transform_modifier_from_pos(self, pos_modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_modifier_from_pos(
+        self, pos_modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Transform POS modifier format to AuraConnect format"""
         # Default implementation - should be overridden by specific adapters
         return pos_modifier_data

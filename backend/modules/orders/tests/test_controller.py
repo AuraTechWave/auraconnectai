@@ -1,7 +1,9 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from modules.orders.controllers.order_controller import (
-    update_order, get_order_by_id, list_orders
+    update_order,
+    get_order_by_id,
+    list_orders,
 )
 from modules.orders.schemas.order_schemas import OrderUpdate, OrderOut
 from modules.orders.enums.order_enums import OrderStatus
@@ -11,10 +13,10 @@ from datetime import datetime
 class TestOrderController:
 
     @pytest.mark.asyncio
-    @patch('backend.modules.orders.controllers.'
-           'order_controller.update_order_service')
-    async def test_update_order_delegates_to_service(self, mock_service,
-                                                     db_session):
+    @patch(
+        "backend.modules.orders.controllers." "order_controller.update_order_service"
+    )
+    async def test_update_order_delegates_to_service(self, mock_service, db_session):
         """Test that update_order properly delegates to service layer."""
         mock_service.return_value = {"message": "success", "data": {"id": 1}}
         order_data = OrderUpdate(status=OrderStatus.IN_PROGRESS)
@@ -25,10 +27,8 @@ class TestOrderController:
         assert result["message"] == "success"
 
     @pytest.mark.asyncio
-    @patch('backend.modules.orders.controllers.'
-           'order_controller.get_order_service')
-    async def test_get_order_by_id_delegates_to_service(self, mock_service,
-                                                        db_session):
+    @patch("backend.modules.orders.controllers." "order_controller.get_order_service")
+    async def test_get_order_by_id_delegates_to_service(self, mock_service, db_session):
         """Test that get_order_by_id properly delegates to service."""
         mock_order = AsyncMock()
         mock_order.id = 1
@@ -40,10 +40,8 @@ class TestOrderController:
         assert result.id == 1
 
     @pytest.mark.asyncio
-    @patch('backend.modules.orders.controllers.'
-           'order_controller.get_orders_service')
-    async def test_list_orders_delegates_to_service(self, mock_service,
-                                                    db_session):
+    @patch("backend.modules.orders.controllers." "order_controller.get_orders_service")
+    async def test_list_orders_delegates_to_service(self, mock_service, db_session):
         """Test that list_orders properly delegates to service layer."""
         mock_orders = [AsyncMock(), AsyncMock()]
         mock_orders[0].id = 1
@@ -66,8 +64,7 @@ class TestOrderController:
 
         mock_service.return_value = mock_orders
 
-        result = await list_orders(db_session, status="pending",
-                                   staff_id=1, limit=10)
+        result = await list_orders(db_session, status="pending", staff_id=1, limit=10)
 
         mock_service.assert_called_once_with(
             db_session, "pending", 1, None, 10, 0, False
@@ -76,10 +73,8 @@ class TestOrderController:
         assert all(isinstance(order, OrderOut) for order in result)
 
     @pytest.mark.asyncio
-    @patch('backend.modules.orders.controllers.'
-           'order_controller.get_orders_service')
-    async def test_list_orders_with_all_parameters(self, mock_service,
-                                                   db_session):
+    @patch("backend.modules.orders.controllers." "order_controller.get_orders_service")
+    async def test_list_orders_with_all_parameters(self, mock_service, db_session):
         """Test list_orders with all optional parameters."""
         mock_service.return_value = []
 
@@ -90,7 +85,7 @@ class TestOrderController:
             table_no=5,
             limit=50,
             offset=10,
-            include_items=True
+            include_items=True,
         )
 
         mock_service.assert_called_once_with(

@@ -5,7 +5,13 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from enum import Enum
 
-from .inventory_models import AlertStatus, AlertPriority, AdjustmentType, VendorStatus, WasteReason
+from .inventory_models import (
+    AlertStatus,
+    AlertPriority,
+    AdjustmentType,
+    VendorStatus,
+    WasteReason,
+)
 
 
 # Vendor schemas
@@ -95,10 +101,10 @@ class InventoryBase(BaseModel):
     alert_threshold_percentage: Optional[float] = Field(None, ge=0, le=100)
     is_active: bool = True
 
-    @validator('max_quantity')
+    @validator("max_quantity")
     def validate_max_quantity(cls, v, values):
-        if v is not None and 'threshold' in values and v < values['threshold']:
-            raise ValueError('max_quantity must be >= threshold')
+        if v is not None and "threshold" in values and v < values["threshold"]:
+            raise ValueError("max_quantity must be >= threshold")
         return v
 
 
@@ -151,8 +157,8 @@ class Inventory(InventoryBase):
 
 class InventoryWithDetails(Inventory):
     vendor: Optional[Vendor] = None
-    alerts: List['InventoryAlert'] = []
-    recent_adjustments: List['InventoryAdjustment'] = []
+    alerts: List["InventoryAlert"] = []
+    recent_adjustments: List["InventoryAdjustment"] = []
 
 
 # Alert schemas
@@ -206,15 +212,21 @@ class InventoryAdjustmentBase(BaseModel):
     expiration_date: Optional[datetime] = None
     notes: Optional[str] = None
     location: Optional[str] = Field(None, max_length=100)
-    
-    @validator('quantity_adjusted')
+
+    @validator("quantity_adjusted")
     def validate_quantity_adjusted(cls, v, values):
-        if 'adjustment_type' in values:
-            adj_type = values['adjustment_type']
+        if "adjustment_type" in values:
+            adj_type = values["adjustment_type"]
             # For waste, expired, damaged - quantity must be positive (we're removing from inventory)
-            if adj_type in [AdjustmentType.WASTE, AdjustmentType.EXPIRED, AdjustmentType.DAMAGED]:
+            if adj_type in [
+                AdjustmentType.WASTE,
+                AdjustmentType.EXPIRED,
+                AdjustmentType.DAMAGED,
+            ]:
                 if v <= 0:
-                    raise ValueError(f'Quantity for {adj_type} must be positive (amount being removed)')
+                    raise ValueError(
+                        f"Quantity for {adj_type} must be positive (amount being removed)"
+                    )
         return v
 
 
@@ -248,33 +260,45 @@ class InventoryAdjustmentWithItem(InventoryAdjustment):
 # Waste tracking specific schemas
 class WasteEventCreate(BaseModel):
     """Schema for creating a waste event with enhanced validation"""
+
     inventory_id: int
     quantity: float = Field(..., gt=0, description="Quantity wasted (must be positive)")
     waste_reason: WasteReason = Field(..., description="Predefined waste reason")
-    custom_reason: Optional[str] = Field(None, min_length=10, max_length=500, 
-                                         description="Additional details if waste_reason is OTHER")
+    custom_reason: Optional[str] = Field(
+        None,
+        min_length=10,
+        max_length=500,
+        description="Additional details if waste_reason is OTHER",
+    )
     batch_number: Optional[str] = Field(None, max_length=100)
     expiration_date: Optional[datetime] = None
     location: Optional[str] = Field(None, max_length=100)
-    temperature_at_waste: Optional[float] = Field(None, description="Temperature when waste occurred (°F)")
-    witnessed_by: Optional[str] = Field(None, max_length=100, description="Staff member who witnessed the waste")
-    
-    @validator('custom_reason')
+    temperature_at_waste: Optional[float] = Field(
+        None, description="Temperature when waste occurred (°F)"
+    )
+    witnessed_by: Optional[str] = Field(
+        None, max_length=100, description="Staff member who witnessed the waste"
+    )
+
+    @validator("custom_reason")
     def validate_custom_reason(cls, v, values):
-        if 'waste_reason' in values and values['waste_reason'] == WasteReason.OTHER:
+        if "waste_reason" in values and values["waste_reason"] == WasteReason.OTHER:
             if not v or len(v.strip()) < 10:
-                raise ValueError('Custom reason is required when waste_reason is OTHER (min 10 characters)')
+                raise ValueError(
+                    "Custom reason is required when waste_reason is OTHER (min 10 characters)"
+                )
         return v
-    
-    @validator('quantity')
+
+    @validator("quantity")
     def validate_positive_quantity(cls, v):
         if v <= 0:
-            raise ValueError('Waste quantity must be greater than zero')
+            raise ValueError("Waste quantity must be greater than zero")
         return v
 
 
 class WasteEventResponse(BaseModel):
     """Response schema for waste events"""
+
     id: int
     inventory_id: int
     inventory_name: str
@@ -288,7 +312,7 @@ class WasteEventResponse(BaseModel):
     created_at: datetime
     location: Optional[str]
     witnessed_by: Optional[str]
-    
+
     class Config:
         from_attributes = True
 
@@ -485,8 +509,11 @@ class InventorySearchParams(BaseModel):
     active_only: Optional[bool] = True
     limit: int = Field(default=50, ge=1, le=500)
     offset: int = Field(default=0, ge=0)
-    sort_by: Optional[str] = Field(default="item_name", pattern=r'^(item_name|quantity|threshold|category|created_at)$')
-    sort_order: Optional[str] = Field(default="asc", pattern=r'^(asc|desc)$')
+    sort_by: Optional[str] = Field(
+        default="item_name",
+        pattern=r"^(item_name|quantity|threshold|category|created_at)$",
+    )
+    sort_order: Optional[str] = Field(default="asc", pattern=r"^(asc|desc)$")
 
 
 class AlertSearchParams(BaseModel):
@@ -518,7 +545,7 @@ class UsageReportParams(BaseModel):
     inventory_id: Optional[int] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    group_by: Optional[str] = Field(default="day", pattern=r'^(day|week|month)$')
+    group_by: Optional[str] = Field(default="day", pattern=r"^(day|week|month)$")
 
 
 # Bulk operation schemas

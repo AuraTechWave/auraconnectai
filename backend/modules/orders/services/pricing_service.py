@@ -7,8 +7,12 @@ import logging
 
 from ..models.order_models import Order
 from ..schemas.dynamic_pricing_schemas import (
-    DynamicPricingRequest, DynamicPricingResponse, BulkPricingRequest,
-    BulkPricingResponse, PricingContext, ApplyDynamicPricingRequest
+    DynamicPricingRequest,
+    DynamicPricingResponse,
+    BulkPricingRequest,
+    BulkPricingResponse,
+    PricingContext,
+    ApplyDynamicPricingRequest,
 )
 from ..enums.order_enums import PricingType
 from .ai_recommendation_service import recommendation_service
@@ -22,26 +26,30 @@ class PricingService:
         self.fallback_enabled = True
 
     async def calculate_dynamic_prices(
-        self,
-        request: BulkPricingRequest
+        self, request: BulkPricingRequest
     ) -> BulkPricingResponse:
         try:
             pricing_results = []
-            total_original = Decimal('0.00')
-            total_calculated = Decimal('0.00')
+            total_original = Decimal("0.00")
+            total_calculated = Decimal("0.00")
 
             for item_request in request.items:
                 if request.context:
                     item_request.context = request.context
 
                 try:
-                    pricing_result = await recommendation_service.\
-                        calculate_dynamic_price(item_request)
+                    pricing_result = (
+                        await recommendation_service.calculate_dynamic_price(
+                            item_request
+                        )
+                    )
                     pricing_results.append(pricing_result)
-                    total_original += (pricing_result.original_price *
-                                       item_request.quantity)
-                    total_calculated += (pricing_result.calculated_price *
-                                         item_request.quantity)
+                    total_original += (
+                        pricing_result.original_price * item_request.quantity
+                    )
+                    total_calculated += (
+                        pricing_result.calculated_price * item_request.quantity
+                    )
 
                 except Exception as e:
                     logger.warning(
@@ -49,19 +57,19 @@ class PricingService:
                         f"{item_request.menu_item_id}: {str(e)}"
                     )
                     if self.fallback_enabled:
-                        fallback_result = self._create_fallback_pricing(
-                            item_request
-                        )
+                        fallback_result = self._create_fallback_pricing(item_request)
                         pricing_results.append(fallback_result)
-                        total_original += (fallback_result.original_price *
-                                           item_request.quantity)
-                        total_calculated += (fallback_result.calculated_price *
-                                             item_request.quantity)
+                        total_original += (
+                            fallback_result.original_price * item_request.quantity
+                        )
+                        total_calculated += (
+                            fallback_result.calculated_price * item_request.quantity
+                        )
                     else:
                         raise HTTPException(
                             status_code=503,
                             detail=f"Pricing service unavailable for item "
-                                   f"{item_request.menu_item_id}"
+                            f"{item_request.menu_item_id}",
                         )
 
             total_savings = total_original - total_calculated
@@ -70,7 +78,7 @@ class PricingService:
                 pricing_results=pricing_results,
                 total_original_price=total_original,
                 total_calculated_price=total_calculated,
-                total_savings=total_savings
+                total_savings=total_savings,
             )
 
         except HTTPException:
@@ -78,28 +86,23 @@ class PricingService:
         except Exception as e:
             logger.error(f"Error in bulk pricing calculation: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to calculate bulk pricing"
+                status_code=500, detail="Failed to calculate bulk pricing"
             )
 
     async def apply_dynamic_pricing_to_order(
-        self,
-        request: ApplyDynamicPricingRequest
+        self, request: ApplyDynamicPricingRequest
     ) -> Dict[str, Any]:
         try:
-            order = self.db.query(Order).filter(
-                Order.id == request.order_id
-            ).first()
+            order = self.db.query(Order).filter(Order.id == request.order_id).first()
             if not order:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Order with id {request.order_id} not found"
+                    detail=f"Order with id {request.order_id} not found",
                 )
 
             if not order.order_items:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Order has no items to price"
+                    status_code=400, detail="Order has no items to price"
                 )
 
             context = self._build_pricing_context()
@@ -110,23 +113,23 @@ class PricingService:
                         menu_item_id=item.menu_item_id,
                         quantity=item.quantity,
                         base_price=item.price,
-                        context=context
+                        context=context,
                     )
                     for item in order.order_items
                 ],
-                context=context
+                context=context,
             )
 
-            pricing_response = await self.calculate_dynamic_prices(
-                bulk_request
-            )
+            pricing_response = await self.calculate_dynamic_prices(bulk_request)
 
             updated_items = []
             for i, item in enumerate(order.order_items):
                 pricing_result = pricing_response.pricing_results[i]
 
-                if (request.force_recalculate or
-                        item.pricing_type != PricingType.DYNAMIC.value):
+                if (
+                    request.force_recalculate
+                    or item.pricing_type != PricingType.DYNAMIC.value
+                ):
                     item.original_price = item.price
                     item.price = pricing_result.calculated_price
                     item.pricing_type = PricingType.DYNAMIC.value
@@ -134,21 +137,19 @@ class PricingService:
 
                     if pricing_result.adjustments:
                         primary_adjustment = pricing_result.adjustments[0]
-                        item.adjustment_reason = (
-                            primary_adjustment.adjustment_type
-                        )
+                        item.adjustment_reason = primary_adjustment.adjustment_type
 
-                    updated_items.append({
-                        "item_id": item.id,
-                        "menu_item_id": item.menu_item_id,
-                        "original_price": float(
-                            item.original_price or item.price
-                        ),
-                        "new_price": float(item.price),
-                        "adjustments": [
-                            adj.dict() for adj in pricing_result.adjustments
-                        ]
-                    })
+                    updated_items.append(
+                        {
+                            "item_id": item.id,
+                            "menu_item_id": item.menu_item_id,
+                            "original_price": float(item.original_price or item.price),
+                            "new_price": float(item.price),
+                            "adjustments": [
+                                adj.dict() for adj in pricing_result.adjustments
+                            ],
+                        }
+                    )
 
             self.db.commit()
 
@@ -160,13 +161,11 @@ class PricingService:
                 "message": "Dynamic pricing applied successfully",
                 "order_id": request.order_id,
                 "updated_items": updated_items,
-                "total_original_price": float(
-                    pricing_response.total_original_price
-                ),
+                "total_original_price": float(pricing_response.total_original_price),
                 "total_calculated_price": float(
                     pricing_response.total_calculated_price
                 ),
-                "total_savings": float(pricing_response.total_savings)
+                "total_savings": float(pricing_response.total_savings),
             }
 
         except HTTPException:
@@ -178,8 +177,7 @@ class PricingService:
             )
             self.db.rollback()
             raise HTTPException(
-                status_code=500,
-                detail="Failed to apply dynamic pricing to order"
+                status_code=500, detail="Failed to apply dynamic pricing to order"
             )
 
     def _create_fallback_pricing(
@@ -192,7 +190,7 @@ class PricingService:
             adjustments=[],
             confidence_score=1.0,
             pricing_source="static_fallback",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
 
     def _build_pricing_context(self) -> PricingContext:
@@ -219,14 +217,14 @@ class PricingService:
             time_of_day=time_of_day,
             day_of_week=current_day,
             demand_level=demand_level,
-            inventory_level=75.0
+            inventory_level=75.0,
         )
 
     def _log_pricing_decision(
         self,
         order_id: int,
         pricing_response: BulkPricingResponse,
-        updated_items: List[Dict[str, Any]]
+        updated_items: List[Dict[str, Any]],
     ):
         logger.info(
             f"Dynamic pricing applied to order {order_id}: "

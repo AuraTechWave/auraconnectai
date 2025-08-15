@@ -14,16 +14,16 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 def custom_openapi(app: FastAPI) -> Dict[str, Any]:
     """
     Generate custom OpenAPI schema with enhanced documentation.
-    
+
     Args:
         app: FastAPI application instance
-        
+
     Returns:
         OpenAPI schema dictionary
     """
     if app.openapi_schema:
         return app.openapi_schema
-    
+
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
@@ -31,33 +31,36 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
         routes=app.routes,
         servers=[
             {"url": "http://localhost:8000", "description": "Local development server"},
-            {"url": "https://api-staging.auraconnect.ai", "description": "Staging server"},
-            {"url": "https://api.auraconnect.ai", "description": "Production server"}
+            {
+                "url": "https://api-staging.auraconnect.ai",
+                "description": "Staging server",
+            },
+            {"url": "https://api.auraconnect.ai", "description": "Production server"},
         ],
     )
-    
+
     # Add enhanced documentation
     openapi_schema["info"]["x-logo"] = {
         "url": "https://auraconnect.ai/assets/logo.png",
-        "altText": "AuraConnect Logo"
+        "altText": "AuraConnect Logo",
     }
-    
+
     # Add security schemes
     openapi_schema["components"]["securitySchemes"] = {
         "bearerAuth": {
             "type": "http",
             "scheme": "bearer",
             "bearerFormat": "JWT",
-            "description": "JWT authentication token obtained from /auth/login endpoint"
+            "description": "JWT authentication token obtained from /auth/login endpoint",
         },
         "apiKey": {
             "type": "apiKey",
             "in": "header",
             "name": "X-API-Key",
-            "description": "API key for server-to-server authentication"
-        }
+            "description": "API key for server-to-server authentication",
+        },
     }
-    
+
     # Add common response schemas
     openapi_schema["components"]["schemas"]["ErrorResponse"] = {
         "type": "object",
@@ -73,19 +76,19 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
                             "type": "object",
                             "properties": {
                                 "field": {"type": "string"},
-                                "message": {"type": "string"}
-                            }
-                        }
+                                "message": {"type": "string"},
+                            },
+                        },
                     },
                     "request_id": {"type": "string", "example": "req_xyz789"},
-                    "timestamp": {"type": "string", "format": "date-time"}
+                    "timestamp": {"type": "string", "format": "date-time"},
                 },
-                "required": ["code", "message"]
+                "required": ["code", "message"],
             }
         },
-        "required": ["error"]
+        "required": ["error"],
     }
-    
+
     openapi_schema["components"]["schemas"]["PaginationMeta"] = {
         "type": "object",
         "properties": {
@@ -94,10 +97,10 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
             "total_pages": {"type": "integer", "example": 5},
             "total_count": {"type": "integer", "example": 98},
             "has_next": {"type": "boolean", "example": True},
-            "has_previous": {"type": "boolean", "example": False}
-        }
+            "has_previous": {"type": "boolean", "example": False},
+        },
     }
-    
+
     # Add common parameters
     openapi_schema["components"]["parameters"] = {
         "PageParam": {
@@ -105,56 +108,38 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
             "in": "query",
             "description": "Page number for pagination",
             "required": False,
-            "schema": {
-                "type": "integer",
-                "default": 1,
-                "minimum": 1
-            }
+            "schema": {"type": "integer", "default": 1, "minimum": 1},
         },
         "PageSizeParam": {
             "name": "page_size",
             "in": "query",
             "description": "Number of items per page",
             "required": False,
-            "schema": {
-                "type": "integer",
-                "default": 20,
-                "minimum": 1,
-                "maximum": 100
-            }
+            "schema": {"type": "integer", "default": 20, "minimum": 1, "maximum": 100},
         },
         "SearchParam": {
             "name": "search",
             "in": "query",
             "description": "Search query for filtering results",
             "required": False,
-            "schema": {
-                "type": "string"
-            }
+            "schema": {"type": "string"},
         },
         "SortByParam": {
             "name": "sort_by",
             "in": "query",
             "description": "Field to sort results by",
             "required": False,
-            "schema": {
-                "type": "string",
-                "default": "created_at"
-            }
+            "schema": {"type": "string", "default": "created_at"},
         },
         "SortOrderParam": {
             "name": "sort_order",
             "in": "query",
             "description": "Sort order direction",
             "required": False,
-            "schema": {
-                "type": "string",
-                "enum": ["asc", "desc"],
-                "default": "desc"
-            }
-        }
+            "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"},
+        },
     }
-    
+
     # Add tags with descriptions
     openapi_schema["tags"] = [
         {
@@ -162,83 +147,83 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
             "description": "Authentication and authorization endpoints",
             "externalDocs": {
                 "description": "Authentication guide",
-                "url": "https://docs.auraconnect.ai/auth"
-            }
+                "url": "https://docs.auraconnect.ai/auth",
+            },
         },
         {
             "name": "Staff Management",
             "description": "Employee management, scheduling, and attendance tracking",
             "externalDocs": {
                 "description": "Staff management guide",
-                "url": "https://docs.auraconnect.ai/staff"
-            }
+                "url": "https://docs.auraconnect.ai/staff",
+            },
         },
         {
             "name": "Orders",
             "description": "Order creation, management, and tracking",
             "externalDocs": {
                 "description": "Orders API reference",
-                "url": "https://docs.auraconnect.ai/api/orders"
-            }
+                "url": "https://docs.auraconnect.ai/api/orders",
+            },
         },
         {
             "name": "Menu Management",
             "description": "Menu items, categories, modifiers, and recipes",
             "externalDocs": {
                 "description": "Menu management guide",
-                "url": "https://docs.auraconnect.ai/menu"
-            }
+                "url": "https://docs.auraconnect.ai/menu",
+            },
         },
         {
             "name": "Inventory",
             "description": "Inventory tracking, stock management, and vendor integration",
             "externalDocs": {
                 "description": "Inventory guide",
-                "url": "https://docs.auraconnect.ai/inventory"
-            }
+                "url": "https://docs.auraconnect.ai/inventory",
+            },
         },
         {
             "name": "Payroll",
             "description": "Payroll processing, tax calculations, and payment management",
             "externalDocs": {
                 "description": "Payroll documentation",
-                "url": "https://docs.auraconnect.ai/payroll"
-            }
+                "url": "https://docs.auraconnect.ai/payroll",
+            },
         },
         {
             "name": "Analytics",
             "description": "Business analytics, reports, and AI-powered insights",
             "externalDocs": {
                 "description": "Analytics guide",
-                "url": "https://docs.auraconnect.ai/analytics"
-            }
+                "url": "https://docs.auraconnect.ai/analytics",
+            },
         },
         {
             "name": "Customer Management",
             "description": "Customer profiles, loyalty programs, and feedback",
             "externalDocs": {
                 "description": "Customer management guide",
-                "url": "https://docs.auraconnect.ai/customers"
-            }
+                "url": "https://docs.auraconnect.ai/customers",
+            },
         },
         {
             "name": "POS Integration",
             "description": "Point of Sale system integrations and synchronization",
             "externalDocs": {
                 "description": "POS integration guide",
-                "url": "https://docs.auraconnect.ai/pos"
-            }
+                "url": "https://docs.auraconnect.ai/pos",
+            },
         },
         {
             "name": "Payments",
             "description": "Payment processing, refunds, and reconciliation",
             "externalDocs": {
                 "description": "Payments guide",
-                "url": "https://docs.auraconnect.ai/payments"
-            }
-        }
+                "url": "https://docs.auraconnect.ai/payments",
+            },
+        },
     ]
-    
+
     # Add webhook documentation
     openapi_schema["webhooks"] = {
         "orderCreated": {
@@ -251,24 +236,28 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "event": {"type": "string", "example": "order.created"},
-                                    "timestamp": {"type": "string", "format": "date-time"},
+                                    "event": {
+                                        "type": "string",
+                                        "example": "order.created",
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                    },
                                     "data": {
                                         "type": "object",
                                         "properties": {
                                             "id": {"type": "integer"},
                                             "order_number": {"type": "string"},
-                                            "total_amount": {"type": "string"}
-                                        }
-                                    }
-                                }
+                                            "total_amount": {"type": "string"},
+                                        },
+                                    },
+                                },
                             }
                         }
                     }
                 },
-                "responses": {
-                    "200": {"description": "Webhook processed successfully"}
-                }
+                "responses": {"200": {"description": "Webhook processed successfully"}},
             }
         },
         "paymentCompleted": {
@@ -281,35 +270,39 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
                             "schema": {
                                 "type": "object",
                                 "properties": {
-                                    "event": {"type": "string", "example": "payment.completed"},
-                                    "timestamp": {"type": "string", "format": "date-time"},
+                                    "event": {
+                                        "type": "string",
+                                        "example": "payment.completed",
+                                    },
+                                    "timestamp": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                    },
                                     "data": {
                                         "type": "object",
                                         "properties": {
                                             "payment_id": {"type": "string"},
                                             "order_id": {"type": "integer"},
                                             "amount": {"type": "string"},
-                                            "payment_method": {"type": "string"}
-                                        }
-                                    }
-                                }
+                                            "payment_method": {"type": "string"},
+                                        },
+                                    },
+                                },
                             }
                         }
                     }
                 },
-                "responses": {
-                    "200": {"description": "Webhook processed successfully"}
-                }
+                "responses": {"200": {"description": "Webhook processed successfully"}},
             }
-        }
+        },
     }
-    
+
     # Add external documentation
     openapi_schema["externalDocs"] = {
         "description": "AuraConnect API Documentation",
-        "url": "https://docs.auraconnect.ai/api"
+        "url": "https://docs.auraconnect.ai/api",
     }
-    
+
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
@@ -317,11 +310,11 @@ def custom_openapi(app: FastAPI) -> Dict[str, Any]:
 def configure_openapi_ui(app: FastAPI):
     """
     Configure custom OpenAPI UI endpoints with enhanced styling.
-    
+
     Args:
         app: FastAPI application instance
     """
-    
+
     @app.get("/docs", include_in_schema=False)
     async def custom_swagger_ui_html():
         return get_swagger_ui_html(
@@ -341,7 +334,16 @@ def configure_openapi_ui(app: FastAPI):
                 "showExtensions": True,
                 "showCommonExtensions": True,
                 "tryItOutEnabled": True,
-                "supportedSubmitMethods": ["get", "put", "post", "delete", "options", "head", "patch", "trace"],
+                "supportedSubmitMethods": [
+                    "get",
+                    "put",
+                    "post",
+                    "delete",
+                    "options",
+                    "head",
+                    "patch",
+                    "trace",
+                ],
                 "validatorUrl": None,
                 "onComplete": """() => {
                     // Add custom styling
@@ -353,10 +355,10 @@ def configure_openapi_ui(app: FastAPI):
                         .swagger-ui .scheme-container { background: #f5f5f5; padding: 15px; }
                     `;
                     document.head.appendChild(style);
-                }"""
-            }
+                }""",
+            },
         )
-    
+
     @app.get("/redoc", include_in_schema=False)
     async def redoc_html():
         return get_redoc_html(
@@ -371,7 +373,7 @@ def configure_openapi_ui(app: FastAPI):
 def add_operation_ids(app: FastAPI):
     """
     Add operation IDs to all routes for better API client generation.
-    
+
     Args:
         app: FastAPI application instance
     """
@@ -379,7 +381,7 @@ def add_operation_ids(app: FastAPI):
         if hasattr(route, "endpoint") and hasattr(route, "methods"):
             # Generate operation ID from endpoint name
             operation_id = route.endpoint.__name__
-            
+
             # Make it more descriptive based on HTTP method
             for method in route.methods:
                 if method == "GET":

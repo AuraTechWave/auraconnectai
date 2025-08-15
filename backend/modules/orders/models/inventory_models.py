@@ -1,5 +1,5 @@
 # NOTE: The Inventory model has been moved to core.inventory_models
-# to avoid duplicate table definitions. 
+# to avoid duplicate table definitions.
 # Please import from core.inventory_models instead:
 # from core.inventory_models import Inventory
 

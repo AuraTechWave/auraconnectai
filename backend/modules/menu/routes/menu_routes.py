@@ -8,14 +8,33 @@ from math import ceil
 from core.database import get_db
 from core.menu_service import MenuService
 from core.menu_schemas import (
-    MenuCategory, MenuCategoryCreate, MenuCategoryUpdate, MenuCategoryWithItems,
-    MenuItem, MenuItemCreate, MenuItemUpdate, MenuItemWithDetails,
-    ModifierGroup, ModifierGroupCreate, ModifierGroupUpdate, ModifierGroupWithModifiers,
-    Modifier, ModifierCreate, ModifierUpdate,
-    MenuItemModifier, MenuItemModifierCreate, MenuItemModifierUpdate,
-    MenuItemInventory, MenuItemInventoryCreate, MenuItemInventoryUpdate,
-    MenuSearchParams, BulkMenuItemUpdate, BulkCategoryUpdate,
-    MenuItemResponse, MenuCategoryResponse, PaginatedResponse
+    MenuCategory,
+    MenuCategoryCreate,
+    MenuCategoryUpdate,
+    MenuCategoryWithItems,
+    MenuItem,
+    MenuItemCreate,
+    MenuItemUpdate,
+    MenuItemWithDetails,
+    ModifierGroup,
+    ModifierGroupCreate,
+    ModifierGroupUpdate,
+    ModifierGroupWithModifiers,
+    Modifier,
+    ModifierCreate,
+    ModifierUpdate,
+    MenuItemModifier,
+    MenuItemModifierCreate,
+    MenuItemModifierUpdate,
+    MenuItemInventory,
+    MenuItemInventoryCreate,
+    MenuItemInventoryUpdate,
+    MenuSearchParams,
+    BulkMenuItemUpdate,
+    BulkCategoryUpdate,
+    MenuItemResponse,
+    MenuCategoryResponse,
+    PaginatedResponse,
 )
 from core.auth import require_permission, User
 from ..utils.dynamic_pricing_utils import apply_dynamic_pricing
@@ -30,11 +49,13 @@ def get_menu_service(db: Session = Depends(get_db)) -> MenuService:
 
 
 # Menu Categories
-@router.post("/categories", response_model=MenuCategory, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/categories", response_model=MenuCategory, status_code=status.HTTP_201_CREATED
+)
 async def create_category(
     category_data: MenuCategoryCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create")),
 ):
     """Create a new menu category"""
     return menu_service.create_category(category_data, current_user.id)
@@ -44,7 +65,7 @@ async def create_category(
 async def get_categories(
     active_only: bool = Query(True, description="Filter by active categories only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get all menu categories"""
     return menu_service.get_categories(active_only)
@@ -54,14 +75,13 @@ async def get_categories(
 async def get_category_by_id(
     category_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get a category by ID with its items"""
     category = menu_service.get_category_by_id(category_id)
     if not category:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Category not found"
         )
     return category
 
@@ -71,7 +91,7 @@ async def update_category(
     category_id: int,
     category_data: MenuCategoryUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Update a menu category"""
     return menu_service.update_category(category_id, category_data, current_user.id)
@@ -81,7 +101,7 @@ async def update_category(
 async def delete_category(
     category_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete")),
 ):
     """Delete a menu category"""
     menu_service.delete_category(category_id, current_user.id)
@@ -91,13 +111,15 @@ async def delete_category(
 async def bulk_update_categories(
     bulk_data: BulkCategoryUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Bulk update menu categories"""
     updated_categories = []
     for category_id in bulk_data.category_ids:
         try:
-            category = menu_service.update_category(category_id, bulk_data.updates, current_user.id)
+            category = menu_service.update_category(
+                category_id, bulk_data.updates, current_user.id
+            )
             updated_categories.append(category)
         except HTTPException:
             continue  # Skip non-existent categories
@@ -109,7 +131,7 @@ async def bulk_update_categories(
 async def create_menu_item(
     item_data: MenuItemCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create")),
 ):
     """Create a new menu item"""
     return menu_service.create_menu_item(item_data, current_user.id)
@@ -123,14 +145,18 @@ async def get_menu_items(
     is_available: Optional[bool] = Query(None, description="Filter by availability"),
     min_price: Optional[float] = Query(None, ge=0, description="Minimum price"),
     max_price: Optional[float] = Query(None, ge=0, description="Maximum price"),
-    dietary_tags: Optional[List[str]] = Query(None, description="Filter by dietary tags"),
+    dietary_tags: Optional[List[str]] = Query(
+        None, description="Filter by dietary tags"
+    ),
     allergens: Optional[List[str]] = Query(None, description="Exclude allergens"),
     limit: int = Query(50, ge=1, le=500, description="Items per page"),
     offset: int = Query(0, ge=0, description="Items to skip"),
-    sort_by: str = Query("display_order", pattern=r'^(name|price|created_at|display_order)$'),
-    sort_order: str = Query("asc", pattern=r'^(asc|desc)$'),
+    sort_by: str = Query(
+        "display_order", pattern=r"^(name|price|created_at|display_order)$"
+    ),
+    sort_order: str = Query("asc", pattern=r"^(asc|desc)$"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get menu items with search and pagination"""
     params = MenuSearchParams(
@@ -145,9 +171,9 @@ async def get_menu_items(
         limit=limit,
         offset=offset,
         sort_by=sort_by,
-        sort_order=sort_order
+        sort_order=sort_order,
     )
-    
+
     # Fetch the raw items from the database.
     items, total = menu_service.get_menu_items(params)
 
@@ -165,11 +191,7 @@ async def get_menu_items(
     page = (offset // limit) + 1 if limit > 0 else 1
 
     return MenuItemResponse(
-        items=pydantic_items,
-        total=total,
-        page=page,
-        size=limit,
-        pages=pages
+        items=pydantic_items, total=total, page=page, size=limit, pages=pages
     )
 
 
@@ -177,14 +199,13 @@ async def get_menu_items(
 async def get_menu_item_by_id(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get a menu item by ID with details"""
     item = menu_service.get_menu_item_by_id(item_id)
     if not item:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Menu item not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found"
         )
 
     # Apply dynamic pricing to the single item.
@@ -200,7 +221,7 @@ async def update_menu_item(
     item_id: int,
     item_data: MenuItemUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Update a menu item"""
     return menu_service.update_menu_item(item_id, item_data, current_user.id)
@@ -210,7 +231,7 @@ async def update_menu_item(
 async def delete_menu_item(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete")),
 ):
     """Delete a menu item"""
     menu_service.delete_menu_item(item_id, current_user.id)
@@ -220,18 +241,24 @@ async def delete_menu_item(
 async def bulk_update_menu_items(
     bulk_data: BulkMenuItemUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Bulk update menu items"""
-    return menu_service.bulk_update_items(bulk_data.item_ids, bulk_data.updates, current_user.id)
+    return menu_service.bulk_update_items(
+        bulk_data.item_ids, bulk_data.updates, current_user.id
+    )
 
 
 # Modifier Groups
-@router.post("/modifier-groups", response_model=ModifierGroup, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/modifier-groups",
+    response_model=ModifierGroup,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_modifier_group(
     group_data: ModifierGroupCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create")),
 ):
     """Create a new modifier group"""
     return menu_service.create_modifier_group(group_data, current_user.id)
@@ -241,7 +268,7 @@ async def create_modifier_group(
 async def get_modifier_groups(
     active_only: bool = Query(True, description="Filter by active groups only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get all modifier groups"""
     return menu_service.get_modifier_groups(active_only)
@@ -251,14 +278,13 @@ async def get_modifier_groups(
 async def get_modifier_group_by_id(
     group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get a modifier group by ID with its modifiers"""
     group = menu_service.get_modifier_group_by_id(group_id)
     if not group:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Modifier group not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Modifier group not found"
         )
     return group
 
@@ -268,7 +294,7 @@ async def update_modifier_group(
     group_id: int,
     group_data: ModifierGroupUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Update a modifier group"""
     return menu_service.update_modifier_group(group_id, group_data, current_user.id)
@@ -278,7 +304,7 @@ async def update_modifier_group(
 async def delete_modifier_group(
     group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete")),
 ):
     """Delete a modifier group"""
     menu_service.delete_modifier_group(group_id, current_user.id)
@@ -289,7 +315,7 @@ async def delete_modifier_group(
 async def create_modifier(
     modifier_data: ModifierCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:create"))
+    current_user: User = Depends(require_permission("menu:create")),
 ):
     """Create a new modifier"""
     return menu_service.create_modifier(modifier_data, current_user.id)
@@ -300,7 +326,7 @@ async def get_modifiers_by_group(
     group_id: int,
     active_only: bool = Query(True, description="Filter by active modifiers only"),
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get modifiers by group ID"""
     return menu_service.get_modifiers_by_group(group_id, active_only)
@@ -310,14 +336,13 @@ async def get_modifiers_by_group(
 async def get_modifier_by_id(
     modifier_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get a modifier by ID"""
     modifier = menu_service.get_modifier_by_id(modifier_id)
     if not modifier:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Modifier not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Modifier not found"
         )
     return modifier
 
@@ -327,7 +352,7 @@ async def update_modifier(
     modifier_id: int,
     modifier_data: ModifierUpdate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Update a modifier"""
     return menu_service.update_modifier(modifier_id, modifier_data, current_user.id)
@@ -337,19 +362,23 @@ async def update_modifier(
 async def delete_modifier(
     modifier_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete")),
 ):
     """Delete a modifier"""
     menu_service.delete_modifier(modifier_id, current_user.id)
 
 
 # Menu Item Modifiers
-@router.post("/items/{item_id}/modifiers", response_model=MenuItemModifier, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/items/{item_id}/modifiers",
+    response_model=MenuItemModifier,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_modifier_to_item(
     item_id: int,
     link_data: MenuItemModifierCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Add a modifier group to a menu item"""
     # Ensure the item_id matches
@@ -361,30 +390,37 @@ async def add_modifier_to_item(
 async def get_item_modifiers(
     item_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get all modifier groups for a menu item"""
     return menu_service.get_item_modifiers(item_id)
 
 
-@router.delete("/items/{item_id}/modifiers/{modifier_group_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/items/{item_id}/modifiers/{modifier_group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def remove_modifier_from_item(
     item_id: int,
     modifier_group_id: int,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Remove a modifier group from a menu item"""
     menu_service.remove_modifier_from_item(item_id, modifier_group_id, current_user.id)
 
 
 # Menu Item Inventory
-@router.post("/items/{item_id}/inventory", response_model=MenuItemInventory, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/items/{item_id}/inventory",
+    response_model=MenuItemInventory,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_inventory_to_item(
     item_id: int,
     link_data: MenuItemInventoryCreate,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Link an inventory item to a menu item"""
     # Ensure the item_id matches
@@ -396,7 +432,7 @@ async def add_inventory_to_item(
 @router.get("/stats")
 async def get_menu_stats(
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Get menu statistics"""
     return menu_service.get_menu_stats()
@@ -404,9 +440,7 @@ async def get_menu_stats(
 
 # Public endpoints (no authentication required)
 @router.get("/public/categories", response_model=List[MenuCategory])
-async def get_public_categories(
-    menu_service: MenuService = Depends(get_menu_service)
-):
+async def get_public_categories(menu_service: MenuService = Depends(get_menu_service)):
     """Get active menu categories for public use"""
     return menu_service.get_categories(active_only=True)
 
@@ -414,11 +448,13 @@ async def get_public_categories(
 @router.get("/public/items", response_model=MenuItemResponse)
 async def get_public_menu_items(
     category_id: Optional[int] = Query(None, description="Filter by category"),
-    dietary_tags: Optional[List[str]] = Query(None, description="Filter by dietary tags"),
+    dietary_tags: Optional[List[str]] = Query(
+        None, description="Filter by dietary tags"
+    ),
     allergens: Optional[List[str]] = Query(None, description="Exclude allergens"),
     limit: int = Query(50, ge=1, le=500, description="Items per page"),
     offset: int = Query(0, ge=0, description="Items to skip"),
-    menu_service: MenuService = Depends(get_menu_service)
+    menu_service: MenuService = Depends(get_menu_service),
 ):
     """Get available menu items for public use"""
     params = MenuSearchParams(
@@ -430,33 +466,28 @@ async def get_public_menu_items(
         limit=limit,
         offset=offset,
         sort_by="display_order",
-        sort_order="asc"
+        sort_order="asc",
     )
-    
+
     items, total = menu_service.get_menu_items(params)
     pages = ceil(total / limit) if total > 0 else 0
     page = (offset // limit) + 1 if limit > 0 else 1
-    
+
     return MenuItemResponse(
-        items=items,
-        total=total,
-        page=page,
-        size=limit,
-        pages=pages
+        items=items, total=total, page=page, size=limit, pages=pages
     )
 
 
 @router.get("/public/items/{item_id}", response_model=MenuItemWithDetails)
 async def get_public_menu_item(
-    item_id: int,
-    menu_service: MenuService = Depends(get_menu_service)
+    item_id: int, menu_service: MenuService = Depends(get_menu_service)
 ):
     """Get a menu item for public use"""
     item = menu_service.get_menu_item_by_id(item_id)
     if not item or not item.is_active or not item.is_available:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Menu item not found or not available"
+            detail="Menu item not found or not available",
         )
     return item
 
@@ -467,19 +498,23 @@ async def bulk_update_menu_items(
     item_ids: List[int],
     updates: dict,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Bulk update multiple menu items and create version if significant changes"""
-    
+
     result = menu_service.bulk_update_items(item_ids, updates, current_user.id)
-    
+
     return {
         "message": f"Updated {result['updated']} items",
         "details": result,
-        "version_info": {
-            "version_created": result.get("version_created", False),
-            "version_id": result.get("version_id")
-        } if result.get("version_created") else None
+        "version_info": (
+            {
+                "version_created": result.get("version_created", False),
+                "version_id": result.get("version_id"),
+            }
+            if result.get("version_created")
+            else None
+        ),
     }
 
 
@@ -488,20 +523,24 @@ async def bulk_activate_menu_items(
     item_ids: List[int],
     active: bool = True,
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Bulk activate or deactivate multiple menu items"""
-    
+
     result = menu_service.bulk_activate_items(item_ids, active, current_user.id)
-    
+
     action = "activated" if active else "deactivated"
     return {
         "message": f"{action.capitalize()} {result['updated']} items",
         "details": result,
-        "version_info": {
-            "version_created": result.get("version_created", False),
-            "version_id": result.get("version_id")
-        } if result.get("version_created") else None
+        "version_info": (
+            {
+                "version_created": result.get("version_created", False),
+                "version_id": result.get("version_id"),
+            }
+            if result.get("version_created")
+            else None
+        ),
     }
 
 
@@ -509,20 +548,20 @@ async def bulk_activate_menu_items(
 async def bulk_update_prices(
     price_updates: List[dict],  # [{"item_id": 1, "price": 10.99}, ...]
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:update"))
+    current_user: User = Depends(require_permission("menu:update")),
 ):
     """Bulk update item prices - always creates a version due to criticality"""
-    
+
     result = menu_service.bulk_update_prices(price_updates, current_user.id)
-    
+
     return {
         "message": f"Updated prices for {result['updated']} items",
         "details": result,
         "version_info": {
             "version_created": True,  # Always true for price changes
             "version_id": result.get("version_id"),
-            "note": "Price changes always trigger version creation for audit purposes"
-        }
+            "note": "Price changes always trigger version creation for audit purposes",
+        },
     }
 
 
@@ -530,17 +569,21 @@ async def bulk_update_prices(
 async def bulk_delete_menu_items(
     item_ids: List[int],
     menu_service: MenuService = Depends(get_menu_service),
-    current_user: User = Depends(require_permission("menu:delete"))
+    current_user: User = Depends(require_permission("menu:delete")),
 ):
     """Bulk soft-delete multiple menu items"""
-    
+
     result = menu_service.bulk_delete_items(item_ids, current_user.id)
-    
+
     return {
         "message": f"Deleted {result['deleted']} items",
         "details": result,
-        "version_info": {
-            "version_created": result.get("version_created", False),
-            "version_id": result.get("version_id")
-        } if result.get("version_created") else None
+        "version_info": (
+            {
+                "version_created": result.get("version_created", False),
+                "version_id": result.get("version_id"),
+            }
+            if result.get("version_created")
+            else None
+        ),
     }

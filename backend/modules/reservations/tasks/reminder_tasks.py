@@ -36,24 +36,24 @@ async def run_reminder_scheduler():
     This can be started as a background task when the application starts.
     """
     logger.info("Starting reminder scheduler")
-    
+
     while True:
         try:
             await process_scheduled_reminders()
         except Exception as e:
             logger.error(f"Error in reminder scheduler: {str(e)}")
-        
+
         # Wait 5 minutes before next check
         await asyncio.sleep(300)
 
 
 # Example of how to integrate with FastAPI startup:
-# 
+#
 # from fastapi import FastAPI
 # import asyncio
-# 
+#
 # app = FastAPI()
-# 
+#
 # @app.on_event("startup")
 # async def startup_event():
 #     # Start the reminder scheduler as a background task

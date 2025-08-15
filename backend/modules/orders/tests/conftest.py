@@ -18,9 +18,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(scope="function")
@@ -38,6 +36,7 @@ def db_session():
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create a test client with database dependency override."""
+
     def override_get_db():
         try:
             yield db_session
@@ -53,6 +52,7 @@ def client(db_session):
 @pytest_asyncio.fixture
 async def async_client(db_session):
     """Create an async test client."""
+
     def override_get_db():
         try:
             yield db_session
@@ -68,11 +68,7 @@ async def async_client(db_session):
 @pytest.fixture
 def sample_order(db_session):
     """Create a sample order for testing."""
-    order = Order(
-        staff_id=1,
-        table_no=5,
-        status=OrderStatus.PENDING.value
-    )
+    order = Order(staff_id=1, table_no=5, status=OrderStatus.PENDING.value)
     db_session.add(order)
     db_session.commit()
     db_session.refresh(order)
@@ -82,11 +78,7 @@ def sample_order(db_session):
 @pytest.fixture
 def sample_order_with_items(db_session):
     """Create a sample order with order items."""
-    order = Order(
-        staff_id=1,
-        table_no=3,
-        status=OrderStatus.IN_PROGRESS.value
-    )
+    order = Order(staff_id=1, table_no=3, status=OrderStatus.IN_PROGRESS.value)
     db_session.add(order)
     db_session.commit()
     db_session.refresh(order)
@@ -96,14 +88,9 @@ def sample_order_with_items(db_session):
         menu_item_id=101,
         quantity=2,
         price=15.99,
-        notes="Extra spicy"
+        notes="Extra spicy",
     )
-    item2 = OrderItem(
-        order_id=order.id,
-        menu_item_id=102,
-        quantity=1,
-        price=8.50
-    )
+    item2 = OrderItem(order_id=order.id, menu_item_id=102, quantity=1, price=8.50)
     db_session.add_all([item1, item2])
     db_session.commit()
     return order
@@ -116,7 +103,7 @@ def sample_inventory(db_session):
         quantity=50.0,
         unit="kg",
         threshold=10.0,
-        vendor_id=1
+        vendor_id=1,
     )
     db_session.add(inventory)
     db_session.commit()
@@ -127,19 +114,14 @@ def sample_inventory(db_session):
 @pytest.fixture
 def sample_inventory_with_mapping(db_session):
     inventory = Inventory(
-        item_name="Test Ingredient",
-        quantity=50.0,
-        unit="kg",
-        threshold=10.0
+        item_name="Test Ingredient", quantity=50.0, unit="kg", threshold=10.0
     )
     db_session.add(inventory)
     db_session.commit()
     db_session.refresh(inventory)
 
     mapping = MenuItemInventory(
-        menu_item_id=101,
-        inventory_id=inventory.id,
-        quantity_needed=2.5
+        menu_item_id=101, inventory_id=inventory.id, quantity_needed=2.5
     )
     db_session.add(mapping)
     db_session.commit()
@@ -161,7 +143,7 @@ def anyio_backend():
     return "asyncio"
 
 
-@pytest.fixture(scope="function") 
+@pytest.fixture(scope="function")
 def db(db_session):
     """Alias for db_session for compatibility."""
     return db_session

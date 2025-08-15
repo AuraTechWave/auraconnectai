@@ -17,11 +17,9 @@ __all__ = [
     "KitchenDisplay",
     "DisplayStatus",
     "StationAssignment",
-    
     # Services
     "KDSService",
     "StationRoutingService",
-    
     # Schemas
     "StationCreate",
     "StationUpdate",

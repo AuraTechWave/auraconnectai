@@ -10,7 +10,7 @@ from .pricing_schemas import (
     BulkPricingRequest,
     PricingRecommendationSet,
     PriceTestingConfig,
-    PriceTestingResult
+    PriceTestingResult,
 )
 
 from .staffing_schemas import (
@@ -25,7 +25,7 @@ from .staffing_schemas import (
     StaffingOptimizationRequest,
     StaffingRecommendationSet,
     StaffPerformanceMetrics,
-    LaborCostAnalysis
+    LaborCostAnalysis,
 )
 
 __all__ = [
@@ -40,7 +40,6 @@ __all__ = [
     "PricingRecommendationSet",
     "PriceTestingConfig",
     "PriceTestingResult",
-    
     # Staffing schemas
     "StaffRole",
     "ShiftType",
@@ -53,5 +52,5 @@ __all__ = [
     "StaffingOptimizationRequest",
     "StaffingRecommendationSet",
     "StaffPerformanceMetrics",
-    "LaborCostAnalysis"
+    "LaborCostAnalysis",
 ]

@@ -4,10 +4,11 @@ from typing import List, Optional
 from core.database import get_db
 from modules.settings.controllers.pos_sync_controller import (
     get_pos_sync_settings_controller,
-    create_or_update_pos_sync_setting_controller
+    create_or_update_pos_sync_setting_controller,
 )
 from modules.settings.schemas.pos_sync_schemas import (
-    POSSyncSettingOut, POSSyncSettingCreate
+    POSSyncSettingOut,
+    POSSyncSettingCreate,
 )
 
 router = APIRouter(prefix="/settings/pos-sync", tags=["POS Sync Settings"])
@@ -17,14 +18,13 @@ router = APIRouter(prefix="/settings/pos-sync", tags=["POS Sync Settings"])
 async def get_pos_sync_settings(
     tenant_id: Optional[int] = Query(None, description="Filter by tenant ID"),
     team_id: Optional[int] = Query(None, description="Filter by team ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return await get_pos_sync_settings_controller(db, tenant_id, team_id)
 
 
 @router.post("/", response_model=POSSyncSettingOut)
 async def create_or_update_pos_sync_setting(
-    setting_data: POSSyncSettingCreate,
-    db: Session = Depends(get_db)
+    setting_data: POSSyncSettingCreate, db: Session = Depends(get_db)
 ):
     return await create_or_update_pos_sync_setting_controller(db, setting_data)

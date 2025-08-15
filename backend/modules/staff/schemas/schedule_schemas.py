@@ -11,18 +11,20 @@ from .scheduling_schemas import SchedulePublishRequest as BaseSchedulePublishReq
 # Schedule Preview Schemas
 class SchedulePreviewResponse(BaseModel):
     """Response schema for schedule preview"""
+
     date_range: Dict[str, str]  # {start: "2023-01-01", end: "2023-01-07"}
     total_shifts: int
     by_date: Dict[str, List[Dict[str, Any]]]  # Date -> list of shifts
     by_staff: List[Dict[str, Any]]  # List of staff with their shifts
     summary: Dict[str, Any]  # Summary statistics
-    
+
     class Config:
         orm_mode = True
 
 
 class PaginatedPreviewResponse(BaseModel):
     """Paginated response for schedule preview"""
+
     items: List[Dict[str, Any]]
     page: int
     page_size: int
@@ -30,7 +32,7 @@ class PaginatedPreviewResponse(BaseModel):
     total_pages: int
     has_next: bool
     has_previous: bool
-    
+
     class Config:
         orm_mode = True
 
@@ -38,9 +40,10 @@ class PaginatedPreviewResponse(BaseModel):
 # Enhanced Schedule Publish Request
 class SchedulePublishRequest(BaseSchedulePublishRequest):
     """Extended schedule publish request with notification channels"""
+
     notification_channels: Optional[List[str]] = ["email", "in_app"]
-    
-    @validator('notification_channels')
+
+    @validator("notification_channels")
     def validate_channels(cls, v):
         if v:
             valid_channels = ["email", "sms", "push", "in_app"]
@@ -53,21 +56,22 @@ class SchedulePublishRequest(BaseSchedulePublishRequest):
 # Schedule CRUD Schemas
 class ScheduleCreateRequest(BaseModel):
     """Request schema for creating a schedule/shift"""
+
     staff_id: int
     date: date
     start_time: time
     end_time: time
     break_duration: Optional[int] = Field(0, description="Break duration in minutes")
     notes: Optional[str] = None
-    
-    @validator('end_time')
+
+    @validator("end_time")
     def validate_times(cls, v, values):
-        if 'start_time' in values and v <= values['start_time']:
+        if "start_time" in values and v <= values["start_time"]:
             # Allow overnight shifts
             pass
         return v
-    
-    @validator('break_duration')
+
+    @validator("break_duration")
     def validate_break_duration(cls, v):
         if v and v < 0:
             raise ValueError("Break duration cannot be negative")
@@ -76,12 +80,13 @@ class ScheduleCreateRequest(BaseModel):
 
 class ScheduleUpdateRequest(BaseModel):
     """Request schema for updating a schedule/shift"""
+
     start_time: Optional[time] = None
     end_time: Optional[time] = None
     break_duration: Optional[int] = None
     notes: Optional[str] = None
-    
-    @validator('break_duration')
+
+    @validator("break_duration")
     def validate_break_duration(cls, v):
         if v is not None and v < 0:
             raise ValueError("Break duration cannot be negative")
@@ -90,6 +95,7 @@ class ScheduleUpdateRequest(BaseModel):
 
 class ScheduleResponse(BaseModel):
     """Response schema for schedule/shift"""
+
     id: int
     staff_id: int
     staff_name: str
@@ -104,7 +110,7 @@ class ScheduleResponse(BaseModel):
     published_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -112,6 +118,7 @@ class ScheduleResponse(BaseModel):
 # Notification Schemas
 class NotificationResult(BaseModel):
     """Result of notification sending"""
+
     success: bool
     total_staff: int
     notifications_sent: Dict[str, int]  # channel -> count
@@ -120,26 +127,31 @@ class NotificationResult(BaseModel):
 
 class ShiftReminderRequest(BaseModel):
     """Request for sending shift reminders"""
+
     restaurant_id: int
-    hours_before: int = Field(2, ge=1, le=24, description="Hours before shift to send reminder")
+    hours_before: int = Field(
+        2, ge=1, le=24, description="Hours before shift to send reminder"
+    )
 
 
 # Cache Management Schemas
 class CacheWarmRequest(BaseModel):
     """Request to warm schedule cache"""
+
     week_start: date
     include_filters: Optional[List[Dict[str, Any]]] = None
 
 
 class CacheStatsResponse(BaseModel):
     """Cache statistics response"""
+
     total_cached_previews: int
     cache_keys: List[str]
     oldest_cache: Optional[str]
     newest_cache: Optional[str]
     total_size_bytes: int
     hit_rate: Optional[float] = None
-    
+
     class Config:
         orm_mode = True
 
@@ -147,6 +159,7 @@ class CacheStatsResponse(BaseModel):
 # Analytics and Reporting Schemas
 class ScheduleAnalytics(BaseModel):
     """Schedule analytics response"""
+
     period: Dict[str, str]  # start/end dates
     total_shifts: int
     total_hours: float
@@ -154,13 +167,14 @@ class ScheduleAnalytics(BaseModel):
     staff_utilization: Dict[str, float]  # staff_id -> utilization %
     coverage_gaps: List[Dict[str, Any]]
     labor_cost_estimate: Optional[float]
-    
+
     class Config:
         orm_mode = True
 
 
 class StaffScheduleMetrics(BaseModel):
     """Individual staff schedule metrics"""
+
     staff_id: int
     staff_name: str
     period_start: date
@@ -172,7 +186,7 @@ class StaffScheduleMetrics(BaseModel):
     days_worked: int
     overtime_hours: float
     utilization_percentage: float
-    
+
     class Config:
         orm_mode = True
 
@@ -180,6 +194,7 @@ class StaffScheduleMetrics(BaseModel):
 # Batch Operations
 class BatchScheduleOperation(BaseModel):
     """Batch schedule operation request"""
+
     operation: str  # "create", "update", "delete", "publish"
     schedule_ids: Optional[List[int]] = None
     schedule_data: Optional[List[Dict[str, Any]]] = None
@@ -188,6 +203,7 @@ class BatchScheduleOperation(BaseModel):
 
 class BatchOperationResult(BaseModel):
     """Result of batch schedule operation"""
+
     operation: str
     total_processed: int
     successful: int

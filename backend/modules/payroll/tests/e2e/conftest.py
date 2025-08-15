@@ -35,7 +35,7 @@ def sample_company_setup():
         "pay_period_end": date(2024, 1, 14),
         "pay_date": date(2024, 1, 19),
         "locations": ["california", "new_york"],
-        "departments": ["Engineering", "Sales", "Support"]
+        "departments": ["Engineering", "Sales", "Support"],
     }
 
 
@@ -60,7 +60,7 @@ def sample_pay_policies(sample_employees):
 def create_sample_employees():
     """Create standard set of test employees."""
     employees = []
-    
+
     # Engineer in California - salaried
     engineer = Mock(spec=Staff)
     engineer.id = 1
@@ -74,7 +74,7 @@ def create_sample_employees():
     engineer.federal_allowances = 2
     engineer.is_active = True
     employees.append(engineer)
-    
+
     # Sales rep in New York - hourly with commission
     sales_rep = Mock(spec=Staff)
     sales_rep.id = 2
@@ -88,7 +88,7 @@ def create_sample_employees():
     sales_rep.federal_allowances = 4
     sales_rep.is_active = True
     employees.append(sales_rep)
-    
+
     # Support agent - part-time hourly
     support = Mock(spec=Staff)
     support.id = 3
@@ -103,7 +103,7 @@ def create_sample_employees():
     support.is_active = True
     support.is_part_time = True
     employees.append(support)
-    
+
     return employees
 
 
@@ -111,7 +111,7 @@ def create_sample_timesheets(employees, company_setup):
     """Create standard timesheet data."""
     timesheets = []
     start_date = company_setup["pay_period_start"]
-    
+
     # Sales rep - regular hours + overtime
     for day in range(10):  # 10 working days
         work_date = start_date + timedelta(days=day)
@@ -123,7 +123,7 @@ def create_sample_timesheets(employees, company_setup):
             ts.overtime_hours = Decimal("0.0") if day < 8 else Decimal("2.0")
             ts.is_approved = True
             timesheets.append(ts)
-    
+
     # Support agent - part-time hours
     for day in range(10):
         work_date = start_date + timedelta(days=day)
@@ -135,14 +135,14 @@ def create_sample_timesheets(employees, company_setup):
             ts.overtime_hours = Decimal("0.0")
             ts.is_approved = True
             timesheets.append(ts)
-    
+
     return timesheets
 
 
 def create_sample_pay_policies(employees):
     """Create standard pay policies."""
     policies = []
-    
+
     # Engineer policy
     policy1 = Mock(spec=StaffPayPolicy)
     policy1.staff_id = 1
@@ -152,7 +152,7 @@ def create_sample_pay_policies(employees):
     policy1.retirement_match_percentage = Decimal("0.06")
     policy1.benefit_proration_factor = Decimal("0.4615")  # Bi-weekly
     policies.append(policy1)
-    
+
     # Sales rep policy
     policy2 = Mock(spec=StaffPayPolicy)
     policy2.staff_id = 2
@@ -164,7 +164,7 @@ def create_sample_pay_policies(employees):
     policy2.retirement_match_percentage = Decimal("0.04")
     policy2.benefit_proration_factor = Decimal("0.4615")
     policies.append(policy2)
-    
+
     # Support agent policy
     policy3 = Mock(spec=StaffPayPolicy)
     policy3.staff_id = 3
@@ -174,5 +174,5 @@ def create_sample_pay_policies(employees):
     policy3.health_insurance_monthly = Decimal("0.00")  # No benefits for part-time
     policy3.retirement_match_percentage = Decimal("0.00")
     policies.append(policy3)
-    
+
     return policies

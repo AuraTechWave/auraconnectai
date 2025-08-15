@@ -11,8 +11,6 @@ class POSSyncSetting(Base):
     team_id = Column(Integer, nullable=True)
     enabled = Column(Boolean, nullable=False, default=True)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    updated_by = Column(
-        Integer, ForeignKey("staff_members.id"), nullable=False
-    )
+    updated_by = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
 
     updated_by_staff = relationship("StaffMember")

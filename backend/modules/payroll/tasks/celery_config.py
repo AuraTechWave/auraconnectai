@@ -20,7 +20,7 @@ celery_app = Celery(
     "payroll_tasks",
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=["backend.modules.payroll.tasks.payroll_tasks"]
+    include=["backend.modules.payroll.tasks.payroll_tasks"],
 )
 
 # Celery configuration
@@ -31,46 +31,37 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    
     # Result backend settings
     result_expires=3600,  # Results expire after 1 hour
-    
     # Task execution settings
     task_acks_late=True,  # Tasks acknowledged after execution
     task_reject_on_worker_lost=True,
-    
     # Retry settings
     task_default_retry_delay=60,  # 60 seconds
     task_max_retries=3,
-    
     # Rate limiting
     task_default_rate_limit="100/m",  # 100 tasks per minute
-    
     # Worker settings
     worker_prefetch_multiplier=4,
     worker_max_tasks_per_child=1000,  # Restart worker after 1000 tasks
-    
     # Beat schedule for periodic tasks
     beat_schedule={
         "cleanup-old-jobs": {
             "task": "payroll.cleanup_old_jobs",
             "schedule": 3600.0,  # Every hour
-            "args": ()
+            "args": (),
         },
         "retry-failed-webhooks": {
             "task": "payroll.retry_failed_webhooks",
             "schedule": 300.0,  # Every 5 minutes
-            "args": ()
+            "args": (),
         },
         "generate-daily-audit-summary": {
             "task": "payroll.generate_audit_summary",
-            "schedule": {
-                "hour": 2,  # 2 AM daily
-                "minute": 0
-            },
-            "args": ()
-        }
-    }
+            "schedule": {"hour": 2, "minute": 0},  # 2 AM daily
+            "args": (),
+        },
+    },
 )
 
 # Task routing for different queues
@@ -78,7 +69,7 @@ celery_app.conf.task_routes = {
     "payroll.process_batch_payroll": {"queue": "payroll_heavy"},
     "payroll.export_audit_logs": {"queue": "exports"},
     "payroll.send_webhook": {"queue": "webhooks"},
-    "payroll.*": {"queue": "payroll_default"}
+    "payroll.*": {"queue": "payroll_default"},
 }
 
 # Queue configuration with priorities
@@ -86,12 +77,7 @@ celery_app.conf.task_queue_max_priority = 10
 celery_app.conf.task_default_priority = 5
 
 # Task priorities
-TASK_PRIORITIES = {
-    "urgent": 9,
-    "high": 7,
-    "normal": 5,
-    "low": 3
-}
+TASK_PRIORITIES = {"urgent": 9, "high": 7, "normal": 5, "low": 3}
 
 
 def get_celery_app() -> Celery:
@@ -101,12 +87,14 @@ def get_celery_app() -> Celery:
 
 def configure_celery_for_flask(app):
     """Configure Celery with Flask app context."""
+
     class ContextTask(celery_app.Task):
         """Make celery tasks work with Flask app context."""
+
         def __call__(self, *args, **kwargs):
             with app.app_context():
                 return self.run(*args, **kwargs)
-    
+
     celery_app.Task = ContextTask
     return celery_app
 

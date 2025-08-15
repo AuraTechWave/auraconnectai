@@ -2,8 +2,12 @@
 """Core models module"""
 
 from .core_models import (
-    Restaurant, Location, Floor,
-    RestaurantStatus, FloorStatus, LocationType
+    Restaurant,
+    Location,
+    Floor,
+    RestaurantStatus,
+    FloorStatus,
+    LocationType,
 )
 
 __all__ = [
@@ -12,5 +16,5 @@ __all__ = [
     "Floor",
     "RestaurantStatus",
     "FloorStatus",
-    "LocationType"
+    "LocationType",
 ]

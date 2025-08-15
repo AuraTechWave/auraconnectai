@@ -12,50 +12,48 @@ from ...schemas.pos_analytics_schemas import TimeRange
 
 
 def parse_time_range(
-    time_range: TimeRange,
-    start_date: Optional[datetime],
-    end_date: Optional[datetime]
+    time_range: TimeRange, start_date: Optional[datetime], end_date: Optional[datetime]
 ) -> Tuple[datetime, datetime]:
     """
     Parse time range into start and end dates.
-    
+
     Args:
         time_range: Predefined time range enum
         start_date: Custom start date
         end_date: Custom end date
-        
+
     Returns:
         Tuple of (start_date, end_date)
-        
+
     Raises:
         HTTPException: If custom range is invalid
     """
-    
+
     if time_range == TimeRange.CUSTOM:
         if not start_date or not end_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="start_date and end_date required for custom time range"
+                detail="start_date and end_date required for custom time range",
             )
-        
+
         if start_date >= end_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="start_date must be before end_date"
+                detail="start_date must be before end_date",
             )
-            
+
         # Limit custom range to 90 days
         if (end_date - start_date).days > 90:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Custom time range cannot exceed 90 days"
+                detail="Custom time range cannot exceed 90 days",
             )
-            
+
         return start_date, end_date
-    
+
     # Calculate based on predefined range
     now = datetime.utcnow()
-    
+
     if time_range == TimeRange.LAST_HOUR:
         return now - timedelta(hours=1), now
     elif time_range == TimeRange.LAST_24_HOURS:
@@ -74,6 +72,6 @@ def get_media_type(format: str) -> str:
     media_types = {
         "csv": "text/csv",
         "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "pdf": "application/pdf"
+        "pdf": "application/pdf",
     }
     return media_types.get(format, "application/octet-stream")

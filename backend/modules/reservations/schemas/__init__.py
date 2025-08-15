@@ -14,12 +14,12 @@ from .reservation_schemas import (
     ReservationSettingsResponse,
     ReservationStatus,
     WaitlistStatus,
-    NotificationMethod
+    NotificationMethod,
 )
 
 __all__ = [
     "ReservationCreate",
-    "ReservationUpdate", 
+    "ReservationUpdate",
     "ReservationResponse",
     "ReservationListResponse",
     "ReservationAvailability",
@@ -33,5 +33,5 @@ __all__ = [
     "ReservationSettingsResponse",
     "ReservationStatus",
     "WaitlistStatus",
-    "NotificationMethod"
+    "NotificationMethod",
 ]

@@ -1,11 +1,15 @@
 from sqlalchemy.orm import Session
 from ..services.print_ticket_service import (
-    generate_print_ticket, get_print_queue, update_print_ticket_status,
-    retry_failed_tickets
+    generate_print_ticket,
+    get_print_queue,
+    update_print_ticket_status,
+    retry_failed_tickets,
 )
 from ..schemas.print_ticket_schemas import (
-    PrintTicketRequest, PrintTicketResponse, PrintQueueStatus,
-    PrintTicketStatusUpdate
+    PrintTicketRequest,
+    PrintTicketResponse,
+    PrintQueueStatus,
+    PrintTicketStatusUpdate,
 )
 from ..enums.order_enums import PrintStatus
 from typing import List
@@ -37,7 +41,6 @@ async def handle_print_job_error(
     ticket_id: int, error_message: str, db: Session
 ) -> PrintTicketResponse:
     status_update = PrintTicketStatusUpdate(
-        status=PrintStatus.FAILED,
-        error_message=error_message
+        status=PrintStatus.FAILED, error_message=error_message
     )
     return await update_ticket_status(ticket_id, status_update, db)

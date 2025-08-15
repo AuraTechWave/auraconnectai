@@ -15,6 +15,7 @@ from enum import Enum
 
 class MessageRole(str, Enum):
     """Role of the message sender"""
+
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
@@ -23,6 +24,7 @@ class MessageRole(str, Enum):
 
 class MessageType(str, Enum):
     """Type of message content"""
+
     TEXT = "text"
     QUERY_RESULT = "query_result"
     CHART = "chart"
@@ -34,6 +36,7 @@ class MessageType(str, Enum):
 
 class QueryIntent(str, Enum):
     """Detected intent of user query"""
+
     SALES_REPORT = "sales_report"
     REVENUE_ANALYSIS = "revenue_analysis"
     STAFF_PERFORMANCE = "staff_performance"
@@ -48,6 +51,7 @@ class QueryIntent(str, Enum):
 
 class ChartType(str, Enum):
     """Types of charts for data visualization"""
+
     LINE = "line"
     BAR = "bar"
     PIE = "pie"
@@ -60,21 +64,21 @@ class ChartType(str, Enum):
 
 class ChatMessage(BaseModel):
     """Individual chat message"""
+
     id: str = Field(..., description="Unique message ID")
     role: MessageRole
     content: str
     type: MessageType = MessageType.TEXT
     timestamp: datetime = Field(default_factory=datetime.now)
     metadata: Optional[Dict[str, Any]] = None
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class QueryContext(BaseModel):
     """Context information for query processing"""
+
     session_id: str
     user_id: int
     conversation_history: List[ChatMessage] = []
@@ -82,8 +86,8 @@ class QueryContext(BaseModel):
     preferred_visualization: Optional[ChartType] = None
     time_zone: Optional[str] = "UTC"
     language: str = "en"
-    
-    @validator('conversation_history')
+
+    @validator("conversation_history")
     def limit_history_size(cls, v):
         """Keep only last 20 messages to prevent context overflow"""
         return v[-20:] if len(v) > 20 else v
@@ -91,6 +95,7 @@ class QueryContext(BaseModel):
 
 class AnalyticsQuery(BaseModel):
     """Parsed analytics query from user input"""
+
     original_text: str
     intent: QueryIntent
     entities: Dict[str, Any] = {}
@@ -105,6 +110,7 @@ class AnalyticsQuery(BaseModel):
 
 class DataPoint(BaseModel):
     """Single data point for charts/tables"""
+
     label: str
     value: Union[float, int, str]
     metadata: Optional[Dict[str, Any]] = None
@@ -112,6 +118,7 @@ class DataPoint(BaseModel):
 
 class ChartData(BaseModel):
     """Data structure for chart visualization"""
+
     type: ChartType
     title: str
     data: List[DataPoint]
@@ -122,7 +129,10 @@ class ChartData(BaseModel):
 
 class TableData(BaseModel):
     """Data structure for table visualization"""
-    columns: List[Dict[str, str]]  # [{"key": "name", "label": "Staff Name", "type": "string"}]
+
+    columns: List[
+        Dict[str, str]
+    ]  # [{"key": "name", "label": "Staff Name", "type": "string"}]
     rows: List[Dict[str, Any]]
     total_rows: Optional[int] = None
     page: Optional[int] = 1
@@ -131,6 +141,7 @@ class TableData(BaseModel):
 
 class QueryResult(BaseModel):
     """Result of an analytics query"""
+
     query_id: str
     status: str = "success"  # success, error, partial
     summary: str
@@ -143,11 +154,12 @@ class QueryResult(BaseModel):
 
 class ChatRequest(BaseModel):
     """User chat request"""
+
     message: str = Field(..., min_length=1, max_length=1000)
     session_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
-    
-    @validator('message')
+
+    @validator("message")
     def clean_message(cls, v):
         """Clean and validate user message"""
         return v.strip()
@@ -155,6 +167,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """AI assistant response"""
+
     message: ChatMessage
     query_result: Optional[QueryResult] = None
     suggested_questions: Optional[List[str]] = None
@@ -164,6 +177,7 @@ class ChatResponse(BaseModel):
 
 class ChatSession(BaseModel):
     """Chat session information"""
+
     session_id: str
     user_id: int
     started_at: datetime
@@ -175,14 +189,16 @@ class ChatSession(BaseModel):
 
 class SuggestedQuery(BaseModel):
     """Suggested query for quick access"""
+
     text: str
     category: str
     description: Optional[str] = None
     icon: Optional[str] = None
-    
-    
+
+
 class QueryTemplate(BaseModel):
     """Template for common queries"""
+
     id: str
     name: str
     description: str
@@ -194,6 +210,7 @@ class QueryTemplate(BaseModel):
 
 class ConversationSummary(BaseModel):
     """Summary of a conversation for history"""
+
     session_id: str
     user_id: int
     start_time: datetime
@@ -206,6 +223,7 @@ class ConversationSummary(BaseModel):
 
 class AnalyticsInsight(BaseModel):
     """AI-generated insight from data analysis"""
+
     type: str  # trend, anomaly, recommendation, comparison
     title: str
     description: str
@@ -217,18 +235,18 @@ class AnalyticsInsight(BaseModel):
 
 class WebSocketMessage(BaseModel):
     """WebSocket message format for real-time chat"""
+
     type: str  # chat, typing, status, error
     data: Dict[str, Any]
     timestamp: datetime = Field(default_factory=datetime.now)
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class AssistantCapabilities(BaseModel):
     """Capabilities and limitations of the AI assistant"""
+
     supported_queries: List[str]
     supported_metrics: List[str]
     supported_time_ranges: List[str]
@@ -236,10 +254,11 @@ class AssistantCapabilities(BaseModel):
     max_results_per_query: int
     rate_limits: Dict[str, int]
     available_data_sources: List[str]
-    
-    
+
+
 class FeedbackRequest(BaseModel):
     """User feedback on assistant response"""
+
     message_id: str
     session_id: str
     rating: int = Field(..., ge=1, le=5)

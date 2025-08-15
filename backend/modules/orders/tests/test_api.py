@@ -24,6 +24,7 @@ class TestOrderAPI:
     def test_get_orders_with_status_filter(self, client, db_session):
         """Test GET /orders with status filter."""
         from modules.orders.models.order_models import Order
+
         order1 = Order(staff_id=1, status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, status=OrderStatus.IN_PROGRESS.value)
         db_session.add_all([order1, order2])
@@ -38,6 +39,7 @@ class TestOrderAPI:
     def test_get_orders_with_staff_id_filter(self, client, db_session):
         """Test GET /orders with staff_id filter."""
         from modules.orders.models.order_models import Order
+
         order1 = Order(staff_id=1, status=OrderStatus.PENDING.value)
         order2 = Order(staff_id=2, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2])
@@ -52,10 +54,9 @@ class TestOrderAPI:
     def test_get_orders_with_table_no_filter(self, client, db_session):
         """Test GET /orders with table_no filter."""
         from modules.orders.models.order_models import Order
-        order1 = Order(staff_id=1, table_no=5,
-                       status=OrderStatus.PENDING.value)
-        order2 = Order(staff_id=2, table_no=3,
-                       status=OrderStatus.PENDING.value)
+
+        order1 = Order(staff_id=1, table_no=5, status=OrderStatus.PENDING.value)
+        order2 = Order(staff_id=2, table_no=3, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2])
         db_session.commit()
 
@@ -68,8 +69,8 @@ class TestOrderAPI:
     def test_get_orders_pagination(self, client, db_session):
         """Test GET /orders pagination parameters."""
         from modules.orders.models.order_models import Order
-        orders = [Order(staff_id=i, status=OrderStatus.PENDING.value)
-                  for i in range(5)]
+
+        orders = [Order(staff_id=i, status=OrderStatus.PENDING.value) for i in range(5)]
         db_session.add_all(orders)
         db_session.commit()
 
@@ -105,10 +106,10 @@ class TestOrderAPI:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["detail"]
 
-    def test_get_order_by_id_soft_deleted(self, client, sample_order,
-                                          db_session):
+    def test_get_order_by_id_soft_deleted(self, client, sample_order, db_session):
         """Test GET /orders/{id} with soft-deleted order."""
         from datetime import datetime
+
         sample_order.deleted_at = datetime.utcnow()
         db_session.commit()
 
@@ -118,19 +119,16 @@ class TestOrderAPI:
     def test_update_order_status_success(self, client, sample_order):
         """Test PUT /orders/{order_id} with valid status update."""
         update_data = {"status": "in_progress"}
-        response = client.put(f"/orders/{sample_order.id}",
-                              json=update_data)
+        response = client.put(f"/orders/{sample_order.id}", json=update_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "Order updated successfully"
         assert data["data"]["status"] == "in_progress"
 
-    def test_update_order_status_invalid_transition(self, client,
-                                                    sample_order):
+    def test_update_order_status_invalid_transition(self, client, sample_order):
         """Test PUT /orders/{order_id} with invalid transition."""
         update_data = {"status": "completed"}
-        response = client.put(f"/orders/{sample_order.id}",
-                              json=update_data)
+        response = client.put(f"/orders/{sample_order.id}", json=update_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Invalid status transition" in response.json()["detail"]
 
@@ -142,13 +140,9 @@ class TestOrderAPI:
                     "menu_item_id": 301,
                     "quantity": 2,
                     "price": 18.99,
-                    "notes": "Extra cheese"
+                    "notes": "Extra cheese",
                 },
-                {
-                    "menu_item_id": 302,
-                    "quantity": 1,
-                    "price": 7.50
-                }
+                {"menu_item_id": 302, "quantity": 1, "price": 7.50},
             ]
         }
         response = client.put(f"/orders/{sample_order.id}", json=update_data)
@@ -163,8 +157,7 @@ class TestOrderAPI:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "Order not found" in response.json()["detail"]
 
-    def test_update_order_combined_status_and_items(self, client,
-                                                    sample_order):
+    def test_update_order_combined_status_and_items(self, client, sample_order):
         """Test PUT /orders/{order_id} updating status and items."""
         update_data = {
             "status": "in_progress",
@@ -173,9 +166,9 @@ class TestOrderAPI:
                     "menu_item_id": 401,
                     "quantity": 3,
                     "price": 25.00,
-                    "notes": "Well done"
+                    "notes": "Well done",
                 }
-            ]
+            ],
         }
         response = client.put(f"/orders/{sample_order.id}", json=update_data)
         assert response.status_code == status.HTTP_200_OK
@@ -194,7 +187,7 @@ class TestOrderAPI:
                 {
                     "menu_item_id": "not_an_integer",
                     "quantity": -1,
-                    "price": "not_a_number"
+                    "price": "not_a_number",
                 }
             ]
         }
@@ -206,9 +199,9 @@ class TestOrderAPI:
         request_data = {
             "order_items": [
                 {"menu_item_id": 104, "quantity": 2, "price": 10.99},
-                {"menu_item_id": 105, "quantity": 1, "price": 7.99}
+                {"menu_item_id": 105, "quantity": 1, "price": 7.99},
             ],
-            "rule_types": ["combo", "bulk_discount"]
+            "rule_types": ["combo", "bulk_discount"],
         }
         response = client.post("/orders/validate-rules", json=request_data)
         assert response.status_code == status.HTTP_200_OK
@@ -220,9 +213,9 @@ class TestOrderAPI:
         request_data = {
             "order_items": [
                 {"menu_item_id": 101, "quantity": 1, "price": 12.99},
-                {"menu_item_id": 301, "quantity": 1, "price": 15.99}
+                {"menu_item_id": 301, "quantity": 1, "price": 15.99},
             ],
-            "rule_types": ["compatibility"]
+            "rule_types": ["compatibility"],
         }
         response = client.post("/orders/validate-rules", json=request_data)
         assert response.status_code == status.HTTP_200_OK
@@ -234,8 +227,7 @@ class TestOrderAPI:
         """Test POST /orders/validate-rules with invalid data."""
         request_data = {
             "order_items": [
-                {"menu_item_id": "invalid", "quantity": -1,
-                 "price": "not_a_number"}
+                {"menu_item_id": "invalid", "quantity": -1, "price": "not_a_number"}
             ]
         }
         response = client.post("/orders/validate-rules", json=request_data)
@@ -249,31 +241,27 @@ class TestDelayedFulfillmentAPI:
         delay_data = {
             "scheduled_fulfillment_time": "2025-12-31T15:30:00",
             "delay_reason": DelayReason.CUSTOMER_REQUEST.value,
-            "additional_notes": "Customer requested later delivery"
+            "additional_notes": "Customer requested later delivery",
         }
 
-        response = client.post(f"/orders/{sample_order.id}/delay",
-                               json=delay_data)
+        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["message"] == "Order scheduled for delayed fulfillment"
         assert data["data"]["status"] == OrderStatus.DELAYED.value
-        assert (data["data"]["delay_reason"] ==
-                DelayReason.CUSTOMER_REQUEST.value)
+        assert data["data"]["delay_reason"] == DelayReason.CUSTOMER_REQUEST.value
 
-    def test_delay_order_invalid_status(self, client, sample_order,
-                                        db_session):
+    def test_delay_order_invalid_status(self, client, sample_order, db_session):
         """Test delaying order with invalid status."""
         sample_order.status = OrderStatus.COMPLETED.value
         db_session.commit()
 
         delay_data = {
             "scheduled_fulfillment_time": "2025-12-31T15:30:00",
-            "delay_reason": DelayReason.CUSTOMER_REQUEST.value
+            "delay_reason": DelayReason.CUSTOMER_REQUEST.value,
         }
 
-        response = client.post(f"/orders/{sample_order.id}/delay",
-                               json=delay_data)
+        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Cannot delay order" in response.json()["detail"]
 
@@ -281,11 +269,10 @@ class TestDelayedFulfillmentAPI:
         """Test delaying order with past time."""
         delay_data = {
             "scheduled_fulfillment_time": "2020-01-01T12:00:00",
-            "delay_reason": DelayReason.CUSTOMER_REQUEST.value
+            "delay_reason": DelayReason.CUSTOMER_REQUEST.value,
         }
 
-        response = client.post(f"/orders/{sample_order.id}/delay",
-                               json=delay_data)
+        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "must be in the future" in response.json()["detail"]
 
@@ -293,7 +280,7 @@ class TestDelayedFulfillmentAPI:
         """Test delaying non-existent order."""
         delay_data = {
             "scheduled_fulfillment_time": "2025-12-31T15:30:00",
-            "delay_reason": DelayReason.CUSTOMER_REQUEST.value
+            "delay_reason": DelayReason.CUSTOMER_REQUEST.value,
         }
 
         response = client.post("/orders/999/delay", json=delay_data)
@@ -304,13 +291,11 @@ class TestDelayedFulfillmentAPI:
         """Test delay order with invalid data."""
         delay_data = {
             "scheduled_fulfillment_time": "invalid-date",
-            "delay_reason": "invalid_reason"
+            "delay_reason": "invalid_reason",
         }
 
-        response = client.post(f"/orders/{sample_order.id}/delay",
-                               json=delay_data)
-        assert (response.status_code ==
-                status.HTTP_422_UNPROCESSABLE_ENTITY)
+        response = client.post(f"/orders/{sample_order.id}/delay", json=delay_data)
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_get_delayed_orders_empty(self, client):
         """Test GET /orders/delayed returns empty list."""
@@ -323,12 +308,14 @@ class TestDelayedFulfillmentAPI:
         from modules.orders.models.order_models import Order
 
         order1 = Order(
-            staff_id=1, status=OrderStatus.DELAYED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+            staff_id=1,
+            status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0),
         )
         order2 = Order(
-            staff_id=2, status=OrderStatus.SCHEDULED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+            staff_id=2,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0),
         )
         order3 = Order(staff_id=3, status=OrderStatus.PENDING.value)
         db_session.add_all([order1, order2, order3])
@@ -338,8 +325,7 @@ class TestDelayedFulfillmentAPI:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) == 2
-        expected_statuses = [OrderStatus.DELAYED.value,
-                             OrderStatus.SCHEDULED.value]
+        expected_statuses = [OrderStatus.DELAYED.value, OrderStatus.SCHEDULED.value]
         assert data[0]["status"] in expected_statuses
         assert data[1]["status"] in expected_statuses
 
@@ -348,22 +334,27 @@ class TestDelayedFulfillmentAPI:
         from modules.orders.models.order_models import Order
 
         order1 = Order(
-            staff_id=1, status=OrderStatus.DELAYED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+            staff_id=1,
+            status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0),
         )
         order2 = Order(
-            staff_id=2, status=OrderStatus.SCHEDULED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+            staff_id=2,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0),
         )
         order3 = Order(
-            staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0)
+            staff_id=3,
+            status=OrderStatus.AWAITING_FULFILLMENT.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0),
         )
         db_session.add_all([order1, order2, order3])
         db_session.commit()
 
-        url = ("/orders/delayed?from_time=2025-12-31T12:00:00"
-               "&to_time=2025-12-31T16:00:00")
+        url = (
+            "/orders/delayed?from_time=2025-12-31T12:00:00"
+            "&to_time=2025-12-31T16:00:00"
+        )
         response = client.get(url)
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

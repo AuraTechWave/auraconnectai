@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ReservationEvent:
     """Base reservation event"""
+
     event_type: str
     reservation_id: int
     customer_id: int
@@ -31,13 +32,14 @@ class ReservationEvent:
             "customer_id": self.customer_id,
             "timestamp": self.timestamp.isoformat(),
             "user_id": self.user_id,
-            "metadata": self.metadata or {}
+            "metadata": self.metadata or {},
         }
 
 
 @dataclass
 class ReservationCreatedEvent(ReservationEvent):
     """Emitted when reservation is created"""
+
     event_type: str = "reservation.created"
     party_size: int = None
     reservation_date: str = None
@@ -48,6 +50,7 @@ class ReservationCreatedEvent(ReservationEvent):
 @dataclass
 class ReservationUpdatedEvent(ReservationEvent):
     """Emitted when reservation is updated"""
+
     event_type: str = "reservation.updated"
     changes: Dict[str, Any] = None
 
@@ -55,6 +58,7 @@ class ReservationUpdatedEvent(ReservationEvent):
 @dataclass
 class ReservationCancelledEvent(ReservationEvent):
     """Emitted when reservation is cancelled"""
+
     event_type: str = "reservation.cancelled"
     reason: str = None
     cancelled_by: str = None
@@ -63,6 +67,7 @@ class ReservationCancelledEvent(ReservationEvent):
 @dataclass
 class ReservationPromotedEvent(ReservationEvent):
     """Emitted when reservation is promoted from waitlist"""
+
     event_type: str = "reservation.promoted"
     waitlist_id: int = None
     original_position: int = None
@@ -71,6 +76,7 @@ class ReservationPromotedEvent(ReservationEvent):
 @dataclass
 class ReservationSeatedEvent(ReservationEvent):
     """Emitted when guests are seated"""
+
     event_type: str = "reservation.seated"
     table_numbers: str = None
     seated_by: int = None
@@ -79,6 +85,7 @@ class ReservationSeatedEvent(ReservationEvent):
 @dataclass
 class ReservationCompletedEvent(ReservationEvent):
     """Emitted when reservation is completed"""
+
     event_type: str = "reservation.completed"
     duration_minutes: int = None
 
@@ -86,6 +93,7 @@ class ReservationCompletedEvent(ReservationEvent):
 @dataclass
 class ReservationNoShowEvent(ReservationEvent):
     """Emitted when reservation is marked as no-show"""
+
     event_type: str = "reservation.no_show"
     marked_by: int = None
 
@@ -93,6 +101,7 @@ class ReservationNoShowEvent(ReservationEvent):
 @dataclass
 class WaitlistCreatedEvent(ReservationEvent):
     """Emitted when added to waitlist"""
+
     event_type: str = "waitlist.created"
     position: int = None
     requested_date: str = None
@@ -102,6 +111,7 @@ class WaitlistCreatedEvent(ReservationEvent):
 @dataclass
 class WaitlistNotifiedEvent(ReservationEvent):
     """Emitted when waitlist customer is notified"""
+
     event_type: str = "waitlist.notified"
     waitlist_id: int = None
     available_time: str = None
@@ -111,6 +121,7 @@ class WaitlistNotifiedEvent(ReservationEvent):
 @dataclass
 class WaitlistConvertedEvent(ReservationEvent):
     """Emitted when waitlist converts to reservation"""
+
     event_type: str = "waitlist.converted"
     waitlist_id: int = None
     new_reservation_id: int = None
@@ -127,7 +138,7 @@ reservation_event_handlers: Dict[str, List[Callable]] = {
     "reservation.no_show": [],
     "waitlist.created": [],
     "waitlist.notified": [],
-    "waitlist.converted": []
+    "waitlist.converted": [],
 }
 
 
@@ -135,7 +146,7 @@ def register_event_handler(event_type: str, handler: Callable):
     """Register an event handler"""
     if event_type not in reservation_event_handlers:
         raise ValueError(f"Unknown event type: {event_type}")
-    
+
     reservation_event_handlers[event_type].append(handler)
     logger.info(f"Registered handler {handler.__name__} for {event_type}")
 
@@ -150,13 +161,13 @@ async def emit_reservation_event(event: ReservationEvent):
     """Emit a reservation event to all registered handlers"""
     event_type = event.event_type
     handlers = reservation_event_handlers.get(event_type, [])
-    
+
     if not handlers:
         logger.debug(f"No handlers registered for {event_type}")
         return
-    
+
     logger.info(f"Emitting {event_type} for reservation {event.reservation_id}")
-    
+
     # Run handlers concurrently
     tasks = []
     for handler in handlers:
@@ -165,11 +176,11 @@ async def emit_reservation_event(event: ReservationEvent):
         else:
             # Wrap sync handlers
             tasks.append(asyncio.create_task(asyncio.to_thread(handler, event)))
-    
+
     # Wait for all handlers to complete
     if tasks:
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # Log any exceptions
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -179,6 +190,7 @@ async def emit_reservation_event(event: ReservationEvent):
 
 
 # Example handlers that could be registered
+
 
 async def log_reservation_event(event: ReservationEvent):
     """Log reservation events for analytics"""
@@ -209,5 +221,7 @@ async def update_analytics_on_completion(event: ReservationCompletedEvent):
 async def check_waitlist_on_cancellation(event: ReservationCancelledEvent):
     """Check waitlist when reservation is cancelled"""
     if event.event_type == "reservation.cancelled":
-        logger.info(f"Would check waitlist after cancellation of {event.reservation_id}")
+        logger.info(
+            f"Would check waitlist after cancellation of {event.reservation_id}"
+        )
         # In production, would trigger waitlist service

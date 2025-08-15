@@ -14,6 +14,7 @@ from ..models.kds_models import StationType, StationStatus, DisplayStatus
 
 class StationCreate(BaseModel):
     """Schema for creating a kitchen station"""
+
     name: str = Field(..., min_length=1, max_length=100)
     station_type: StationType
     display_name: Optional[str] = None
@@ -26,13 +27,14 @@ class StationCreate(BaseModel):
     features: List[str] = Field(default_factory=list)
     printer_id: Optional[str] = None
 
-    @validator('display_name', always=True)
+    @validator("display_name", always=True)
     def set_display_name(cls, v, values):
-        return v or values.get('name')
+        return v or values.get("name")
 
 
 class StationUpdate(BaseModel):
     """Schema for updating a kitchen station"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     station_type: Optional[StationType] = None
     status: Optional[StationStatus] = None
@@ -50,6 +52,7 @@ class StationUpdate(BaseModel):
 
 class StationResponse(BaseModel):
     """Response schema for kitchen station"""
+
     id: int
     name: str
     station_type: StationType
@@ -67,7 +70,7 @@ class StationResponse(BaseModel):
     staff_assigned_at: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]
-    
+
     # Computed fields
     active_items_count: int = 0
     pending_items_count: int = 0
@@ -79,6 +82,7 @@ class StationResponse(BaseModel):
 
 class KitchenDisplayCreate(BaseModel):
     """Schema for creating a kitchen display"""
+
     station_id: int
     display_number: int = Field(1, ge=1, le=10)
     name: Optional[str] = None
@@ -91,6 +95,7 @@ class KitchenDisplayCreate(BaseModel):
 
 class KitchenDisplayUpdate(BaseModel):
     """Schema for updating a kitchen display"""
+
     name: Optional[str] = None
     ip_address: Optional[str] = None
     is_active: Optional[bool] = None
@@ -102,6 +107,7 @@ class KitchenDisplayUpdate(BaseModel):
 
 class KitchenDisplayResponse(BaseModel):
     """Response schema for kitchen display"""
+
     id: int
     station_id: int
     display_number: int
@@ -122,6 +128,7 @@ class KitchenDisplayResponse(BaseModel):
 
 class StationAssignmentCreate(BaseModel):
     """Schema for creating station assignments"""
+
     station_id: int
     category_name: Optional[str] = None
     tag_name: Optional[str] = None
@@ -130,15 +137,16 @@ class StationAssignmentCreate(BaseModel):
     prep_time_override: Optional[int] = Field(None, ge=1, le=120)
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
-    @validator('category_name')
+    @validator("category_name")
     def validate_assignment(cls, v, values):
-        if not v and not values.get('tag_name'):
-            raise ValueError('Either category_name or tag_name must be provided')
+        if not v and not values.get("tag_name"):
+            raise ValueError("Either category_name or tag_name must be provided")
         return v
 
 
 class StationAssignmentResponse(BaseModel):
     """Response schema for station assignment"""
+
     id: int
     station_id: int
     category_name: Optional[str]
@@ -156,6 +164,7 @@ class StationAssignmentResponse(BaseModel):
 
 class MenuItemStationCreate(BaseModel):
     """Schema for assigning menu items to stations"""
+
     menu_item_id: int
     station_id: int
     is_primary: bool = True
@@ -166,6 +175,7 @@ class MenuItemStationCreate(BaseModel):
 
 class MenuItemStationResponse(BaseModel):
     """Response schema for menu item station assignment"""
+
     id: int
     menu_item_id: int
     station_id: int
@@ -182,6 +192,7 @@ class MenuItemStationResponse(BaseModel):
 
 class OrderItemDisplay(BaseModel):
     """Schema for displaying order items on KDS"""
+
     order_id: int
     order_item_id: int
     table_number: Optional[int]
@@ -196,6 +207,7 @@ class OrderItemDisplay(BaseModel):
 
 class KDSOrderItemResponse(BaseModel):
     """Response schema for KDS order items"""
+
     id: int
     order_item_id: int
     station_id: int
@@ -218,11 +230,11 @@ class KDSOrderItemResponse(BaseModel):
     recall_count: int
     last_recalled_at: Optional[datetime]
     recall_reason: Optional[str]
-    
+
     # Computed fields
     wait_time_seconds: int
     is_late: bool
-    
+
     # Related data
     order_id: Optional[int] = None
     table_number: Optional[int] = None
@@ -234,6 +246,7 @@ class KDSOrderItemResponse(BaseModel):
 
 class StationSummary(BaseModel):
     """Summary statistics for a station"""
+
     station_id: int
     station_name: str
     station_type: StationType
@@ -249,12 +262,13 @@ class StationSummary(BaseModel):
 
 class KDSWebSocketMessage(BaseModel):
     """WebSocket message format for KDS updates"""
-    type: str = Field(..., regex="^(new_item|update_item|remove_item|station_update|heartbeat)$")
+
+    type: str = Field(
+        ..., regex="^(new_item|update_item|remove_item|station_update|heartbeat)$"
+    )
     station_id: Optional[int] = None
     data: Dict[str, Any]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    
+
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}

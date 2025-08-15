@@ -19,16 +19,18 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     """Fallback notification service when core notification service is unavailable."""
-    
+
     def __init__(self):
         self.enabled = True
-    
-    async def send_notification(self, recipient: str, subject: str, message: str, channel: str = "email"):
+
+    async def send_notification(
+        self, recipient: str, subject: str, message: str, channel: str = "email"
+    ):
         """Send notification through specified channel."""
         if not self.enabled:
             logger.warning("Notification service is disabled")
             return False
-        
+
         try:
             if channel == "email":
                 return await self._send_email(recipient, subject, message)
@@ -42,7 +44,7 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send {channel} notification: {e}")
             return False
-    
+
     async def _send_email(self, recipient: str, subject: str, message: str) -> bool:
         """Send email notification."""
         try:
@@ -53,7 +55,7 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             return False
-    
+
     async def _send_sms(self, recipient: str, message: str) -> bool:
         """Send SMS notification."""
         try:
@@ -63,8 +65,10 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send SMS: {e}")
             return False
-    
-    async def _send_push_notification(self, recipient: str, subject: str, message: str) -> bool:
+
+    async def _send_push_notification(
+        self, recipient: str, subject: str, message: str
+    ) -> bool:
         """Send push notification."""
         try:
             # This would integrate with your push notification service
@@ -73,7 +77,7 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to send push notification: {e}")
             return False
-    
+
     async def get_device_tokens(self, staff_id: int) -> List[str]:
         """Get device tokens for push notifications."""
         try:
@@ -83,12 +87,16 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Failed to get device tokens for staff {staff_id}: {e}")
             return []
-    
-    async def create_in_app_notification(self, notification_data: Dict[str, Any]) -> bool:
+
+    async def create_in_app_notification(
+        self, notification_data: Dict[str, Any]
+    ) -> bool:
         """Create in-app notification."""
         try:
             # This would create an in-app notification record
-            logger.info(f"In-app notification created: {notification_data.get('type', 'unknown')}")
+            logger.info(
+                f"In-app notification created: {notification_data.get('type', 'unknown')}"
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to create in-app notification: {e}")
@@ -98,6 +106,7 @@ class NotificationService:
 # Try to import core notification service, fallback to local implementation
 try:
     from core.notifications import notification_service as core_notification
+
     notification_service = core_notification
     logger.info("Using core notification service")
 except ImportError:
@@ -107,12 +116,12 @@ except ImportError:
 
 class ScheduleNotificationService:
     """Service for handling schedule-related notifications"""
-    
+
     def __init__(self):
         self.notification_channels = ["email", "sms", "push", "in_app"]
         self.batch_size = 50  # Send notifications in batches
         self.notification_service = notification_service
-    
+
     async def send_schedule_published_notifications(
         self,
         db: AsyncSession,
@@ -120,30 +129,26 @@ class ScheduleNotificationService:
         start_date: date,
         end_date: date,
         channels: List[str] = ["email", "in_app"],
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Send notifications when schedule is published"""
-        
+
         # Get all affected staff with their schedules
         affected_staff = await self._get_affected_staff(
             db, restaurant_id, start_date, end_date
         )
-        
+
         if not affected_staff:
-            return {
-                "success": True,
-                "total_staff": 0,
-                "notifications_sent": {}
-            }
-        
+            return {"success": True, "total_staff": 0, "notifications_sent": {}}
+
         # Group notifications by channel
         results = {
             "success": True,
             "total_staff": len(affected_staff),
             "notifications_sent": {},
-            "errors": []
+            "errors": [],
         }
-        
+
         # Send notifications through each channel
         for channel in channels:
             if channel in self.notification_channels:
@@ -154,29 +159,26 @@ class ScheduleNotificationService:
                     results["notifications_sent"][channel] = sent_count
                 except Exception as e:
                     logger.error(f"Error sending {channel} notifications: {e}")
-                    results["errors"].append({
-                        "channel": channel,
-                        "error": str(e)
-                    })
-        
+                    results["errors"].append({"channel": channel, "error": str(e)})
+
         return results
-    
+
     async def send_schedule_updated_notifications(
         self,
         db: AsyncSession,
         restaurant_id: int,
         updated_schedules: List[Schedule],
-        channels: List[str] = ["email", "push"]
+        channels: List[str] = ["email", "push"],
     ) -> Dict[str, Any]:
         """Send notifications for schedule updates"""
-        
+
         # Group schedules by staff
         staff_schedules = {}
         for schedule in updated_schedules:
             if schedule.staff_id not in staff_schedules:
                 staff_schedules[schedule.staff_id] = []
             staff_schedules[schedule.staff_id].append(schedule)
-        
+
         # Get staff details
         staff_ids = list(staff_schedules.keys())
         staff_result = await db.execute(
@@ -184,29 +186,28 @@ class ScheduleNotificationService:
                 and_(
                     Staff.restaurant_id == restaurant_id,
                     Staff.id.in_(staff_ids),
-                    Staff.is_active == True
+                    Staff.is_active == True,
                 )
             )
         )
         staff_list = staff_result.scalars().all()
-        
+
         # Prepare notification data
         notification_data = []
         for staff in staff_list:
             schedules = staff_schedules.get(staff.id, [])
             if schedules:
-                notification_data.append({
-                    "staff": staff,
-                    "updated_schedules": schedules
-                })
-        
+                notification_data.append(
+                    {"staff": staff, "updated_schedules": schedules}
+                )
+
         # Send notifications
         results = {
             "success": True,
             "total_staff": len(notification_data),
-            "notifications_sent": {}
+            "notifications_sent": {},
         }
-        
+
         for channel in channels:
             if channel in self.notification_channels:
                 try:
@@ -216,52 +217,50 @@ class ScheduleNotificationService:
                     results["notifications_sent"][channel] = sent_count
                 except Exception as e:
                     logger.error(f"Error sending {channel} update notifications: {e}")
-        
+
         return results
-    
+
     async def send_shift_reminders(
-        self,
-        db: AsyncSession,
-        restaurant_id: int,
-        hours_before: int = 2
+        self, db: AsyncSession, restaurant_id: int, hours_before: int = 2
     ) -> Dict[str, Any]:
         """Send reminders for upcoming shifts"""
-        
+
         # Calculate reminder window
         now = datetime.utcnow()
         reminder_start = now + timedelta(hours=hours_before - 0.5)
         reminder_end = now + timedelta(hours=hours_before + 0.5)
-        
+
         # Get upcoming shifts in reminder window
-        query = select(Schedule).where(
-            and_(
-                Schedule.restaurant_id == restaurant_id,
-                Schedule.date >= now.date(),
-                Schedule.is_published == True,
-                Schedule.reminder_sent == False
+        query = (
+            select(Schedule)
+            .where(
+                and_(
+                    Schedule.restaurant_id == restaurant_id,
+                    Schedule.date >= now.date(),
+                    Schedule.is_published == True,
+                    Schedule.reminder_sent == False,
+                )
             )
-        ).options(selectinload(Schedule.staff))
-        
+            .options(selectinload(Schedule.staff))
+        )
+
         result = await db.execute(query)
         upcoming_shifts = result.scalars().all()
-        
+
         # Filter shifts in reminder window
         shifts_to_remind = []
         for shift in upcoming_shifts:
             shift_start = datetime.combine(shift.date, shift.start_time)
             if reminder_start <= shift_start <= reminder_end:
                 shifts_to_remind.append(shift)
-        
+
         if not shifts_to_remind:
-            return {
-                "success": True,
-                "reminders_sent": 0
-            }
-        
+            return {"success": True, "reminders_sent": 0}
+
         # Send reminders
         sent_count = 0
         errors = []
-        
+
         for shift in shifts_to_remind:
             try:
                 await self._send_shift_reminder(shift)
@@ -269,98 +268,96 @@ class ScheduleNotificationService:
                 sent_count += 1
             except Exception as e:
                 logger.error(f"Error sending reminder for shift {shift.id}: {e}")
-                errors.append({
-                    "shift_id": shift.id,
-                    "staff_name": shift.staff.name,
-                    "error": str(e)
-                })
-        
+                errors.append(
+                    {
+                        "shift_id": shift.id,
+                        "staff_name": shift.staff.name,
+                        "error": str(e),
+                    }
+                )
+
         await db.commit()
-        
+
         return {
             "success": len(errors) == 0,
             "reminders_sent": sent_count,
-            "errors": errors
+            "errors": errors,
         }
-    
+
     async def _get_affected_staff(
-        self,
-        db: AsyncSession,
-        restaurant_id: int,
-        start_date: date,
-        end_date: date
+        self, db: AsyncSession, restaurant_id: int, start_date: date, end_date: date
     ) -> List[Dict[str, Any]]:
         """Get staff affected by schedule publication"""
-        
+
         # Get all schedules in date range with staff details
-        query = select(Schedule).where(
-            and_(
-                Schedule.restaurant_id == restaurant_id,
-                Schedule.date >= start_date,
-                Schedule.date <= end_date,
-                Schedule.is_published == True
+        query = (
+            select(Schedule)
+            .where(
+                and_(
+                    Schedule.restaurant_id == restaurant_id,
+                    Schedule.date >= start_date,
+                    Schedule.date <= end_date,
+                    Schedule.is_published == True,
+                )
             )
-        ).options(selectinload(Schedule.staff))
-        
+            .options(selectinload(Schedule.staff))
+        )
+
         result = await db.execute(query)
         schedules = result.scalars().all()
-        
+
         # Group by staff
         staff_data = {}
         for schedule in schedules:
             if schedule.staff_id not in staff_data:
                 staff_data[schedule.staff_id] = {
                     "staff": schedule.staff,
-                    "schedules": []
+                    "schedules": [],
                 }
             staff_data[schedule.staff_id]["schedules"].append(schedule)
-        
+
         return list(staff_data.values())
-    
+
     async def _send_by_channel(
         self,
         channel: str,
         staff_data: List[Dict[str, Any]],
         start_date: date,
         end_date: date,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> int:
         """Send notifications through specific channel"""
-        
+
         if channel == "email":
             return await self._send_email_notifications(
                 staff_data, start_date, end_date, notes
             )
         elif channel == "sms":
-            return await self._send_sms_notifications(
-                staff_data, start_date, end_date
-            )
+            return await self._send_sms_notifications(staff_data, start_date, end_date)
         elif channel == "push":
-            return await self._send_push_notifications(
-                staff_data, start_date, end_date
-            )
+            return await self._send_push_notifications(staff_data, start_date, end_date)
         elif channel == "in_app":
             return await self._send_in_app_notifications(
                 staff_data, start_date, end_date, notes
             )
-        
+
         return 0
-    
+
     async def _send_email_notifications(
         self,
         staff_data: List[Dict[str, Any]],
         start_date: date,
         end_date: date,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> int:
         """Send email notifications in batches"""
-        
+
         sent_count = 0
-        
+
         # Process in batches
         for i in range(0, len(staff_data), self.batch_size):
-            batch = staff_data[i:i + self.batch_size]
-            
+            batch = staff_data[i : i + self.batch_size]
+
             # Prepare batch emails
             email_tasks = []
             for item in batch:
@@ -374,30 +371,30 @@ class ScheduleNotificationService:
                             recipient=staff.email,
                             subject=f"Your Schedule for {start_date.strftime('%b %d')} - {end_date.strftime('%b %d')}",
                             message=email_content,
-                            channel="email"
+                            channel="email",
                         )
                     )
-            
+
             # Send batch
             if email_tasks:
                 results = await asyncio.gather(*email_tasks, return_exceptions=True)
                 sent_count += sum(1 for r in results if not isinstance(r, Exception))
-        
+
         return sent_count
-    
+
     def _create_schedule_email(
         self,
         staff: Staff,
         schedules: List[Schedule],
         start_date: date,
         end_date: date,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> str:
         """Create HTML email content for schedule notification"""
-        
+
         # Sort schedules by date
         schedules.sort(key=lambda s: s.date)
-        
+
         schedule_html = ""
         for schedule in schedules:
             schedule_html += f"""
@@ -413,7 +410,7 @@ class ScheduleNotificationService:
                 </td>
             </tr>
             """
-        
+
         notes_section = ""
         if notes:
             notes_section = f"""
@@ -422,7 +419,7 @@ class ScheduleNotificationService:
                 <p>{notes}</p>
             </div>
             """
-        
+
         return f"""
         <html>
             <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
@@ -458,101 +455,94 @@ class ScheduleNotificationService:
             </body>
         </html>
         """
-    
+
     async def _send_sms_notifications(
-        self,
-        staff_data: List[Dict[str, Any]],
-        start_date: date,
-        end_date: date
+        self, staff_data: List[Dict[str, Any]], start_date: date, end_date: date
     ) -> int:
         """Send SMS notifications"""
-        
+
         sent_count = 0
-        
+
         for item in staff_data:
             staff = item["staff"]
             if staff.phone:
                 # Calculate total hours
                 total_hours = sum(s.total_hours for s in item["schedules"])
-                
+
                 message = (
                     f"Hi {staff.name}, your schedule for "
                     f"{start_date.strftime('%b %d')}-{end_date.strftime('%b %d')} "
                     f"is ready. Total: {total_hours} hours. "
                     f"Check the app for details."
                 )
-                
+
                 try:
                     await self.notification_service.send_notification(
                         recipient=staff.phone,
                         subject="Schedule Published",
                         message=message,
-                        channel="sms"
+                        channel="sms",
                     )
                     sent_count += 1
                 except Exception as e:
                     logger.error(f"SMS failed for {staff.name}: {e}")
-        
+
         return sent_count
-    
+
     async def _send_push_notifications(
-        self,
-        staff_data: List[Dict[str, Any]],
-        start_date: date,
-        end_date: date
+        self, staff_data: List[Dict[str, Any]], start_date: date, end_date: date
     ) -> int:
         """Send push notifications"""
-        
+
         sent_count = 0
-        
+
         for item in staff_data:
             staff = item["staff"]
-            
+
             # Get device tokens for staff
             device_tokens = await self.notification_service.get_device_tokens(staff.id)
-            
+
             if device_tokens:
                 title = "Schedule Published"
                 body = (
                     f"Your schedule for {start_date.strftime('%b %d')}-"
                     f"{end_date.strftime('%b %d')} is now available"
                 )
-                
+
                 data = {
                     "type": "schedule_published",
                     "start_date": start_date.isoformat(),
-                    "end_date": end_date.isoformat()
+                    "end_date": end_date.isoformat(),
                 }
-                
+
                 # Send to each device token individually
                 for token in device_tokens:
                     try:
                         await self.notification_service.send_notification(
-                            recipient=token,
-                            subject=title,
-                            message=body,
-                            channel="push"
+                            recipient=token, subject=title, message=body, channel="push"
                         )
                         sent_count += 1
                     except Exception as e:
-                        logger.error(f"Push notification failed for {staff.name} (token: {token[:10]}...): {e}")
-        
+                        logger.error(
+                            f"Push notification failed for {staff.name} (token: {token[:10]}...): {e}"
+                        )
+
         return sent_count
-    
+
     async def _send_in_app_notifications(
         self,
         staff_data: List[Dict[str, Any]],
         start_date: date,
         end_date: date,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> int:
         """Create in-app notifications"""
-        
+
         sent_count = 0
-        
+
         for item in staff_data:
             staff = item["staff"]
-            
+
             notification_data = {
                 "user_id": staff.id,
                 "type": "schedule_published",
@@ -567,54 +557,56 @@ class ScheduleNotificationService:
                     "end_date": end_date.isoformat(),
                     "shift_count": len(item["schedules"]),
                     "total_hours": sum(s.total_hours for s in item["schedules"]),
-                    "notes": notes
-                }
+                    "notes": notes,
+                },
             }
-            
+
             try:
-                await self.notification_service.create_in_app_notification(notification_data)
+                await self.notification_service.create_in_app_notification(
+                    notification_data
+                )
                 sent_count += 1
             except Exception as e:
                 logger.error(f"In-app notification failed for {staff.name}: {e}")
-        
+
         return sent_count
-    
+
     async def _send_update_notifications(
-        self,
-        channel: str,
-        notification_data: List[Dict[str, Any]]
+        self, channel: str, notification_data: List[Dict[str, Any]]
     ) -> int:
         """Send update notifications through specific channel"""
-        
+
         # Similar implementation to published notifications
         # but with different message templates
         sent_count = 0
-        
+
         for item in notification_data:
             staff = item["staff"]
             schedules = item["updated_schedules"]
-            
+
             if channel == "email" and staff.email:
                 subject = "Schedule Update"
                 body = self._create_update_email(staff, schedules)
-                
+
                 try:
                     await self.notification_service.send_notification(
                         recipient=staff.email,
                         subject=subject,
                         message=body,
-                        channel="email"
+                        channel="email",
                     )
                     sent_count += 1
                 except Exception as e:
                     logger.error(f"Update email failed for {staff.name}: {e}")
-            
+
             elif channel == "push":
-                device_tokens = await self.notification_service.get_device_tokens(staff.id)
+                device_tokens = await self.notification_service.get_device_tokens(
+                    staff.id
+                )
                 if device_tokens:
                     title = "Schedule Updated"
                     body = f"Your schedule has been updated. {len(schedules)} shifts affected."
-                    
+
                     # Send to each device token individually
                     for token in device_tokens:
                         try:
@@ -622,17 +614,19 @@ class ScheduleNotificationService:
                                 recipient=token,
                                 subject=title,
                                 message=body,
-                                channel="push"
+                                channel="push",
                             )
                             sent_count += 1
                         except Exception as e:
-                            logger.error(f"Update push failed for {staff.name} (token: {token[:10]}...): {e}")
-        
+                            logger.error(
+                                f"Update push failed for {staff.name} (token: {token[:10]}...): {e}"
+                            )
+
         return sent_count
-    
+
     def _create_update_email(self, staff: Staff, schedules: List[Schedule]) -> str:
         """Create email content for schedule updates"""
-        
+
         changes_html = ""
         for schedule in schedules:
             changes_html += f"""
@@ -641,7 +635,7 @@ class ScheduleNotificationService:
                 {schedule.start_time.strftime('%I:%M %p')} - {schedule.end_time.strftime('%I:%M %p')}
             </li>
             """
-        
+
         return f"""
         <html>
             <body style="font-family: Arial, sans-serif; padding: 20px;">
@@ -657,31 +651,30 @@ class ScheduleNotificationService:
             </body>
         </html>
         """
-    
+
     async def _send_shift_reminder(self, shift: Schedule):
         """Send reminder for a single shift"""
-        
+
         staff = shift.staff
         shift_start = datetime.combine(shift.date, shift.start_time)
-        
+
         # Send push notification if available
         device_tokens = await self.notification_service.get_device_tokens(staff.id)
         if device_tokens:
             title = "Shift Reminder"
             body = f"Your shift starts at {shift.start_time.strftime('%I:%M %p')} today"
-            
+
             # Send to each device token individually
             for token in device_tokens:
                 try:
                     await self.notification_service.send_notification(
-                        recipient=token,
-                        subject=title,
-                        message=body,
-                        channel="push"
+                        recipient=token, subject=title, message=body, channel="push"
                     )
                 except Exception as e:
-                    logger.error(f"Failed to send shift reminder to {staff.name} (token: {token[:10]}...): {e}")
-        
+                    logger.error(
+                        f"Failed to send shift reminder to {staff.name} (token: {token[:10]}...): {e}"
+                    )
+
         # Send SMS if configured
         if staff.phone and staff.notification_preferences.get("sms_reminders", False):
             message = (
@@ -693,7 +686,7 @@ class ScheduleNotificationService:
                 recipient=staff.phone,
                 subject="Shift Reminder",
                 message=message,
-                channel="sms"
+                channel="sms",
             )
 
 

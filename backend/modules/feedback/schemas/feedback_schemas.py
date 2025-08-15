@@ -6,14 +6,20 @@ from datetime import datetime
 from enum import Enum
 
 from modules.feedback.models.feedback_models import (
-    ReviewType, ReviewStatus, FeedbackType, FeedbackStatus, 
-    FeedbackPriority, SentimentScore, ReviewSource
+    ReviewType,
+    ReviewStatus,
+    FeedbackType,
+    FeedbackStatus,
+    FeedbackPriority,
+    SentimentScore,
+    ReviewSource,
 )
 
 
 # Base schemas
 class ReviewBase(BaseModel):
     """Base review schema"""
+
     review_type: ReviewType
     title: Optional[str] = Field(None, max_length=255)
     content: str = Field(..., min_length=10, max_length=5000)
@@ -28,24 +34,26 @@ class ReviewBase(BaseModel):
 
 class ReviewCreate(ReviewBase):
     """Schema for creating a review"""
+
     customer_id: int
     order_id: Optional[int] = None
     source: ReviewSource = ReviewSource.WEBSITE
-    
-    @validator('rating')
+
+    @validator("rating")
     def validate_rating(cls, v):
         # Round to nearest 0.5
         return round(v * 2) / 2
-    
-    @validator('content')
+
+    @validator("content")
     def validate_content(cls, v):
         if len(v.strip()) < 10:
-            raise ValueError('Review content must be at least 10 characters')
+            raise ValueError("Review content must be at least 10 characters")
         return v.strip()
 
 
 class ReviewUpdate(BaseModel):
     """Schema for updating a review"""
+
     title: Optional[str] = Field(None, max_length=255)
     content: Optional[str] = Field(None, min_length=10, max_length=5000)
     rating: Optional[float] = Field(None, ge=1.0, le=5.0)
@@ -57,6 +65,7 @@ class ReviewUpdate(BaseModel):
 
 class ReviewModeration(BaseModel):
     """Schema for review moderation"""
+
     status: ReviewStatus
     moderation_notes: Optional[str] = Field(None, max_length=1000)
     is_featured: Optional[bool] = False
@@ -64,6 +73,7 @@ class ReviewModeration(BaseModel):
 
 class ReviewResponse(BaseModel):
     """Schema for review responses"""
+
     id: int
     uuid: str
     review_type: ReviewType
@@ -93,13 +103,14 @@ class ReviewResponse(BaseModel):
     business_response_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class ReviewSummary(BaseModel):
     """Summary schema for review listings"""
+
     id: int
     uuid: str
     review_type: ReviewType
@@ -112,7 +123,7 @@ class ReviewSummary(BaseModel):
     helpful_votes: int
     sentiment_score: Optional[SentimentScore]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -120,6 +131,7 @@ class ReviewSummary(BaseModel):
 # Business Response schemas
 class BusinessResponseCreate(BaseModel):
     """Schema for creating business responses"""
+
     content: str = Field(..., min_length=10, max_length=2000)
     responder_name: str = Field(..., max_length=100)
     responder_title: Optional[str] = Field(None, max_length=100)
@@ -130,6 +142,7 @@ class BusinessResponseCreate(BaseModel):
 
 class BusinessResponseResponse(BaseModel):
     """Schema for business response responses"""
+
     id: int
     uuid: str
     review_id: int
@@ -138,7 +151,7 @@ class BusinessResponseResponse(BaseModel):
     responder_title: Optional[str]
     is_published: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -146,6 +159,7 @@ class BusinessResponseResponse(BaseModel):
 # Review Media schemas
 class ReviewMediaCreate(BaseModel):
     """Schema for review media creation"""
+
     media_type: str = Field(..., pattern="^(image|video)$")
     file_path: str
     file_name: str
@@ -158,6 +172,7 @@ class ReviewMediaCreate(BaseModel):
 
 class ReviewMediaResponse(BaseModel):
     """Schema for review media responses"""
+
     id: int
     uuid: str
     review_id: int
@@ -172,7 +187,7 @@ class ReviewMediaResponse(BaseModel):
     is_processed: bool
     is_approved: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -180,17 +195,19 @@ class ReviewMediaResponse(BaseModel):
 # Review Vote schemas
 class ReviewVoteCreate(BaseModel):
     """Schema for voting on review helpfulness"""
+
     is_helpful: bool
 
 
 class ReviewVoteResponse(BaseModel):
     """Schema for review vote responses"""
+
     id: int
     review_id: int
     customer_id: int
     is_helpful: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -198,6 +215,7 @@ class ReviewVoteResponse(BaseModel):
 # Feedback schemas
 class FeedbackBase(BaseModel):
     """Base feedback schema"""
+
     feedback_type: FeedbackType
     subject: str = Field(..., min_length=5, max_length=255)
     message: str = Field(..., min_length=10, max_length=5000)
@@ -211,23 +229,25 @@ class FeedbackBase(BaseModel):
 
 class FeedbackCreate(FeedbackBase):
     """Schema for creating feedback"""
+
     customer_id: Optional[int] = None
     customer_email: Optional[EmailStr] = None
     customer_name: Optional[str] = Field(None, max_length=100)
     customer_phone: Optional[str] = Field(None, max_length=20)
     order_id: Optional[int] = None
     product_id: Optional[int] = None
-    
-    @validator('customer_email')
+
+    @validator("customer_email")
     def validate_customer_info(cls, v, values):
         # Either customer_id or customer_email must be provided
-        if not v and not values.get('customer_id'):
-            raise ValueError('Either customer_id or customer_email must be provided')
+        if not v and not values.get("customer_id"):
+            raise ValueError("Either customer_id or customer_email must be provided")
         return v
 
 
 class FeedbackUpdate(BaseModel):
     """Schema for updating feedback"""
+
     subject: Optional[str] = Field(None, min_length=5, max_length=255)
     message: Optional[str] = Field(None, min_length=10, max_length=5000)
     category: Optional[str] = Field(None, max_length=100)
@@ -243,6 +263,7 @@ class FeedbackUpdate(BaseModel):
 
 class FeedbackResponse(BaseModel):
     """Schema for feedback responses"""
+
     id: int
     uuid: str
     feedback_type: FeedbackType
@@ -272,13 +293,14 @@ class FeedbackResponse(BaseModel):
     tags: Optional[List[str]]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class FeedbackSummary(BaseModel):
     """Summary schema for feedback listings"""
+
     id: int
     uuid: str
     feedback_type: FeedbackType
@@ -290,7 +312,7 @@ class FeedbackSummary(BaseModel):
     assigned_to: Optional[int]
     sentiment_score: Optional[SentimentScore]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -298,6 +320,7 @@ class FeedbackSummary(BaseModel):
 # Feedback Response schemas
 class FeedbackResponseCreate(BaseModel):
     """Schema for creating feedback responses"""
+
     message: str = Field(..., min_length=5, max_length=2000)
     responder_id: int
     responder_name: str = Field(..., max_length=100)
@@ -308,6 +331,7 @@ class FeedbackResponseCreate(BaseModel):
 
 class FeedbackResponseResponse(BaseModel):
     """Schema for feedback response responses"""
+
     id: int
     uuid: str
     feedback_id: int
@@ -317,7 +341,7 @@ class FeedbackResponseResponse(BaseModel):
     is_internal: bool
     is_resolution: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -325,6 +349,7 @@ class FeedbackResponseResponse(BaseModel):
 # Review Template schemas
 class ReviewTemplateCreate(BaseModel):
     """Schema for creating review templates"""
+
     name: str = Field(..., max_length=255)
     review_type: ReviewType
     title: str = Field(..., max_length=255)
@@ -343,6 +368,7 @@ class ReviewTemplateCreate(BaseModel):
 
 class ReviewTemplateUpdate(BaseModel):
     """Schema for updating review templates"""
+
     name: Optional[str] = Field(None, max_length=255)
     title: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
@@ -361,6 +387,7 @@ class ReviewTemplateUpdate(BaseModel):
 
 class ReviewTemplateResponse(BaseModel):
     """Schema for review template responses"""
+
     id: int
     uuid: str
     name: str
@@ -379,7 +406,7 @@ class ReviewTemplateResponse(BaseModel):
     reminder_days: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -387,6 +414,7 @@ class ReviewTemplateResponse(BaseModel):
 # Review Aggregate schemas
 class ReviewAggregateResponse(BaseModel):
     """Schema for review aggregate responses"""
+
     id: int
     entity_type: str
     entity_id: int
@@ -404,7 +432,7 @@ class ReviewAggregateResponse(BaseModel):
     sentiment_distribution: Optional[Dict[str, int]]
     positive_sentiment_percentage: float
     last_calculated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -412,6 +440,7 @@ class ReviewAggregateResponse(BaseModel):
 # Feedback Category schemas
 class FeedbackCategoryCreate(BaseModel):
     """Schema for creating feedback categories"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     parent_id: Optional[int] = None
@@ -424,6 +453,7 @@ class FeedbackCategoryCreate(BaseModel):
 
 class FeedbackCategoryUpdate(BaseModel):
     """Schema for updating feedback categories"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     parent_id: Optional[int] = None
@@ -437,6 +467,7 @@ class FeedbackCategoryUpdate(BaseModel):
 
 class FeedbackCategoryResponse(BaseModel):
     """Schema for feedback category responses"""
+
     id: int
     name: str
     description: Optional[str]
@@ -449,7 +480,7 @@ class FeedbackCategoryResponse(BaseModel):
     escalation_conditions: Optional[Dict[str, Any]]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -457,6 +488,7 @@ class FeedbackCategoryResponse(BaseModel):
 # Review Invitation schemas
 class ReviewInvitationCreate(BaseModel):
     """Schema for creating review invitations"""
+
     customer_id: int
     order_id: Optional[int] = None
     product_id: Optional[int] = None
@@ -468,6 +500,7 @@ class ReviewInvitationCreate(BaseModel):
 
 class ReviewInvitationResponse(BaseModel):
     """Schema for review invitation responses"""
+
     id: int
     uuid: str
     customer_id: int
@@ -486,7 +519,7 @@ class ReviewInvitationResponse(BaseModel):
     is_expired: bool
     expires_at: Optional[datetime]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -494,6 +527,7 @@ class ReviewInvitationResponse(BaseModel):
 # Analytics schemas
 class ReviewAnalytics(BaseModel):
     """Schema for review analytics"""
+
     total_reviews: int
     average_rating: float
     rating_distribution: Dict[str, int]
@@ -506,6 +540,7 @@ class ReviewAnalytics(BaseModel):
 
 class FeedbackAnalytics(BaseModel):
     """Schema for feedback analytics"""
+
     total_feedback: int
     feedback_by_type: Dict[str, int]
     feedback_by_status: Dict[str, int]
@@ -519,6 +554,7 @@ class FeedbackAnalytics(BaseModel):
 # Search and filter schemas
 class ReviewFilters(BaseModel):
     """Schema for review filtering"""
+
     review_type: Optional[ReviewType] = None
     status: Optional[ReviewStatus] = None
     rating_min: Optional[float] = Field(None, ge=1.0, le=5.0)
@@ -536,6 +572,7 @@ class ReviewFilters(BaseModel):
 
 class FeedbackFilters(BaseModel):
     """Schema for feedback filtering"""
+
     feedback_type: Optional[FeedbackType] = None
     status: Optional[FeedbackStatus] = None
     priority: Optional[FeedbackPriority] = None
@@ -552,6 +589,7 @@ class FeedbackFilters(BaseModel):
 # Pagination schemas
 class PaginatedResponse(BaseModel):
     """Base schema for paginated responses"""
+
     items: List[Any]
     total: int
     page: int
@@ -563,9 +601,11 @@ class PaginatedResponse(BaseModel):
 
 class ReviewListResponse(PaginatedResponse):
     """Schema for paginated review responses"""
+
     items: List[ReviewSummary]
 
 
 class FeedbackListResponse(PaginatedResponse):
     """Schema for paginated feedback responses"""
+
     items: List[FeedbackSummary]

@@ -12,9 +12,7 @@ class ToastAdapter(BasePOSAdapter):
         self.headers = {
             "Authorization": f"Bearer {credentials.get('access_token')}",
             "Content-Type": "application/json",
-            "Toast-Restaurant-External-ID": credentials.get(
-                "restaurant_id", ""
-            )
+            "Toast-Restaurant-External-ID": credentials.get("restaurant_id", ""),
         }
 
     async def push_order(self, order_data: Dict[str, Any]) -> SyncResponse:
@@ -26,16 +24,14 @@ class ToastAdapter(BasePOSAdapter):
                     f"{self.base_url}/orders/v2/orders",
                     json=transformed_data,
                     headers=self.headers,
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 return SyncResponse(
                     success=True, message="Order pushed successfully to Toast"
                 )
             except httpx.HTTPError as e:
-                return SyncResponse(
-                    success=False, message=f"Toast API error: {str(e)}"
-                )
+                return SyncResponse(success=False, message=f"Toast API error: {str(e)}")
 
     async def test_connection(self) -> bool:
         async with httpx.AsyncClient() as client:
@@ -43,7 +39,7 @@ class ToastAdapter(BasePOSAdapter):
                 response = await client.get(
                     f"{self.base_url}/config/v1/restaurants",
                     headers=self.headers,
-                    timeout=10.0
+                    timeout=10.0,
                 )
                 return response.status_code == 200
             except Exception:
@@ -59,15 +55,15 @@ class ToastAdapter(BasePOSAdapter):
                     "menuItemId": item["menu_item_id"],
                     "quantity": item["quantity"],
                     "unitPrice": float(item["price"]),
-                    "specialInstructions": item.get("notes", "")
+                    "specialInstructions": item.get("notes", ""),
                 }
                 for item in order.get("items", [])
             ],
             "metadata": {
                 "tableNumber": order.get("table_no"),
                 "staffId": order["staff_id"],
-                "auraOrderId": order["id"]
-            }
+                "auraOrderId": order["id"],
+            },
         }
 
     async def get_vendor_orders(
@@ -83,7 +79,7 @@ class ToastAdapter(BasePOSAdapter):
                     f"{self.base_url}/orders/v2/orders",
                     headers=self.headers,
                     params=params,
-                    timeout=30.0
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -91,22 +87,32 @@ class ToastAdapter(BasePOSAdapter):
                 return {"orders": []}
 
     # Menu synchronization method stubs - Toast integration not fully implemented
-    async def get_menu_categories(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_categories(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
-    async def get_menu_items(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_menu_items(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
-    async def get_modifier_groups(self, since_timestamp: Optional[datetime] = None) -> List[Dict[str, Any]]:
+    async def get_modifier_groups(
+        self, since_timestamp: Optional[datetime] = None
+    ) -> List[Dict[str, Any]]:
         return []
 
     async def get_modifiers(self, modifier_group_id: str) -> List[Dict[str, Any]]:
         return []
 
-    async def create_menu_category(self, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_menu_category(
+        self, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def update_menu_category(self, category_id: str, category_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_category(
+        self, category_id: str, category_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
     async def delete_menu_category(self, category_id: str) -> bool:
@@ -115,25 +121,35 @@ class ToastAdapter(BasePOSAdapter):
     async def create_menu_item(self, item_data: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def update_menu_item(self, item_id: str, item_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_menu_item(
+        self, item_id: str, item_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
     async def delete_menu_item(self, item_id: str) -> bool:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def create_modifier_group(self, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier_group(
+        self, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def update_modifier_group(self, modifier_group_id: str, modifier_group_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier_group(
+        self, modifier_group_id: str, modifier_group_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
     async def delete_modifier_group(self, modifier_group_id: str) -> bool:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def create_modifier(self, modifier_group_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_modifier(
+        self, modifier_group_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
-    async def update_modifier(self, modifier_id: str, modifier_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def update_modifier(
+        self, modifier_id: str, modifier_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         raise NotImplementedError("Toast menu sync not implemented")
 
     async def delete_modifier(self, modifier_id: str) -> bool:

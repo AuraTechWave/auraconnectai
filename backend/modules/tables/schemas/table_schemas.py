@@ -5,12 +5,18 @@ from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from decimal import Decimal
 
-from ..models.table_models import TableStatus, TableShape, FloorStatus, ReservationStatus
+from ..models.table_models import (
+    TableStatus,
+    TableShape,
+    FloorStatus,
+    ReservationStatus,
+)
 
 
 # Floor Schemas
 class FloorBase(BaseModel):
     """Base floor schema"""
+
     name: str = Field(..., max_length=100)
     display_name: Optional[str] = Field(None, max_length=100)
     floor_number: int = Field(1, ge=0)
@@ -24,12 +30,14 @@ class FloorBase(BaseModel):
 
 class FloorCreate(FloorBase):
     """Floor creation schema"""
+
     status: FloorStatus = FloorStatus.ACTIVE
     is_default: bool = False
 
 
 class FloorUpdate(BaseModel):
     """Floor update schema"""
+
     name: Optional[str] = Field(None, max_length=100)
     display_name: Optional[str] = Field(None, max_length=100)
     floor_number: Optional[int] = Field(None, ge=0)
@@ -45,6 +53,7 @@ class FloorUpdate(BaseModel):
 
 class FloorResponse(FloorBase):
     """Floor response schema"""
+
     id: int
     restaurant_id: int
     status: FloorStatus
@@ -53,7 +62,7 @@ class FloorResponse(FloorBase):
     occupied_tables: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -61,35 +70,40 @@ class FloorResponse(FloorBase):
 # Table Schemas
 class TableBase(BaseModel):
     """Base table schema"""
+
     table_number: str = Field(..., max_length=20)
     display_name: Optional[str] = Field(None, max_length=50)
     min_capacity: int = Field(1, ge=1)
     max_capacity: int = Field(..., ge=1)
     preferred_capacity: Optional[int] = None
-    
-    @validator('preferred_capacity')
+
+    @validator("preferred_capacity")
     def validate_preferred_capacity(cls, v, values):
         if v is not None:
-            min_cap = values.get('min_capacity', 1)
-            max_cap = values.get('max_capacity')
+            min_cap = values.get("min_capacity", 1)
+            max_cap = values.get("max_capacity")
             if max_cap and (v < min_cap or v > max_cap):
-                raise ValueError('Preferred capacity must be between min and max capacity')
+                raise ValueError(
+                    "Preferred capacity must be between min and max capacity"
+                )
         return v
 
 
 class TableLayoutData(BaseModel):
     """Table layout position data"""
+
     position_x: int = Field(0, ge=0)
     position_y: int = Field(0, ge=0)
     width: int = Field(100, gt=0)
     height: int = Field(100, gt=0)
     rotation: int = Field(0, ge=0, lt=360)
     shape: TableShape = TableShape.RECTANGLE
-    color: Optional[str] = Field(None, pattern='^#[0-9A-Fa-f]{6}$')
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
 
 
 class TableFeatures(BaseModel):
     """Table features"""
+
     has_power_outlet: bool = False
     is_wheelchair_accessible: bool = False
     is_by_window: bool = False
@@ -99,6 +113,7 @@ class TableFeatures(BaseModel):
 
 class TableCreate(TableBase, TableLayoutData, TableFeatures):
     """Table creation schema"""
+
     floor_id: int
     section: Optional[str] = Field(None, max_length=50)
     zone: Optional[str] = Field(None, max_length=50)
@@ -108,6 +123,7 @@ class TableCreate(TableBase, TableLayoutData, TableFeatures):
 
 class TableUpdate(BaseModel):
     """Table update schema"""
+
     table_number: Optional[str] = Field(None, max_length=20)
     display_name: Optional[str] = Field(None, max_length=50)
     floor_id: Optional[int] = None
@@ -120,7 +136,7 @@ class TableUpdate(BaseModel):
     height: Optional[int] = Field(None, gt=0)
     rotation: Optional[int] = Field(None, ge=0, lt=360)
     shape: Optional[TableShape] = None
-    color: Optional[str] = Field(None, pattern='^#[0-9A-Fa-f]{6}$')
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     status: Optional[TableStatus] = None
     is_active: Optional[bool] = None
     has_power_outlet: Optional[bool] = None
@@ -136,6 +152,7 @@ class TableUpdate(BaseModel):
 
 class TableResponse(TableBase, TableLayoutData, TableFeatures):
     """Table response schema"""
+
     id: int
     restaurant_id: int
     floor_id: int
@@ -146,11 +163,11 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
     server_station: Optional[str]
     qr_code: Optional[str]
     properties: Dict[str, Any]
-    current_session: Optional['TableSessionResponse'] = None
+    current_session: Optional["TableSessionResponse"] = None
     floor_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -158,6 +175,7 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
 # Table Session Schemas
 class TableSessionCreate(BaseModel):
     """Create table session"""
+
     table_id: int
     guest_count: int = Field(..., gt=0)
     guest_name: Optional[str] = Field(None, max_length=100)
@@ -168,6 +186,7 @@ class TableSessionCreate(BaseModel):
 
 class TableSessionUpdate(BaseModel):
     """Update table session"""
+
     guest_count: Optional[int] = Field(None, gt=0)
     guest_name: Optional[str] = Field(None, max_length=100)
     guest_phone: Optional[str] = Field(None, max_length=20)
@@ -177,6 +196,7 @@ class TableSessionUpdate(BaseModel):
 
 class TableSessionResponse(BaseModel):
     """Table session response"""
+
     id: int
     restaurant_id: int
     table_id: int
@@ -190,7 +210,7 @@ class TableSessionResponse(BaseModel):
     server_name: Optional[str] = None
     duration_minutes: Optional[int] = None
     combined_tables: Optional[List[Dict[str, Any]]] = []
-    
+
     class Config:
         orm_mode = True
 
@@ -198,6 +218,7 @@ class TableSessionResponse(BaseModel):
 # Reservation Schemas
 class TableReservationBase(BaseModel):
     """Base reservation schema"""
+
     reservation_date: datetime
     guest_count: int = Field(..., gt=0)
     guest_name: str = Field(..., max_length=100)
@@ -208,6 +229,7 @@ class TableReservationBase(BaseModel):
 
 class TableReservationCreate(TableReservationBase):
     """Create reservation"""
+
     table_id: Optional[int] = None  # Can be auto-assigned
     customer_id: Optional[int] = None
     special_requests: Optional[str] = Field(None, max_length=500)
@@ -219,6 +241,7 @@ class TableReservationCreate(TableReservationBase):
 
 class TableReservationUpdate(BaseModel):
     """Update reservation"""
+
     table_id: Optional[int] = None
     reservation_date: Optional[datetime] = None
     guest_count: Optional[int] = Field(None, gt=0)
@@ -234,6 +257,7 @@ class TableReservationUpdate(BaseModel):
 
 class TableReservationResponse(TableReservationBase):
     """Reservation response"""
+
     id: int
     restaurant_id: int
     table_id: Optional[int]
@@ -256,7 +280,7 @@ class TableReservationResponse(TableReservationBase):
     table_number: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -264,34 +288,45 @@ class TableReservationResponse(TableReservationBase):
 # Layout Schemas
 class TableLayoutCreate(BaseModel):
     """Create table layout"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     layout_data: Dict[str, Any]
     is_active: bool = False
     is_default: bool = False
     active_days: Optional[List[str]] = None
-    active_from_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
-    active_to_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_from_time: Optional[str] = Field(
+        None, pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+    )
+    active_to_time: Optional[str] = Field(
+        None, pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+    )
     event_date: Optional[datetime] = None
     event_name: Optional[str] = Field(None, max_length=100)
 
 
 class TableLayoutUpdate(BaseModel):
     """Update table layout"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     layout_data: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None
     active_days: Optional[List[str]] = None
-    active_from_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
-    active_to_time: Optional[str] = Field(None, pattern='^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')
+    active_from_time: Optional[str] = Field(
+        None, pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+    )
+    active_to_time: Optional[str] = Field(
+        None, pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+    )
     event_date: Optional[datetime] = None
     event_name: Optional[str] = Field(None, max_length=100)
 
 
 class TableLayoutResponse(BaseModel):
     """Layout response"""
+
     id: int
     restaurant_id: int
     name: str
@@ -306,7 +341,7 @@ class TableLayoutResponse(BaseModel):
     event_name: Optional[str]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -314,12 +349,14 @@ class TableLayoutResponse(BaseModel):
 # Bulk Operations
 class BulkTableCreate(BaseModel):
     """Bulk create tables"""
+
     floor_id: int
     tables: List[TableCreate]
 
 
 class BulkTableUpdate(BaseModel):
     """Bulk update tables"""
+
     table_ids: List[int]
     update_data: TableUpdate
 
@@ -327,12 +364,14 @@ class BulkTableUpdate(BaseModel):
 # Status Updates
 class TableStatusUpdate(BaseModel):
     """Update table status"""
+
     status: TableStatus
     reason: Optional[str] = Field(None, max_length=200)
 
 
 class BulkTableStatusUpdate(BaseModel):
     """Bulk update table status"""
+
     table_ids: List[int]
     status: TableStatus
     reason: Optional[str] = Field(None, max_length=200)
@@ -341,6 +380,7 @@ class BulkTableStatusUpdate(BaseModel):
 # Analytics
 class TableUtilizationStats(BaseModel):
     """Table utilization statistics"""
+
     table_id: int
     table_number: str
     total_sessions: int
@@ -350,10 +390,11 @@ class TableUtilizationStats(BaseModel):
     avg_guests_per_session: float
     occupancy_rate: float
     peak_hours: List[int]
-    
-    
+
+
 class FloorHeatmapData(BaseModel):
     """Floor heatmap data for visualization"""
+
     floor_id: int
     floor_name: str
     period: str  # e.g., "today", "week", "month"

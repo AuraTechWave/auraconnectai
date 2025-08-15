@@ -3,9 +3,15 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
-                                 FraudCheckStatus, FraudRiskLevel,
-                                 CheckpointType, SpecialInstructionType)
+from ..enums.order_enums import (
+    OrderStatus,
+    MultiItemRuleType,
+    OrderPriority,
+    FraudCheckStatus,
+    FraudRiskLevel,
+    CheckpointType,
+    SpecialInstructionType,
+)
 
 
 class SpecialInstructionBase(BaseModel):
@@ -254,12 +260,12 @@ class ArchivedOrdersFilter(BaseModel):
 
 
 class OrderPriorityUpdate(BaseModel):
-    priority: OrderPriority = Field(
-        ..., description="New priority level for the order")
+    priority: OrderPriority = Field(..., description="New priority level for the order")
     reason: Optional[str] = Field(
-        None, max_length=500, description="Reason for priority change")
+        None, max_length=500, description="Reason for priority change"
+    )
 
-    @validator('reason')
+    @validator("reason")
     def validate_reason(cls, v):
         if v and len(v.strip()) == 0:
             return None
@@ -296,10 +302,10 @@ class OrderAuditResponse(BaseModel):
     total_count: int
     has_more: bool = Field(..., description="Whether there are more records")
 
-    @validator('has_more', always=True)
+    @validator("has_more", always=True)
     def calculate_has_more(cls, v, values):
-        events = values.get('events', [])
-        total_count = values.get('total_count', 0)
+        events = values.get("events", [])
+        total_count = values.get("total_count", 0)
         return len(events) < total_count
 
     class Config:
@@ -314,7 +320,7 @@ class KitchenPrintRequest(BaseModel):
     )
     format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
-    @validator('printer_options', 'format_options')
+    @validator("printer_options", "format_options")
     def validate_options(cls, v):
         if v is None:
             return {}
@@ -348,17 +354,16 @@ class AutoCancellationConfigBase(BaseModel):
     tenant_id: Optional[int] = None
     team_id: Optional[int] = None
     status: OrderStatus
-    threshold_minutes: int = Field(
-        ..., gt=0, description="Time threshold in minutes"
-    )
+    threshold_minutes: int = Field(..., gt=0, description="Time threshold in minutes")
     enabled: bool = True
     updated_by: int
 
-    @validator('status')
+    @validator("status")
     def validate_cancellable_status(cls, v):
         cancellable_statuses = [
-            OrderStatus.PENDING, OrderStatus.IN_PROGRESS,
-            OrderStatus.IN_KITCHEN
+            OrderStatus.PENDING,
+            OrderStatus.IN_PROGRESS,
+            OrderStatus.IN_KITCHEN,
         ]
         if v not in cancellable_statuses:
             raise ValueError(

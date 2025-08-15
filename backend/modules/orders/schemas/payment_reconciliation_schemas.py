@@ -3,7 +3,9 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
 from ..enums.payment_enums import (
-    ReconciliationStatus, DiscrepancyType, ReconciliationAction
+    ReconciliationStatus,
+    DiscrepancyType,
+    ReconciliationAction,
 )
 
 
@@ -47,7 +49,7 @@ class PaymentReconciliationOut(PaymentReconciliationBase):
 class ReconciliationRequest(BaseModel):
     order_ids: Optional[List[int]] = None
     external_payment_references: Optional[List[str]] = None
-    amount_threshold: Optional[Decimal] = Field(default=Decimal('0.01'), gt=0)
+    amount_threshold: Optional[Decimal] = Field(default=Decimal("0.01"), gt=0)
 
 
 class ReconciliationResponse(BaseModel):
