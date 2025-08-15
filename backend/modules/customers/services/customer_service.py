@@ -179,7 +179,8 @@ class CustomerService:
             joinedload(Customer.rewards).joinedload(CustomerReward.template),
             joinedload(Customer.preferences),
             joinedload(Customer.payment_methods),
-            joinedload(Customer.notifications).load_only('id', 'type', 'status', 'created_at')
+            joinedload(Customer.notifications).load_only('id', 'type', 'status', 'created_at'),
+            joinedload(Customer.orders)  # Fix N+1: Eager load orders relationship
         ).filter(Customer.deleted_at.is_(None))
         
         # Text search with database-level filtering

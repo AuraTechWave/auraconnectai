@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import case, and_
 from fastapi import HTTPException, UploadFile
 from core.file_service import file_service
+from core.cache_service import cached, cache_service
 from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
                                  FraudCheckStatus)
 from ..enums.webhook_enums import WebhookEventType
@@ -428,7 +429,11 @@ async def get_orders_service(
     if include_items:
         query = query.options(joinedload(Order.order_items))
 
-    query = query.options(joinedload(Order.tags), joinedload(Order.category))
+    query = query.options(
+        joinedload(Order.tags), 
+        joinedload(Order.category),
+        joinedload(Order.customer)  # Fix N+1: Eager load customer relationship
+    )
 
     return query.all()
 

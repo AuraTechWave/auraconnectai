@@ -6,6 +6,7 @@ from sqlalchemy import and_, or_, desc, asc, func, text
 from fastapi import HTTPException, status
 from datetime import datetime
 
+from .cache_service import cached, cache_service, invalidate_on_change
 from .menu_versioning_triggers import create_manual_version_on_bulk_change
 
 from .menu_models import (
@@ -194,6 +195,9 @@ class MenuService:
             query = query.order_by(desc(sort_column))
         else:
             query = query.order_by(asc(sort_column))
+
+        # Fix N+1: Eager load category relationship before pagination
+        query = query.options(joinedload(MenuItem.category))
 
         # Apply pagination
         items = query.offset(params.offset).limit(params.limit).all()
