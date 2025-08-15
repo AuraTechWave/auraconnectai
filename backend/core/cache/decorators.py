@@ -8,7 +8,7 @@ import functools
 import hashlib
 import json
 import logging
-from typing import Optional, Callable, Any, Union
+from typing import Optional, Callable, Any, Union, List, Dict
 from inspect import signature
 
 from .cache_manager import cache_manager, CacheTTL
@@ -148,6 +148,13 @@ def cache(
         wrapper.refresh = lambda *args, **kwargs: _refresh_cache(
             func, cache_type, ttl, *args, **kwargs
         )
+        
+        # Store invalidation events for potential use by cache invalidation system
+        if invalidate_on:
+            wrapper._invalidate_on = invalidate_on
+            wrapper._cache_type = cache_type
+            # Register with a global invalidation registry if needed
+            _register_invalidation_events(func, cache_type, invalidate_on)
         
         return wrapper
     return decorator
@@ -332,3 +339,42 @@ def _refresh_cache(func: Callable, cache_type: str, ttl: Optional[Union[int, Cac
         ttl=cache_ttl,
         force_refresh=True
     )
+
+
+# Global registry for invalidation events
+_invalidation_registry: Dict[str, List[Callable]] = {}
+
+
+def _register_invalidation_events(func: Callable, cache_type: str, events: List[str]):
+    """
+    Register function for cache invalidation on specific events
+    
+    Args:
+        func: Function to register
+        cache_type: Cache type
+        events: List of event names that should trigger invalidation
+    """
+    for event in events:
+        if event not in _invalidation_registry:
+            _invalidation_registry[event] = []
+        _invalidation_registry[event].append((func, cache_type))
+    
+    logger.debug(f"Registered {func.__name__} for invalidation on events: {events}")
+
+
+def trigger_cache_invalidation(event: str, *args, **kwargs):
+    """
+    Trigger cache invalidation for all functions registered to an event
+    
+    Args:
+        event: Event name
+        *args, **kwargs: Arguments to pass to invalidation
+    """
+    if event in _invalidation_registry:
+        for func, cache_type in _invalidation_registry[event]:
+            try:
+                cache_key = generate_cache_key(func, *args, **kwargs)
+                cache_manager.delete(cache_type, cache_key)
+                logger.info(f"Invalidated cache for {func.__name__} on event {event}")
+            except Exception as e:
+                logger.error(f"Failed to invalidate cache for {func.__name__}: {e}")

@@ -47,9 +47,9 @@ class RedisClient:
             }
             
             # Use URL if provided, otherwise use individual settings
-            if settings.redis_url:
+            if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
                 cls._pool = redis.ConnectionPool.from_url(
-                    settings.redis_url,
+                    settings.REDIS_URL,
                     **{k: v for k, v in pool_kwargs.items() if k not in ['host', 'port', 'db', 'password']}
                 )
             else:

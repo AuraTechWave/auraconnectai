@@ -408,15 +408,22 @@ async def warm_cache_async(tenant_id: Optional[int] = None) -> Dict[str, Any]:
     Returns:
         Warming statistics
     """
-    # Get database session
-    db = next(get_db())
+    # Properly manage database session
+    db_gen = get_db()
+    db = None
     
     try:
+        db = next(db_gen)
         warmer = CacheWarmer(db)
         stats = warmer.warm_all(tenant_id, parallel=True)
         return stats
     finally:
-        db.close()
+        if db:
+            db.close()
+        try:
+            next(db_gen)  # Trigger generator cleanup
+        except StopIteration:
+            pass
 
 
 def schedule_cache_warming(tenant_id: Optional[int] = None, interval_minutes: int = 30):
@@ -432,14 +439,23 @@ def schedule_cache_warming(tenant_id: Optional[int] = None, interval_minutes: in
     import threading
     
     def warm_job():
-        db = next(get_db())
+        # Properly manage database session
+        db_gen = get_db()
+        db = None
+        
         try:
+            db = next(db_gen)
             warmer = CacheWarmer(db)
             warmer.warm_all(tenant_id)
         except Exception as e:
             logger.error(f"Scheduled cache warming failed: {e}")
         finally:
-            db.close()
+            if db:
+                db.close()
+            try:
+                next(db_gen)  # Trigger generator cleanup
+            except StopIteration:
+                pass
     
     # Schedule job
     schedule.every(interval_minutes).minutes.do(warm_job)
