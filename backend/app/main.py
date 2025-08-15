@@ -5,6 +5,7 @@ from typing import Optional
 from core.exceptions import register_exception_handlers
 from core.tenant_context import TenantIsolationMiddleware
 from core.rate_limiter import RateLimitMiddleware
+from core.response_middleware import ResponseStandardizationMiddleware, ErrorHandlingMiddleware
 from app.startup import run_startup_checks
 
 # ========== Authentication & Authorization ==========
@@ -209,15 +210,9 @@ app = FastAPI(
 # Register exception handlers for consistent error responses
 register_exception_handlers(app)
 
-# CRITICAL: Add rate limiting middleware FIRST
-# This protects against DDoS and abuse before other processing
-app.add_middleware(RateLimitMiddleware)
+# CRITICAL: Middleware order matters! They are executed in reverse order of addition
 
-# Add tenant isolation middleware BEFORE CORS
-# This ensures tenant context is established for all requests
-app.add_middleware(TenantIsolationMiddleware)
-
-# CORS middleware for frontend integration
+# 1. CORS middleware (needs to be last added/first executed for preflight requests)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://localhost:3001", "https://app.auraconnect.ai"],
@@ -225,6 +220,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2. Response standardization middleware
+# Wraps all responses in standard format
+app.add_middleware(
+    ResponseStandardizationMiddleware,
+    exclude_paths=["/docs", "/redoc", "/openapi.json", "/health", "/metrics"]
+)
+
+# 3. Error handling middleware
+# Catches and standardizes error responses
+app.add_middleware(ErrorHandlingMiddleware)
+
+# 4. Tenant isolation middleware
+# Ensures tenant context is established for all requests
+app.add_middleware(TenantIsolationMiddleware)
+
+# 5. Rate limiting middleware (first to execute)
+# Protects against DDoS and abuse before other processing
+app.add_middleware(RateLimitMiddleware)
 
 # ========== Include all routers with proper order (auth first) ==========
 
@@ -324,6 +338,10 @@ app.include_router(ai_staffing_router, prefix="/api/v1/ai", tags=["AI Staffing R
 
 # Customer Management
 app.include_router(customer_router)
+
+# Customer Management V2 - Standardized Response Format
+from modules.customers.routers.customer_router_v2 import router as customer_router_v2
+app.include_router(customer_router_v2)
 app.include_router(customer_segment_router)
 
 # GDPR Compliance
