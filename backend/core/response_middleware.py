@@ -95,11 +95,12 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
             # Check if response is already in standard format
             if isinstance(response_data, dict) and "success" in response_data and "meta" in response_data:
                 # Update meta with request ID and processing time
-                response_data["meta"]["request_id"] = request_id
-                response_data["meta"]["processing_time_ms"] = processing_time_ms
+                if isinstance(response_data.get("meta"), dict):
+                    response_data["meta"]["request_id"] = request_id
+                    response_data["meta"]["processing_time_ms"] = processing_time_ms
                 
                 return JSONResponse(
-                    content=json.loads(json.dumps(response_data, default=str)),
+                    content=response_data,
                     status_code=response.status_code,
                     headers=dict(response.headers)
                 )
@@ -126,7 +127,7 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
                 )
             
             return JSONResponse(
-                content=json.loads(standard_response.model_dump_json(exclude_none=True)),
+                content=standard_response.model_dump(exclude_none=True, mode='json'),
                 status_code=response.status_code,
                 headers=dict(response.headers)
             )
@@ -156,7 +157,7 @@ class ResponseStandardizationMiddleware(BaseHTTPMiddleware):
             )
             
             return JSONResponse(
-                content=json.loads(error_response.model_dump_json(exclude_none=True)),
+                content=error_response.model_dump(exclude_none=True, mode='json'),
                 status_code=500
             )
     
@@ -193,34 +194,34 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             # Handle validation errors
             return JSONResponse(
                 status_code=422,
-                content=json.loads(StandardResponse.error(
+                content=StandardResponse.error(
                     message="Validation error",
                     code="VALIDATION_ERROR",
                     errors=[ErrorDetail(code="VALIDATION_ERROR", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump_json(exclude_none=True)))
+                ).model_dump(exclude_none=True, mode='json'))
             )
         except PermissionError as e:
             # Handle permission errors
             return JSONResponse(
                 status_code=403,
-                content=json.loads(StandardResponse.error(
+                content=StandardResponse.error(
                     message="Permission denied",
                     code="FORBIDDEN",
                     errors=[ErrorDetail(code="FORBIDDEN", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump_json(exclude_none=True)))
+                ).model_dump(exclude_none=True, mode='json'))
             )
         except KeyError as e:
             # Handle missing key errors
             return JSONResponse(
                 status_code=400,
-                content=json.loads(StandardResponse.error(
+                content=StandardResponse.error(
                     message=f"Missing required field: {str(e)}",
                     code="BAD_REQUEST",
                     errors=[ErrorDetail(code="MISSING_FIELD", message=f"Field {str(e)} is required")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump_json(exclude_none=True)))
+                ).model_dump(exclude_none=True, mode='json'))
             )
         except Exception as e:
             # Handle all other exceptions
@@ -229,10 +230,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             
             return JSONResponse(
                 status_code=500,
-                content=json.loads(StandardResponse.error(
+                content=StandardResponse.error(
                     message="An unexpected error occurred",
                     code="INTERNAL_ERROR",
                     errors=[ErrorDetail(code="INTERNAL_ERROR", message="Internal server error")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump_json(exclude_none=True)))
+                ).model_dump(exclude_none=True, mode='json'))
             )
