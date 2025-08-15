@@ -273,96 +273,101 @@ BUSINESS_RESPONSE_TEMPLATE = """
 
 # Template mapping
 EMAIL_TEMPLATES = {
-    'review_invitation': {
-        'subject': 'Share your experience with {{ entity_name }}',
-        'header_subtitle': 'Your Opinion Matters',
-        'content': REVIEW_INVITATION_TEMPLATE
+    "review_invitation": {
+        "subject": "Share your experience with {{ entity_name }}",
+        "header_subtitle": "Your Opinion Matters",
+        "content": REVIEW_INVITATION_TEMPLATE,
     },
-    'review_submitted': {
-        'subject': 'Thank you for your review!',
-        'header_subtitle': 'Review Confirmation',
-        'content': REVIEW_SUBMITTED_TEMPLATE
+    "review_submitted": {
+        "subject": "Thank you for your review!",
+        "header_subtitle": "Review Confirmation",
+        "content": REVIEW_SUBMITTED_TEMPLATE,
     },
-    'review_approved': {
-        'subject': 'Your review is now live!',
-        'header_subtitle': 'Review Published',
-        'content': REVIEW_APPROVED_TEMPLATE
+    "review_approved": {
+        "subject": "Your review is now live!",
+        "header_subtitle": "Review Published",
+        "content": REVIEW_APPROVED_TEMPLATE,
     },
-    'review_rejected': {
-        'subject': 'Review Update Required',
-        'header_subtitle': 'Review Guidelines',
-        'content': REVIEW_REJECTED_TEMPLATE
+    "review_rejected": {
+        "subject": "Review Update Required",
+        "header_subtitle": "Review Guidelines",
+        "content": REVIEW_REJECTED_TEMPLATE,
     },
-    'feedback_received': {
-        'subject': 'We received your feedback - Reference #{{ feedback_id }}',
-        'header_subtitle': 'Feedback Confirmation',
-        'content': FEEDBACK_RECEIVED_TEMPLATE
+    "feedback_received": {
+        "subject": "We received your feedback - Reference #{{ feedback_id }}",
+        "header_subtitle": "Feedback Confirmation",
+        "content": FEEDBACK_RECEIVED_TEMPLATE,
     },
-    'feedback_response': {
-        'subject': 'Response to your feedback - Reference #{{ feedback_id }}',
-        'header_subtitle': 'Feedback Update',
-        'content': FEEDBACK_RESPONSE_TEMPLATE
+    "feedback_response": {
+        "subject": "Response to your feedback - Reference #{{ feedback_id }}",
+        "header_subtitle": "Feedback Update",
+        "content": FEEDBACK_RESPONSE_TEMPLATE,
     },
-    'business_response': {
-        'subject': '{{ business_name }} responded to your review',
-        'header_subtitle': 'Business Response',
-        'content': BUSINESS_RESPONSE_TEMPLATE
-    }
+    "business_response": {
+        "subject": "{{ business_name }} responded to your review",
+        "header_subtitle": "Business Response",
+        "content": BUSINESS_RESPONSE_TEMPLATE,
+    },
 }
 
-def render_email_template(template_key: str, variables: Dict[str, Any]) -> Dict[str, str]:
+
+def render_email_template(
+    template_key: str, variables: Dict[str, Any]
+) -> Dict[str, str]:
     """Render email template with variables"""
     template_config = EMAIL_TEMPLATES.get(template_key)
-    
+
     if not template_config:
         raise ValueError(f"Template '{template_key}' not found")
-    
+
     from jinja2 import Template
-    
+
     # Render subject
-    subject_template = Template(template_config['subject'])
+    subject_template = Template(template_config["subject"])
     subject = subject_template.render(**variables)
-    
+
     # Render content
-    content_template = Template(template_config['content'])
+    content_template = Template(template_config["content"])
     content = content_template.render(**variables)
-    
+
     # Render full HTML
     base_template = Template(BASE_TEMPLATE)
     html_content = base_template.render(
         subject=subject,
-        header_subtitle=template_config['header_subtitle'],
+        header_subtitle=template_config["header_subtitle"],
         content=content,
-        unsubscribe_url=variables.get('unsubscribe_url', '#'),
-        **variables
+        unsubscribe_url=variables.get("unsubscribe_url", "#"),
+        **variables,
     )
-    
+
     # Generate text version (simplified)
     text_content = _html_to_text(content)
-    
+
     return {
-        'subject': subject,
-        'html_content': html_content,
-        'text_content': text_content
+        "subject": subject,
+        "html_content": html_content,
+        "text_content": text_content,
     }
+
 
 def _html_to_text(html_content: str) -> str:
     """Convert HTML content to plain text (simplified)"""
     import re
-    
+
     # Remove HTML tags
-    text = re.sub(r'<[^>]+>', '', html_content)
-    
+    text = re.sub(r"<[^>]+>", "", html_content)
+
     # Clean up whitespace
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r"\s+", " ", text)
     text = text.strip()
-    
+
     return text
+
 
 def get_rating_stars(rating: float) -> str:
     """Convert numeric rating to star representation"""
     full_stars = int(rating)
     half_star = 1 if rating - full_stars >= 0.5 else 0
     empty_stars = 5 - full_stars - half_star
-    
-    return '★' * full_stars + '☆' * half_star + '☆' * empty_stars
+
+    return "★" * full_stars + "☆" * half_star + "☆" * empty_stars

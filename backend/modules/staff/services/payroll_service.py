@@ -6,17 +6,17 @@ from modules.staff.schemas.payroll_schemas import PayrollResponse
 from datetime import datetime
 
 
-async def calculate_payroll(staff_id: int, period: str,
-                            db: Session) -> PayrollResponse:
+async def calculate_payroll(staff_id: int, period: str, db: Session) -> PayrollResponse:
     payroll_engine = PayrollEngine(db)
     payslip_service = PayslipService(db)
 
     payroll_data = await payroll_engine.calculate_payroll(staff_id, period)
 
-    existing_payroll = db.query(Payroll).filter(
-        Payroll.staff_id == staff_id,
-        Payroll.period == period
-    ).first()
+    existing_payroll = (
+        db.query(Payroll)
+        .filter(Payroll.staff_id == staff_id, Payroll.period == period)
+        .first()
+    )
 
     if existing_payroll:
         existing_payroll.gross_pay = payroll_data["gross_pay"]
@@ -31,7 +31,7 @@ async def calculate_payroll(staff_id: int, period: str,
             period=period,
             gross_pay=payroll_data["gross_pay"],
             deductions=payroll_data["deductions"],
-            net_pay=payroll_data["net_pay"]
+            net_pay=payroll_data["net_pay"],
         )
         db.add(payroll)
         db.commit()
@@ -46,5 +46,5 @@ async def calculate_payroll(staff_id: int, period: str,
         deductions=payroll_data["deductions"],
         net_pay=payroll_data["net_pay"],
         breakdown=payroll_data["breakdown"],
-        created_at=payroll.created_at
+        created_at=payroll.created_at,
     )

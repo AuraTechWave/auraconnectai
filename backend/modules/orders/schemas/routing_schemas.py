@@ -11,6 +11,7 @@ from enum import Enum
 
 class RouteTargetType(str, Enum):
     """Types of routing targets"""
+
     STATION = "station"
     STAFF = "staff"
     TEAM = "team"
@@ -19,6 +20,7 @@ class RouteTargetType(str, Enum):
 
 class RuleConditionOperator(str, Enum):
     """Operators for rule conditions"""
+
     EQUALS = "equals"
     NOT_EQUALS = "not_equals"
     CONTAINS = "contains"
@@ -33,6 +35,7 @@ class RuleConditionOperator(str, Enum):
 
 class RuleStatus(str, Enum):
     """Status of routing rules"""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     TESTING = "testing"
@@ -41,6 +44,7 @@ class RuleStatus(str, Enum):
 
 class RoutingStrategy(str, Enum):
     """Load balancing strategies"""
+
     ROUND_ROBIN = "round_robin"
     LEAST_LOADED = "least_loaded"
     SKILL_BASED = "skill_based"
@@ -51,27 +55,33 @@ class RoutingStrategy(str, Enum):
 # Condition Schemas
 class RuleConditionBase(BaseModel):
     """Base schema for rule conditions"""
-    field_path: str = Field(..., description="Path to the field to evaluate (e.g., 'order.type', 'item.category')")
+
+    field_path: str = Field(
+        ...,
+        description="Path to the field to evaluate (e.g., 'order.type', 'item.category')",
+    )
     operator: RuleConditionOperator
     value: Any = Field(..., description="Value to compare against")
     condition_group: int = Field(0, description="Group number for AND/OR logic")
     is_negated: bool = Field(False, description="Negate the condition")
 
-    @validator('field_path')
+    @validator("field_path")
     def validate_field_path(cls, v):
         """Validate field path format"""
-        if not v or not all(part.strip() for part in v.split('.')):
+        if not v or not all(part.strip() for part in v.split(".")):
             raise ValueError("Invalid field path format")
         return v
 
 
 class RuleConditionCreate(RuleConditionBase):
     """Schema for creating a rule condition"""
+
     pass
 
 
 class RuleConditionResponse(RuleConditionBase):
     """Schema for rule condition response"""
+
     id: int
     rule_id: int
     created_at: datetime
@@ -84,12 +94,19 @@ class RuleConditionResponse(RuleConditionBase):
 # Action Schemas
 class RuleActionBase(BaseModel):
     """Base schema for rule actions"""
-    action_type: str = Field(..., description="Type of action (route, notify, tag, priority, split)")
-    action_config: Dict[str, Any] = Field(..., description="Action-specific configuration")
-    execution_order: int = Field(0, description="Order of execution")
-    condition_expression: Optional[str] = Field(None, description="Additional condition for this action")
 
-    @validator('action_type')
+    action_type: str = Field(
+        ..., description="Type of action (route, notify, tag, priority, split)"
+    )
+    action_config: Dict[str, Any] = Field(
+        ..., description="Action-specific configuration"
+    )
+    execution_order: int = Field(0, description="Order of execution")
+    condition_expression: Optional[str] = Field(
+        None, description="Additional condition for this action"
+    )
+
+    @validator("action_type")
     def validate_action_type(cls, v):
         """Validate action type"""
         valid_types = ["route", "notify", "tag", "priority", "split", "log", "webhook"]
@@ -100,11 +117,13 @@ class RuleActionBase(BaseModel):
 
 class RuleActionCreate(RuleActionBase):
     """Schema for creating a rule action"""
+
     pass
 
 
 class RuleActionResponse(RuleActionBase):
     """Schema for rule action response"""
+
     id: int
     rule_id: int
     created_at: datetime
@@ -117,6 +136,7 @@ class RuleActionResponse(RuleActionBase):
 # Routing Rule Schemas
 class RoutingRuleBase(BaseModel):
     """Base schema for routing rules"""
+
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     priority: int = Field(0, ge=0, le=1000, description="Rule priority (0-1000)")
@@ -128,26 +148,32 @@ class RoutingRuleBase(BaseModel):
     active_until: Optional[datetime] = None
     schedule_config: Optional[Dict[str, Any]] = None
 
-    @validator('schedule_config')
+    @validator("schedule_config")
     def validate_schedule_config(cls, v):
         """Validate schedule configuration"""
         if v:
-            if 'days' in v and not isinstance(v['days'], list):
+            if "days" in v and not isinstance(v["days"], list):
                 raise ValueError("Schedule days must be a list")
-            if 'hours' in v:
-                if not isinstance(v['hours'], dict) or 'start' not in v['hours'] or 'end' not in v['hours']:
+            if "hours" in v:
+                if (
+                    not isinstance(v["hours"], dict)
+                    or "start" not in v["hours"]
+                    or "end" not in v["hours"]
+                ):
                     raise ValueError("Schedule hours must have start and end times")
         return v
 
 
 class RoutingRuleCreate(RoutingRuleBase):
     """Schema for creating a routing rule"""
+
     conditions: List[RuleConditionCreate] = Field(..., min_items=1)
     actions: List[RuleActionCreate] = Field(..., min_items=1)
 
 
 class RoutingRuleUpdate(BaseModel):
     """Schema for updating a routing rule"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
     priority: Optional[int] = Field(None, ge=0, le=1000)
@@ -162,6 +188,7 @@ class RoutingRuleUpdate(BaseModel):
 
 class RoutingRuleResponse(RoutingRuleBase):
     """Schema for routing rule response"""
+
     id: int
     conditions: List[RuleConditionResponse] = []
     actions: List[RuleActionResponse] = []
@@ -180,14 +207,22 @@ class RoutingRuleResponse(RoutingRuleBase):
 # Route Evaluation Schemas
 class RouteEvaluationRequest(BaseModel):
     """Request to evaluate routing rules for an order"""
+
     order_id: int
-    force_evaluation: bool = Field(False, description="Force re-evaluation even if cached")
-    test_mode: bool = Field(False, description="Run in test mode without applying routes")
-    include_inactive: bool = Field(False, description="Include inactive rules in evaluation")
+    force_evaluation: bool = Field(
+        False, description="Force re-evaluation even if cached"
+    )
+    test_mode: bool = Field(
+        False, description="Run in test mode without applying routes"
+    )
+    include_inactive: bool = Field(
+        False, description="Include inactive rules in evaluation"
+    )
 
 
 class RouteEvaluationResult(BaseModel):
     """Result of route evaluation"""
+
     order_id: int
     evaluated_rules: int
     matched_rules: List[Dict[str, Any]]
@@ -200,8 +235,11 @@ class RouteEvaluationResult(BaseModel):
 # Override Schemas
 class RouteOverrideCreate(BaseModel):
     """Schema for creating a route override"""
+
     order_id: int
-    override_type: str = Field(..., description="Type of override (manual, system, emergency)")
+    override_type: str = Field(
+        ..., description="Type of override (manual, system, emergency)"
+    )
     target_type: RouteTargetType
     target_id: int
     reason: Optional[str] = None
@@ -210,6 +248,7 @@ class RouteOverrideCreate(BaseModel):
 
 class RouteOverrideResponse(BaseModel):
     """Schema for route override response"""
+
     id: int
     order_id: int
     override_type: str
@@ -228,8 +267,11 @@ class RouteOverrideResponse(BaseModel):
 # Staff Capability Schemas
 class StaffCapabilityCreate(BaseModel):
     """Schema for creating staff capability"""
+
     staff_id: int
-    capability_type: str = Field(..., description="Type of capability (category, station, skill, certification)")
+    capability_type: str = Field(
+        ..., description="Type of capability (category, station, skill, certification)"
+    )
     capability_value: str = Field(..., description="Value of the capability")
     max_concurrent_orders: int = Field(5, ge=1)
     is_available: bool = True
@@ -240,6 +282,7 @@ class StaffCapabilityCreate(BaseModel):
 
 class StaffCapabilityResponse(BaseModel):
     """Schema for staff capability response"""
+
     id: int
     staff_id: int
     capability_type: str
@@ -259,6 +302,7 @@ class StaffCapabilityResponse(BaseModel):
 # Team Schemas
 class TeamRoutingConfigCreate(BaseModel):
     """Schema for creating team routing config"""
+
     team_name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     is_active: bool = True
@@ -271,6 +315,7 @@ class TeamRoutingConfigCreate(BaseModel):
 
 class TeamRoutingConfigResponse(BaseModel):
     """Schema for team routing config response"""
+
     id: int
     team_name: str
     description: Optional[str]
@@ -290,6 +335,7 @@ class TeamRoutingConfigResponse(BaseModel):
 
 class TeamMemberCreate(BaseModel):
     """Schema for adding team member"""
+
     team_id: int
     staff_id: int
     is_active: bool = True
@@ -301,6 +347,7 @@ class TeamMemberCreate(BaseModel):
 
 class TeamMemberResponse(BaseModel):
     """Schema for team member response"""
+
     id: int
     team_id: int
     staff_id: int
@@ -319,6 +366,7 @@ class TeamMemberResponse(BaseModel):
 # Routing Log Schemas
 class RoutingLogQuery(BaseModel):
     """Query parameters for routing logs"""
+
     rule_id: Optional[int] = None
     order_id: Optional[int] = None
     matched_only: bool = False
@@ -331,6 +379,7 @@ class RoutingLogQuery(BaseModel):
 
 class RoutingLogResponse(BaseModel):
     """Schema for routing log response"""
+
     id: int
     rule_id: int
     order_id: int
@@ -351,6 +400,7 @@ class RoutingLogResponse(BaseModel):
 # Bulk Operations
 class BulkRuleStatusUpdate(BaseModel):
     """Schema for bulk rule status update"""
+
     rule_ids: List[int] = Field(..., min_items=1)
     status: RuleStatus
     reason: Optional[str] = None
@@ -358,13 +408,17 @@ class BulkRuleStatusUpdate(BaseModel):
 
 class RoutingRuleTestRequest(BaseModel):
     """Request to test routing rules"""
+
     rule_id: Optional[int] = None
-    test_order_data: Dict[str, Any] = Field(..., description="Mock order data for testing")
+    test_order_data: Dict[str, Any] = Field(
+        ..., description="Mock order data for testing"
+    )
     include_all_rules: bool = Field(False, description="Test against all rules")
 
 
 class RoutingRuleTestResult(BaseModel):
     """Result of routing rule test"""
+
     rule_id: Optional[int]
     rule_name: Optional[str]
     matched: bool

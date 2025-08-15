@@ -2,12 +2,12 @@ from .payroll_models import (
     TaxRule,
     PayrollPolicy,
     EmployeePayment,
-    EmployeePaymentTaxApplication
+    EmployeePaymentTaxApplication,
 )
 
 __all__ = [
     "TaxRule",
     "PayrollPolicy",
     "EmployeePayment",
-    "EmployeePaymentTaxApplication"
+    "EmployeePaymentTaxApplication",
 ]

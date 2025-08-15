@@ -7,18 +7,38 @@ from sqlalchemy import case, and_
 from fastapi import HTTPException, UploadFile
 from core.file_service import file_service
 from core.cache_service import cached, cache_service
-from ..enums.order_enums import (OrderStatus, MultiItemRuleType, OrderPriority,
-                                 FraudCheckStatus)
+from ..enums.order_enums import (
+    OrderStatus,
+    MultiItemRuleType,
+    OrderPriority,
+    FraudCheckStatus,
+)
 from ..enums.webhook_enums import WebhookEventType
 from ..models.order_models import (
-    Order, OrderItem, Tag, Category, OrderAttachment, AutoCancellationConfig
+    Order,
+    OrderItem,
+    Tag,
+    Category,
+    OrderAttachment,
+    AutoCancellationConfig,
 )
 from ..schemas.order_schemas import (
-    OrderUpdate, OrderOut, OrderItemUpdate, RuleValidationResult,
-    DelayFulfillmentRequest, TagCreate, TagOut, CategoryCreate, CategoryOut,
-    OrderPriorityUpdate, KitchenPrintRequest, KitchenPrintResponse,
-    KitchenTicketFormat, CustomerNotesUpdate, OrderAttachmentOut,
-    SpecialInstructionBase
+    OrderUpdate,
+    OrderOut,
+    OrderItemUpdate,
+    RuleValidationResult,
+    DelayFulfillmentRequest,
+    TagCreate,
+    TagOut,
+    CategoryCreate,
+    CategoryOut,
+    OrderPriorityUpdate,
+    KitchenPrintRequest,
+    KitchenPrintResponse,
+    KitchenTicketFormat,
+    CustomerNotesUpdate,
+    OrderAttachmentOut,
+    SpecialInstructionBase,
 )
 from ...pos.services.pos_bridge_service import POSBridgeService
 from .fraud_service import perform_fraud_check
@@ -33,18 +53,17 @@ from core.compliance import AuditLog
 logger = logging.getLogger(__name__)
 
 
-def serialize_instructions_to_notes(
-        instructions: List[SpecialInstructionBase]) -> str:
+def serialize_instructions_to_notes(instructions: List[SpecialInstructionBase]) -> str:
     """Convert structured instructions to formatted notes text"""
     if not instructions:
         return ""
 
     instruction_texts = []
     for instruction in instructions:
-        priority_prefix = (f"[P{instruction.priority}] "
-                           if instruction.priority else "")
-        station_prefix = (f"[{instruction.target_station}] "
-                          if instruction.target_station else "")
+        priority_prefix = f"[P{instruction.priority}] " if instruction.priority else ""
+        station_prefix = (
+            f"[{instruction.target_station}] " if instruction.target_station else ""
+        )
         instruction_text = (
             f"{priority_prefix}{station_prefix}"
             f"{instruction.instruction_type.value.upper()}: "
@@ -64,33 +83,35 @@ def parse_notes_to_instructions(notes: str) -> List[dict]:
     parts = [part.strip() for part in notes.split(" | ")]
 
     for part in parts:
-        if not re.search(r'[A-Z]+:', part):
+        if not re.search(r"[A-Z]+:", part):
             continue
 
         priority = None
         target_station = None
 
-        priority_match = re.search(r'\[P(\d+)\]', part)
+        priority_match = re.search(r"\[P(\d+)\]", part)
         if priority_match:
             priority = int(priority_match.group(1))
-            part = re.sub(r'\[P\d+\]\s*', '', part)
+            part = re.sub(r"\[P\d+\]\s*", "", part)
 
-        station_match = re.search(r'\[([A-Z_]+)\]', part)
+        station_match = re.search(r"\[([A-Z_]+)\]", part)
         if station_match:
             target_station = station_match.group(1)
-            part = re.sub(r'\[[A-Z_]+\]\s*', '', part)
+            part = re.sub(r"\[[A-Z_]+\]\s*", "", part)
 
-        type_match = re.search(r'([A-Z_]+):\s*(.+)', part)
+        type_match = re.search(r"([A-Z_]+):\s*(.+)", part)
         if type_match:
             instruction_type = type_match.group(1).lower()
             description = type_match.group(2).strip()
 
-            instructions.append({
-                "instruction_type": instruction_type,
-                "description": description,
-                "priority": priority,
-                "target_station": target_station
-            })
+            instructions.append(
+                {
+                    "instruction_type": instruction_type,
+                    "description": description,
+                    "priority": priority,
+                    "target_station": target_station,
+                }
+            )
 
     return instructions
 
@@ -99,10 +120,14 @@ logger = logging.getLogger(__name__)
 
 VALID_TRANSITIONS = {
     OrderStatus.PENDING: [
-        OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED, OrderStatus.DELAYED
+        OrderStatus.IN_PROGRESS,
+        OrderStatus.CANCELLED,
+        OrderStatus.DELAYED,
     ],
     OrderStatus.IN_PROGRESS: [
-        OrderStatus.IN_KITCHEN, OrderStatus.CANCELLED, OrderStatus.DELAYED
+        OrderStatus.IN_KITCHEN,
+        OrderStatus.CANCELLED,
+        OrderStatus.DELAYED,
     ],
     OrderStatus.IN_KITCHEN: [OrderStatus.READY, OrderStatus.CANCELLED],
     OrderStatus.READY: [OrderStatus.SERVED],
@@ -110,13 +135,9 @@ VALID_TRANSITIONS = {
     OrderStatus.COMPLETED: [OrderStatus.ARCHIVED],
     OrderStatus.CANCELLED: [OrderStatus.ARCHIVED],
     OrderStatus.DELAYED: [OrderStatus.SCHEDULED, OrderStatus.CANCELLED],
-    OrderStatus.SCHEDULED: [
-        OrderStatus.AWAITING_FULFILLMENT, OrderStatus.CANCELLED
-    ],
-    OrderStatus.AWAITING_FULFILLMENT: [
-        OrderStatus.PENDING, OrderStatus.CANCELLED
-    ],
-    OrderStatus.ARCHIVED: [OrderStatus.COMPLETED]
+    OrderStatus.SCHEDULED: [OrderStatus.AWAITING_FULFILLMENT, OrderStatus.CANCELLED],
+    OrderStatus.AWAITING_FULFILLMENT: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+    OrderStatus.ARCHIVED: [OrderStatus.COMPLETED],
 }
 
 
@@ -127,7 +148,7 @@ async def log_order_audit_event(
     new_status: OrderStatus,
     user_id: int,
     metadata: Optional[dict] = None,
-    action: str = "status_change"
+    action: str = "status_change",
 ):
     """Log an order audit event with enhanced error handling."""
     try:
@@ -139,28 +160,30 @@ async def log_order_audit_event(
             previous_value=previous_status.value if previous_status else None,
             new_value=new_status.value,
             metadata=metadata or {},
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
         db.add(audit_event)
         db.flush()  # Ensure the audit event is written
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.warning(f"Failed to log audit event for order "
-                       f"{order_id}: {str(e)}")
+        logger.warning(f"Failed to log audit event for order " f"{order_id}: {str(e)}")
         if "database" in str(e).lower() or "connection" in str(e).lower():
             raise
 
 
 async def get_order_by_id(db: Session, order_id: int):
-    order = db.query(Order).options(joinedload(Order.order_items)).filter(
-        Order.id == order_id, Order.deleted_at.is_(None)
-    ).first()
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.order_items))
+        .filter(Order.id == order_id, Order.deleted_at.is_(None))
+        .first()
+    )
 
     if not order:
         raise HTTPException(
-            status_code=404,
-            detail=f"Order with id {order_id} not found"
+            status_code=404, detail=f"Order with id {order_id} not found"
         )
 
     return order
@@ -183,7 +206,7 @@ async def update_order_service(
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid status transition from {current_status} to "
-                       f"{order_update.status}"
+                f"{order_update.status}",
             )
 
         await log_order_audit_event(
@@ -193,23 +216,25 @@ async def update_order_service(
             new_status=order_update.status,
             user_id=user_id,
             metadata={
-                "notes": getattr(order_update, 'notes', None),
-                "delay_reason": getattr(order_update, 'delay_reason', None),
+                "notes": getattr(order_update, "notes", None),
+                "delay_reason": getattr(order_update, "delay_reason", None),
                 "source": "api_update",
                 "previous_staff_id": order.staff_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             },
-            action="status_change"
+            action="status_change",
         )
 
         # Handle inventory deduction based on configuration
-        if (order_update.status == OrderStatus.IN_PROGRESS and
-                current_status == OrderStatus.PENDING):
+        if (
+            order_update.status == OrderStatus.IN_PROGRESS
+            and current_status == OrderStatus.PENDING
+        ):
             try:
                 # Get inventory configuration
                 config = get_inventory_config()
                 use_recipe_deduction = config.USE_RECIPE_BASED_INVENTORY_DEDUCTION
-                
+
                 if use_recipe_deduction:
                     # Use new recipe-based deduction
                     recipe_inventory_service = RecipeInventoryService(db)
@@ -217,12 +242,12 @@ async def update_order_service(
                         order_items=order.order_items,
                         order_id=order.id,
                         user_id=user_id,
-                        deduction_type="order_progress"
+                        deduction_type="order_progress",
                     )
                 else:
                     # Use legacy MenuItemInventory-based deduction
                     result = await deduct_inventory(db, order.order_items)
-                
+
                 if result.get("low_stock_alerts"):
                     # Log low stock alerts
                     logger.warning(
@@ -237,8 +262,7 @@ async def update_order_service(
         status_changed = True
 
     if order_update.order_items is not None:
-        existing_items = {item.menu_item_id: item
-                          for item in order.order_items}
+        existing_items = {item.menu_item_id: item for item in order.order_items}
 
         db.query(OrderItem).filter(OrderItem.order_id == order_id).delete()
 
@@ -253,9 +277,13 @@ async def update_order_service(
                     instr.dict() for instr in item_data.special_instructions
                 ]
                 structured_notes = serialize_instructions_to_notes(
-                    item_data.special_instructions)
-                processed_notes = (f"{processed_notes} | {structured_notes}"
-                                   if processed_notes else structured_notes)
+                    item_data.special_instructions
+                )
+                processed_notes = (
+                    f"{processed_notes} | {structured_notes}"
+                    if processed_notes
+                    else structured_notes
+                )
 
             new_item = OrderItem(
                 order_id=order_id,
@@ -263,7 +291,7 @@ async def update_order_service(
                 quantity=item_data.quantity,
                 price=item_data.price,
                 notes=processed_notes,
-                special_instructions=special_instructions_json
+                special_instructions=special_instructions_json,
             )
             db.add(new_item)
 
@@ -271,27 +299,39 @@ async def update_order_service(
     db.refresh(order)
 
     # Update KDS if order status changed to ready or completed
-    if status_changed and order.status in [OrderStatus.READY.value, OrderStatus.COMPLETED.value]:
+    if status_changed and order.status in [
+        OrderStatus.READY.value,
+        OrderStatus.COMPLETED.value,
+    ]:
         try:
             from modules.kds.models.kds_models import KDSOrderItem, DisplayStatus
             from modules.kds.services.kds_service import KDSService
-            
+
             kds_service = KDSService(db)
-            kds_items = db.query(KDSOrderItem).join(OrderItem).filter(
-                OrderItem.order_id == order.id
-            ).all()
-            
+            kds_items = (
+                db.query(KDSOrderItem)
+                .join(OrderItem)
+                .filter(OrderItem.order_id == order.id)
+                .all()
+            )
+
             # Mark all KDS items as ready/completed
-            new_kds_status = DisplayStatus.READY if order.status == OrderStatus.READY.value else DisplayStatus.COMPLETED
+            new_kds_status = (
+                DisplayStatus.READY
+                if order.status == OrderStatus.READY.value
+                else DisplayStatus.COMPLETED
+            )
             for kds_item in kds_items:
                 if kds_item.status != DisplayStatus.COMPLETED:
                     kds_item.status = new_kds_status
                     if new_kds_status == DisplayStatus.COMPLETED:
                         kds_item.completed_at = datetime.utcnow()
                         kds_item.completed_by_id = user_id
-            
+
             db.commit()
-            logger.info(f"Updated {len(kds_items)} KDS items for order {order.id} to {new_kds_status.value}")
+            logger.info(
+                f"Updated {len(kds_items)} KDS items for order {order.id} to {new_kds_status.value}"
+            )
         except Exception as e:
             logger.error(f"Failed to update KDS status for order {order.id}: {str(e)}")
             # Don't fail the order update if KDS update fails
@@ -301,11 +341,11 @@ async def update_order_service(
 
         if order.status == OrderStatus.COMPLETED.value:
             event_type = WebhookEventType.ORDER_COMPLETED
-            
+
             # Handle inventory deduction on completion if configured
             config = get_inventory_config()
             deduct_on_completion = config.DEDUCT_INVENTORY_ON_COMPLETION
-            
+
             if deduct_on_completion:
                 try:
                     recipe_inventory_service = RecipeInventoryService(db)
@@ -313,7 +353,7 @@ async def update_order_service(
                         order_items=order.order_items,
                         order_id=order.id,
                         user_id=user_id,
-                        deduction_type="order_completion"
+                        deduction_type="order_completion",
                     )
                     if result.get("low_stock_alerts"):
                         logger.warning(
@@ -325,19 +365,17 @@ async def update_order_service(
                         f"Failed to deduct inventory on order completion {order.id}: {str(e)}"
                     )
                     # Don't fail the order completion, just log the error
-                    
+
         elif order.status == OrderStatus.CANCELLED.value:
             event_type = WebhookEventType.ORDER_CANCELLED
-            
+
             # Handle inventory reversal for cancelled orders
             config = get_inventory_config()
             if config.AUTO_REVERSE_ON_CANCELLATION:
                 try:
                     recipe_inventory_service = RecipeInventoryService(db)
                     result = await recipe_inventory_service.reverse_inventory_deduction(
-                        order_id=order.id,
-                        user_id=user_id,
-                        reason="Order cancelled"
+                        order_id=order.id, user_id=user_id, reason="Order cancelled"
                     )
                     if result.get("reversed_items"):
                         logger.info(
@@ -355,12 +393,12 @@ async def update_order_service(
             order_id=order.id,
             event_type=event_type,
             previous_status=previous_status,
-            new_status=order.status
+            new_status=order.status,
         )
 
     return {
         "message": "Order updated successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
@@ -377,7 +415,7 @@ async def get_orders_service(
     limit: int = 100,
     offset: int = 0,
     include_items: bool = False,
-    include_archived: bool = False
+    include_archived: bool = False,
 ) -> List[Order]:
     query = db.query(Order)
 
@@ -404,12 +442,19 @@ async def get_orders_service(
 
     if min_priority:
         priority_values = {
-            OrderPriority.LOW: [OrderPriority.LOW, OrderPriority.NORMAL,
-                                OrderPriority.HIGH, OrderPriority.URGENT],
-            OrderPriority.NORMAL: [OrderPriority.NORMAL, OrderPriority.HIGH,
-                                   OrderPriority.URGENT],
+            OrderPriority.LOW: [
+                OrderPriority.LOW,
+                OrderPriority.NORMAL,
+                OrderPriority.HIGH,
+                OrderPriority.URGENT,
+            ],
+            OrderPriority.NORMAL: [
+                OrderPriority.NORMAL,
+                OrderPriority.HIGH,
+                OrderPriority.URGENT,
+            ],
             OrderPriority.HIGH: [OrderPriority.HIGH, OrderPriority.URGENT],
-            OrderPriority.URGENT: [OrderPriority.URGENT]
+            OrderPriority.URGENT: [OrderPriority.URGENT],
         }
         query = query.filter(Order.priority.in_(priority_values[min_priority]))
 
@@ -419,9 +464,9 @@ async def get_orders_service(
             (Order.priority == OrderPriority.HIGH.value, 2),
             (Order.priority == OrderPriority.NORMAL.value, 3),
             (Order.priority == OrderPriority.LOW.value, 4),
-            else_=5
+            else_=5,
         ),
-        Order.created_at
+        Order.created_at,
     )
 
     query = query.offset(offset).limit(limit)
@@ -430,9 +475,9 @@ async def get_orders_service(
         query = query.options(joinedload(Order.order_items))
 
     query = query.options(
-        joinedload(Order.tags), 
+        joinedload(Order.tags),
         joinedload(Order.category),
-        joinedload(Order.customer)  # Fix N+1: Eager load customer relationship
+        joinedload(Order.customer),  # Fix N+1: Eager load customer relationship
     )
 
     return query.all()
@@ -442,21 +487,18 @@ async def update_order_priority_service(
     order_id: int,
     priority_data: OrderPriorityUpdate,
     db: Session,
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
 ):
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.deleted_at.is_(None)
-    ).first()
+    order = (
+        db.query(Order).filter(Order.id == order_id, Order.deleted_at.is_(None)).first()
+    )
 
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    if order.status in [OrderStatus.COMPLETED.value,
-                        OrderStatus.CANCELLED.value]:
+    if order.status in [OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]:
         raise HTTPException(
-            status_code=400,
-            detail=f"Cannot change priority for {order.status} orders"
+            status_code=400, detail=f"Cannot change priority for {order.status} orders"
         )
 
     old_priority = order.priority
@@ -476,28 +518,30 @@ async def update_order_priority_service(
         )
 
         from ..schemas.order_schemas import OrderPriorityResponse
+
         return OrderPriorityResponse(
-            message=(f"Order priority updated from {old_priority.value} "
-                     f"to {priority_data.priority.value}"),
+            message=(
+                f"Order priority updated from {old_priority.value} "
+                f"to {priority_data.priority.value}"
+            ),
             previous_priority=old_priority.value,
             new_priority=priority_data.priority.value,
             updated_at=order.priority_updated_at,
             reason=priority_data.reason,
-            data=OrderOut.model_validate(order)
+            data=OrderOut.model_validate(order),
         )
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update order priority: {str(e)}"
+            status_code=500, detail=f"Failed to update order priority: {str(e)}"
         )
 
 
 async def validate_multi_item_rules(
     items: List[OrderItemUpdate],
     rule_types: Optional[List[MultiItemRuleType]] = None,
-    db: Session = None
+    db: Session = None,
 ) -> RuleValidationResult:
     """
     Validate multi-item order rules including combo deals, bulk discounts,
@@ -507,7 +551,7 @@ async def validate_multi_item_rules(
         rule_types = [
             MultiItemRuleType.COMBO,
             MultiItemRuleType.BULK_DISCOUNT,
-            MultiItemRuleType.COMPATIBILITY
+            MultiItemRuleType.COMPATIBILITY,
         ]
 
     modified_items = []
@@ -515,13 +559,9 @@ async def validate_multi_item_rules(
     for rule_type in rule_types:
         if rule_type == MultiItemRuleType.COMBO:
             pizza_items = [
-                item for item in items
-                if item.menu_item_id in [101, 102, 103]
+                item for item in items if item.menu_item_id in [101, 102, 103]
             ]
-            drink_items = [
-                item for item in items
-                if item.menu_item_id in [201, 202]
-            ]
+            drink_items = [item for item in items if item.menu_item_id in [201, 202]]
 
             if pizza_items and drink_items:
                 pass
@@ -539,36 +579,32 @@ async def validate_multi_item_rules(
                 if pair[0] in item_ids and pair[1] in item_ids:
                     return RuleValidationResult(
                         is_valid=False,
-                        message=f"Items {pair[0]} and {pair[1]} are not "
-                                f"compatible"
+                        message=f"Items {pair[0]} and {pair[1]} are not " f"compatible",
                     )
 
     return RuleValidationResult(
         is_valid=True,
         message="All rules passed",
-        modified_items=modified_items if modified_items else None
+        modified_items=modified_items if modified_items else None,
     )
 
 
 async def create_order_with_fraud_check(
-    db: Session,
-    order_data: dict,
-    perform_fraud_validation: bool = True
+    db: Session, order_data: dict, perform_fraud_validation: bool = True
 ):
     order = Order(**order_data)
     db.add(order)
     db.flush()
 
     if perform_fraud_validation:
-        fraud_result = await perform_fraud_check(
-            db, order.id, force_recheck=True)
+        fraud_result = await perform_fraud_check(db, order.id, force_recheck=True)
 
         if fraud_result.status == FraudCheckStatus.FAILED:
             db.rollback()
             raise HTTPException(
                 status_code=400,
                 detail=f"Order blocked due to fraud detection. "
-                       f"Risk level: {fraud_result.risk_level.value}"
+                f"Risk level: {fraud_result.risk_level.value}",
             )
         elif fraud_result.status == FraudCheckStatus.MANUAL_REVIEW:
             order.status = "pending_review"
@@ -580,45 +616,57 @@ async def create_order_with_fraud_check(
     try:
         from ..schemas.routing_schemas import RouteEvaluationRequest
         from .routing_rule_service import RoutingRuleService
-        
+
         routing_service = RoutingRuleService(db)
         evaluation_request = RouteEvaluationRequest(
-            order_id=order.id,
-            test_mode=False  # Apply routing in production mode
+            order_id=order.id, test_mode=False  # Apply routing in production mode
         )
-        
+
         routing_result = routing_service.evaluate_order_routing(evaluation_request)
-        
+
         # Log routing decision
-        logger.info(f"Order {order.id} routing decision: {routing_result.routing_decision}")
-        
+        logger.info(
+            f"Order {order.id} routing decision: {routing_result.routing_decision}"
+        )
+
         # If routing rules didn't match or defaulted to KDS stations, use legacy routing
         if routing_result.routing_decision.get("type") == "default":
             # Route order to KDS stations using legacy system
             try:
-                from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
+                from modules.kds.services.kds_order_routing_service import (
+                    KDSOrderRoutingService,
+                )
+
                 kds_routing_service = KDSOrderRoutingService(db)
                 routed_items = kds_routing_service.route_order_to_stations(order.id)
-                logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items")
+                logger.info(
+                    f"Order {order.id} routed to KDS with {len(routed_items)} items"
+                )
             except Exception as e:
                 logger.error(f"Failed to route order {order.id} to KDS: {str(e)}")
                 # Don't fail the order creation if KDS routing fails
-        
+
     except Exception as e:
         logger.error(f"Failed to evaluate routing rules for order {order.id}: {str(e)}")
         # Fall back to legacy KDS routing if rule evaluation fails
         try:
-            from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
+            from modules.kds.services.kds_order_routing_service import (
+                KDSOrderRoutingService,
+            )
+
             kds_routing_service = KDSOrderRoutingService(db)
             routed_items = kds_routing_service.route_order_to_stations(order.id)
-            logger.info(f"Order {order.id} routed to KDS with {len(routed_items)} items (fallback)")
+            logger.info(
+                f"Order {order.id} routed to KDS with {len(routed_items)} items (fallback)"
+            )
         except Exception as e2:
-            logger.error(f"Failed to route order {order.id} to KDS (fallback): {str(e2)}")
+            logger.error(
+                f"Failed to route order {order.id} to KDS (fallback): {str(e2)}"
+            )
 
     webhook_service = WebhookService(db)
     await webhook_service.trigger_webhook(
-        order_id=order.id,
-        event_type=WebhookEventType.ORDER_CREATED
+        order_id=order.id, event_type=WebhookEventType.ORDER_CREATED
     )
 
     return order
@@ -637,14 +685,12 @@ async def schedule_delayed_fulfillment(
     current_status = OrderStatus(order.status)
     if OrderStatus.DELAYED not in VALID_TRANSITIONS.get(current_status, []):
         raise HTTPException(
-            status_code=400,
-            detail=f"Cannot delay order with status {current_status}"
+            status_code=400, detail=f"Cannot delay order with status {current_status}"
         )
 
     if delay_data.scheduled_fulfillment_time <= datetime.utcnow():
         raise HTTPException(
-            status_code=400,
-            detail="Scheduled fulfillment time must be in the future"
+            status_code=400, detail="Scheduled fulfillment time must be in the future"
         )
 
     order.status = OrderStatus.DELAYED.value
@@ -657,25 +703,27 @@ async def schedule_delayed_fulfillment(
 
     return {
         "message": "Order scheduled for delayed fulfillment",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
 async def get_scheduled_orders(
     db: Session,
     from_time: Optional[datetime] = None,
-    to_time: Optional[datetime] = None
+    to_time: Optional[datetime] = None,
 ):
     """
     Retrieve orders scheduled for fulfillment within a time range.
     """
     query = db.query(Order).filter(
-        Order.status.in_([
-            OrderStatus.DELAYED.value,
-            OrderStatus.SCHEDULED.value,
-            OrderStatus.AWAITING_FULFILLMENT.value
-        ]),
-        Order.deleted_at.is_(None)
+        Order.status.in_(
+            [
+                OrderStatus.DELAYED.value,
+                OrderStatus.SCHEDULED.value,
+                OrderStatus.AWAITING_FULFILLMENT.value,
+            ]
+        ),
+        Order.deleted_at.is_(None),
     )
 
     if from_time:
@@ -694,11 +742,15 @@ async def process_due_delayed_orders(db: Session):
     """
     current_time = datetime.utcnow()
 
-    due_orders = db.query(Order).filter(
-        Order.status == OrderStatus.SCHEDULED.value,
-        Order.scheduled_fulfillment_time <= current_time,
-        Order.deleted_at.is_(None)
-    ).all()
+    due_orders = (
+        db.query(Order)
+        .filter(
+            Order.status == OrderStatus.SCHEDULED.value,
+            Order.scheduled_fulfillment_time <= current_time,
+            Order.deleted_at.is_(None),
+        )
+        .all()
+    )
 
     processed_orders = []
 
@@ -715,7 +767,7 @@ async def process_due_delayed_orders(db: Session):
         "message": f"Processed {len(processed_orders)} due orders",
         "processed_orders": [
             OrderOut.model_validate(order) for order in processed_orders
-        ]
+        ],
     }
 
 
@@ -727,8 +779,7 @@ async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
         found_ids = [tag.id for tag in tags]
         missing_ids = [tag_id for tag_id in tag_ids if tag_id not in found_ids]
         raise HTTPException(
-            status_code=404,
-            detail=f"Tags with ids {missing_ids} not found"
+            status_code=404, detail=f"Tags with ids {missing_ids} not found"
         )
 
     for tag in tags:
@@ -740,7 +791,7 @@ async def add_tags_to_order(db: Session, order_id: int, tag_ids: List[int]):
 
     return {
         "message": "Tags added successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
@@ -749,10 +800,7 @@ async def remove_tag_from_order(db: Session, order_id: int, tag_id: int):
 
     tag = db.query(Tag).filter(Tag.id == tag_id).first()
     if not tag:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Tag with id {tag_id} not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Tag with id {tag_id} not found")
 
     if tag in order.tags:
         order.tags.remove(tag)
@@ -761,21 +809,18 @@ async def remove_tag_from_order(db: Session, order_id: int, tag_id: int):
 
     return {
         "message": "Tag removed successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
-async def set_order_category(db: Session, order_id: int,
-                             category_id: Optional[int]):
+async def set_order_category(db: Session, order_id: int, category_id: Optional[int]):
     order = await get_order_by_id(db, order_id)
 
     if category_id is not None:
-        category = db.query(Category).filter(
-            Category.id == category_id).first()
+        category = db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise HTTPException(
-                status_code=404,
-                detail=f"Category with id {category_id} not found"
+                status_code=404, detail=f"Category with id {category_id} not found"
             )
         order.category_id = category_id
     else:
@@ -786,7 +831,7 @@ async def set_order_category(db: Session, order_id: int,
 
     return {
         "message": "Category updated successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
@@ -794,14 +839,10 @@ async def create_tag(db: Session, tag_data: TagCreate):
     existing_tag = db.query(Tag).filter(Tag.name == tag_data.name).first()
     if existing_tag:
         raise HTTPException(
-            status_code=400,
-            detail=f"Tag with name '{tag_data.name}' already exists"
+            status_code=400, detail=f"Tag with name '{tag_data.name}' already exists"
         )
 
-    tag = Tag(
-        name=tag_data.name,
-        description=tag_data.description
-    )
+    tag = Tag(name=tag_data.name, description=tag_data.description)
     db.add(tag)
     db.commit()
     db.refresh(tag)
@@ -809,24 +850,21 @@ async def create_tag(db: Session, tag_data: TagCreate):
     return TagOut.model_validate(tag)
 
 
-async def get_tags(db: Session, limit: int = 100,
-                   offset: int = 0) -> List[Tag]:
+async def get_tags(db: Session, limit: int = 100, offset: int = 0) -> List[Tag]:
     return db.query(Tag).offset(offset).limit(limit).all()
 
 
 async def create_category(db: Session, category_data: CategoryCreate):
-    existing_category = db.query(Category).filter(
-        Category.name == category_data.name).first()
+    existing_category = (
+        db.query(Category).filter(Category.name == category_data.name).first()
+    )
     if existing_category:
         raise HTTPException(
             status_code=400,
-            detail=f"Category with name '{category_data.name}' already exists"
+            detail=f"Category with name '{category_data.name}' already exists",
         )
 
-    category = Category(
-        name=category_data.name,
-        description=category_data.description
-    )
+    category = Category(name=category_data.name, description=category_data.description)
     db.add(category)
     db.commit()
     db.refresh(category)
@@ -834,16 +872,16 @@ async def create_category(db: Session, category_data: CategoryCreate):
     return CategoryOut.model_validate(category)
 
 
-async def get_categories(db: Session, limit: int = 100,
-                         offset: int = 0) -> List[Category]:
+async def get_categories(
+    db: Session, limit: int = 100, offset: int = 0
+) -> List[Category]:
     return db.query(Category).offset(offset).limit(limit).all()
 
 
 async def archive_order_service(db: Session, order_id: int):
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.deleted_at.is_(None)
-    ).first()
+    order = (
+        db.query(Order).filter(Order.id == order_id, Order.deleted_at.is_(None)).first()
+    )
 
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -853,7 +891,7 @@ async def archive_order_service(db: Session, order_id: int):
         raise HTTPException(
             status_code=400,
             detail=f"Only completed or cancelled orders can be archived. "
-                   f"Current status: {current_status}"
+            f"Current status: {current_status}",
         )
 
     order.status = OrderStatus.ARCHIVED.value
@@ -862,23 +900,21 @@ async def archive_order_service(db: Session, order_id: int):
 
     return {
         "message": "Order archived successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
 async def restore_order_service(db: Session, order_id: int):
-    order = db.query(Order).filter(
-        Order.id == order_id,
-        Order.deleted_at.is_(None)
-    ).first()
+    order = (
+        db.query(Order).filter(Order.id == order_id, Order.deleted_at.is_(None)).first()
+    )
 
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
     if OrderStatus(order.status) != OrderStatus.ARCHIVED:
         raise HTTPException(
-            status_code=400,
-            detail="Only archived orders can be restored"
+            status_code=400, detail="Only archived orders can be restored"
         )
 
     order.status = OrderStatus.COMPLETED.value
@@ -887,7 +923,7 @@ async def restore_order_service(db: Session, order_id: int):
 
     return {
         "message": "Order restored successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
@@ -896,11 +932,10 @@ async def get_archived_orders_service(
     staff_id: Optional[int] = None,
     table_no: Optional[int] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
 ) -> List[Order]:
     query = db.query(Order).filter(
-        Order.status == OrderStatus.ARCHIVED.value,
-        Order.deleted_at.is_(None)
+        Order.status == OrderStatus.ARCHIVED.value, Order.deleted_at.is_(None)
     )
 
     if staff_id:
@@ -917,7 +952,7 @@ async def get_archived_orders_service(
 def validate_priority_escalation(
     current_priority: OrderPriority,
     new_priority: OrderPriority,
-    user_permissions: Optional[List[str]] = None
+    user_permissions: Optional[List[str]] = None,
 ) -> bool:
     """
     Validate priority escalation based on business rules.
@@ -937,7 +972,7 @@ def validate_priority_escalation(
         OrderPriority.LOW: 1,
         OrderPriority.NORMAL: 2,
         OrderPriority.HIGH: 3,
-        OrderPriority.URGENT: 4
+        OrderPriority.URGENT: 4,
     }
 
     current_level = priority_levels[current_priority]
@@ -957,35 +992,38 @@ def validate_priority_escalation(
 
 
 async def get_order_audit_events_service(
-    db: Session,
-    order_id: int,
-    limit: int = 100,
-    offset: int = 0
+    db: Session, order_id: int, limit: int = 100, offset: int = 0
 ) -> List[AuditLog]:
     """Retrieve audit events for a specific order."""
-    return db.query(AuditLog).filter(
-        AuditLog.module == "orders",
-        AuditLog.action == "status_change",
-        AuditLog.entity_id == order_id
-    ).order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
+    return (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.module == "orders",
+            AuditLog.action == "status_change",
+            AuditLog.entity_id == order_id,
+        )
+        .order_by(AuditLog.timestamp.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
 
-async def count_order_audit_events_service(
-    db: Session,
-    order_id: int
-) -> int:
+async def count_order_audit_events_service(db: Session, order_id: int) -> int:
     """Count total audit events for a specific order."""
-    return db.query(AuditLog).filter(
-        AuditLog.module == "orders",
-        AuditLog.action == "status_change",
-        AuditLog.entity_id == order_id
-    ).count()
+    return (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.module == "orders",
+            AuditLog.action == "status_change",
+            AuditLog.entity_id == order_id,
+        )
+        .count()
+    )
 
 
 async def generate_kitchen_print_ticket_service(
-    order_id: int,
-    print_request: KitchenPrintRequest,
-    db: Session
+    order_id: int, print_request: KitchenPrintRequest, db: Session
 ) -> KitchenPrintResponse:
     """Generate and send kitchen print ticket for an order."""
 
@@ -1006,16 +1044,18 @@ async def generate_kitchen_print_ticket_service(
             return KitchenPrintResponse(
                 success=True,
                 message="Kitchen ticket printed successfully",
-                ticket_id=(f"ticket_{order_id}_"
-                           f"{int(datetime.utcnow().timestamp())}"),
-                print_timestamp=datetime.utcnow()
+                ticket_id=(
+                    f"ticket_{order_id}_" f"{int(datetime.utcnow().timestamp())}"
+                ),
+                print_timestamp=datetime.utcnow(),
             )
         else:
             return KitchenPrintResponse(
                 success=False,
-                message=(f"Print failed: "
-                         f"{print_result.get('error', 'Unknown error')}"),
-                error_code=print_result.get('error_code', 'PRINT_ERROR')
+                message=(
+                    f"Print failed: " f"{print_result.get('error', 'Unknown error')}"
+                ),
+                error_code=print_result.get("error_code", "PRINT_ERROR"),
             )
 
     except HTTPException:
@@ -1025,7 +1065,7 @@ async def generate_kitchen_print_ticket_service(
         return KitchenPrintResponse(
             success=False,
             message=f"Print system error: {str(e)}",
-            error_code="SYSTEM_ERROR"
+            error_code="SYSTEM_ERROR",
         )
 
 
@@ -1040,14 +1080,15 @@ def _validate_order_for_printing(order: Order) -> None:
         valid_statuses = [s.value for s in PRINTABLE_STATUSES]
         raise HTTPException(
             status_code=400,
-            detail=(f"Cannot print ticket for order with status "
-                    f"{order.status}. Valid statuses: {valid_statuses}")
+            detail=(
+                f"Cannot print ticket for order with status "
+                f"{order.status}. Valid statuses: {valid_statuses}"
+            ),
         )
 
     if not order.order_items:
         raise HTTPException(
-            status_code=400,
-            detail="Cannot print ticket for order with no items"
+            status_code=400, detail="Cannot print ticket for order with no items"
         )
 
 
@@ -1056,41 +1097,40 @@ async def _send_to_pos_printer(
     print_request: KitchenPrintRequest,
     ticket_content: str,
     ticket_data: KitchenTicketFormat,
-    db: Session
+    db: Session,
 ) -> dict:
     """Send ticket to POS printer and return result."""
     pos_service = POSBridgeService(db)
 
     try:
         order_data = pos_service._transform_order_to_dict(order)
-        order_data.update({
-            "print_type": "kitchen_ticket",
-            "station_id": print_request.station_id,
-            "format_options": print_request.format_options,
-            "ticket_content": ticket_content,
-            "ticket_data": ticket_data.model_dump()
-        })
+        order_data.update(
+            {
+                "print_type": "kitchen_ticket",
+                "station_id": print_request.station_id,
+                "format_options": print_request.format_options,
+                "ticket_content": ticket_content,
+                "ticket_data": ticket_data.model_dump(),
+            }
+        )
 
         sync_result = await pos_service.sync_all_active_integrations(
             order.id, tenant_id=None, team_id=None
         )
 
-        if (sync_result.get("results") and
-                any(r["success"] for r in sync_result["results"])):
+        if sync_result.get("results") and any(
+            r["success"] for r in sync_result["results"]
+        ):
             return {"success": True}
         else:
             return {
                 "success": False,
                 "error": "No active POS integrations",
-                "error_code": "NO_POS_INTEGRATION"
+                "error_code": "NO_POS_INTEGRATION",
             }
 
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "error_code": "POS_ERROR"
-        }
+        return {"success": False, "error": str(e), "error_code": "POS_ERROR"}
 
 
 def _format_kitchen_ticket(
@@ -1105,10 +1145,10 @@ def _format_kitchen_ticket(
             "quantity": item.quantity,
             "price": float(item.price),
             "notes": item.notes or "",
-            "special_requests": getattr(item, 'special_requests', None)
+            "special_requests": getattr(item, "special_requests", None),
         }
 
-        if hasattr(item, 'cooking_instructions'):
+        if hasattr(item, "cooking_instructions"):
             item_data["cooking_instructions"] = item.cooking_instructions
 
         items_data.append(item_data)
@@ -1120,7 +1160,7 @@ def _format_kitchen_ticket(
         station_name=_determine_station_name(print_request.station_id),
         timestamp=datetime.utcnow(),
         special_instructions=_extract_special_instructions(order),
-        priority_level=_determine_priority(order)
+        priority_level=_determine_priority(order),
     )
 
 
@@ -1130,7 +1170,7 @@ def _determine_station_name(station_id: Optional[int]) -> Optional[str]:
         1: "Grill Station",
         2: "Prep Station",
         3: "Salad Station",
-        4: "Dessert Station"
+        4: "Dessert Station",
     }
     return STATION_MAPPING.get(station_id) if station_id else None
 
@@ -1139,15 +1179,15 @@ def _extract_special_instructions(order: Order) -> Optional[str]:
     """Extract special instructions from order."""
     instructions = []
 
-    if hasattr(order, 'customer_notes') and order.customer_notes:
+    if hasattr(order, "customer_notes") and order.customer_notes:
         instructions.append(f"Customer: {order.customer_notes}")
 
     # Add item-specific special instructions
     for item in order.order_items:
-        if hasattr(item, 'special_instructions') and item.special_instructions:
+        if hasattr(item, "special_instructions") and item.special_instructions:
             for instruction in item.special_instructions:
                 if isinstance(instruction, dict):
-                    desc = instruction.get('description', '')
+                    desc = instruction.get("description", "")
                     if desc:
                         item_desc = f"Item {item.menu_item_id}: {desc}"
                         instructions.append(item_desc)
@@ -1174,8 +1214,9 @@ def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
         content += f"STATION: {ticket_data.station_name}\n"
     if ticket_data.priority_level:
         priority_text = "★" * ticket_data.priority_level
-        priority_line = (f"PRIORITY: {priority_text} "
-                         f"({ticket_data.priority_level}/5)\n")
+        priority_line = (
+            f"PRIORITY: {priority_text} " f"({ticket_data.priority_level}/5)\n"
+        )
         content += priority_line
 
     content += "=" * 32 + "\n"
@@ -1183,14 +1224,14 @@ def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
     for item in ticket_data.items:
         content += f"{item['quantity']}x ITEM #{item['menu_item_id']}\n"
 
-        if item.get('notes'):
+        if item.get("notes"):
             content += f"   * {item['notes']}\n"
 
-        if item.get('special_requests'):
+        if item.get("special_requests"):
             content += f"   >> {item['special_requests']}\n"
 
         # Add cooking instructions
-        if item.get('cooking_instructions'):
+        if item.get("cooking_instructions"):
             content += f"   COOK: {item['cooking_instructions']}\n"
 
     content += "=" * 32 + "\n"
@@ -1206,11 +1247,16 @@ def _generate_ticket_content(ticket_data: KitchenTicketFormat) -> str:
 async def update_customer_notes(
     order_id: int, notes_update: CustomerNotesUpdate, db: Session
 ):
-    order = db.query(Order).options(
-        joinedload(Order.attachments),
-        joinedload(Order.tags),
-        joinedload(Order.category)
-    ).filter(Order.id == order_id).first()
+    order = (
+        db.query(Order)
+        .options(
+            joinedload(Order.attachments),
+            joinedload(Order.tags),
+            joinedload(Order.category),
+        )
+        .filter(Order.id == order_id)
+        .first()
+    )
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     order.customer_notes = notes_update.customer_notes
@@ -1219,7 +1265,7 @@ async def update_customer_notes(
 
     return {
         "message": "Customer notes updated successfully",
-        "data": OrderOut.model_validate(order)
+        "data": OrderOut.model_validate(order),
     }
 
 
@@ -1228,7 +1274,7 @@ async def add_attachment(
     file: UploadFile,
     db: Session,
     description: Optional[str] = None,
-    is_public: bool = False
+    is_public: bool = False,
 ):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
@@ -1243,7 +1289,7 @@ async def add_attachment(
             file_type=file_data["file_type"],
             file_size=file_data["file_size"],
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
         db.add(attachment)
         db.commit()
@@ -1251,7 +1297,7 @@ async def add_attachment(
 
         return {
             "message": "Attachment uploaded successfully",
-            "data": OrderAttachmentOut.model_validate(attachment)
+            "data": OrderAttachmentOut.model_validate(attachment),
         }
 
     except HTTPException:
@@ -1259,33 +1305,39 @@ async def add_attachment(
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to add attachment: {str(e)}"
+            status_code=500, detail=f"Failed to add attachment: {str(e)}"
         )
 
 
-async def get_attachments(order_id: int,
-                          db: Session) -> List[OrderAttachmentOut]:
-    order = db.query(Order).options(joinedload(Order.attachments)).filter(
-        Order.id == order_id
-    ).first()
+async def get_attachments(order_id: int, db: Session) -> List[OrderAttachmentOut]:
+    order = (
+        db.query(Order)
+        .options(joinedload(Order.attachments))
+        .filter(Order.id == order_id)
+        .first()
+    )
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
 
-    attachments = db.query(OrderAttachment).filter(
-        OrderAttachment.order_id == order_id,
-        OrderAttachment.deleted_at.is_(None)
-    ).all()
+    attachments = (
+        db.query(OrderAttachment)
+        .filter(
+            OrderAttachment.order_id == order_id, OrderAttachment.deleted_at.is_(None)
+        )
+        .all()
+    )
 
-    return [OrderAttachmentOut.model_validate(attachment)
-            for attachment in attachments]
+    return [OrderAttachmentOut.model_validate(attachment) for attachment in attachments]
 
 
 async def delete_attachment(attachment_id: int, db: Session):
-    attachment = db.query(OrderAttachment).filter(
-        OrderAttachment.id == attachment_id,
-        OrderAttachment.deleted_at.is_(None)
-    ).first()
+    attachment = (
+        db.query(OrderAttachment)
+        .filter(
+            OrderAttachment.id == attachment_id, OrderAttachment.deleted_at.is_(None)
+        )
+        .first()
+    )
 
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
@@ -1298,14 +1350,13 @@ async def delete_attachment(attachment_id: int, db: Session):
 
         return {
             "message": "Attachment deleted successfully",
-            "data": {"id": attachment_id}
+            "data": {"id": attachment_id},
         }
 
     except Exception as e:
         db.rollback()
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete attachment: {str(e)}"
+            status_code=500, detail=f"Failed to delete attachment: {str(e)}"
         )
 
 
@@ -1313,7 +1364,7 @@ async def get_auto_cancellation_configs(
     db: Session,
     tenant_id: Optional[int] = None,
     team_id: Optional[int] = None,
-    status: Optional[OrderStatus] = None
+    status: Optional[OrderStatus] = None,
 ):
     """Get auto-cancellation configurations with optional filtering."""
     query = db.query(AutoCancellationConfig)
@@ -1328,16 +1379,17 @@ async def get_auto_cancellation_configs(
     return query.all()
 
 
-async def create_or_update_auto_cancellation_config(
-    db: Session,
-    config_data: dict
-):
+async def create_or_update_auto_cancellation_config(db: Session, config_data: dict):
     """Create or update auto-cancellation configuration."""
-    existing_config = db.query(AutoCancellationConfig).filter(
-        AutoCancellationConfig.tenant_id == config_data.get('tenant_id'),
-        AutoCancellationConfig.team_id == config_data.get('team_id'),
-        AutoCancellationConfig.status == config_data['status']
-    ).first()
+    existing_config = (
+        db.query(AutoCancellationConfig)
+        .filter(
+            AutoCancellationConfig.tenant_id == config_data.get("tenant_id"),
+            AutoCancellationConfig.team_id == config_data.get("team_id"),
+            AutoCancellationConfig.status == config_data["status"],
+        )
+        .first()
+    )
 
     if existing_config:
         for key, value in config_data.items():
@@ -1354,9 +1406,7 @@ async def create_or_update_auto_cancellation_config(
 
 
 async def detect_stale_orders(
-    db: Session,
-    tenant_id: Optional[int] = None,
-    team_id: Optional[int] = None
+    db: Session, tenant_id: Optional[int] = None, team_id: Optional[int] = None
 ) -> List[Order]:
     """Detect orders that have exceeded their configured time thresholds."""
     configs = await get_auto_cancellation_configs(db, tenant_id, team_id)
@@ -1369,15 +1419,13 @@ async def detect_stale_orders(
     current_time = datetime.utcnow()
 
     for config in active_configs:
-        threshold_time = current_time - timedelta(
-            minutes=config.threshold_minutes
-        )
+        threshold_time = current_time - timedelta(minutes=config.threshold_minutes)
 
         query = db.query(Order).filter(
             and_(
                 Order.status == config.status,
                 Order.updated_at <= threshold_time,
-                Order.deleted_at.is_(None)
+                Order.deleted_at.is_(None),
             )
         )
 
@@ -1390,7 +1438,7 @@ async def cancel_stale_orders(
     db: Session,
     tenant_id: Optional[int] = None,
     team_id: Optional[int] = None,
-    system_user_id: int = 1
+    system_user_id: int = 1,
 ) -> dict:
     """Enhanced error handling and partial success reporting."""
     stale_orders = await detect_stale_orders(db, tenant_id, team_id)
@@ -1399,7 +1447,7 @@ async def cancel_stale_orders(
         return {
             "cancelled_count": 0,
             "cancelled_orders": [],
-            "message": "No stale orders found"
+            "message": "No stale orders found",
         }
 
     cancelled_orders = []
@@ -1409,20 +1457,20 @@ async def cancel_stale_orders(
         try:
             current_status = OrderStatus(order.status)
 
-            if OrderStatus.CANCELLED not in VALID_TRANSITIONS.get(
-                current_status, []
-            ):
+            if OrderStatus.CANCELLED not in VALID_TRANSITIONS.get(current_status, []):
                 logger.warning(
                     f"Order {order.id} with status {current_status} "
                     f"cannot be auto-cancelled"
                 )
-                failed_orders.append({
-                    "order_id": order.id,
-                    "error": (
-                        f"Status {current_status} cannot transition to "
-                        f"CANCELLED"
-                    )
-                })
+                failed_orders.append(
+                    {
+                        "order_id": order.id,
+                        "error": (
+                            f"Status {current_status} cannot transition to "
+                            f"CANCELLED"
+                        ),
+                    }
+                )
                 continue
 
             order.status = OrderStatus.CANCELLED.value
@@ -1437,11 +1485,12 @@ async def cancel_stale_orders(
                     "cancellation_reason": "auto_cancellation_stale_order",
                     "stale_duration_minutes": (
                         datetime.utcnow() - order.updated_at
-                    ).total_seconds() / 60,
+                    ).total_seconds()
+                    / 60,
                     "source": "system_auto_cancellation",
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.utcnow().isoformat(),
                 },
-                action="auto_cancellation"
+                action="auto_cancellation",
             )
             cancelled_orders.append(order.id)
 
@@ -1464,39 +1513,25 @@ async def cancel_stale_orders(
                 "cancelled_count": 0,
                 "cancelled_orders": [],
                 "failed_orders": failed_orders,
-                "message": "Database commit failed"
+                "message": "Database commit failed",
             }
 
     return {
         "cancelled_count": len(cancelled_orders),
         "cancelled_orders": cancelled_orders,
         "failed_orders": failed_orders,
-        "message": f"Successfully cancelled {len(cancelled_orders)} orders"
+        "message": f"Successfully cancelled {len(cancelled_orders)} orders",
     }
 
 
 async def create_default_auto_cancellation_configs(
-    db: Session,
-    tenant_id: Optional[int] = None,
-    updated_by: int = 1
+    db: Session, tenant_id: Optional[int] = None, updated_by: int = 1
 ):
     """Create sensible default configurations for a new tenant/team."""
     default_configs = [
-        {
-            "status": "PENDING",
-            "threshold_minutes": 30,
-            "updated_by": updated_by
-        },
-        {
-            "status": "IN_PROGRESS",
-            "threshold_minutes": 90,
-            "updated_by": updated_by
-        },
-        {
-            "status": "IN_KITCHEN",
-            "threshold_minutes": 45,
-            "updated_by": updated_by
-        },
+        {"status": "PENDING", "threshold_minutes": 30, "updated_by": updated_by},
+        {"status": "IN_PROGRESS", "threshold_minutes": 90, "updated_by": updated_by},
+        {"status": "IN_KITCHEN", "threshold_minutes": 45, "updated_by": updated_by},
     ]
 
     created_configs = []
@@ -1504,9 +1539,7 @@ async def create_default_auto_cancellation_configs(
         if tenant_id:
             config_data["tenant_id"] = tenant_id
 
-        config = await create_or_update_auto_cancellation_config(
-            db, config_data
-        )
+        config = await create_or_update_auto_cancellation_config(db, config_data)
         created_configs.append(config)
 
     return created_configs
@@ -1518,12 +1551,12 @@ async def notify_stale_order_cancellation(order: Order, reason: str):
         "order_id": order.id,
         "table_no": order.table_no,
         "cancellation_reason": reason,
-        "original_amount": sum(
-            item.price * item.quantity for item in order.order_items
-        ) if order.order_items else 0,
-        "stale_duration": (
-            datetime.utcnow() - order.updated_at
-        ).total_seconds() / 60
+        "original_amount": (
+            sum(item.price * item.quantity for item in order.order_items)
+            if order.order_items
+            else 0
+        ),
+        "stale_duration": (datetime.utcnow() - order.updated_at).total_seconds() / 60,
     }
 
     logger.info(

@@ -12,42 +12,39 @@ from pydantic import BaseModel, Field, validator
 # Request schemas
 class OrderCompleteRequest(BaseModel):
     """Request to complete an order with inventory options"""
+
     skip_inventory: bool = Field(
-        default=False,
-        description="Skip inventory deduction (for special cases)"
+        default=False, description="Skip inventory deduction (for special cases)"
     )
     force_deduction: bool = Field(
-        default=False,
-        description="Force deduction even if inventory is insufficient"
+        default=False, description="Force deduction even if inventory is insufficient"
     )
     reason: Optional[str] = Field(
         None,
         min_length=1,
         max_length=500,
-        description="Optional reason for the completion"
+        description="Optional reason for the completion",
     )
 
 
 class OrderCancelRequest(BaseModel):
     """Request to cancel an order"""
+
     reason: str = Field(
-        ...,
-        min_length=1,
-        max_length=500,
-        description="Reason for cancellation"
+        ..., min_length=1, max_length=500, description="Reason for cancellation"
     )
     reverse_inventory: bool = Field(
-        default=True,
-        description="Whether to reverse inventory deductions"
+        default=True, description="Whether to reverse inventory deductions"
     )
 
 
 class FulfilledItem(BaseModel):
     """Item that has been fulfilled"""
+
     menu_item_id: int = Field(..., gt=0)
     fulfilled_quantity: int = Field(..., gt=0)
-    
-    @validator('fulfilled_quantity')
+
+    @validator("fulfilled_quantity")
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError("Fulfilled quantity must be positive")
@@ -56,22 +53,22 @@ class FulfilledItem(BaseModel):
 
 class PartialFulfillmentRequest(BaseModel):
     """Request for partial order fulfillment"""
+
     fulfilled_items: List[FulfilledItem] = Field(
-        ...,
-        min_items=1,
-        description="List of items that have been fulfilled"
+        ..., min_items=1, description="List of items that have been fulfilled"
     )
     reason: Optional[str] = Field(
         None,
         min_length=1,
         max_length=500,
-        description="Optional reason for the partial fulfillment"
+        description="Optional reason for the partial fulfillment",
     )
 
 
 # Response schemas
 class DeductedItem(BaseModel):
     """Information about a deducted inventory item"""
+
     inventory_id: int
     item_name: str
     quantity_deducted: float
@@ -81,6 +78,7 @@ class DeductedItem(BaseModel):
 
 class LowStockAlert(BaseModel):
     """Low stock alert information"""
+
     inventory_id: int
     item_name: str
     current_quantity: float
@@ -90,6 +88,7 @@ class LowStockAlert(BaseModel):
 
 class InventoryDeductionResult(BaseModel):
     """Result of inventory deduction operation"""
+
     success: bool
     deducted_items: List[DeductedItem]
     low_stock_alerts: List[LowStockAlert]
@@ -99,6 +98,7 @@ class InventoryDeductionResult(BaseModel):
 
 class OrderCompleteResponse(BaseModel):
     """Response for order completion with inventory"""
+
     success: bool
     order_id: int
     status: str
@@ -110,6 +110,7 @@ class OrderCompleteResponse(BaseModel):
 
 class ReversedItem(BaseModel):
     """Information about a reversed inventory item"""
+
     inventory_id: int
     item_name: str
     quantity_restored: float
@@ -119,6 +120,7 @@ class ReversedItem(BaseModel):
 
 class InventoryReversalResult(BaseModel):
     """Result of inventory reversal operation"""
+
     success: bool
     reversed_items: List[ReversedItem]
     total_items_reversed: int
@@ -126,6 +128,7 @@ class InventoryReversalResult(BaseModel):
 
 class OrderCancelResponse(BaseModel):
     """Response for order cancellation with inventory"""
+
     success: bool
     order_id: int
     status: str
@@ -137,6 +140,7 @@ class OrderCancelResponse(BaseModel):
 
 class PartialFulfillmentResponse(BaseModel):
     """Response for partial fulfillment"""
+
     success: bool
     order_id: int
     fulfilled_items: List[FulfilledItem]
@@ -145,6 +149,7 @@ class PartialFulfillmentResponse(BaseModel):
 
 class InventoryImpactItem(BaseModel):
     """Impact preview for a single inventory item"""
+
     inventory_id: int
     item_name: str
     current_quantity: float
@@ -158,6 +163,7 @@ class InventoryImpactItem(BaseModel):
 
 class InventoryAvailabilityResponse(BaseModel):
     """Response for inventory availability check"""
+
     can_fulfill: bool
     impact_preview: List[InventoryImpactItem]
     warnings: List[str]
@@ -179,5 +185,5 @@ __all__ = [
     "ReversedItem",
     "InventoryReversalResult",
     "InventoryImpactItem",
-    "FulfilledItem"
+    "FulfilledItem",
 ]

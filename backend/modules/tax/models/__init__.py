@@ -6,7 +6,7 @@ from .tax_jurisdiction_models import (
     TaxRate,
     TaxRuleConfiguration,
     TaxExemptionCertificate,
-    TaxNexus
+    TaxNexus,
 )
 from .tax_compliance_models import (
     TaxFiling,
@@ -15,20 +15,18 @@ from .tax_compliance_models import (
     TaxAuditLog,
     TaxReportTemplate,
     FilingStatus,
-    FilingType
+    FilingType,
 )
 
 __all__ = [
     # Original models
     "TaxRule",
-    
     # Jurisdiction models
     "TaxJurisdiction",
     "TaxRate",
     "TaxRuleConfiguration",
     "TaxExemptionCertificate",
     "TaxNexus",
-    
     # Compliance models
     "TaxFiling",
     "TaxFilingLineItem",

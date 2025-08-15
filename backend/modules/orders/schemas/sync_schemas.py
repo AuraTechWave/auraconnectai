@@ -14,6 +14,7 @@ from enum import Enum
 
 class SyncStatusEnum(str, Enum):
     """Sync status values"""
+
     pending = "pending"
     in_progress = "in_progress"
     synced = "synced"
@@ -24,6 +25,7 @@ class SyncStatusEnum(str, Enum):
 
 class SyncDirectionEnum(str, Enum):
     """Sync direction values"""
+
     local_to_remote = "local_to_remote"
     remote_to_local = "remote_to_local"
     bidirectional = "bidirectional"
@@ -31,6 +33,7 @@ class SyncDirectionEnum(str, Enum):
 
 class ConflictResolutionMethod(str, Enum):
     """Conflict resolution methods"""
+
     local_wins = "local_wins"
     remote_wins = "remote_wins"
     merge = "merge"
@@ -40,6 +43,7 @@ class ConflictResolutionMethod(str, Enum):
 
 class SyncBatchResponse(BaseModel):
     """Response model for sync batch"""
+
     id: int
     batch_id: str
     batch_type: str
@@ -53,7 +57,7 @@ class SyncBatchResponse(BaseModel):
     conflict_count: int = 0
     avg_sync_time_ms: Optional[float] = None
     error_summary: Optional[Dict[str, Any]] = None
-    
+
     class Config:
         orm_mode = True
         from_attributes = True
@@ -61,6 +65,7 @@ class SyncBatchResponse(BaseModel):
 
 class SyncConflictResponse(BaseModel):
     """Response model for sync conflict"""
+
     id: int
     order_id: int
     conflict_type: str
@@ -73,7 +78,7 @@ class SyncConflictResponse(BaseModel):
     resolved_at: Optional[datetime] = None
     resolved_by: Optional[int] = None
     resolution_notes: Optional[str] = None
-    
+
     class Config:
         orm_mode = True
         from_attributes = True
@@ -81,6 +86,7 @@ class SyncConflictResponse(BaseModel):
 
 class SyncStatusResponse(BaseModel):
     """Response model for sync status overview"""
+
     sync_status_counts: Dict[str, int]
     unsynced_orders: int
     pending_conflicts: int
@@ -91,19 +97,18 @@ class SyncStatusResponse(BaseModel):
 
 class SyncConfigurationUpdate(BaseModel):
     """Request model for updating sync configuration"""
-    sync_enabled: Optional[bool] = Field(None, description="Enable/disable automatic sync")
+
+    sync_enabled: Optional[bool] = Field(
+        None, description="Enable/disable automatic sync"
+    )
     sync_interval_minutes: Optional[int] = Field(
-        None,
-        ge=1,
-        le=1440,
-        description="Sync interval in minutes (1-1440)"
+        None, ge=1, le=1440, description="Sync interval in minutes (1-1440)"
     )
     conflict_resolution_mode: Optional[str] = Field(
-        None,
-        description="Conflict resolution mode (auto/manual)"
+        None, description="Conflict resolution mode (auto/manual)"
     )
-    
-    @validator('conflict_resolution_mode')
+
+    @validator("conflict_resolution_mode")
     def validate_conflict_mode(cls, v):
         if v and v not in ["auto", "manual"]:
             raise ValueError("Invalid conflict resolution mode")
@@ -112,28 +117,26 @@ class SyncConfigurationUpdate(BaseModel):
 
 class ManualSyncRequest(BaseModel):
     """Request model for manual sync"""
+
     order_ids: Optional[List[int]] = Field(
-        None,
-        description="Specific order IDs to sync (empty for all pending)"
+        None, description="Specific order IDs to sync (empty for all pending)"
     )
-    force: bool = Field(
-        False,
-        description="Force sync even if recently synced"
-    )
+    force: bool = Field(False, description="Force sync even if recently synced")
 
 
 class ConflictResolutionRequest(BaseModel):
     """Request model for resolving conflicts"""
+
     resolution_method: ConflictResolutionMethod
     notes: Optional[str] = Field(None, max_length=500)
     final_data: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Final data to use (for merge resolution)"
+        None, description="Final data to use (for merge resolution)"
     )
 
 
 class OrderSyncStatusResponse(BaseModel):
     """Response model for individual order sync status"""
+
     order_id: int
     sync_status: str
     sync_direction: Optional[str] = None
@@ -146,7 +149,7 @@ class OrderSyncStatusResponse(BaseModel):
     remote_id: Optional[str] = None
     local_checksum: Optional[str] = None
     remote_checksum: Optional[str] = None
-    
+
     class Config:
         orm_mode = True
         from_attributes = True
@@ -154,6 +157,7 @@ class OrderSyncStatusResponse(BaseModel):
 
 class SyncLogResponse(BaseModel):
     """Response model for sync log entry"""
+
     id: int
     batch_id: Optional[int] = None
     order_id: int
@@ -165,7 +169,7 @@ class SyncLogResponse(BaseModel):
     duration_ms: Optional[int] = None
     error_message: Optional[str] = None
     error_code: Optional[str] = None
-    
+
     class Config:
         orm_mode = True
         from_attributes = True
@@ -173,6 +177,7 @@ class SyncLogResponse(BaseModel):
 
 class SyncMetricsResponse(BaseModel):
     """Response model for sync metrics"""
+
     total_synced_today: int
     total_failed_today: int
     average_sync_time_ms: float
@@ -186,19 +191,15 @@ class SyncMetricsResponse(BaseModel):
 
 class BatchSyncRequest(BaseModel):
     """Request model for batch sync operations"""
+
     order_ids: List[int] = Field(..., min_items=1, max_items=100)
-    priority: bool = Field(
-        False,
-        description="Process with high priority"
-    )
-    ignore_recent_sync: bool = Field(
-        False,
-        description="Sync even if recently synced"
-    )
+    priority: bool = Field(False, description="Process with high priority")
+    ignore_recent_sync: bool = Field(False, description="Sync even if recently synced")
 
 
 class SyncHealthCheckResponse(BaseModel):
     """Response model for sync health check"""
+
     status: str = Field(..., description="healthy, warning, or critical")
     issues: List[str] = Field(default_factory=list)
     last_check: datetime

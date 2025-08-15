@@ -16,12 +16,18 @@ from decimal import Decimal
 from ..services.event_processor import event_processor
 from ..services.realtime_metrics_service import realtime_metrics_service
 from ..services.websocket_manager import websocket_manager
-from ..schemas.realtime_schemas import OrderCompletedEvent, StaffActionEvent, SystemEvent, AlertSeverity
+from ..schemas.realtime_schemas import (
+    OrderCompletedEvent,
+    StaffActionEvent,
+    SystemEvent,
+    AlertSeverity,
+)
 
 logger = logging.getLogger(__name__)
 
 
 # Order-related hooks
+
 
 async def order_completed_hook(
     order_id: int,
@@ -30,14 +36,14 @@ async def order_completed_hook(
     total_amount: Decimal,
     items_count: int,
     table_no: Optional[int] = None,
-    completed_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None,
 ):
     """
     Hook to be called when an order is completed.
-    
+
     This should be called from the orders module when an order status
     changes to 'completed' to trigger real-time metrics updates.
-    
+
     Args:
         order_id: ID of the completed order
         staff_id: ID of the staff member who processed the order
@@ -55,12 +61,14 @@ async def order_completed_hook(
             total_amount=total_amount,
             items_count=items_count,
             completed_at=completed_at or datetime.now(),
-            table_no=table_no
+            table_no=table_no,
         )
-        
+
         await event_processor.process_order_completed(event)
-        logger.info(f"Order completed event processed: order_id={order_id}, amount=${total_amount}")
-        
+        logger.info(
+            f"Order completed event processed: order_id={order_id}, amount=${total_amount}"
+        )
+
     except Exception as e:
         logger.error(f"Error processing order completed hook: {e}")
 
@@ -72,36 +80,35 @@ def order_completed_sync(
     total_amount: Decimal,
     items_count: int,
     table_no: Optional[int] = None,
-    completed_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None,
 ):
     """
     Synchronous version of order_completed_hook for non-async contexts.
-    
+
     This creates an async task to handle the event processing.
     """
     try:
-        asyncio.create_task(order_completed_hook(
-            order_id=order_id,
-            staff_id=staff_id,
-            customer_id=customer_id,
-            total_amount=total_amount,
-            items_count=items_count,
-            table_no=table_no,
-            completed_at=completed_at
-        ))
+        asyncio.create_task(
+            order_completed_hook(
+                order_id=order_id,
+                staff_id=staff_id,
+                customer_id=customer_id,
+                total_amount=total_amount,
+                items_count=items_count,
+                table_no=table_no,
+                completed_at=completed_at,
+            )
+        )
     except Exception as e:
         logger.error(f"Error creating order completed task: {e}")
 
 
 async def order_cancelled_hook(
-    order_id: int,
-    staff_id: int,
-    reason: str,
-    cancelled_at: Optional[datetime] = None
+    order_id: int, staff_id: int, reason: str, cancelled_at: Optional[datetime] = None
 ):
     """
     Hook to be called when an order is cancelled.
-    
+
     Args:
         order_id: ID of the cancelled order
         staff_id: ID of the staff member who cancelled the order
@@ -115,29 +122,30 @@ async def order_cancelled_hook(
                 "order_id": order_id,
                 "staff_id": staff_id,
                 "reason": reason,
-                "cancelled_at": cancelled_at or datetime.now()
+                "cancelled_at": cancelled_at or datetime.now(),
             },
-            priority=True
+            priority=True,
         )
-        
+
         logger.info(f"Order cancelled event processed: order_id={order_id}")
-        
+
     except Exception as e:
         logger.error(f"Error processing order cancelled hook: {e}")
 
 
 # Staff-related hooks
 
+
 async def staff_action_hook(
     staff_id: int,
     action_type: str,
     action_data: Optional[Dict[str, Any]] = None,
     shift_id: Optional[int] = None,
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[datetime] = None,
 ):
     """
     Hook to be called when staff members perform significant actions.
-    
+
     Args:
         staff_id: ID of the staff member
         action_type: Type of action (e.g., "order_processed", "shift_started")
@@ -151,12 +159,14 @@ async def staff_action_hook(
             action_type=action_type,
             action_data=action_data or {},
             shift_id=shift_id,
-            timestamp=timestamp or datetime.now()
+            timestamp=timestamp or datetime.now(),
         )
-        
+
         await event_processor.process_staff_action(event)
-        logger.debug(f"Staff action event processed: staff_id={staff_id}, action={action_type}")
-        
+        logger.debug(
+            f"Staff action event processed: staff_id={staff_id}, action={action_type}"
+        )
+
     except Exception as e:
         logger.error(f"Error processing staff action hook: {e}")
 
@@ -166,34 +176,37 @@ def staff_action_sync(
     action_type: str,
     action_data: Optional[Dict[str, Any]] = None,
     shift_id: Optional[int] = None,
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[datetime] = None,
 ):
     """
     Synchronous version of staff_action_hook.
     """
     try:
-        asyncio.create_task(staff_action_hook(
-            staff_id=staff_id,
-            action_type=action_type,
-            action_data=action_data,
-            shift_id=shift_id,
-            timestamp=timestamp
-        ))
+        asyncio.create_task(
+            staff_action_hook(
+                staff_id=staff_id,
+                action_type=action_type,
+                action_data=action_data,
+                shift_id=shift_id,
+                timestamp=timestamp,
+            )
+        )
     except Exception as e:
         logger.error(f"Error creating staff action task: {e}")
 
 
 # Customer-related hooks
 
+
 async def customer_action_hook(
     customer_id: int,
     action_type: str,
     action_data: Optional[Dict[str, Any]] = None,
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[datetime] = None,
 ):
     """
     Hook to be called for customer actions (new customer, loyalty points, etc.).
-    
+
     Args:
         customer_id: ID of the customer
         action_type: Type of action (e.g., "new_customer", "loyalty_earned")
@@ -207,17 +220,20 @@ async def customer_action_hook(
                 "customer_id": customer_id,
                 "action_type": action_type,
                 "action_data": action_data or {},
-                "timestamp": timestamp or datetime.now()
-            }
+                "timestamp": timestamp or datetime.now(),
+            },
         )
-        
-        logger.debug(f"Customer action event processed: customer_id={customer_id}, action={action_type}")
-        
+
+        logger.debug(
+            f"Customer action event processed: customer_id={customer_id}, action={action_type}"
+        )
+
     except Exception as e:
         logger.error(f"Error processing customer action hook: {e}")
 
 
 # Payment-related hooks
+
 
 async def payment_processed_hook(
     order_id: int,
@@ -225,11 +241,11 @@ async def payment_processed_hook(
     amount: Decimal,
     status: str,
     transaction_id: Optional[str] = None,
-    processed_at: Optional[datetime] = None
+    processed_at: Optional[datetime] = None,
 ):
     """
     Hook to be called when a payment is processed.
-    
+
     Args:
         order_id: ID of the order being paid
         payment_method: Payment method used
@@ -247,18 +263,21 @@ async def payment_processed_hook(
                 "amount": float(amount),
                 "status": status,
                 "transaction_id": transaction_id,
-                "processed_at": processed_at or datetime.now()
+                "processed_at": processed_at or datetime.now(),
             },
-            priority=True if status == "success" else False
+            priority=True if status == "success" else False,
         )
-        
-        logger.info(f"Payment processed event: order_id={order_id}, amount=${amount}, status={status}")
-        
+
+        logger.info(
+            f"Payment processed event: order_id={order_id}, amount=${amount}, status={status}"
+        )
+
     except Exception as e:
         logger.error(f"Error processing payment hook: {e}")
 
 
 # System-related hooks
+
 
 async def system_event_hook(
     event_type: str,
@@ -266,11 +285,11 @@ async def system_event_hook(
     severity: str = "low",
     source_service: str = "unknown",
     event_data: Optional[Dict[str, Any]] = None,
-    timestamp: Optional[datetime] = None
+    timestamp: Optional[datetime] = None,
 ):
     """
     Hook for system-wide events that should be tracked in analytics.
-    
+
     Args:
         event_type: Type of system event
         message: Human-readable message about the event
@@ -282,35 +301,35 @@ async def system_event_hook(
     try:
         event = SystemEvent(
             event_type=event_type,
-            event_data={
-                "message": message,
-                **(event_data or {})
-            },
+            event_data={"message": message, **(event_data or {})},
             timestamp=timestamp or datetime.now(),
             source_service=source_service,
-            severity=AlertSeverity(severity)
+            severity=AlertSeverity(severity),
         )
-        
+
         await event_processor.process_system_event(event)
-        logger.info(f"System event processed: {event_type} ({severity}) from {source_service}")
-        
+        logger.info(
+            f"System event processed: {event_type} ({severity}) from {source_service}"
+        )
+
     except Exception as e:
         logger.error(f"Error processing system event hook: {e}")
 
 
 # Cache invalidation hooks
 
+
 async def invalidate_analytics_cache_hook(cache_pattern: Optional[str] = None):
     """
     Hook to invalidate analytics caches when data changes.
-    
+
     Args:
         cache_pattern: Specific cache pattern to invalidate (None for all)
     """
     try:
         await realtime_metrics_service.invalidate_cache(cache_pattern)
         logger.info(f"Analytics cache invalidated: {cache_pattern or 'all'}")
-        
+
     except Exception as e:
         logger.error(f"Error invalidating analytics cache: {e}")
 
@@ -327,17 +346,18 @@ def invalidate_analytics_cache_sync(cache_pattern: Optional[str] = None):
 
 # Alert hooks
 
+
 async def trigger_custom_alert_hook(
     alert_name: str,
     message: str,
     metric_name: str,
     current_value: float,
     threshold_value: float,
-    severity: str = "medium"
+    severity: str = "medium",
 ):
     """
     Hook to trigger custom alerts from other modules.
-    
+
     Args:
         alert_name: Name of the alert
         message: Alert message
@@ -347,39 +367,42 @@ async def trigger_custom_alert_hook(
         severity: Alert severity
     """
     try:
-        await websocket_manager.broadcast_alert_notification({
-            "type": "custom_alert",
-            "alert_name": alert_name,
-            "message": message,
-            "metric_name": metric_name,
-            "current_value": current_value,
-            "threshold_value": threshold_value,
-            "severity": severity,
-            "triggered_at": datetime.now().isoformat(),
-            "source": "external_module"
-        })
-        
+        await websocket_manager.broadcast_alert_notification(
+            {
+                "type": "custom_alert",
+                "alert_name": alert_name,
+                "message": message,
+                "metric_name": metric_name,
+                "current_value": current_value,
+                "threshold_value": threshold_value,
+                "severity": severity,
+                "triggered_at": datetime.now().isoformat(),
+                "source": "external_module",
+            }
+        )
+
         logger.info(f"Custom alert triggered: {alert_name} (severity: {severity})")
-        
+
     except Exception as e:
         logger.error(f"Error triggering custom alert: {e}")
 
 
 # Utility functions for module integration
 
+
 def get_analytics_status() -> Dict[str, Any]:
     """
     Get current analytics system status for health checks.
-    
+
     Returns:
         Dictionary with system status information
     """
     try:
         from ..services.websocket_manager import websocket_manager
-        
+
         ws_stats = websocket_manager.get_connection_stats()
         event_metrics = event_processor.get_event_metrics()
-        
+
         return {
             "status": "healthy",
             "websocket_connections": ws_stats["total_connections"],
@@ -387,37 +410,37 @@ def get_analytics_status() -> Dict[str, Any]:
             "events_processed": event_metrics["total_events_processed"],
             "events_per_minute": event_metrics["events_per_minute"],
             "failed_events": event_metrics["failed_events"],
-            "last_check": datetime.now().isoformat()
+            "last_check": datetime.now().isoformat(),
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting analytics status: {e}")
         return {
             "status": "error",
             "error": str(e),
-            "last_check": datetime.now().isoformat()
+            "last_check": datetime.now().isoformat(),
         }
 
 
 async def force_dashboard_refresh():
     """
     Force a refresh of all dashboard data and broadcast to clients.
-    
+
     This can be called by other modules when they know significant
     changes have occurred that should be immediately reflected.
     """
     try:
         # Invalidate all caches
         await realtime_metrics_service.invalidate_cache()
-        
+
         # Get fresh dashboard snapshot
         snapshot = await realtime_metrics_service.get_current_dashboard_snapshot()
-        
+
         # Broadcast to all connected clients
         await websocket_manager.broadcast_dashboard_update(snapshot)
-        
+
         logger.info("Dashboard refresh forced and broadcast to clients")
-        
+
     except Exception as e:
         logger.error(f"Error forcing dashboard refresh: {e}")
 

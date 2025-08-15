@@ -12,16 +12,16 @@ from .kds_models import (
     DisplayStatus,
     StationAssignment,
     MenuItemStation,
-    KDSOrderItem
+    KDSOrderItem,
 )
 
 __all__ = [
     "KitchenStation",
-    "StationType", 
+    "StationType",
     "StationStatus",
     "KitchenDisplay",
     "DisplayStatus",
     "StationAssignment",
     "MenuItemStation",
-    "KDSOrderItem"
+    "KDSOrderItem",
 ]

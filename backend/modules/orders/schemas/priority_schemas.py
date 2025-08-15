@@ -8,61 +8,66 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from ..models.priority_models import (
-    PriorityAlgorithm, PriorityScoreType
-)
+from ..models.priority_models import PriorityAlgorithm, PriorityScoreType
 from ..models.queue_models import QueueStatus, QueueItemStatus
 
 
 class PriorityRuleBase(BaseModel):
     """Base schema for priority rules"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     score_type: PriorityScoreType
     is_active: bool = True
-    score_config: Dict[str, Any] = Field(..., description="Score calculation configuration")
+    score_config: Dict[str, Any] = Field(
+        ..., description="Score calculation configuration"
+    )
     min_score: float = Field(0.0, ge=0)
     max_score: float = Field(100.0, gt=0)
     default_weight: float = Field(1.0, ge=0)
     normalize_output: bool = True
-    normalization_method: str = Field("min_max", pattern="^(min_max|z_score|percentile)$")
-    
+    normalization_method: str = Field(
+        "min_max", pattern="^(min_max|z_score|percentile)$"
+    )
+
     # Additional fields from main branch
     algorithm_type: Optional[PriorityAlgorithm] = None
     weight: Optional[float] = Field(None, ge=0, le=100)
     parameters: Dict[str, Any] = Field(default_factory=dict)
     score_function: Optional[str] = None
     conditions: Dict[str, Any] = Field(default_factory=dict)
-    
-    @validator('score_config')
+
+    @validator("score_config")
     def validate_score_config(cls, v):
         """Validate score configuration structure"""
-        required_fields = ['type']
+        required_fields = ["type"]
         if not all(field in v for field in required_fields):
             raise ValueError(f"score_config must contain: {required_fields}")
-        
+
         # Validate config type
-        valid_types = ['linear', 'exponential', 'logarithmic', 'step', 'custom']
-        if v.get('type') not in valid_types:
+        valid_types = ["linear", "exponential", "logarithmic", "step", "custom"]
+        if v.get("type") not in valid_types:
             raise ValueError(f"score_config.type must be one of: {valid_types}")
-        
+
         return v
-    
-    @validator('max_score')
+
+    @validator("max_score")
     def validate_score_range(cls, v, values):
         """Ensure max_score > min_score"""
-        if 'min_score' in values and v <= values['min_score']:
+        if "min_score" in values and v <= values["min_score"]:
             raise ValueError("max_score must be greater than min_score")
         return v
 
 
 class PriorityRuleCreate(PriorityRuleBase):
     """Schema for creating priority rules"""
+
     pass
 
 
 class PriorityRuleUpdate(BaseModel):
     """Schema for updating priority rules"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     score_type: Optional[PriorityScoreType] = None
@@ -72,8 +77,10 @@ class PriorityRuleUpdate(BaseModel):
     max_score: Optional[float] = Field(None, gt=0)
     default_weight: Optional[float] = Field(None, ge=0)
     normalize_output: Optional[bool] = None
-    normalization_method: Optional[str] = Field(None, pattern="^(min_max|z_score|percentile)$")
-    
+    normalization_method: Optional[str] = Field(
+        None, pattern="^(min_max|z_score|percentile)$"
+    )
+
     # Additional fields from main branch
     algorithm_type: Optional[PriorityAlgorithm] = None
     weight: Optional[float] = Field(None, ge=0, le=100)
@@ -84,15 +91,17 @@ class PriorityRuleUpdate(BaseModel):
 
 class PriorityRuleResponse(PriorityRuleBase):
     """Schema for priority rule responses"""
+
     id: int
     created_at: datetime
     updated_at: Optional[datetime]
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class PriorityRuleListResponse(BaseModel):
     """Response for list of priority rules"""
+
     items: List[PriorityRuleResponse]
     total: int
     page: int
@@ -102,12 +111,13 @@ class PriorityRuleListResponse(BaseModel):
 
 class PriorityProfileRuleBase(BaseModel):
     """Base schema for profile-rule associations"""
+
     rule_id: int
     weight: float = Field(1.0, ge=0)
     is_active: bool = True
     override_config: Optional[Dict[str, Any]] = None
     boost_conditions: Optional[Dict[str, Any]] = None
-    
+
     # Additional fields from main branch
     weight_override: Optional[float] = None
     is_required: bool = False
@@ -118,19 +128,21 @@ class PriorityProfileRuleBase(BaseModel):
 
 class PriorityProfileBase(BaseModel):
     """Base schema for priority profiles"""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     algorithm_type: PriorityAlgorithm = PriorityAlgorithm.WEIGHTED
     is_active: bool = True
     is_default: bool = False
-    aggregation_method: str = Field("weighted_sum", 
-                                  pattern="^(weighted_sum|max|min|average|multiply)$")
+    aggregation_method: str = Field(
+        "weighted_sum", pattern="^(weighted_sum|max|min|average|multiply)$"
+    )
     total_weight_normalization: bool = True
     min_total_score: float = Field(0.0, ge=0)
     max_total_score: float = Field(100.0, gt=0)
     cache_duration_seconds: int = Field(60, ge=0, le=3600)
     recalculation_threshold: float = Field(0.1, ge=0, le=1.0)
-    
+
     # Additional fields from main branch
     queue_types: List[str] = Field(default_factory=list)
     order_types: List[str] = Field(default_factory=list)
@@ -141,8 +153,9 @@ class PriorityProfileBase(BaseModel):
 
 class PriorityProfileCreate(PriorityProfileBase):
     """Schema for creating priority profiles"""
+
     rules: List[PriorityProfileRuleBase] = Field(default_factory=list)
-    
+
     # Additional field from main branch
     rule_assignments: List[Dict[str, Any]] = Field(default_factory=list)
     # Example: [{"rule_id": 1, "weight_override": 2.0, "is_required": true}]
@@ -150,19 +163,21 @@ class PriorityProfileCreate(PriorityProfileBase):
 
 class PriorityProfileUpdate(BaseModel):
     """Schema for updating priority profiles"""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = None
     algorithm_type: Optional[PriorityAlgorithm] = None
     is_active: Optional[bool] = None
     is_default: Optional[bool] = None
-    aggregation_method: Optional[str] = Field(None, 
-                                            pattern="^(weighted_sum|max|min|average|multiply)$")
+    aggregation_method: Optional[str] = Field(
+        None, pattern="^(weighted_sum|max|min|average|multiply)$"
+    )
     total_weight_normalization: Optional[bool] = None
     min_total_score: Optional[float] = Field(None, ge=0)
     max_total_score: Optional[float] = Field(None, gt=0)
     cache_duration_seconds: Optional[int] = Field(None, ge=0, le=3600)
     recalculation_threshold: Optional[float] = Field(None, ge=0, le=1.0)
-    
+
     # Additional fields from main branch
     queue_types: Optional[List[str]] = None
     order_types: Optional[List[str]] = None
@@ -173,30 +188,34 @@ class PriorityProfileUpdate(BaseModel):
 
 class PriorityProfileRuleResponse(PriorityProfileRuleBase):
     """Schema for profile-rule association responses"""
+
     id: int
     created_at: datetime
     rule: PriorityRuleResponse
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class PriorityProfileResponse(BaseModel):
     """Schema for priority profile responses"""
+
     id: int
     created_at: datetime
     updated_at: Optional[datetime]
     rule_count: Optional[int] = 0
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class PriorityProfileDetailResponse(PriorityProfileResponse):
     """Schema for detailed priority profile responses with rules"""
+
     profile_rules: List[PriorityProfileRuleResponse] = []
 
 
 class PriorityProfileListResponse(BaseModel):
     """Response for list of priority profiles"""
+
     items: List[PriorityProfileResponse]
     total: int
     page: int
@@ -206,6 +225,7 @@ class PriorityProfileListResponse(BaseModel):
 
 class QueuePriorityConfigBase(BaseModel):
     """Base schema for queue priority configurations"""
+
     queue_id: int
     profile_id: int
     is_active: bool = True
@@ -218,7 +238,7 @@ class QueuePriorityConfigBase(BaseModel):
     boost_duration_seconds: int = Field(30, ge=0)
     queue_overrides: Optional[Dict[str, Any]] = None
     peak_hours_config: Optional[Dict[str, Any]] = None
-    
+
     # Additional fields from main branch
     priority_boost_vip: float = Field(20.0, ge=0)
     priority_boost_delayed: float = Field(15.0, ge=0)
@@ -231,11 +251,13 @@ class QueuePriorityConfigBase(BaseModel):
 
 class QueuePriorityConfigCreate(QueuePriorityConfigBase):
     """Schema for creating queue priority configurations"""
+
     pass
 
 
 class QueuePriorityConfigUpdate(BaseModel):
     """Schema for updating queue priority configurations"""
+
     profile_id: Optional[int] = None
     is_active: Optional[bool] = None
     priority_enabled: Optional[bool] = None
@@ -247,7 +269,7 @@ class QueuePriorityConfigUpdate(BaseModel):
     boost_duration_seconds: Optional[int] = Field(None, ge=0)
     queue_overrides: Optional[Dict[str, Any]] = None
     peak_hours_config: Optional[Dict[str, Any]] = None
-    
+
     # Additional fields from main branch
     priority_boost_vip: Optional[float] = Field(None, ge=0)
     priority_boost_delayed: Optional[float] = Field(None, ge=0)
@@ -260,23 +282,26 @@ class QueuePriorityConfigUpdate(BaseModel):
 
 class QueuePriorityConfigResponse(QueuePriorityConfigBase):
     """Schema for queue priority configuration responses"""
+
     id: int
     created_at: datetime
     updated_at: Optional[datetime]
     profile_name: Optional[str] = None
     queue_name: Optional[str] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class QueuePriorityConfigListResponse(BaseModel):
     """Response for list of queue priority configurations"""
+
     items: List[QueuePriorityConfigResponse]
     total: int
 
 
 class OrderPriorityScoreBase(BaseModel):
     """Base schema for order priority scores"""
+
     queue_item_id: int
     config_id: int
     total_score: float
@@ -289,7 +314,7 @@ class OrderPriorityScoreBase(BaseModel):
     is_boosted: bool = False
     boost_expires_at: Optional[datetime] = None
     boost_reason: Optional[str] = None
-    
+
     # Additional fields from main branch
     order_id: int
     queue_id: int
@@ -302,13 +327,15 @@ class OrderPriorityScoreBase(BaseModel):
 
 class OrderPriorityScoreResponse(OrderPriorityScoreBase):
     """Schema for order priority score responses"""
+
     id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class PriorityAdjustmentBase(BaseModel):
     """Base schema for priority adjustments"""
+
     queue_item_id: int
     old_score: float
     new_score: float
@@ -318,7 +345,7 @@ class PriorityAdjustmentBase(BaseModel):
     new_position: Optional[int] = None
     adjusted_by_id: Optional[int] = None
     adjusted_at: datetime
-    
+
     # Additional fields from main branch
     order_id: int
     old_priority: float
@@ -330,6 +357,7 @@ class PriorityAdjustmentBase(BaseModel):
 
 class PriorityAdjustmentRequest(BaseModel):
     """Schema for priority adjustment requests"""
+
     queue_item_id: int
     new_score: float
     adjustment_type: str = Field(..., pattern="^(manual|boost|penalty)$")
@@ -339,13 +367,15 @@ class PriorityAdjustmentRequest(BaseModel):
 
 class PriorityAdjustmentResponse(PriorityAdjustmentBase):
     """Schema for priority adjustment responses"""
+
     id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class QueueRebalanceBase(BaseModel):
     """Base schema for queue rebalancing"""
+
     queue_id: int
     items_processed: int
     items_moved: int
@@ -356,6 +386,7 @@ class QueueRebalanceBase(BaseModel):
 
 class QueueRebalanceRequest(BaseModel):
     """Schema for queue rebalancing requests"""
+
     queue_id: int
     force: bool = False
     dry_run: bool = False
@@ -363,11 +394,13 @@ class QueueRebalanceRequest(BaseModel):
 
 class QueueRebalanceResponse(QueueRebalanceBase):
     """Schema for queue rebalancing responses"""
+
     pass
 
 
 class PriorityMetricsQuery(BaseModel):
     """Schema for priority metrics queries"""
+
     start_date: datetime
     end_date: datetime
     queue_id: Optional[int] = None
@@ -376,6 +409,7 @@ class PriorityMetricsQuery(BaseModel):
 
 class PriorityMetricsResponse(BaseModel):
     """Schema for priority metrics responses"""
+
     queue_id: int
     queue_name: str
     period: str
@@ -384,6 +418,7 @@ class PriorityMetricsResponse(BaseModel):
 
 class BulkPriorityCalculateRequest(BaseModel):
     """Schema for bulk priority calculation requests"""
+
     queue_id: int
     order_ids: Optional[List[int]] = None
     apply_boost: bool = False
@@ -392,6 +427,7 @@ class BulkPriorityCalculateRequest(BaseModel):
 
 class BulkPriorityCalculateResponse(BaseModel):
     """Schema for bulk priority calculation responses"""
+
     queue_id: int
     items_processed: int
     items_updated: int
@@ -403,6 +439,7 @@ class BulkPriorityCalculateResponse(BaseModel):
 # Additional schemas from main branch
 class PriorityCalculationRequest(BaseModel):
     """Schema for priority calculation requests"""
+
     order_id: int
     queue_id: int
     profile_override: Optional[int] = None
@@ -410,6 +447,7 @@ class PriorityCalculationRequest(BaseModel):
 
 class PriorityScoreResponse(BaseModel):
     """Schema for priority score responses"""
+
     order_id: int
     queue_id: int
     total_score: float
@@ -422,6 +460,7 @@ class PriorityScoreResponse(BaseModel):
 
 class ManualPriorityAdjustmentRequest(BaseModel):
     """Schema for manual priority adjustment requests"""
+
     order_id: int
     queue_id: int
     new_priority: float
@@ -430,11 +469,13 @@ class ManualPriorityAdjustmentRequest(BaseModel):
 
 class RebalanceQueueRequest(BaseModel):
     """Schema for queue rebalancing requests"""
+
     queue_id: int
 
 
 class RebalanceQueueResponse(BaseModel):
     """Schema for queue rebalancing responses"""
+
     queue_id: int
     items_processed: int
     items_moved: int
@@ -444,6 +485,7 @@ class RebalanceQueueResponse(BaseModel):
 
 class PriorityMetricsRequest(BaseModel):
     """Schema for priority metrics requests"""
+
     start_date: datetime
     end_date: datetime
     profile_id: Optional[int] = None
@@ -452,4 +494,5 @@ class PriorityMetricsRequest(BaseModel):
 
 class BatchProfileRuleUpdate(BaseModel):
     """Schema for batch profile rule updates"""
+
     assignments: List[Dict[str, Any]]

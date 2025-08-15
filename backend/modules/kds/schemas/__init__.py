@@ -18,12 +18,12 @@ from .kds_schemas import (
     OrderItemDisplay,
     KDSOrderItemResponse,
     StationSummary,
-    KDSWebSocketMessage
+    KDSWebSocketMessage,
 )
 
 __all__ = [
     "StationCreate",
-    "StationUpdate", 
+    "StationUpdate",
     "StationResponse",
     "KitchenDisplayCreate",
     "KitchenDisplayUpdate",
@@ -35,5 +35,5 @@ __all__ = [
     "OrderItemDisplay",
     "KDSOrderItemResponse",
     "StationSummary",
-    "KDSWebSocketMessage"
+    "KDSWebSocketMessage",
 ]

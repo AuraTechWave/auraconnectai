@@ -6,15 +6,28 @@ from decimal import Decimal
 import logging
 from core.database import get_db
 from ..controllers.payment_reconciliation_controller import (
-    create_reconciliation, get_reconciliation_by_id, update_reconciliation,
-    list_reconciliations, reconcile_payments, resolve_discrepancy,
-    get_metrics, auto_reconcile, handle_webhook
+    create_reconciliation,
+    get_reconciliation_by_id,
+    update_reconciliation,
+    list_reconciliations,
+    reconcile_payments,
+    resolve_discrepancy,
+    get_metrics,
+    auto_reconcile,
+    handle_webhook,
 )
 from ..schemas.payment_reconciliation_schemas import (
-    PaymentReconciliationCreate, PaymentReconciliationUpdate,
-    PaymentReconciliationOut, ReconciliationRequest, ReconciliationResponse,
-    ReconciliationFilter, ResolutionRequest, ReconciliationMetrics,
-    AutoReconcileResponse, PaymentWebhookData, WebhookResponse
+    PaymentReconciliationCreate,
+    PaymentReconciliationUpdate,
+    PaymentReconciliationOut,
+    ReconciliationRequest,
+    ReconciliationResponse,
+    ReconciliationFilter,
+    ResolutionRequest,
+    ReconciliationMetrics,
+    AutoReconcileResponse,
+    PaymentWebhookData,
+    WebhookResponse,
 )
 from ..enums.payment_enums import ReconciliationStatus, DiscrepancyType
 from ..models.payment_reconciliation_models import PaymentReconciliation
@@ -22,24 +35,19 @@ from ..models.order_models import Order
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/payment-reconciliation",
-    tags=["Payment Reconciliation"]
-)
+router = APIRouter(prefix="/payment-reconciliation", tags=["Payment Reconciliation"])
 
 
 @router.post("/", response_model=PaymentReconciliationOut)
 async def create_payment_reconciliation(
-    reconciliation_data: PaymentReconciliationCreate,
-    db: Session = Depends(get_db)
+    reconciliation_data: PaymentReconciliationCreate, db: Session = Depends(get_db)
 ):
     return await create_reconciliation(reconciliation_data, db)
 
 
 @router.get("/{reconciliation_id}", response_model=PaymentReconciliationOut)
 async def get_payment_reconciliation(
-    reconciliation_id: int,
-    db: Session = Depends(get_db)
+    reconciliation_id: int, db: Session = Depends(get_db)
 ):
     return await get_reconciliation_by_id(reconciliation_id, db)
 
@@ -48,7 +56,7 @@ async def get_payment_reconciliation(
 async def update_payment_reconciliation(
     reconciliation_id: int,
     update_data: PaymentReconciliationUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return await update_reconciliation(reconciliation_id, update_data, db)
 
@@ -62,7 +70,7 @@ async def get_payment_reconciliations(
     to_date: Optional[datetime] = Query(None),
     limit: int = Query(100, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     filters = ReconciliationFilter(
         reconciliation_status=reconciliation_status,
@@ -71,25 +79,23 @@ async def get_payment_reconciliations(
         from_date=from_date,
         to_date=to_date,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
     return await list_reconciliations(filters, db)
 
 
 @router.post("/reconcile", response_model=ReconciliationResponse)
 async def perform_payment_reconciliation(
-    request: ReconciliationRequest,
-    db: Session = Depends(get_db)
+    request: ReconciliationRequest, db: Session = Depends(get_db)
 ):
     return await reconcile_payments(request, db)
 
 
-@router.post("/{reconciliation_id}/resolve",
-             response_model=PaymentReconciliationOut)
+@router.post("/{reconciliation_id}/resolve", response_model=PaymentReconciliationOut)
 async def resolve_payment_discrepancy(
     reconciliation_id: int,
     resolution_data: ResolutionRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     return await resolve_discrepancy(reconciliation_id, resolution_data, db)
 
@@ -120,8 +126,7 @@ async def auto_reconcile_pending(db: Session = Depends(get_db)):
 
 @router.post("/webhook/payment-received", response_model=WebhookResponse)
 async def handle_payment_webhook(
-    payment_data: PaymentWebhookData,
-    db: Session = Depends(get_db)
+    payment_data: PaymentWebhookData, db: Session = Depends(get_db)
 ):
     """
     Handle real-time payment notification webhooks.
@@ -136,7 +141,7 @@ async def handle_payment_webhook(
 async def get_reconciliation_summary(
     from_date: Optional[datetime] = Query(None),
     to_date: Optional[datetime] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get reconciliation analytics and KPIs.
@@ -148,11 +153,9 @@ async def get_reconciliation_summary(
 
     query = db.query(
         PaymentReconciliation.reconciliation_status,
-        func.count(PaymentReconciliation.id).label('count'),
-        func.sum(PaymentReconciliation.amount_expected).label(
-            'total_expected'),
-        func.sum(PaymentReconciliation.amount_received).label(
-            'total_received')
+        func.count(PaymentReconciliation.id).label("count"),
+        func.sum(PaymentReconciliation.amount_expected).label("total_expected"),
+        func.sum(PaymentReconciliation.amount_received).label("total_received"),
     ).group_by(PaymentReconciliation.reconciliation_status)
 
     if from_date:
@@ -167,20 +170,17 @@ async def get_reconciliation_summary(
         total_expected = float(result.total_expected or 0)
         total_received = float(result.total_received or 0)
         summary[result.reconciliation_status] = {
-            'count': result.count,
-            'total_expected': total_expected,
-            'total_received': total_received,
-            'variance': total_received - total_expected
+            "count": result.count,
+            "total_expected": total_expected,
+            "total_received": total_received,
+            "variance": total_received - total_expected,
         }
 
     return summary
 
 
 @router.post("/webhooks/pos-payment")
-async def handle_pos_payment_webhook(
-    payment_data: dict,
-    db: Session = Depends(get_db)
-):
+async def handle_pos_payment_webhook(payment_data: dict, db: Session = Depends(get_db)):
     """
     Handle real-time payment notifications from POS.
 
@@ -188,9 +188,9 @@ async def handle_pos_payment_webhook(
     reconciliation records with proper status detection.
     """
     try:
-        order_reference = payment_data.get('order_reference')
-        amount = Decimal(str(payment_data.get('amount', 0)))
-        payment_reference = payment_data.get('payment_reference')
+        order_reference = payment_data.get("order_reference")
+        amount = Decimal(str(payment_data.get("amount", 0)))
+        payment_reference = payment_data.get("payment_reference")
 
         if not order_reference or not payment_reference:
             logger.warning("Webhook: Missing required fields")
@@ -201,21 +201,20 @@ async def handle_pos_payment_webhook(
             logger.warning(f"Webhook: Order {order_reference} not found")
             return {"status": "order_not_found"}
 
-        order_total = sum(float(item.price) * item.quantity
-                          for item in order.order_items)
+        order_total = sum(
+            float(item.price) * item.quantity for item in order.order_items
+        )
         expected_amount = Decimal(str(order_total))
 
         amount_diff = abs(amount - expected_amount)
-        if amount_diff <= Decimal('0.01'):
+        if amount_diff <= Decimal("0.01"):
             status = ReconciliationStatus.MATCHED
             discrepancy_type = None
             discrepancy_details = None
         else:
             status = ReconciliationStatus.DISCREPANCY
             discrepancy_type = DiscrepancyType.AMOUNT_MISMATCH
-            discrepancy_details = (
-                f"Expected: ${expected_amount}, Received: ${amount}"
-            )
+            discrepancy_details = f"Expected: ${expected_amount}, Received: ${amount}"
 
         reconciliation_data = PaymentReconciliationCreate(
             order_id=order.id,
@@ -224,7 +223,7 @@ async def handle_pos_payment_webhook(
             amount_received=amount,
             reconciliation_status=status,
             discrepancy_type=discrepancy_type,
-            discrepancy_details=discrepancy_details
+            discrepancy_details=discrepancy_details,
         )
 
         await create_reconciliation(reconciliation_data, db)
@@ -233,7 +232,4 @@ async def handle_pos_payment_webhook(
 
     except Exception as e:
         logger.error(f"Webhook processing error: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="Webhook processing failed"
-        )
+        raise HTTPException(status_code=500, detail="Webhook processing failed")

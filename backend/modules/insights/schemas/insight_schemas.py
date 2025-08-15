@@ -6,14 +6,18 @@ from pydantic import BaseModel, Field, validator
 from decimal import Decimal
 
 from ..models.insight_models import (
-    InsightType, InsightSeverity, InsightStatus, 
-    InsightDomain, NotificationChannel
+    InsightType,
+    InsightSeverity,
+    InsightStatus,
+    InsightDomain,
+    NotificationChannel,
 )
 
 
 # Base Schemas
 class InsightBase(BaseModel):
     """Base insight schema"""
+
     type: InsightType
     severity: InsightSeverity
     domain: InsightDomain
@@ -30,6 +34,7 @@ class InsightBase(BaseModel):
 
 class InsightCreate(InsightBase):
     """Create insight schema"""
+
     restaurant_id: int
     generated_by: str = Field(..., max_length=100)
     thread_id: Optional[str] = None
@@ -43,12 +48,14 @@ class InsightCreate(InsightBase):
 
 class InsightUpdate(BaseModel):
     """Update insight schema"""
+
     status: Optional[InsightStatus] = None
     resolution_notes: Optional[str] = None
 
 
 class InsightResponse(InsightBase):
     """Insight response schema"""
+
     id: int
     restaurant_id: int
     status: InsightStatus
@@ -64,12 +71,12 @@ class InsightResponse(InsightBase):
     notifications_sent: Dict[str, Any]
     created_at: datetime
     updated_at: datetime
-    
+
     # Computed fields
     age_hours: Optional[float] = None
     time_to_acknowledge: Optional[float] = None
     rating_summary: Optional[Dict[str, int]] = None
-    
+
     class Config:
         orm_mode = True
 
@@ -77,12 +84,14 @@ class InsightResponse(InsightBase):
 # Rating Schemas
 class InsightRatingCreate(BaseModel):
     """Create rating schema"""
+
     rating: str = Field(..., regex="^(useful|irrelevant|needs_followup)$")
     comment: Optional[str] = Field(None, max_length=500)
 
 
 class InsightRatingResponse(BaseModel):
     """Rating response schema"""
+
     id: int
     insight_id: int
     user_id: int
@@ -90,7 +99,7 @@ class InsightRatingResponse(BaseModel):
     rating: str
     comment: Optional[str]
     created_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -98,12 +107,14 @@ class InsightRatingResponse(BaseModel):
 # Action Schemas
 class InsightActionCreate(BaseModel):
     """Create action schema"""
+
     action_type: str = Field(..., max_length=50)
     action_details: Optional[Dict[str, Any]] = {}
 
 
 class InsightActionResponse(BaseModel):
     """Action response schema"""
+
     id: int
     insight_id: int
     user_id: int
@@ -111,7 +122,7 @@ class InsightActionResponse(BaseModel):
     action_type: str
     action_details: Dict[str, Any]
     created_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -119,6 +130,7 @@ class InsightActionResponse(BaseModel):
 # Notification Rule Schemas
 class NotificationRuleCreate(BaseModel):
     """Create notification rule schema"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     domains: List[InsightDomain] = []
@@ -129,21 +141,24 @@ class NotificationRuleCreate(BaseModel):
     channels: List[NotificationChannel]
     recipients: Dict[str, List[str]]
     immediate: bool = True
-    batch_hours: Optional[List[int]] = Field(None, description="Hours for batch send (0-23)")
+    batch_hours: Optional[List[int]] = Field(
+        None, description="Hours for batch send (0-23)"
+    )
     max_per_hour: Optional[int] = Field(None, gt=0)
     max_per_day: Optional[int] = Field(None, gt=0)
-    
-    @validator('batch_hours')
+
+    @validator("batch_hours")
     def validate_batch_hours(cls, v):
         if v:
             for hour in v:
                 if hour < 0 or hour > 23:
-                    raise ValueError('Batch hours must be between 0 and 23')
+                    raise ValueError("Batch hours must be between 0 and 23")
         return v
 
 
 class NotificationRuleUpdate(BaseModel):
     """Update notification rule schema"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
     is_active: Optional[bool] = None
@@ -162,6 +177,7 @@ class NotificationRuleUpdate(BaseModel):
 
 class NotificationRuleResponse(BaseModel):
     """Notification rule response schema"""
+
     id: int
     restaurant_id: int
     name: str
@@ -180,7 +196,7 @@ class NotificationRuleResponse(BaseModel):
     max_per_day: Optional[int]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 
@@ -188,6 +204,7 @@ class NotificationRuleResponse(BaseModel):
 # Thread Schemas
 class ThreadSummary(BaseModel):
     """Thread summary schema"""
+
     thread_id: str
     title: str
     category: Optional[str]
@@ -201,6 +218,7 @@ class ThreadSummary(BaseModel):
 
 class ThreadTimeline(BaseModel):
     """Thread timeline schema"""
+
     thread: Dict[str, Any]
     timeline: List[Dict[str, Any]]
     patterns: Dict[str, Any]
@@ -210,6 +228,7 @@ class ThreadTimeline(BaseModel):
 # Analytics Schemas
 class InsightAnalytics(BaseModel):
     """Insight analytics schema"""
+
     period: Dict[str, Optional[datetime]]
     total_generated: int
     by_domain: Dict[str, int]
@@ -223,6 +242,7 @@ class InsightAnalytics(BaseModel):
 
 class UserEngagement(BaseModel):
     """User engagement schema"""
+
     user_id: int
     period_days: int
     ratings_given: Dict[str, int]
@@ -234,6 +254,7 @@ class UserEngagement(BaseModel):
 # Bulk Operations
 class BulkInsightUpdate(BaseModel):
     """Bulk update insights"""
+
     insight_ids: List[int]
     status: InsightStatus
     notes: Optional[str] = None
@@ -241,6 +262,7 @@ class BulkInsightUpdate(BaseModel):
 
 class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
+
     insight_ids: List[int]
     action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
 
@@ -248,6 +270,7 @@ class BulkInsightAction(BaseModel):
 # Batch Operations
 class InsightBatchAction(BaseModel):
     """Batch action request"""
+
     insight_ids: List[int] = Field(..., min_items=1, max_items=100)
     notes: Optional[str] = Field(None, max_length=500)
 
@@ -255,6 +278,7 @@ class InsightBatchAction(BaseModel):
 # Filter and List Schemas
 class InsightFilters(BaseModel):
     """Insight filter criteria"""
+
     restaurant_id: Optional[int] = None
     domain: Optional[InsightDomain] = None
     type: Optional[InsightType] = None
@@ -268,6 +292,7 @@ class InsightFilters(BaseModel):
 
 class InsightListResponse(BaseModel):
     """Paginated insight list response"""
+
     items: List[InsightResponse]
     total: int
     page: int
@@ -277,6 +302,7 @@ class InsightListResponse(BaseModel):
 
 class InsightSummary(BaseModel):
     """Insight summary statistics"""
+
     total_insights: int
     status_breakdown: Dict[str, int]
     severity_breakdown: Dict[str, int]
@@ -288,6 +314,7 @@ class InsightSummary(BaseModel):
 
 class ThreadFilters(BaseModel):
     """Thread filter criteria"""
+
     restaurant_id: Optional[int] = None
     is_active: Optional[bool] = None
     is_recurring: Optional[bool] = None
@@ -296,6 +323,7 @@ class ThreadFilters(BaseModel):
 
 class InsightThreadResponse(BaseModel):
     """Thread response schema"""
+
     id: int
     thread_id: str
     restaurant_id: int
@@ -312,6 +340,6 @@ class InsightThreadResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     insights: Optional[List[InsightResponse]] = None
-    
+
     class Config:
         orm_mode = True

@@ -32,7 +32,9 @@ def load_scheduling_config() -> SchedulingConfig:
     }
     raw = os.getenv("STAFF_SCHEDULING_PRODUCTIVITY_JSON")
     if not raw:
-        return SchedulingConfig(productivity=default_productivity, minimums=default_minimums)
+        return SchedulingConfig(
+            productivity=default_productivity, minimums=default_minimums
+        )
     try:
         parsed = json.loads(raw)
         prod = parsed.get("productivity") or {}
@@ -43,4 +45,6 @@ def load_scheduling_config() -> SchedulingConfig:
         return SchedulingConfig(productivity=merged_prod, minimums=merged_mins)
     except Exception:
         # Fallback to defaults on parse error
-        return SchedulingConfig(productivity=default_productivity, minimums=default_minimums)
+        return SchedulingConfig(
+            productivity=default_productivity, minimums=default_minimums
+        )

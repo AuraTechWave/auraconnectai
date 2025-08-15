@@ -196,7 +196,7 @@ SECURITY_ALERT_HTML_TEMPLATE = """
 
 class EmailService:
     """Service for sending password reset and security emails."""
-    
+
     def __init__(self):
         """Initialize email service with configuration."""
         self.smtp_host = SMTP_HOST
@@ -206,151 +206,144 @@ class EmailService:
         self.smtp_use_tls = SMTP_USE_TLS
         self.from_email = SMTP_FROM_EMAIL
         self.from_name = SMTP_FROM_NAME
-        
+
         # Validate configuration
         if not self.smtp_host:
             logger.warning("SMTP_HOST not configured - emails will not be sent")
-    
+
     def _create_smtp_connection(self) -> Optional[smtplib.SMTP]:
         """Create SMTP connection."""
         try:
             server = smtplib.SMTP(self.smtp_host, self.smtp_port)
-            
+
             if self.smtp_use_tls:
                 server.starttls()
-            
+
             if self.smtp_username and self.smtp_password:
                 server.login(self.smtp_username, self.smtp_password)
-            
+
             return server
         except Exception as e:
             logger.error(f"Failed to create SMTP connection: {e}")
             return None
-    
+
     def _send_email(
-        self,
-        to_email: str,
-        subject: str,
-        html_content: str,
-        text_content: str
+        self, to_email: str, subject: str, html_content: str, text_content: str
     ) -> bool:
         """Send email with both HTML and text content."""
-        
+
         if not self.smtp_host:
             logger.warning(f"Email not sent to {to_email} - SMTP not configured")
             return False
-        
+
         try:
             # Create message
-            msg = MimeMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = f"{self.from_name} <{self.from_email}>"
-            msg['To'] = to_email
-            
+            msg = MimeMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{self.from_name} <{self.from_email}>"
+            msg["To"] = to_email
+
             # Create text and HTML parts
-            text_part = MimeText(text_content, 'plain')
-            html_part = MimeText(html_content, 'html')
-            
+            text_part = MimeText(text_content, "plain")
+            html_part = MimeText(html_content, "html")
+
             msg.attach(text_part)
             msg.attach(html_part)
-            
+
             # Send email
             server = self._create_smtp_connection()
             if not server:
                 return False
-            
+
             server.send_message(msg)
             server.quit()
-            
+
             logger.info(f"Email sent successfully to {to_email}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {e}")
             return False
-    
+
     def send_password_reset_email(
-        self,
-        email: str,
-        reset_token: str,
-        expires_in_minutes: int = 30
+        self, email: str, reset_token: str, expires_in_minutes: int = 30
     ) -> bool:
         """
         Send password reset email.
-        
+
         Args:
             email: Recipient email address
             reset_token: Password reset token
             expires_in_minutes: Token expiration time in minutes
-            
+
         Returns:
             True if email sent successfully, False otherwise
         """
-        
+
         # Create reset URL
         reset_url = f"{APP_URL}/auth/reset-password?token={reset_token}"
-        
+
         # Template variables
         template_vars = {
-            'app_name': APP_NAME,
-            'email': email,
-            'reset_url': reset_url,
-            'expires_in': expires_in_minutes,
-            'support_email': SUPPORT_EMAIL,
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'current_year': datetime.utcnow().year
+            "app_name": APP_NAME,
+            "email": email,
+            "reset_url": reset_url,
+            "expires_in": expires_in_minutes,
+            "support_email": SUPPORT_EMAIL,
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "current_year": datetime.utcnow().year,
         }
-        
+
         # Render templates
         html_template = Template(PASSWORD_RESET_HTML_TEMPLATE)
         text_template = Template(PASSWORD_RESET_TEXT_TEMPLATE)
-        
+
         html_content = html_template.render(**template_vars)
         text_content = text_template.render(**template_vars)
-        
+
         subject = f"Password Reset Request - {APP_NAME}"
-        
+
         return self._send_email(email, subject, html_content, text_content)
-    
+
     def send_security_alert_email(
         self,
         email: str,
         alert_type: str,
         message: str,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> bool:
         """
         Send security alert email.
-        
+
         Args:
             email: Recipient email address
             alert_type: Type of security alert
             message: Alert message
             ip_address: IP address of the event
             user_agent: User agent of the event
-            
+
         Returns:
             True if email sent successfully, False otherwise
         """
-        
+
         # Template variables
         template_vars = {
-            'app_name': APP_NAME,
-            'email': email,
-            'alert_type': alert_type,
-            'message': message,
-            'ip_address': ip_address,
-            'user_agent': user_agent,
-            'support_email': SUPPORT_EMAIL,
-            'timestamp': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
-            'current_year': datetime.utcnow().year
+            "app_name": APP_NAME,
+            "email": email,
+            "alert_type": alert_type,
+            "message": message,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "support_email": SUPPORT_EMAIL,
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "current_year": datetime.utcnow().year,
         }
-        
+
         # Render template
         html_template = Template(SECURITY_ALERT_HTML_TEMPLATE)
         html_content = html_template.render(**template_vars)
-        
+
         # Simple text version
         text_content = f"""
 {APP_NAME} Security Alert
@@ -367,49 +360,49 @@ If this was not you, please contact support at {SUPPORT_EMAIL}.
 
 © {template_vars['current_year']} {APP_NAME}. All rights reserved.
         """.strip()
-        
+
         subject = f"Security Alert - {APP_NAME}"
-        
+
         return self._send_email(email, subject, html_content, text_content)
-    
+
     def send_password_changed_notification(
         self,
         email: str,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> bool:
         """
         Send password changed notification.
-        
+
         Args:
             email: Recipient email address
             ip_address: IP address of the change
             user_agent: User agent of the change
-            
+
         Returns:
             True if email sent successfully, False otherwise
         """
-        
+
         return self.send_security_alert_email(
             email=email,
             alert_type="Password Changed",
             message="Your password has been successfully changed. If you did not make this change, please contact our support team immediately.",
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
-    
+
     def test_email_configuration(self) -> bool:
         """
         Test email configuration by attempting to connect.
-        
+
         Returns:
             True if configuration is valid, False otherwise
         """
-        
+
         if not self.smtp_host:
             logger.error("SMTP host not configured")
             return False
-        
+
         try:
             server = self._create_smtp_connection()
             if server:

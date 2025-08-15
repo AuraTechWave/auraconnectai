@@ -8,10 +8,17 @@ from datetime import datetime
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
 from ..schemas.table_schemas import (
-    FloorCreate, FloorUpdate, FloorResponse,
-    TableCreate, TableUpdate, TableResponse,
-    BulkTableCreate, BulkTableUpdate,
-    TableLayoutCreate, TableLayoutUpdate, TableLayoutResponse
+    FloorCreate,
+    FloorUpdate,
+    FloorResponse,
+    TableCreate,
+    TableUpdate,
+    TableResponse,
+    BulkTableCreate,
+    BulkTableUpdate,
+    TableLayoutCreate,
+    TableLayoutUpdate,
+    TableLayoutResponse,
 )
 from ..services.layout_service import layout_service
 
@@ -24,23 +31,21 @@ router = APIRouter(prefix="/table-layout", tags=["Table Layout"])
 async def create_floor(
     floor_data: FloorCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Create a new floor/section
-    
+
     Requires permission: tables.manage_layout
     """
-    return await layout_service.create_floor(
-        db, current_user.restaurant_id, floor_data
-    )
+    return await layout_service.create_floor(db, current_user.restaurant_id, floor_data)
 
 
 @router.get("/floors", response_model=List[FloorResponse])
 async def get_floors(
     include_inactive: bool = Query(False),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all floors for the restaurant"""
     return await layout_service.get_floors(
@@ -52,12 +57,10 @@ async def get_floors(
 async def get_floor(
     floor_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get floor details by ID"""
-    return await layout_service.get_floor(
-        db, current_user.restaurant_id, floor_id
-    )
+    return await layout_service.get_floor(db, current_user.restaurant_id, floor_id)
 
 
 @router.put("/floors/{floor_id}", response_model=FloorResponse)
@@ -66,11 +69,11 @@ async def update_floor(
     floor_id: int,
     update_data: FloorUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update floor details
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.update_floor(
@@ -84,16 +87,14 @@ async def delete_floor(
     floor_id: int,
     force: bool = Query(False, description="Force delete even if tables exist"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete a floor
-    
+
     Requires permission: tables.manage_layout
     """
-    await layout_service.delete_floor(
-        db, current_user.restaurant_id, floor_id, force
-    )
+    await layout_service.delete_floor(db, current_user.restaurant_id, floor_id, force)
     return {"success": True, "message": "Floor deleted successfully"}
 
 
@@ -103,16 +104,14 @@ async def delete_floor(
 async def create_table(
     table_data: TableCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Create a new table
-    
+
     Requires permission: tables.manage_layout
     """
-    return await layout_service.create_table(
-        db, current_user.restaurant_id, table_data
-    )
+    return await layout_service.create_table(db, current_user.restaurant_id, table_data)
 
 
 @router.post("/tables/bulk", response_model=List[TableResponse])
@@ -120,11 +119,11 @@ async def create_table(
 async def bulk_create_tables(
     bulk_data: BulkTableCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Create multiple tables at once
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.bulk_create_tables(
@@ -139,16 +138,16 @@ async def get_tables(
     status: Optional[str] = Query(None),
     include_inactive: bool = Query(False),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all tables with optional filters"""
     return await layout_service.get_tables(
-        db, 
+        db,
         current_user.restaurant_id,
         floor_id=floor_id,
         section=section,
         status=status,
-        include_inactive=include_inactive
+        include_inactive=include_inactive,
     )
 
 
@@ -156,12 +155,10 @@ async def get_tables(
 async def get_table(
     table_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get table details by ID"""
-    return await layout_service.get_table(
-        db, current_user.restaurant_id, table_id
-    )
+    return await layout_service.get_table(db, current_user.restaurant_id, table_id)
 
 
 @router.put("/tables/{table_id}", response_model=TableResponse)
@@ -170,11 +167,11 @@ async def update_table(
     table_id: int,
     update_data: TableUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update table details
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.update_table(
@@ -187,11 +184,11 @@ async def update_table(
 async def bulk_update_tables(
     bulk_data: BulkTableUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update multiple tables at once
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.bulk_update_tables(
@@ -204,16 +201,14 @@ async def bulk_update_tables(
 async def delete_table(
     table_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete a table
-    
+
     Requires permission: tables.manage_layout
     """
-    await layout_service.delete_table(
-        db, current_user.restaurant_id, table_id
-    )
+    await layout_service.delete_table(db, current_user.restaurant_id, table_id)
     return {"success": True, "message": "Table deleted successfully"}
 
 
@@ -223,11 +218,11 @@ async def delete_table(
 async def create_layout(
     layout_data: TableLayoutCreate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Save a table layout configuration
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.create_layout(
@@ -239,7 +234,7 @@ async def create_layout(
 async def get_layouts(
     include_inactive: bool = Query(False),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get all saved layouts"""
     return await layout_service.get_layouts(
@@ -249,13 +244,10 @@ async def get_layouts(
 
 @router.get("/layouts/active", response_model=TableLayoutResponse)
 async def get_active_layout(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Get currently active layout"""
-    layout = await layout_service.get_active_layout(
-        db, current_user.restaurant_id
-    )
+    layout = await layout_service.get_active_layout(db, current_user.restaurant_id)
     if not layout:
         raise HTTPException(status_code=404, detail="No active layout found")
     return layout
@@ -265,12 +257,10 @@ async def get_active_layout(
 async def get_layout(
     layout_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get layout details by ID"""
-    return await layout_service.get_layout(
-        db, current_user.restaurant_id, layout_id
-    )
+    return await layout_service.get_layout(db, current_user.restaurant_id, layout_id)
 
 
 @router.put("/layouts/{layout_id}", response_model=TableLayoutResponse)
@@ -279,11 +269,11 @@ async def update_layout(
     layout_id: int,
     update_data: TableLayoutUpdate,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Update layout configuration
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.update_layout(
@@ -296,11 +286,11 @@ async def update_layout(
 async def activate_layout(
     layout_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Activate a saved layout
-    
+
     Requires permission: tables.manage_layout
     """
     return await layout_service.activate_layout(
@@ -313,11 +303,11 @@ async def activate_layout(
 async def apply_layout(
     layout_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Apply a saved layout (update actual table positions)
-    
+
     Requires permission: tables.manage_layout
     """
     result = await layout_service.apply_layout(
@@ -331,16 +321,14 @@ async def apply_layout(
 async def delete_layout(
     layout_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Delete a layout
-    
+
     Requires permission: tables.manage_layout
     """
-    await layout_service.delete_layout(
-        db, current_user.restaurant_id, layout_id
-    )
+    await layout_service.delete_layout(db, current_user.restaurant_id, layout_id)
     return {"success": True, "message": "Layout deleted successfully"}
 
 
@@ -351,27 +339,28 @@ async def export_layout(
     format: str = Query("json", regex="^(json|csv)$"),
     floor_id: Optional[int] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Export current table layout
-    
+
     Requires permission: tables.manage_layout
     """
     export_data = await layout_service.export_layout(
         db, current_user.restaurant_id, format, floor_id
     )
-    
+
     if format == "csv":
         from fastapi.responses import Response
+
         return Response(
             content=export_data,
             media_type="text/csv",
             headers={
                 "Content-Disposition": f"attachment; filename=table_layout_{datetime.utcnow().strftime('%Y%m%d')}.csv"
-            }
+            },
         )
-    
+
     return export_data
 
 
@@ -381,11 +370,11 @@ async def import_layout(
     layout_data: Dict[str, Any],
     merge: bool = Query(False, description="Merge with existing tables"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Import table layout configuration
-    
+
     Requires permission: tables.manage_layout
     """
     result = await layout_service.import_layout(
@@ -400,11 +389,11 @@ async def import_layout(
 async def generate_qr_codes(
     table_ids: Optional[List[int]] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Generate QR codes for tables
-    
+
     Requires permission: tables.manage_layout
     """
     result = await layout_service.generate_qr_codes(
@@ -415,14 +404,8 @@ async def generate_qr_codes(
 
 @router.get("/validate-layout")
 async def validate_layout(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
     """Validate current table layout for issues"""
-    issues = await layout_service.validate_layout(
-        db, current_user.restaurant_id
-    )
-    return {
-        "valid": len(issues) == 0,
-        "issues": issues
-    }
+    issues = await layout_service.validate_layout(db, current_user.restaurant_id)
+    return {"valid": len(issues) == 0, "issues": issues}

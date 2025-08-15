@@ -13,4 +13,4 @@ payment_router.include_router(payment_endpoints_router)
 payment_router.include_router(split_bill_router)
 payment_router.include_router(refund_router)
 
-__all__ = ['payment_router']
+__all__ = ["payment_router"]

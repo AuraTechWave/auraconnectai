@@ -15,7 +15,7 @@ from .reservation_events import (
     WaitlistNotifiedEvent,
     WaitlistConvertedEvent,
     emit_reservation_event,
-    reservation_event_handlers
+    reservation_event_handlers,
 )
 
 __all__ = [
@@ -31,5 +31,5 @@ __all__ = [
     "WaitlistNotifiedEvent",
     "WaitlistConvertedEvent",
     "emit_reservation_event",
-    "reservation_event_handlers"
+    "reservation_event_handlers",
 ]

@@ -13,8 +13,9 @@ class Payroll(Base):
     deductions = Column(Float, nullable=False)
     net_pay = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow,
-                        onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
     staff_member = relationship("StaffMember")
     payslips = relationship("Payslip", back_populates="payroll")

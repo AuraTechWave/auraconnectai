@@ -1,6 +1,4 @@
-from modules.staff.services.staff_service import (
-    fetch_all_staff, register_staff
-)
+from modules.staff.services.staff_service import fetch_all_staff, register_staff
 
 
 async def get_all_staff():

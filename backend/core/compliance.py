@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class AuditLog(Base, TimestampMixin):
     __tablename__ = "audit_logs"
-    __table_args__ = {'extend_existing': True}
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     action = Column(String, nullable=False)
@@ -25,15 +25,19 @@ class AuditLogger:
     def __init__(self, db: Session):
         self.db = db
 
-    def log_action(self, action: str, module: str,
-                   user_id: Optional[int] = None,
-                   metadata: Optional[dict] = None):
+    def log_action(
+        self,
+        action: str,
+        module: str,
+        user_id: Optional[int] = None,
+        metadata: Optional[dict] = None,
+    ):
         try:
             audit_log = AuditLog(
                 action=action,
                 module=module,
                 user_id=user_id,
-                audit_metadata=json.dumps(metadata) if metadata else None
+                audit_metadata=json.dumps(metadata) if metadata else None,
             )
             self.db.add(audit_log)
             self.db.commit()
@@ -47,15 +51,14 @@ class ComplianceEngine:
         self.db = db
         self.audit_logger = AuditLogger(db)
 
-    def validate_fraud_check(self, order_data: dict,
-                             risk_score: float) -> bool:
+    def validate_fraud_check(self, order_data: dict, risk_score: float) -> bool:
         self.audit_logger.log_action(
             action="fraud_check_performed",
             module="orders",
             metadata={
                 "order_id": order_data.get("id"),
                 "risk_score": risk_score,
-                "timestamp": datetime.utcnow().isoformat()
-            }
+                "timestamp": datetime.utcnow().isoformat(),
+            },
         )
         return True

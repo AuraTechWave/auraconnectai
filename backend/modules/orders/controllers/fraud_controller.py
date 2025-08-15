@@ -1,23 +1,22 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..services.fraud_service import (
-    perform_fraud_check, get_fraud_alerts, resolve_fraud_alert
+    perform_fraud_check,
+    get_fraud_alerts,
+    resolve_fraud_alert,
 )
-from ..schemas.order_schemas import (
-    FraudCheckRequest, FraudCheckResponse
-)
+from ..schemas.order_schemas import FraudCheckRequest, FraudCheckResponse
 from ..enums.order_enums import FraudRiskLevel
 
 
 async def check_order_fraud(
-    fraud_request: FraudCheckRequest,
-    db: Session
+    fraud_request: FraudCheckRequest, db: Session
 ) -> FraudCheckResponse:
     return await perform_fraud_check(
         db,
         fraud_request.order_id,
         fraud_request.checkpoint_types,
-        fraud_request.force_recheck
+        fraud_request.force_recheck,
     )
 
 
@@ -26,7 +25,7 @@ async def list_fraud_alerts(
     resolved: Optional[bool] = None,
     severity: Optional[FraudRiskLevel] = None,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
 ) -> List[dict]:
     return await get_fraud_alerts(db, resolved, severity, limit, offset)
 

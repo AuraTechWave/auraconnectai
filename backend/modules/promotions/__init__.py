@@ -9,7 +9,7 @@ from .services.discount_service import DiscountService
 __all__ = [
     "promotions_router",
     "PromotionService",
-    "CouponService", 
+    "CouponService",
     "ReferralService",
-    "DiscountService"
+    "DiscountService",
 ]

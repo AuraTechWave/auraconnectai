@@ -16,7 +16,7 @@ class AutoCancellationScheduler:
         self,
         tenant_id: Optional[int] = None,
         team_id: Optional[int] = None,
-        system_user_id: int = 1
+        system_user_id: int = 1,
     ) -> dict:
         """
         Execute the auto-cancellation process for stale orders.
@@ -34,7 +34,7 @@ class AutoCancellationScheduler:
                 db=self.db,
                 tenant_id=tenant_id,
                 team_id=team_id,
-                system_user_id=system_user_id
+                system_user_id=system_user_id,
             )
 
             if result["cancelled_count"] > 0:
@@ -44,9 +44,7 @@ class AutoCancellationScheduler:
                     f"Order IDs: {result['cancelled_orders']}"
                 )
             else:
-                logger.debug(
-                    "Auto-cancellation completed: No stale orders found"
-                )
+                logger.debug("Auto-cancellation completed: No stale orders found")
 
             return result
 
@@ -55,5 +53,5 @@ class AutoCancellationScheduler:
             return {
                 "cancelled_count": 0,
                 "cancelled_orders": [],
-                "message": f"Auto-cancellation failed: {str(e)}"
+                "message": f"Auto-cancellation failed: {str(e)}",
             }

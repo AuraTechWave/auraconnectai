@@ -10,13 +10,24 @@ from core.database import get_db
 from core.auth import require_permission, get_current_tenant
 
 from ..schemas import (
-    TaxFilingCreate, TaxFilingUpdate, TaxFilingSubmit, TaxFilingResponse,
-    TaxRemittanceCreate, TaxRemittanceResponse,
-    TaxReportRequest, TaxReportResponse,
-    TaxComplianceDashboard, FilingStatus, FilingType,
-    TaxAuditLogResponse
+    TaxFilingCreate,
+    TaxFilingUpdate,
+    TaxFilingSubmit,
+    TaxFilingResponse,
+    TaxRemittanceCreate,
+    TaxRemittanceResponse,
+    TaxReportRequest,
+    TaxReportResponse,
+    TaxComplianceDashboard,
+    FilingStatus,
+    FilingType,
+    TaxAuditLogResponse,
 )
-from ..services import TaxComplianceService, TaxFilingAutomationService, AutomationFrequency
+from ..services import (
+    TaxComplianceService,
+    TaxFilingAutomationService,
+    AutomationFrequency,
+)
 from ..models import TaxFiling, TaxAuditLog
 
 router = APIRouter(prefix="/compliance", tags=["Tax Compliance"])
@@ -28,7 +39,7 @@ async def create_filing(
     filing_data: TaxFilingCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.file")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Create a new tax filing"""
     service = TaxComplianceService(db)
@@ -46,7 +57,7 @@ async def list_filings(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.view")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """List tax filings with filters"""
     service = TaxComplianceService(db)
@@ -58,7 +69,7 @@ async def list_filings(
         period_end=period_end,
         tenant_id=tenant_id,
         limit=limit,
-        offset=offset
+        offset=offset,
     )
 
 
@@ -67,7 +78,7 @@ async def get_filing(
     filing_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.view")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Get a specific tax filing"""
     service = TaxComplianceService(db)
@@ -80,7 +91,7 @@ async def update_filing(
     update_data: TaxFilingUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.file")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Update a tax filing"""
     service = TaxComplianceService(db)
@@ -93,7 +104,7 @@ async def submit_filing(
     submit_data: TaxFilingSubmit,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.file")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Submit a tax filing"""
     service = TaxComplianceService(db)
@@ -106,30 +117,31 @@ async def amend_filing(
     amendment_reason: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.file")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Create an amended filing"""
     # Get original filing
-    original = db.query(TaxFiling).filter(
-        TaxFiling.id == filing_id,
-        TaxFiling.tenant_id == tenant_id
-    ).first()
-    
+    original = (
+        db.query(TaxFiling)
+        .filter(TaxFiling.id == filing_id, TaxFiling.tenant_id == tenant_id)
+        .first()
+    )
+
     if not original:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Filing {filing_id} not found"
+            detail=f"Filing {filing_id} not found",
         )
-    
+
     if original.status not in [FilingStatus.SUBMITTED, FilingStatus.ACCEPTED]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Can only amend submitted or accepted filings"
+            detail="Can only amend submitted or accepted filings",
         )
-    
+
     # Create amended filing
     service = TaxComplianceService(db)
-    
+
     # Copy original filing data
     filing_data = TaxFilingCreate(
         internal_reference=f"AMEND-{original.internal_reference}",
@@ -145,27 +157,29 @@ async def amend_filing(
         form_type=original.form_type,
         notes=f"Amendment of filing {original.filing_number}\nReason: {amendment_reason}",
         line_items=[],  # Would copy line items
-        attachments=[]
+        attachments=[],
     )
-    
+
     amended = service.create_filing(filing_data, current_user["id"], tenant_id)
-    
+
     # Update amended filing
-    db.query(TaxFiling).filter(TaxFiling.id == amended.id).update({
-        "is_amended": True,
-        "amendment_reason": amendment_reason,
-        "original_filing_id": original.id
-    })
-    
+    db.query(TaxFiling).filter(TaxFiling.id == amended.id).update(
+        {
+            "is_amended": True,
+            "amendment_reason": amendment_reason,
+            "original_filing_id": original.id,
+        }
+    )
+
     # Mark original as amended
     original.status = FilingStatus.AMENDED
-    
+
     db.commit()
-    
+
     return {
         "original_filing_id": filing_id,
         "amended_filing_id": amended.id,
-        "message": "Amendment created successfully"
+        "message": "Amendment created successfully",
     }
 
 
@@ -175,7 +189,7 @@ async def create_remittance(
     remittance_data: TaxRemittanceCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.pay")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Create a tax payment remittance"""
     service = TaxComplianceService(db)
@@ -188,7 +202,7 @@ async def get_compliance_dashboard(
     as_of_date: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.view")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Get tax compliance dashboard"""
     service = TaxComplianceService(db)
@@ -201,7 +215,7 @@ async def generate_report(
     report_request: TaxReportRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.report")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Generate a tax report"""
     service = TaxComplianceService(db)
@@ -212,14 +226,14 @@ async def generate_report(
 async def download_report(
     report_id: str,
     format: str = Query("pdf", pattern="^(pdf|excel|csv)$"),
-    current_user: dict = Depends(require_permission("tax.report"))
+    current_user: dict = Depends(require_permission("tax.report")),
 ):
     """Download a generated report"""
     # TODO: Implement report file download
     return {
         "message": "Report download not yet implemented",
         "report_id": report_id,
-        "format": format
+        "format": format,
     }
 
 
@@ -230,22 +244,20 @@ async def schedule_automation(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.admin")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Schedule automated filing generation"""
     automation_service = TaxFilingAutomationService(db)
-    
+
     # Schedule as background task
     background_tasks.add_task(
-        automation_service.schedule_automated_filings,
-        tenant_id,
-        frequency
+        automation_service.schedule_automated_filings, tenant_id, frequency
     )
-    
+
     return {
         "message": "Automation scheduled",
         "frequency": frequency,
-        "status": "pending"
+        "status": "pending",
     }
 
 
@@ -254,15 +266,15 @@ async def generate_automated_filing(
     nexus_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.file")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Generate automated filing for a specific nexus"""
     automation_service = TaxFilingAutomationService(db)
-    
+
     filing = await automation_service.generate_automated_filing(
         nexus_id, tenant_id, current_user["id"]
     )
-    
+
     return TaxFilingResponse.model_validate(filing)
 
 
@@ -271,15 +283,13 @@ async def auto_submit_filings(
     dry_run: bool = Query(True),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.admin")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Auto-submit ready filings"""
     automation_service = TaxFilingAutomationService(db)
-    
-    result = await automation_service.auto_submit_ready_filings(
-        tenant_id, dry_run
-    )
-    
+
+    result = await automation_service.auto_submit_ready_filings(tenant_id, dry_run)
+
     return result
 
 
@@ -289,15 +299,15 @@ async def reconcile_accounts(
     period_end: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.admin")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Reconcile tax accounts with transaction data"""
     automation_service = TaxFilingAutomationService(db)
-    
+
     result = await automation_service.reconcile_tax_accounts(
         tenant_id, period_start, period_end
     )
-    
+
     return result
 
 
@@ -306,15 +316,13 @@ async def get_estimated_payments(
     tax_year: Optional[int] = Query(None),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.view")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Get estimated tax payment schedule"""
     automation_service = TaxFilingAutomationService(db)
-    
-    result = await automation_service.generate_estimated_payments(
-        tenant_id, tax_year
-    )
-    
+
+    result = await automation_service.generate_estimated_payments(tenant_id, tax_year)
+
     return result
 
 
@@ -331,35 +339,36 @@ async def list_audit_logs(
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.audit")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """List audit logs with filters"""
-    query = db.query(TaxAuditLog).filter(
-        TaxAuditLog.tenant_id == tenant_id
-    )
-    
+    query = db.query(TaxAuditLog).filter(TaxAuditLog.tenant_id == tenant_id)
+
     if entity_type:
         query = query.filter(TaxAuditLog.entity_type == entity_type)
-    
+
     if entity_id:
         query = query.filter(TaxAuditLog.entity_id == entity_id)
-    
+
     if event_type:
         query = query.filter(TaxAuditLog.event_type == event_type)
-    
+
     if user_id:
         query = query.filter(TaxAuditLog.user_id == user_id)
-    
+
     if date_from:
         query = query.filter(TaxAuditLog.event_timestamp >= date_from)
-    
+
     if date_to:
         query = query.filter(TaxAuditLog.event_timestamp <= date_to)
-    
-    logs = query.order_by(
-        TaxAuditLog.event_timestamp.desc()
-    ).limit(limit).offset(offset).all()
-    
+
+    logs = (
+        query.order_by(TaxAuditLog.event_timestamp.desc())
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+
     return [TaxAuditLogResponse.model_validate(log) for log in logs]
 
 
@@ -368,46 +377,54 @@ async def list_audit_logs(
 async def get_quick_stats(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("tax.view")),
-    tenant_id: Optional[int] = Depends(get_current_tenant)
+    tenant_id: Optional[int] = Depends(get_current_tenant),
 ):
     """Get quick tax statistics"""
     today = date.today()
-    
+
     # Count filings by status
-    filing_counts = db.query(
-        TaxFiling.status,
-        db.func.count(TaxFiling.id)
-    ).filter(
-        TaxFiling.tenant_id == tenant_id
-    ).group_by(TaxFiling.status).all()
-    
+    filing_counts = (
+        db.query(TaxFiling.status, db.func.count(TaxFiling.id))
+        .filter(TaxFiling.tenant_id == tenant_id)
+        .group_by(TaxFiling.status)
+        .all()
+    )
+
     # Upcoming deadlines
-    upcoming_count = db.query(TaxFiling).filter(
-        TaxFiling.tenant_id == tenant_id,
-        TaxFiling.status.in_([FilingStatus.DRAFT, FilingStatus.READY]),
-        TaxFiling.due_date >= today,
-        TaxFiling.due_date <= today + timedelta(days=30)
-    ).count()
-    
+    upcoming_count = (
+        db.query(TaxFiling)
+        .filter(
+            TaxFiling.tenant_id == tenant_id,
+            TaxFiling.status.in_([FilingStatus.DRAFT, FilingStatus.READY]),
+            TaxFiling.due_date >= today,
+            TaxFiling.due_date <= today + timedelta(days=30),
+        )
+        .count()
+    )
+
     # Overdue filings
-    overdue_count = db.query(TaxFiling).filter(
-        TaxFiling.tenant_id == tenant_id,
-        TaxFiling.status.in_([FilingStatus.DRAFT, FilingStatus.READY]),
-        TaxFiling.due_date < today
-    ).count()
-    
+    overdue_count = (
+        db.query(TaxFiling)
+        .filter(
+            TaxFiling.tenant_id == tenant_id,
+            TaxFiling.status.in_([FilingStatus.DRAFT, FilingStatus.READY]),
+            TaxFiling.due_date < today,
+        )
+        .count()
+    )
+
     # Total tax liability
-    total_liability = db.query(
-        db.func.sum(TaxFiling.total_due)
-    ).filter(
-        TaxFiling.tenant_id == tenant_id,
-        TaxFiling.status != FilingStatus.PAID
-    ).scalar() or 0
-    
+    total_liability = (
+        db.query(db.func.sum(TaxFiling.total_due))
+        .filter(TaxFiling.tenant_id == tenant_id, TaxFiling.status != FilingStatus.PAID)
+        .scalar()
+        or 0
+    )
+
     return {
         "filing_counts": dict(filing_counts),
         "upcoming_deadlines": upcoming_count,
         "overdue_filings": overdue_count,
         "total_outstanding": float(total_liability),
-        "as_of": today
+        "as_of": today,
     }

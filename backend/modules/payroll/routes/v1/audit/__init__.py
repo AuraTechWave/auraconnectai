@@ -17,6 +17,8 @@ router = APIRouter()
 # Include sub-routers
 router.include_router(logs_router, prefix="/logs", tags=["Audit Logs"])
 router.include_router(summary_router, prefix="", tags=["Audit Summary"])
-router.include_router(compliance_router, prefix="/compliance", tags=["Audit Compliance"])
+router.include_router(
+    compliance_router, prefix="/compliance", tags=["Audit Compliance"]
+)
 
 __all__ = ["router"]

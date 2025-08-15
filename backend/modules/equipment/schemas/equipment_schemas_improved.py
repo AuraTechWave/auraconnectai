@@ -22,111 +22,90 @@ SortOrder = Literal["asc", "desc"]
 
 class EquipmentBase(BaseModel):
     """Base equipment schema with common fields"""
+
     equipment_name: str = Field(
-        ...,
-        min_length=1,
-        max_length=200,
-        description="Equipment name"
+        ..., min_length=1, max_length=200, description="Equipment name"
     )
     equipment_type: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="Type of equipment (e.g., Kitchen, HVAC, Storage)"
+        description="Type of equipment (e.g., Kitchen, HVAC, Storage)",
     )
     manufacturer: Optional[str] = Field(
-        None,
-        max_length=100,
-        description="Equipment manufacturer"
+        None, max_length=100, description="Equipment manufacturer"
     )
     model_number: Optional[str] = Field(
-        None,
-        max_length=100,
-        description="Model number"
+        None, max_length=100, description="Model number"
     )
     serial_number: Optional[str] = Field(
-        None,
-        max_length=100,
-        description="Serial number"
+        None, max_length=100, description="Serial number"
     )
     location: Optional[str] = Field(
-        None,
-        max_length=200,
-        description="Physical location of equipment"
+        None, max_length=200, description="Physical location of equipment"
     )
-    
-    @validator('equipment_name', 'equipment_type')
+
+    @validator("equipment_name", "equipment_type")
     def validate_not_empty(cls, v):
         if v and not v.strip():
             raise ValueError("Cannot be empty or whitespace only")
         return v.strip() if v else v
-    
-    @validator('serial_number')
+
+    @validator("serial_number")
     def validate_serial_number(cls, v):
         if v:
             # Remove spaces and convert to uppercase
             v = v.strip().upper()
             # Validate format (alphanumeric with optional dashes)
-            if not re.match(r'^[A-Z0-9\-]+$', v):
-                raise ValueError("Serial number must contain only letters, numbers, and dashes")
+            if not re.match(r"^[A-Z0-9\-]+$", v):
+                raise ValueError(
+                    "Serial number must contain only letters, numbers, and dashes"
+                )
         return v
 
 
 class EquipmentCreate(EquipmentBase):
     """Schema for creating equipment"""
-    purchase_date: Optional[date] = Field(
-        None,
-        description="Date of purchase"
-    )
-    warranty_expiry: Optional[date] = Field(
-        None,
-        description="Warranty expiry date"
-    )
+
+    purchase_date: Optional[date] = Field(None, description="Date of purchase")
+    warranty_expiry: Optional[date] = Field(None, description="Warranty expiry date")
     purchase_cost: Optional[Decimal] = Field(
-        None,
-        gt=0,
-        decimal_places=2,
-        description="Purchase cost"
+        None, gt=0, decimal_places=2, description="Purchase cost"
     )
     is_critical: bool = Field(
-        False,
-        description="Whether equipment is critical for operations"
+        False, description="Whether equipment is critical for operations"
     )
     maintenance_interval_days: Optional[int] = Field(
-        None,
-        gt=0,
-        le=3650,  # Max 10 years
-        description="Maintenance interval in days"
+        None, gt=0, le=3650, description="Maintenance interval in days"  # Max 10 years
     )
     maintenance_notes: Optional[str] = Field(
-        None,
-        max_length=1000,
-        description="General maintenance notes"
+        None, max_length=1000, description="General maintenance notes"
     )
-    
+
     @root_validator
     def validate_dates(cls, values):
-        purchase_date = values.get('purchase_date')
-        warranty_expiry = values.get('warranty_expiry')
-        
+        purchase_date = values.get("purchase_date")
+        warranty_expiry = values.get("warranty_expiry")
+
         if purchase_date and warranty_expiry:
             if purchase_date > warranty_expiry:
                 raise ValueError("Warranty expiry date must be after purchase date")
-                
+
         if purchase_date and purchase_date > date.today():
             raise ValueError("Purchase date cannot be in the future")
-            
+
         return values
-    
-    @validator('purchase_cost')
+
+    @validator("purchase_cost")
     def validate_cost(cls, v):
-        if v is not None and v > Decimal('1000000'):
+        if v is not None and v > Decimal("1000000"):
             raise ValueError("Purchase cost seems unusually high. Please verify.")
         return v
 
 
 class EquipmentUpdate(BaseModel):
     """Schema for updating equipment"""
+
     equipment_name: Optional[str] = Field(None, min_length=1, max_length=200)
     equipment_type: Optional[str] = Field(None, min_length=1, max_length=100)
     manufacturer: Optional[str] = Field(None, max_length=100)
@@ -138,20 +117,21 @@ class EquipmentUpdate(BaseModel):
     is_critical: Optional[bool] = None
     maintenance_interval_days: Optional[int] = Field(None, gt=0, le=3650)
     maintenance_notes: Optional[str] = Field(None, max_length=1000)
-    
-    @validator('warranty_expiry')
+
+    @validator("warranty_expiry")
     def validate_warranty_expiry(cls, v):
         if v and v < date.today():
             # Warning, but allow updating to past date
             pass
         return v
-    
+
     class Config:
         validate_assignment = True
 
 
 class Equipment(EquipmentBase):
     """Schema for equipment response"""
+
     id: int
     status: EquipmentStatusType
     purchase_date: Optional[date]
@@ -166,65 +146,55 @@ class Equipment(EquipmentBase):
     updated_at: Optional[datetime]
     created_by: int
     updated_by: Optional[int]
-    
+
     class Config:
         orm_mode = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
             date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
+            Decimal: lambda v: float(v),
         }
 
 
 class MaintenanceRecordBase(BaseModel):
     """Base maintenance record schema"""
+
     equipment_id: int = Field(..., gt=0)
     maintenance_type: MaintenanceType
     scheduled_date: date
     description: Optional[str] = Field(None, max_length=1000)
     estimated_duration_hours: Optional[float] = Field(
-        None,
-        gt=0,
-        le=168,  # Max 1 week
-        description="Estimated duration in hours"
+        None, gt=0, le=168, description="Estimated duration in hours"  # Max 1 week
     )
     estimated_cost: Optional[Decimal] = Field(
-        None,
-        ge=0,
-        decimal_places=2,
-        description="Estimated cost"
+        None, ge=0, decimal_places=2, description="Estimated cost"
     )
-    
-    @validator('scheduled_date')
+
+    @validator("scheduled_date")
     def validate_scheduled_date(cls, v):
         if v < date.today():
             raise ValueError("Scheduled date cannot be in the past")
         return v
-    
-    @validator('estimated_cost')
+
+    @validator("estimated_cost")
     def validate_estimated_cost(cls, v):
-        if v is not None and v > Decimal('100000'):
+        if v is not None and v > Decimal("100000"):
             raise ValueError("Estimated cost seems unusually high. Please verify.")
         return v
 
 
 class MaintenanceRecordCreate(MaintenanceRecordBase):
     """Schema for creating maintenance record"""
+
     assigned_to: Optional[str] = Field(
-        None,
-        max_length=100,
-        description="Person assigned to perform maintenance"
+        None, max_length=100, description="Person assigned to perform maintenance"
     )
-    priority: int = Field(
-        2,
-        ge=1,
-        le=5,
-        description="Priority (1=Highest, 5=Lowest)"
-    )
+    priority: int = Field(2, ge=1, le=5, description="Priority (1=Highest, 5=Lowest)")
 
 
 class MaintenanceRecordUpdate(BaseModel):
     """Schema for updating maintenance record"""
+
     maintenance_type: Optional[MaintenanceType] = None
     scheduled_date: Optional[date] = None
     description: Optional[str] = Field(None, max_length=1000)
@@ -234,8 +204,8 @@ class MaintenanceRecordUpdate(BaseModel):
     priority: Optional[int] = Field(None, ge=1, le=5)
     status: Optional[MaintenanceStatus] = None
     notes: Optional[str] = Field(None, max_length=2000)
-    
-    @validator('scheduled_date')
+
+    @validator("scheduled_date")
     def validate_scheduled_date(cls, v):
         # Allow past dates for updates (rescheduling)
         return v
@@ -243,67 +213,52 @@ class MaintenanceRecordUpdate(BaseModel):
 
 class MaintenanceRecordComplete(BaseModel):
     """Schema for completing maintenance record"""
+
     date_performed: date = Field(..., description="Date maintenance was performed")
     performed_by: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="Person who performed maintenance"
+        description="Person who performed maintenance",
     )
     actual_duration_hours: float = Field(
-        ...,
-        gt=0,
-        le=168,
-        description="Actual duration in hours"
+        ..., gt=0, le=168, description="Actual duration in hours"
     )
-    cost: Decimal = Field(
-        ...,
-        ge=0,
-        decimal_places=2,
-        description="Actual cost"
-    )
+    cost: Decimal = Field(..., ge=0, decimal_places=2, description="Actual cost")
     downtime_hours: float = Field(
-        0,
-        ge=0,
-        le=168,
-        description="Equipment downtime in hours"
+        0, ge=0, le=168, description="Equipment downtime in hours"
     )
     parts_replaced: Optional[str] = Field(
-        None,
-        max_length=1000,
-        description="List of parts replaced"
+        None, max_length=1000, description="List of parts replaced"
     )
-    notes: Optional[str] = Field(
-        None,
-        max_length=2000,
-        description="Completion notes"
-    )
-    
-    @validator('date_performed')
+    notes: Optional[str] = Field(None, max_length=2000, description="Completion notes")
+
+    @validator("date_performed")
     def validate_date_performed(cls, v):
         if v > date.today():
             raise ValueError("Performance date cannot be in the future")
         return v
-    
-    @validator('cost')
+
+    @validator("cost")
     def validate_cost(cls, v):
-        if v > Decimal('100000'):
+        if v > Decimal("100000"):
             raise ValueError("Cost seems unusually high. Please verify.")
         return v
-    
+
     @root_validator
     def validate_durations(cls, values):
-        actual = values.get('actual_duration_hours')
-        downtime = values.get('downtime_hours')
-        
+        actual = values.get("actual_duration_hours")
+        downtime = values.get("downtime_hours")
+
         if actual and downtime and downtime > actual:
             raise ValueError("Downtime cannot exceed actual duration")
-            
+
         return values
 
 
 class MaintenanceRecord(MaintenanceRecordBase):
     """Schema for maintenance record response"""
+
     id: int
     status: MaintenanceStatus
     assigned_to: Optional[str]
@@ -319,18 +274,19 @@ class MaintenanceRecord(MaintenanceRecordBase):
     updated_at: Optional[datetime]
     created_by: int
     updated_by: Optional[int]
-    
+
     class Config:
         orm_mode = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
             date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v)
+            Decimal: lambda v: float(v),
         }
 
 
 class EquipmentWithMaintenance(Equipment):
     """Equipment with maintenance history"""
+
     maintenance_records: List[MaintenanceRecord] = []
     total_maintenance_count: int = 0
     total_maintenance_cost: float = 0.0
@@ -339,6 +295,7 @@ class EquipmentWithMaintenance(Equipment):
 
 class EquipmentSearchParams(BaseModel):
     """Parameters for equipment search"""
+
     query: Optional[str] = Field(None, max_length=200)
     equipment_type: Optional[str] = Field(None, max_length=100)
     status: Optional[EquipmentStatusType] = None
@@ -353,6 +310,7 @@ class EquipmentSearchParams(BaseModel):
 
 class MaintenanceSearchParams(BaseModel):
     """Parameters for maintenance record search"""
+
     equipment_id: Optional[int] = Field(None, gt=0)
     maintenance_type: Optional[MaintenanceType] = None
     status: Optional[MaintenanceStatus] = None
@@ -363,20 +321,21 @@ class MaintenanceSearchParams(BaseModel):
     sort_order: SortOrder = "desc"
     limit: int = Field(50, ge=1, le=500)
     offset: int = Field(0, ge=0)
-    
+
     @root_validator
     def validate_date_range(cls, values):
-        date_from = values.get('date_from')
-        date_to = values.get('date_to')
-        
+        date_from = values.get("date_from")
+        date_to = values.get("date_to")
+
         if date_from and date_to and date_from > date_to:
             raise ValueError("date_from must be before date_to")
-            
+
         return values
 
 
 class EquipmentListResponse(BaseModel):
     """Response for equipment list"""
+
     items: List[Equipment]
     total: int = Field(..., ge=0)
     page: int = Field(..., ge=1)
@@ -386,6 +345,7 @@ class EquipmentListResponse(BaseModel):
 
 class MaintenanceListResponse(BaseModel):
     """Response for maintenance record list"""
+
     items: List[MaintenanceRecord]
     total: int = Field(..., ge=0)
     page: int = Field(..., ge=1)
@@ -395,6 +355,7 @@ class MaintenanceListResponse(BaseModel):
 
 class MaintenanceSummary(BaseModel):
     """Summary statistics for maintenance"""
+
     total_equipment: int = Field(..., ge=0)
     operational_count: int = Field(..., ge=0)
     maintenance_count: int = Field(..., ge=0)
@@ -406,7 +367,7 @@ class MaintenanceSummary(BaseModel):
     total_maintenance_cost_ytd: float = Field(..., ge=0)
     average_downtime_hours: float = Field(..., ge=0)
     critical_equipment_down: int = Field(..., ge=0)
-    
-    @validator('average_downtime_hours')
+
+    @validator("average_downtime_hours")
     def round_average(cls, v):
         return round(v, 2)

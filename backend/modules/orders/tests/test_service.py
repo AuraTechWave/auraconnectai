@@ -1,17 +1,29 @@
 import pytest
 from fastapi import HTTPException
 from modules.orders.services.order_service import (
-    get_order_by_id, update_order_service, get_orders_service,
-    validate_multi_item_rules, schedule_delayed_fulfillment,
-    get_scheduled_orders, process_due_delayed_orders,
-    archive_order_service, restore_order_service,
-    get_archived_orders_service, update_order_priority_service
+    get_order_by_id,
+    update_order_service,
+    get_orders_service,
+    validate_multi_item_rules,
+    schedule_delayed_fulfillment,
+    get_scheduled_orders,
+    process_due_delayed_orders,
+    archive_order_service,
+    restore_order_service,
+    get_archived_orders_service,
+    update_order_priority_service,
 )
 from modules.orders.schemas.order_schemas import (
-    OrderUpdate, OrderItemUpdate, DelayFulfillmentRequest, OrderPriorityUpdate
+    OrderUpdate,
+    OrderItemUpdate,
+    DelayFulfillmentRequest,
+    OrderPriorityUpdate,
 )
 from modules.orders.enums.order_enums import (
-    OrderStatus, MultiItemRuleType, DelayReason, OrderPriority
+    OrderStatus,
+    MultiItemRuleType,
+    DelayReason,
+    OrderPriority,
 )
 from modules.orders.models.order_models import Order
 from datetime import datetime
@@ -36,8 +48,7 @@ class TestOrderService:
         assert "not found" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_get_order_by_id_soft_deleted(self, db_session,
-                                                sample_order):
+    async def test_get_order_by_id_soft_deleted(self, db_session, sample_order):
         """Test that soft-deleted orders are not returned."""
         sample_order.deleted_at = datetime.utcnow()
         db_session.commit()
@@ -47,25 +58,23 @@ class TestOrderService:
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_order_status_valid_transition(self, db_session,
-                                                        sample_order):
+    async def test_update_order_status_valid_transition(self, db_session, sample_order):
         """Test valid status transition."""
         update_data = OrderUpdate(status=OrderStatus.IN_PROGRESS)
-        result = await update_order_service(
-            sample_order.id, update_data, db_session)
+        result = await update_order_service(sample_order.id, update_data, db_session)
 
         assert result["message"] == "Order updated successfully"
         assert result["data"].status == OrderStatus.IN_PROGRESS.value
 
     @pytest.mark.asyncio
-    async def test_update_order_status_invalid_transition(self, db_session,
-                                                          sample_order):
+    async def test_update_order_status_invalid_transition(
+        self, db_session, sample_order
+    ):
         """Test invalid status transition."""
         update_data = OrderUpdate(status=OrderStatus.COMPLETED)
 
         with pytest.raises(HTTPException) as exc_info:
-            await update_order_service(sample_order.id, update_data,
-                                       db_session)
+            await update_order_service(sample_order.id, update_data, db_session)
         assert exc_info.value.status_code == 400
         assert "Invalid status transition" in exc_info.value.detail
 
@@ -73,16 +82,18 @@ class TestOrderService:
     async def test_update_order_items(self, db_session, sample_order):
         """Test updating order items."""
         new_items = [
-            OrderItemUpdate(menu_item_id=201, quantity=3, price=12.99,
-                            notes="Medium rare"),
-            OrderItemUpdate(menu_item_id=202, quantity=1, price=5.50)
+            OrderItemUpdate(
+                menu_item_id=201, quantity=3, price=12.99, notes="Medium rare"
+            ),
+            OrderItemUpdate(menu_item_id=202, quantity=1, price=5.50),
         ]
         update_data = OrderUpdate(order_items=new_items)
 
         await update_order_service(sample_order.id, update_data, db_session)
 
-        updated_order = db_session.query(Order).filter(
-            Order.id == sample_order.id).first()
+        updated_order = (
+            db_session.query(Order).filter(Order.id == sample_order.id).first()
+        )
         assert len(updated_order.order_items) == 2
         assert updated_order.order_items[0].menu_item_id == 201
         assert updated_order.order_items[1].menu_item_id == 202
@@ -103,7 +114,8 @@ class TestOrderService:
         db_session.commit()
 
         pending_orders = await get_orders_service(
-            db_session, status=OrderStatus.PENDING.value)
+            db_session, status=OrderStatus.PENDING.value
+        )
         assert len(pending_orders) == 1
         assert pending_orders[0].status == OrderStatus.PENDING.value
 
@@ -122,8 +134,7 @@ class TestOrderService:
     @pytest.mark.asyncio
     async def test_get_orders_pagination(self, db_session):
         """Test order pagination."""
-        orders = [Order(staff_id=i, status=OrderStatus.PENDING.value)
-                  for i in range(5)]
+        orders = [Order(staff_id=i, status=OrderStatus.PENDING.value) for i in range(5)]
         db_session.add_all(orders)
         db_session.commit()
 
@@ -135,8 +146,7 @@ class TestOrderService:
         assert page1[0].id != page2[0].id
 
     @pytest.mark.asyncio
-    async def test_get_orders_exclude_soft_deleted(self, db_session,
-                                                   sample_order):
+    async def test_get_orders_exclude_soft_deleted(self, db_session, sample_order):
         """Test that soft-deleted orders are excluded."""
         sample_order.deleted_at = datetime.utcnow()
         db_session.commit()
@@ -152,11 +162,9 @@ class TestMultiItemRules:
         """Test successful combo rule validation."""
         items = [
             OrderItemUpdate(menu_item_id=101, quantity=1, price=12.99),
-            OrderItemUpdate(menu_item_id=201, quantity=1, price=3.99)
+            OrderItemUpdate(menu_item_id=201, quantity=1, price=3.99),
         ]
-        result = await validate_multi_item_rules(
-            items, [MultiItemRuleType.COMBO]
-        )
+        result = await validate_multi_item_rules(items, [MultiItemRuleType.COMBO])
         assert result.is_valid is True
 
     @pytest.mark.asyncio
@@ -164,7 +172,7 @@ class TestMultiItemRules:
         """Test bulk discount rule validation."""
         items = [
             OrderItemUpdate(menu_item_id=101, quantity=3, price=12.99),
-            OrderItemUpdate(menu_item_id=102, quantity=2, price=8.99)
+            OrderItemUpdate(menu_item_id=102, quantity=2, price=8.99),
         ]
         result = await validate_multi_item_rules(
             items, [MultiItemRuleType.BULK_DISCOUNT]
@@ -176,7 +184,7 @@ class TestMultiItemRules:
         """Test compatibility rule validation failure."""
         items = [
             OrderItemUpdate(menu_item_id=101, quantity=1, price=12.99),
-            OrderItemUpdate(menu_item_id=301, quantity=1, price=15.99)
+            OrderItemUpdate(menu_item_id=301, quantity=1, price=15.99),
         ]
         result = await validate_multi_item_rules(
             items, [MultiItemRuleType.COMPATIBILITY]
@@ -189,7 +197,7 @@ class TestMultiItemRules:
         """Test validation with all rule types."""
         items = [
             OrderItemUpdate(menu_item_id=104, quantity=2, price=10.99),
-            OrderItemUpdate(menu_item_id=105, quantity=1, price=7.99)
+            OrderItemUpdate(menu_item_id=105, quantity=1, price=7.99),
         ]
         result = await validate_multi_item_rules(items)
         assert result.is_valid is True
@@ -198,18 +206,18 @@ class TestMultiItemRules:
 class TestDelayedFulfillment:
 
     @pytest.mark.asyncio
-    async def test_schedule_delayed_fulfillment_success(self, db_session,
-                                                        sample_order):
+    async def test_schedule_delayed_fulfillment_success(self, db_session, sample_order):
         """Test successful order delay scheduling."""
         future_time = datetime(2025, 12, 31, 15, 30, 0)
         delay_data = DelayFulfillmentRequest(
             scheduled_fulfillment_time=future_time,
             delay_reason=DelayReason.CUSTOMER_REQUEST.value,
-            additional_notes="Customer requested later delivery"
+            additional_notes="Customer requested later delivery",
         )
 
-        result = await schedule_delayed_fulfillment(sample_order.id,
-                                                    delay_data, db_session)
+        result = await schedule_delayed_fulfillment(
+            sample_order.id, delay_data, db_session
+        )
 
         assert result["message"] == "Order scheduled for delayed fulfillment"
         assert result["data"].status == OrderStatus.DELAYED.value
@@ -229,39 +237,37 @@ class TestDelayedFulfillment:
         future_time = datetime(2025, 12, 31, 15, 30, 0)
         delay_data = DelayFulfillmentRequest(
             scheduled_fulfillment_time=future_time,
-            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value,
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await schedule_delayed_fulfillment(sample_order.id, delay_data,
-                                               db_session)
+            await schedule_delayed_fulfillment(sample_order.id, delay_data, db_session)
         assert exc_info.value.status_code == 400
         assert "Cannot delay order" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_schedule_delayed_fulfillment_past_time(self, db_session,
-                                                          sample_order):
+    async def test_schedule_delayed_fulfillment_past_time(
+        self, db_session, sample_order
+    ):
         """Test delay scheduling with past time."""
         past_time = datetime(2020, 1, 1, 12, 0, 0)
         delay_data = DelayFulfillmentRequest(
             scheduled_fulfillment_time=past_time,
-            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value,
         )
 
         with pytest.raises(HTTPException) as exc_info:
-            await schedule_delayed_fulfillment(sample_order.id, delay_data,
-                                               db_session)
+            await schedule_delayed_fulfillment(sample_order.id, delay_data, db_session)
         assert exc_info.value.status_code == 400
         assert "must be in the future" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_schedule_delayed_fulfillment_order_not_found(self,
-                                                                db_session):
+    async def test_schedule_delayed_fulfillment_order_not_found(self, db_session):
         """Test delay scheduling with non-existent order."""
         future_time = datetime(2025, 12, 31, 15, 30, 0)
         delay_data = DelayFulfillmentRequest(
             scheduled_fulfillment_time=future_time,
-            delay_reason=DelayReason.CUSTOMER_REQUEST.value
+            delay_reason=DelayReason.CUSTOMER_REQUEST.value,
         )
 
         with pytest.raises(HTTPException) as exc_info:
@@ -273,36 +279,42 @@ class TestDelayedFulfillment:
     async def test_get_scheduled_orders_no_filters(self, db_session):
         """Test getting scheduled orders without filters."""
         order1 = Order(
-            staff_id=1, status=OrderStatus.DELAYED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+            staff_id=1,
+            status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0),
         )
         order2 = Order(
-            staff_id=2, status=OrderStatus.SCHEDULED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+            staff_id=2,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0),
         )
         db_session.add_all([order1, order2])
         db_session.commit()
 
         orders = await get_scheduled_orders(db_session)
         assert len(orders) == 2
-        time_check = (orders[0].scheduled_fulfillment_time <=
-                      orders[1].scheduled_fulfillment_time)
+        time_check = (
+            orders[0].scheduled_fulfillment_time <= orders[1].scheduled_fulfillment_time
+        )
         assert time_check
 
     @pytest.mark.asyncio
     async def test_get_scheduled_orders_with_time_filters(self, db_session):
         """Test getting scheduled orders with time range filters."""
         order1 = Order(
-            staff_id=1, status=OrderStatus.DELAYED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0)
+            staff_id=1,
+            status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 10, 0, 0),
         )
         order2 = Order(
-            staff_id=2, status=OrderStatus.SCHEDULED.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0)
+            staff_id=2,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 14, 0, 0),
         )
         order3 = Order(
-            staff_id=3, status=OrderStatus.AWAITING_FULFILLMENT.value,
-            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0)
+            staff_id=3,
+            status=OrderStatus.AWAITING_FULFILLMENT.value,
+            scheduled_fulfillment_time=datetime(2025, 12, 31, 18, 0, 0),
         )
         db_session.add_all([order1, order2, order3])
         db_session.commit()
@@ -321,12 +333,21 @@ class TestDelayedFulfillment:
         past_time = datetime(2020, 1, 1, 12, 0, 0)
         future_time = datetime(2025, 12, 31, 15, 0, 0)
 
-        order1 = Order(staff_id=1, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=past_time)
-        order2 = Order(staff_id=2, status=OrderStatus.SCHEDULED.value,
-                       scheduled_fulfillment_time=future_time)
-        order3 = Order(staff_id=3, status=OrderStatus.DELAYED.value,
-                       scheduled_fulfillment_time=past_time)
+        order1 = Order(
+            staff_id=1,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=past_time,
+        )
+        order2 = Order(
+            staff_id=2,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=future_time,
+        )
+        order3 = Order(
+            staff_id=3,
+            status=OrderStatus.DELAYED.value,
+            scheduled_fulfillment_time=past_time,
+        )
         db_session.add_all([order1, order2, order3])
         db_session.commit()
 
@@ -349,8 +370,11 @@ class TestDelayedFulfillment:
         """Test processing when no orders are due."""
         future_time = datetime(2025, 12, 31, 15, 0, 0)
 
-        order = Order(staff_id=1, status=OrderStatus.SCHEDULED.value,
-                      scheduled_fulfillment_time=future_time)
+        order = Order(
+            staff_id=1,
+            status=OrderStatus.SCHEDULED.value,
+            scheduled_fulfillment_time=future_time,
+        )
         db_session.add(order)
         db_session.commit()
 
@@ -397,8 +421,10 @@ class TestArchiveService:
             await archive_order_service(db_session, order.id)
 
         assert exc_info.value.status_code == 400
-        assert ("Only completed or cancelled orders can be archived"
-                in exc_info.value.detail)
+        assert (
+            "Only completed or cancelled orders can be archived"
+            in exc_info.value.detail
+        )
 
     @pytest.mark.asyncio
     async def test_restore_archived_order_success(self, db_session):
@@ -455,13 +481,14 @@ class TestArchiveService:
 class TestOrderPriority:
 
     @pytest.mark.asyncio
-    async def test_update_order_priority_success(self, db_session,
-                                                 sample_order):
+    async def test_update_order_priority_success(self, db_session, sample_order):
         """Test successful order priority update."""
-        priority_data = OrderPriorityUpdate(priority=OrderPriority.HIGH,
-                                            reason="Rush order")
-        result = await update_order_priority_service(sample_order.id,
-                                                     priority_data, db_session)
+        priority_data = OrderPriorityUpdate(
+            priority=OrderPriority.HIGH, reason="Rush order"
+        )
+        result = await update_order_priority_service(
+            sample_order.id, priority_data, db_session
+        )
 
         assert result.message == "Order priority updated from normal to high"
         assert result.data.priority == OrderPriority.HIGH
@@ -486,14 +513,26 @@ class TestOrderPriority:
         """Test that orders are sorted by priority correctly."""
         from modules.orders.models.order_models import Order
 
-        order_low = Order(staff_id=1, status=OrderStatus.PENDING.value,
-                          priority=OrderPriority.LOW.value)
-        order_normal = Order(staff_id=1, status=OrderStatus.PENDING.value,
-                             priority=OrderPriority.NORMAL.value)
-        order_high = Order(staff_id=1, status=OrderStatus.PENDING.value,
-                           priority=OrderPriority.HIGH.value)
-        order_urgent = Order(staff_id=1, status=OrderStatus.PENDING.value,
-                             priority=OrderPriority.URGENT.value)
+        order_low = Order(
+            staff_id=1,
+            status=OrderStatus.PENDING.value,
+            priority=OrderPriority.LOW.value,
+        )
+        order_normal = Order(
+            staff_id=1,
+            status=OrderStatus.PENDING.value,
+            priority=OrderPriority.NORMAL.value,
+        )
+        order_high = Order(
+            staff_id=1,
+            status=OrderStatus.PENDING.value,
+            priority=OrderPriority.HIGH.value,
+        )
+        order_urgent = Order(
+            staff_id=1,
+            status=OrderStatus.PENDING.value,
+            priority=OrderPriority.URGENT.value,
+        )
 
         db_session.add_all([order_low, order_normal, order_high, order_urgent])
         db_session.commit()
@@ -502,14 +541,20 @@ class TestOrderPriority:
 
         priorities = [order.priority for order in orders]
 
-        urgent_index = next((i for i, p in enumerate(priorities)
-                             if p == OrderPriority.URGENT.value), None)
-        high_index = next((i for i, p in enumerate(priorities)
-                           if p == OrderPriority.HIGH.value), None)
-        normal_index = next((i for i, p in enumerate(priorities)
-                             if p == OrderPriority.NORMAL.value), None)
-        low_index = next((i for i, p in enumerate(priorities)
-                          if p == OrderPriority.LOW.value), None)
+        urgent_index = next(
+            (i for i, p in enumerate(priorities) if p == OrderPriority.URGENT.value),
+            None,
+        )
+        high_index = next(
+            (i for i, p in enumerate(priorities) if p == OrderPriority.HIGH.value), None
+        )
+        normal_index = next(
+            (i for i, p in enumerate(priorities) if p == OrderPriority.NORMAL.value),
+            None,
+        )
+        low_index = next(
+            (i for i, p in enumerate(priorities) if p == OrderPriority.LOW.value), None
+        )
 
         if urgent_index is not None and high_index is not None:
             assert urgent_index < high_index

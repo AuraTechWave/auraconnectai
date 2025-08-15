@@ -6,13 +6,18 @@ from datetime import datetime
 from enum import Enum
 
 from ..models.promotion_models import (
-    PromotionType, PromotionStatus, CouponType, DiscountTarget, ReferralStatus
+    PromotionType,
+    PromotionStatus,
+    CouponType,
+    DiscountTarget,
+    ReferralStatus,
 )
 
 
 # Base schemas
 class PromotionBase(BaseModel):
     """Base promotion schema"""
+
     name: str = Field(..., max_length=200)
     description: Optional[str] = None
     promotion_type: PromotionType
@@ -47,24 +52,25 @@ class PromotionBase(BaseModel):
 
 class PromotionCreate(PromotionBase):
     """Schema for creating a promotion"""
-    
-    @validator('end_date')
+
+    @validator("end_date")
     def end_date_after_start_date(cls, v, values):
-        start_date = values.get('start_date')
+        start_date = values.get("start_date")
         if start_date and v <= start_date:
-            raise ValueError('End date must be after start date')
+            raise ValueError("End date must be after start date")
         return v
-    
-    @validator('discount_value')
+
+    @validator("discount_value")
     def validate_discount_value(cls, v, values):
-        discount_type = values.get('discount_type')
-        if discount_type == 'percentage' and v > 100:
-            raise ValueError('Percentage discount cannot exceed 100%')
+        discount_type = values.get("discount_type")
+        if discount_type == "percentage" and v > 100:
+            raise ValueError("Percentage discount cannot exceed 100%")
         return v
 
 
 class PromotionUpdate(BaseModel):
     """Schema for updating a promotion"""
+
     name: Optional[str] = Field(None, max_length=200)
     description: Optional[str] = None
     status: Optional[PromotionStatus] = None
@@ -85,6 +91,7 @@ class PromotionUpdate(BaseModel):
 
 class Promotion(PromotionBase):
     """Full promotion schema for responses"""
+
     id: int
     uuid: UUID4
     status: PromotionStatus
@@ -95,18 +102,19 @@ class Promotion(PromotionBase):
     revenue_generated: float
     created_at: datetime
     updated_at: datetime
-    
+
     # Computed properties
     is_active: bool
     usage_percentage: float
     days_remaining: int
-    
+
     class Config:
         from_attributes = True
 
 
 class PromotionSummary(BaseModel):
     """Summary promotion schema for lists"""
+
     id: int
     uuid: UUID4
     name: str
@@ -121,7 +129,7 @@ class PromotionSummary(BaseModel):
     is_featured: bool
     is_active: bool
     days_remaining: int
-    
+
     class Config:
         from_attributes = True
 
@@ -129,6 +137,7 @@ class PromotionSummary(BaseModel):
 # Coupon schemas
 class CouponBase(BaseModel):
     """Base coupon schema"""
+
     coupon_type: CouponType = CouponType.SINGLE_USE
     max_uses: int = Field(1, ge=1)
     customer_id: Optional[int] = None
@@ -139,6 +148,7 @@ class CouponBase(BaseModel):
 
 class CouponCreate(CouponBase):
     """Schema for creating a coupon"""
+
     promotion_id: int
     code: Optional[str] = Field(None, max_length=50)  # Auto-generated if not provided
     batch_id: Optional[str] = None
@@ -147,6 +157,7 @@ class CouponCreate(CouponBase):
 
 class CouponBulkCreate(BaseModel):
     """Schema for bulk coupon creation"""
+
     promotion_id: int
     quantity: int = Field(..., ge=1, le=10000)
     coupon_type: CouponType = CouponType.MULTI_USE
@@ -160,6 +171,7 @@ class CouponBulkCreate(BaseModel):
 
 class Coupon(CouponBase):
     """Full coupon schema for responses"""
+
     id: int
     promotion_id: int
     code: str
@@ -169,20 +181,21 @@ class Coupon(CouponBase):
     generation_method: str
     created_at: datetime
     updated_at: datetime
-    
+
     # Computed properties
     is_valid: bool
     remaining_uses: int
-    
+
     # Related data
     promotion: Optional[PromotionSummary] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class CouponValidationRequest(BaseModel):
     """Schema for coupon validation requests"""
+
     code: str = Field(..., max_length=50)
     customer_id: Optional[int] = None
     order_total: float = Field(..., ge=0)
@@ -191,6 +204,7 @@ class CouponValidationRequest(BaseModel):
 
 class CouponValidationResponse(BaseModel):
     """Schema for coupon validation responses"""
+
     is_valid: bool
     coupon: Optional[Coupon] = None
     discount_amount: float = 0.0
@@ -201,6 +215,7 @@ class CouponValidationResponse(BaseModel):
 # Referral program schemas
 class ReferralProgramBase(BaseModel):
     """Base referral program schema"""
+
     name: str = Field(..., max_length=200)
     description: Optional[str] = None
     referrer_reward_type: str
@@ -216,16 +231,17 @@ class ReferralProgramBase(BaseModel):
 
 class ReferralProgramCreate(ReferralProgramBase):
     """Schema for creating a referral program"""
-    
-    @validator('end_date')
+
+    @validator("end_date")
     def end_date_after_start_date(cls, v, values):
-        if v and values.get('start_date') and v <= values['start_date']:
-            raise ValueError('End date must be after start date')
+        if v and values.get("start_date") and v <= values["start_date"]:
+            raise ValueError("End date must be after start date")
         return v
 
 
 class ReferralProgram(ReferralProgramBase):
     """Full referral program schema"""
+
     id: int
     is_active: bool
     total_referrals: int
@@ -233,24 +249,27 @@ class ReferralProgram(ReferralProgramBase):
     total_rewards_issued: float
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class CustomerReferralBase(BaseModel):
     """Base customer referral schema"""
+
     referee_email: str = Field(..., max_length=255)
 
 
 class CustomerReferralCreate(CustomerReferralBase):
     """Schema for creating a referral"""
+
     program_id: int
     referrer_id: int
 
 
 class CustomerReferral(CustomerReferralBase):
     """Full customer referral schema"""
+
     id: int
     program_id: int
     referrer_id: int
@@ -266,7 +285,7 @@ class CustomerReferral(CustomerReferralBase):
     expires_at: datetime
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -274,6 +293,7 @@ class CustomerReferral(CustomerReferralBase):
 # Usage and analytics schemas
 class PromotionUsageBase(BaseModel):
     """Base promotion usage schema"""
+
     promotion_id: int
     customer_id: Optional[int]
     order_id: int
@@ -286,16 +306,18 @@ class PromotionUsageBase(BaseModel):
 
 class PromotionUsage(PromotionUsageBase):
     """Full promotion usage schema"""
+
     id: int
     staff_member_id: Optional[int]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class PromotionAnalyticsBase(BaseModel):
     """Base promotion analytics schema"""
+
     promotion_id: int
     date: datetime
     period_type: str
@@ -309,13 +331,14 @@ class PromotionAnalyticsBase(BaseModel):
 
 class PromotionAnalytics(PromotionAnalyticsBase):
     """Full promotion analytics schema"""
+
     id: int
     conversion_rate: float
     average_order_value: float
     customer_acquisition_cost: float
     return_on_investment: float
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -323,6 +346,7 @@ class PromotionAnalytics(PromotionAnalyticsBase):
 # Search and filter schemas
 class PromotionSearchParams(BaseModel):
     """Parameters for searching promotions"""
+
     query: Optional[str] = None
     promotion_type: Optional[List[PromotionType]] = None
     status: Optional[List[PromotionStatus]] = None
@@ -344,6 +368,7 @@ class PromotionSearchParams(BaseModel):
 
 class PromotionSearchResponse(BaseModel):
     """Response for promotion search"""
+
     promotions: List[PromotionSummary]
     total: int
     page: int
@@ -354,6 +379,7 @@ class PromotionSearchResponse(BaseModel):
 # Discount calculation schemas
 class DiscountCalculationRequest(BaseModel):
     """Request for calculating discounts"""
+
     customer_id: Optional[int] = None
     order_total: float = Field(..., ge=0)
     order_items: List[Dict[str, Any]]
@@ -364,6 +390,7 @@ class DiscountCalculationRequest(BaseModel):
 
 class DiscountCalculationResponse(BaseModel):
     """Response for discount calculations"""
+
     original_total: float
     final_total: float
     total_discount: float
@@ -376,6 +403,7 @@ class DiscountCalculationResponse(BaseModel):
 # A/B Testing schemas
 class ABTestVariant(BaseModel):
     """A/B test variant configuration"""
+
     variant_name: str
     traffic_split: float = Field(..., ge=0, le=100)
     promotion_config: Dict[str, Any]
@@ -383,23 +411,25 @@ class ABTestVariant(BaseModel):
 
 class ABTestConfig(BaseModel):
     """A/B test configuration"""
+
     test_name: str
     variants: List[ABTestVariant]
     start_date: datetime
     end_date: datetime
     success_metric: str
-    
-    @validator('variants')
+
+    @validator("variants")
     def validate_traffic_split(cls, v):
         total_split = sum(variant.traffic_split for variant in v)
         if abs(total_split - 100.0) > 0.01:  # Allow for floating point precision
-            raise ValueError('Total traffic split must equal 100%')
+            raise ValueError("Total traffic split must equal 100%")
         return v
 
 
 # Reporting schemas
 class PromotionReport(BaseModel):
     """Promotion performance report"""
+
     promotion: PromotionSummary
     analytics: Dict[str, Any]
     top_customers: List[Dict[str, Any]]
@@ -410,6 +440,7 @@ class PromotionReport(BaseModel):
 
 class CouponReport(BaseModel):
     """Coupon usage report"""
+
     total_generated: int
     total_used: int
     usage_rate: float
@@ -419,6 +450,7 @@ class CouponReport(BaseModel):
 
 class ReferralReport(BaseModel):
     """Referral program report"""
+
     program: ReferralProgram
     total_sent: int
     total_completed: int

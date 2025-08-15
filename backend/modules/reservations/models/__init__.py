@@ -1,19 +1,19 @@
 from .reservation_models import (
-    Reservation, 
+    Reservation,
     ReservationStatus,
     Waitlist,
     WaitlistStatus,
     ReservationSettings,
     TableConfiguration,
-    SpecialDate
+    SpecialDate,
 )
 
 __all__ = [
     "Reservation",
-    "ReservationStatus", 
+    "ReservationStatus",
     "Waitlist",
     "WaitlistStatus",
     "ReservationSettings",
     "TableConfiguration",
-    "SpecialDate"
+    "SpecialDate",
 ]

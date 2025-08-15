@@ -1,67 +1,64 @@
 """Factory patterns for creating test fixtures"""
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from dataclasses import dataclass, field
 from modules.staff.models.scheduling_models import (
-    ShiftSwap, EnhancedShift, SwapApprovalRule
+    ShiftSwap,
+    EnhancedShift,
+    SwapApprovalRule,
 )
 from modules.staff.models.staff_models import StaffMember, Role
-from modules.staff.enums.scheduling_enums import (
-    ShiftStatus, SwapStatus, ShiftType
-)
+from modules.staff.enums.scheduling_enums import ShiftStatus, SwapStatus, ShiftType
 from modules.core.models import Restaurant, Location
 
 
 @dataclass
 class RestaurantFactory:
     """Factory for creating test restaurants"""
+
     id: int = 1
     name: str = "Test Restaurant"
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    
+
     def create(self) -> Restaurant:
-        return Restaurant(
-            id=self.id,
-            name=self.name,
-            created_at=self.created_at
-        )
+        return Restaurant(id=self.id, name=self.name, created_at=self.created_at)
 
 
 @dataclass
 class LocationFactory:
     """Factory for creating test locations"""
+
     id: int = 1
     name: str = "Main Location"
     restaurant_id: int = 1
     restaurant: Optional[Restaurant] = None
-    
+
     def create(self) -> Location:
         return Location(
             id=self.id,
             name=self.name,
             restaurant_id=self.restaurant_id,
-            restaurant=self.restaurant
+            restaurant=self.restaurant,
         )
 
 
 @dataclass
 class RoleFactory:
     """Factory for creating test roles"""
+
     id: int = 1
     name: str = "Server"
     restaurant_id: int = 1
-    
+
     def create(self) -> Role:
-        return Role(
-            id=self.id,
-            name=self.name,
-            restaurant_id=self.restaurant_id
-        )
+        return Role(id=self.id, name=self.name, restaurant_id=self.restaurant_id)
 
 
 @dataclass
 class StaffMemberFactory:
     """Factory for creating test staff members"""
+
     id: int = 1
     name: str = "John Doe"
     role_id: int = 1
@@ -69,11 +66,13 @@ class StaffMemberFactory:
     restaurant_id: int = 1
     tenure_days: int = 120
     created_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.now(timezone.utc) - timedelta(days=self.tenure_days)
-    
+            self.created_at = datetime.now(timezone.utc) - timedelta(
+                days=self.tenure_days
+            )
+
     def create(self) -> StaffMember:
         return StaffMember(
             id=self.id,
@@ -81,19 +80,15 @@ class StaffMemberFactory:
             role_id=self.role_id,
             role=self.role,
             restaurant_id=self.restaurant_id,
-            created_at=self.created_at
+            created_at=self.created_at,
         )
-    
+
     @classmethod
     def create_batch(cls, count: int, base_id: int = 1, **kwargs) -> list:
         """Create multiple staff members"""
         staff_members = []
         for i in range(count):
-            factory = cls(
-                id=base_id + i,
-                name=f"Staff {base_id + i}",
-                **kwargs
-            )
+            factory = cls(id=base_id + i, name=f"Staff {base_id + i}", **kwargs)
             staff_members.append(factory.create())
         return staff_members
 
@@ -101,6 +96,7 @@ class StaffMemberFactory:
 @dataclass
 class ShiftFactory:
     """Factory for creating test shifts"""
+
     id: int = 1
     staff_id: int = 1
     staff_member: Optional[StaffMember] = None
@@ -113,7 +109,7 @@ class ShiftFactory:
     end_hour: int = 17
     shift_type: ShiftType = ShiftType.REGULAR
     status: ShiftStatus = ShiftStatus.SCHEDULED
-    
+
     def create(self) -> EnhancedShift:
         shift_date = datetime.now(timezone.utc) + timedelta(days=self.days_from_now)
         return EnhancedShift(
@@ -128,12 +124,13 @@ class ShiftFactory:
             start_time=shift_date.replace(hour=self.start_hour, minute=0),
             end_time=shift_date.replace(hour=self.end_hour, minute=0),
             shift_type=self.shift_type,
-            status=self.status
+            status=self.status,
         )
-    
+
     @classmethod
-    def create_pair(cls, staff1: StaffMember, staff2: StaffMember, 
-                   location: Location, role: Role) -> tuple:
+    def create_pair(
+        cls, staff1: StaffMember, staff2: StaffMember, location: Location, role: Role
+    ) -> tuple:
         """Create a pair of shifts for swapping"""
         shift1 = cls(
             id=1,
@@ -142,9 +139,9 @@ class ShiftFactory:
             role_id=role.id,
             role=role,
             location_id=location.id,
-            location=location
+            location=location,
         ).create()
-        
+
         shift2 = cls(
             id=2,
             staff_id=staff2.id,
@@ -152,15 +149,16 @@ class ShiftFactory:
             role_id=role.id,
             role=role,
             location_id=location.id,
-            location=location
+            location=location,
         ).create()
-        
+
         return shift1, shift2
 
 
 @dataclass
 class SwapApprovalRuleFactory:
     """Factory for creating swap approval rules"""
+
     id: int = 1
     restaurant_id: int = 1
     rule_name: str = "Default Rule"
@@ -182,7 +180,7 @@ class SwapApprovalRuleFactory:
     requires_manager_approval: bool = True
     requires_both_staff_consent: bool = True
     approval_timeout_hours: int = 48
-    
+
     def create(self) -> SwapApprovalRule:
         rule = SwapApprovalRule(
             id=self.id,
@@ -204,7 +202,7 @@ class SwapApprovalRuleFactory:
             peak_hours_restricted=self.peak_hours_restricted,
             requires_manager_approval=self.requires_manager_approval,
             requires_both_staff_consent=self.requires_both_staff_consent,
-            approval_timeout_hours=self.approval_timeout_hours
+            approval_timeout_hours=self.approval_timeout_hours,
         )
         # Add peak_hour_ranges as a custom attribute
         rule.peak_hour_ranges = self.peak_hour_ranges
@@ -214,6 +212,7 @@ class SwapApprovalRuleFactory:
 @dataclass
 class ShiftSwapFactory:
     """Factory for creating shift swap requests"""
+
     id: int = 1
     requester_id: int = 1
     requester: Optional[StaffMember] = None
@@ -226,11 +225,11 @@ class ShiftSwapFactory:
     status: SwapStatus = SwapStatus.PENDING
     reason: Optional[str] = "Personal commitment"
     created_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         if self.created_at is None:
             self.created_at = datetime.now(timezone.utc)
-    
+
     def create(self) -> ShiftSwap:
         return ShiftSwap(
             id=self.id,
@@ -244,5 +243,5 @@ class ShiftSwapFactory:
             to_staff=self.to_staff,
             status=self.status,
             reason=self.reason,
-            created_at=self.created_at
+            created_at=self.created_at,
         )

@@ -28,7 +28,7 @@ MIN_DATA_POINTS_FOR_SEASONAL = 30  # Minimum points for seasonal detection
 MODEL_SELECTION_THRESHOLDS = {
     "short_series": 20,  # Use simple models
     "medium_series": 60,  # Use advanced models
-    "long_series": 180   # Use ensemble models
+    "long_series": 180,  # Use ensemble models
 }
 
 # Stock Optimization
@@ -61,9 +61,9 @@ MAX_FORECAST_COMPUTATION_TIME_MS = 5000  # 5 seconds max per forecast
 # Real-time Updates
 REALTIME_UPDATE_INTERVALS = {
     "demand_forecast": 300,  # 5 minutes
-    "stock_alert": 60,       # 1 minute
-    "insight": 600,          # 10 minutes
-    "anomaly_check": 900     # 15 minutes
+    "stock_alert": 60,  # 1 minute
+    "insight": 600,  # 10 minutes
+    "anomaly_check": 900,  # 15 minutes
 }
 
 # Rate Limiting
@@ -71,7 +71,7 @@ RATE_LIMIT_REQUESTS_PER_MINUTE = {
     "forecast": 60,
     "batch_forecast": 10,
     "optimization": 30,
-    "export": 5
+    "export": 5,
 }
 
 # Export Configuration
@@ -80,18 +80,13 @@ MAX_EXPORT_FILE_SIZE_MB = 50
 EXPORT_CHUNK_SIZE = 10000  # Rows per chunk for streaming
 
 # Severity Levels
-SEVERITY_LEVELS = {
-    "low": 1,
-    "medium": 2,
-    "high": 3,
-    "critical": 4
-}
+SEVERITY_LEVELS = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 
 # External Factors
 WEATHER_IMPACT_THRESHOLDS = {
     "hot": {"temp": 30, "multiplier": 1.1},  # >30°C increases demand by 10%
     "cold": {"temp": 10, "multiplier": 0.9},  # <10°C decreases demand by 10%
-    "rain": {"multiplier": 0.85}  # Rain decreases demand by 15%
+    "rain": {"multiplier": 0.85},  # Rain decreases demand by 15%
 }
 
 # Model Types (for validation)
@@ -100,7 +95,7 @@ VALID_MODEL_TYPES = [
     "exponential_smoothing",
     "prophet",
     "moving_average",
-    "ensemble"
+    "ensemble",
 ]
 
 # Entity Types
@@ -110,11 +105,7 @@ VALID_ENTITY_TYPES = ["product", "category", "overall", "location"]
 VALID_TIME_GRANULARITIES = ["hourly", "daily", "weekly", "monthly"]
 
 # Optimization Objectives
-VALID_OPTIMIZATION_OBJECTIVES = [
-    "minimize_cost",
-    "maximize_service",
-    "balanced"
-]
+VALID_OPTIMIZATION_OBJECTIVES = ["minimize_cost", "maximize_service", "balanced"]
 
 # Database Query Limits
 MAX_QUERY_RESULTS = 10000  # Maximum results per query
@@ -145,5 +136,5 @@ ERROR_MESSAGES = {
     "optimization_failed": "Stock optimization failed. Check product data and try again.",
     "invalid_date_range": "Invalid date range. End date must be after start date.",
     "rate_limit_exceeded": "Rate limit exceeded. Please wait {retry_after} seconds.",
-    "unauthorized": "You don't have permission to access this resource."
+    "unauthorized": "You don't have permission to access this resource.",
 }

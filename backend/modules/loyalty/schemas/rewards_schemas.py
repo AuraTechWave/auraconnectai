@@ -47,43 +47,44 @@ class TriggerTypeEnum(str, Enum):
 # Base schemas
 class RewardTemplateBase(BaseModel):
     """Base schema for reward templates"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     reward_type: RewardTypeEnum
     value: Optional[float] = Field(None, ge=0)
     percentage: Optional[float] = Field(None, ge=0, le=100)
     points_cost: Optional[int] = Field(None, ge=0)
-    
+
     # Item-specific
     item_id: Optional[int] = None
     category_ids: Optional[List[int]] = None
-    
+
     # Restrictions
     min_order_amount: Optional[float] = Field(None, ge=0)
     max_discount_amount: Optional[float] = Field(None, ge=0)
     max_uses_per_customer: Optional[int] = Field(None, ge=1)
     max_uses_total: Optional[int] = Field(None, ge=1)
-    
+
     # Validity
     valid_days: int = Field(30, ge=1, le=365)
     valid_from_date: Optional[datetime] = None
     valid_until_date: Optional[datetime] = None
-    
+
     # Eligibility
     eligible_tiers: Optional[List[str]] = None
-    
+
     # Trigger
     trigger_type: TriggerTypeEnum
     trigger_conditions: Optional[Dict[str, Any]] = None
     auto_apply: bool = False
-    
+
     # Display
     title: str = Field(..., max_length=200)
     subtitle: Optional[str] = Field(None, max_length=300)
     terms_and_conditions: Optional[str] = None
     image_url: Optional[str] = Field(None, max_length=500)
     icon: Optional[str] = Field(None, max_length=50)
-    
+
     # Settings
     is_active: bool = True
     is_featured: bool = False
@@ -92,38 +93,41 @@ class RewardTemplateBase(BaseModel):
 
 class RewardTemplateCreate(RewardTemplateBase):
     """Schema for creating reward templates"""
-    
-    @validator('eligible_tiers')
+
+    @validator("eligible_tiers")
     def validate_tiers(cls, v):
         if v:
-            valid_tiers = ['bronze', 'silver', 'gold', 'platinum', 'vip']
+            valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]
             for tier in v:
                 if tier.lower() not in valid_tiers:
-                    raise ValueError(f'Invalid tier: {tier}')
+                    raise ValueError(f"Invalid tier: {tier}")
         return v
-    
-    @validator('trigger_conditions')
+
+    @validator("trigger_conditions")
     def validate_trigger_conditions(cls, v, values):
-        if v and 'trigger_type' in values:
-            trigger_type = values['trigger_type']
-            
+        if v and "trigger_type" in values:
+            trigger_type = values["trigger_type"]
+
             # Validate conditions based on trigger type
             if trigger_type == TriggerTypeEnum.ORDER_COMPLETE:
-                allowed_keys = ['min_order_amount', 'item_categories', 'day_of_week']
+                allowed_keys = ["min_order_amount", "item_categories", "day_of_week"]
             elif trigger_type == TriggerTypeEnum.MILESTONE:
-                allowed_keys = ['total_orders', 'total_spent', 'lifetime_points']
+                allowed_keys = ["total_orders", "total_spent", "lifetime_points"]
             else:
                 allowed_keys = list(v.keys())  # Allow all for other types
-            
+
             for key in v.keys():
                 if key not in allowed_keys:
-                    raise ValueError(f'Invalid condition "{key}" for trigger type {trigger_type}')
-        
+                    raise ValueError(
+                        f'Invalid condition "{key}" for trigger type {trigger_type}'
+                    )
+
         return v
 
 
 class RewardTemplateUpdate(BaseModel):
     """Schema for updating reward templates"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
     value: Optional[float] = Field(None, ge=0)
@@ -149,12 +153,13 @@ class RewardTemplateUpdate(BaseModel):
 
 class RewardTemplate(RewardTemplateBase):
     """Schema for reward template response"""
+
     id: int
     total_issued: int
     total_redeemed: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -162,6 +167,7 @@ class RewardTemplate(RewardTemplateBase):
 # Customer Reward schemas
 class CustomerRewardBase(BaseModel):
     """Base schema for customer rewards"""
+
     reward_type: RewardTypeEnum
     title: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -172,6 +178,7 @@ class CustomerRewardBase(BaseModel):
 
 class CustomerReward(CustomerRewardBase):
     """Schema for customer reward response"""
+
     id: int
     customer_id: int
     template_id: int
@@ -183,18 +190,19 @@ class CustomerReward(CustomerRewardBase):
     redeemed_amount: Optional[float]
     order_id: Optional[int]
     created_at: datetime
-    
+
     # Computed properties
     is_valid: bool
     is_expired: bool
     days_until_expiry: Optional[int]
-    
+
     class Config:
         from_attributes = True
 
 
 class CustomerRewardSummary(BaseModel):
     """Simplified customer reward for listings"""
+
     id: int
     code: str
     title: str
@@ -209,6 +217,7 @@ class CustomerRewardSummary(BaseModel):
 # Campaign schemas
 class RewardCampaignBase(BaseModel):
     """Base schema for reward campaigns"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     template_id: int
@@ -225,25 +234,26 @@ class RewardCampaignBase(BaseModel):
 
 class RewardCampaignCreate(RewardCampaignBase):
     """Schema for creating reward campaigns"""
-    
-    @validator('end_date')
+
+    @validator("end_date")
     def validate_end_date(cls, v, values):
-        if 'start_date' in values and v <= values['start_date']:
-            raise ValueError('End date must be after start date')
+        if "start_date" in values and v <= values["start_date"]:
+            raise ValueError("End date must be after start date")
         return v
-    
-    @validator('target_tiers')
+
+    @validator("target_tiers")
     def validate_target_tiers(cls, v):
         if v:
-            valid_tiers = ['bronze', 'silver', 'gold', 'platinum', 'vip']
+            valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]
             for tier in v:
                 if tier.lower() not in valid_tiers:
-                    raise ValueError(f'Invalid tier: {tier}')
+                    raise ValueError(f"Invalid tier: {tier}")
         return v
 
 
 class RewardCampaignUpdate(BaseModel):
     """Schema for updating reward campaigns"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
     target_criteria: Optional[Dict[str, Any]] = None
@@ -258,15 +268,16 @@ class RewardCampaignUpdate(BaseModel):
 
 class RewardCampaign(RewardCampaignBase):
     """Schema for reward campaign response"""
+
     id: int
     rewards_distributed: int
     target_audience_size: Optional[int]
     created_at: datetime
     updated_at: datetime
-    
+
     # Related data
     template: Optional[RewardTemplate] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -274,6 +285,7 @@ class RewardCampaign(RewardCampaignBase):
 # Redemption schemas
 class RewardRedemptionRequest(BaseModel):
     """Schema for reward redemption request"""
+
     reward_code: str = Field(..., max_length=20)
     order_id: int
     staff_member_id: Optional[int] = None
@@ -281,6 +293,7 @@ class RewardRedemptionRequest(BaseModel):
 
 class RewardRedemptionResponse(BaseModel):
     """Schema for reward redemption response"""
+
     success: bool
     discount_amount: Optional[float] = None
     reward_title: Optional[str] = None
@@ -290,6 +303,7 @@ class RewardRedemptionResponse(BaseModel):
 
 class RewardRedemption(BaseModel):
     """Schema for redemption history"""
+
     id: int
     reward_id: int
     customer_id: int
@@ -300,7 +314,7 @@ class RewardRedemption(BaseModel):
     redemption_method: str
     staff_member_id: Optional[int]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -308,6 +322,7 @@ class RewardRedemption(BaseModel):
 # Points transaction schemas
 class LoyaltyPointsTransaction(BaseModel):
     """Schema for points transaction"""
+
     id: int
     customer_id: int
     transaction_type: str
@@ -320,7 +335,7 @@ class LoyaltyPointsTransaction(BaseModel):
     source: str
     expires_at: Optional[datetime]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -328,6 +343,7 @@ class LoyaltyPointsTransaction(BaseModel):
 # Analytics schemas
 class RewardAnalytics(BaseModel):
     """Schema for reward analytics"""
+
     total_issued: int
     total_redeemed: int
     total_expired: int
@@ -338,6 +354,7 @@ class RewardAnalytics(BaseModel):
 
 class RewardTemplateAnalytics(RewardAnalytics):
     """Schema for reward template specific analytics"""
+
     template_id: int
     template_name: str
     template_type: RewardTypeEnum
@@ -345,6 +362,7 @@ class RewardTemplateAnalytics(RewardAnalytics):
 
 class CustomerLoyaltyStats(BaseModel):
     """Schema for customer loyalty statistics"""
+
     customer_id: int
     loyalty_points: int
     lifetime_points: int
@@ -360,6 +378,7 @@ class CustomerLoyaltyStats(BaseModel):
 # Search and filter schemas
 class RewardSearchParams(BaseModel):
     """Parameters for searching rewards"""
+
     customer_id: Optional[int] = None
     template_id: Optional[int] = None
     reward_type: Optional[RewardTypeEnum] = None
@@ -368,12 +387,15 @@ class RewardSearchParams(BaseModel):
     expiring_soon: Optional[int] = Field(None, ge=1, le=30)  # Days until expiry
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
-    sort_by: str = Field("created_at", pattern="^(created_at|valid_until|redeemed_at|value)$")
+    sort_by: str = Field(
+        "created_at", pattern="^(created_at|valid_until|redeemed_at|value)$"
+    )
     sort_order: str = Field("desc", pattern="^(asc|desc)$")
 
 
 class RewardSearchResponse(BaseModel):
     """Response for reward search"""
+
     rewards: List[CustomerRewardSummary]
     total: int
     page: int
@@ -384,6 +406,7 @@ class RewardSearchResponse(BaseModel):
 # Manual reward issuance
 class ManualRewardIssuance(BaseModel):
     """Schema for manually issuing rewards"""
+
     customer_id: int
     template_id: int
     custom_message: Optional[str] = None
@@ -392,6 +415,7 @@ class ManualRewardIssuance(BaseModel):
 
 class BulkRewardIssuance(BaseModel):
     """Schema for bulk reward issuance"""
+
     customer_ids: List[int] = Field(..., min_items=1, max_items=1000)
     template_id: int
     custom_message: Optional[str] = None
@@ -400,6 +424,7 @@ class BulkRewardIssuance(BaseModel):
 
 class BulkRewardIssuanceResponse(BaseModel):
     """Response for bulk reward issuance"""
+
     total_customers: int
     successful_issuances: int
     failed_issuances: int
@@ -410,6 +435,7 @@ class BulkRewardIssuanceResponse(BaseModel):
 # Order completion processing
 class OrderCompletionReward(BaseModel):
     """Schema for order completion reward processing"""
+
     order_id: int
     process_rewards: bool = True
     process_points: bool = True
@@ -417,6 +443,7 @@ class OrderCompletionReward(BaseModel):
 
 class OrderCompletionResponse(BaseModel):
     """Response for order completion processing"""
+
     success: bool
     points_earned: int
     rewards_triggered: List[Dict[str, Any]]

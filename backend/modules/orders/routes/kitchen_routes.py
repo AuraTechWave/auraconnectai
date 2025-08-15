@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from core.database import get_db
-from ..controllers.order_controller import (
-    update_order, generate_kitchen_print_ticket
-)
+from ..controllers.order_controller import update_order, generate_kitchen_print_ticket
 from ..schemas.order_schemas import (
-    OrderUpdate, KitchenPrintRequest, KitchenPrintResponse
+    OrderUpdate,
+    KitchenPrintRequest,
+    KitchenPrintResponse,
 )
 from ..enums.order_enums import OrderStatus
 
@@ -14,15 +14,13 @@ router = APIRouter(prefix="/kitchen/orders", tags=["Kitchen"])
 KITCHEN_ALLOWED_STATUSES = {
     OrderStatus.READY,
     OrderStatus.SERVED,
-    OrderStatus.COMPLETED
+    OrderStatus.COMPLETED,
 }
 
 
 @router.put("/{id}/status", response_model=dict)
 async def update_order_status(
-    id: int,
-    order_data: OrderUpdate,
-    db: Session = Depends(get_db)
+    id: int, order_data: OrderUpdate, db: Session = Depends(get_db)
 ):
     """
     Update order status from kitchen perspective.
@@ -34,7 +32,7 @@ async def update_order_status(
         raise HTTPException(
             status_code=400,
             detail=f"Kitchen can only update status to: "
-                   f"{', '.join([s.value for s in KITCHEN_ALLOWED_STATUSES])}"
+            f"{', '.join([s.value for s in KITCHEN_ALLOWED_STATUSES])}",
         )
 
     return await update_order(id, order_data, db)
@@ -42,9 +40,7 @@ async def update_order_status(
 
 @router.post("/{id}/print", response_model=KitchenPrintResponse)
 async def print_kitchen_ticket(
-    id: int,
-    print_request: KitchenPrintRequest,
-    db: Session = Depends(get_db)
+    id: int, print_request: KitchenPrintRequest, db: Session = Depends(get_db)
 ):
     """
     Generate and print kitchen ticket for an order.

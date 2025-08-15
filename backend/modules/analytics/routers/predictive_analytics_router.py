@@ -17,26 +17,41 @@ from core.database import get_db
 from core.auth import get_current_user
 from core.auth import User
 from modules.analytics.schemas.predictive_analytics_schemas import (
-    DemandForecastRequest, DemandForecast,
-    StockOptimizationRequest, StockOptimizationResult,
-    BatchPredictionRequest, PredictionAlert,
-    ForecastAccuracyReport, ForecastComparison,
-    TrendAnalysis, PredictiveInsight,
-    ModelPerformance, ForecastType,
-    TimeGranularity, HistoricalDataRequest,
-    ModelTrainingRequest, PredictionExportRequest
+    DemandForecastRequest,
+    DemandForecast,
+    StockOptimizationRequest,
+    StockOptimizationResult,
+    BatchPredictionRequest,
+    PredictionAlert,
+    ForecastAccuracyReport,
+    ForecastComparison,
+    TrendAnalysis,
+    PredictiveInsight,
+    ModelPerformance,
+    ForecastType,
+    TimeGranularity,
+    HistoricalDataRequest,
+    ModelTrainingRequest,
+    PredictionExportRequest,
 )
 from modules.analytics.services.demand_prediction_service import DemandPredictionService
-from modules.analytics.services.stock_optimization_service import StockOptimizationService
-from modules.analytics.services.forecast_monitoring_service import ForecastMonitoringService
-from modules.analytics.services.permissions_service import require_analytics_permission, AnalyticsPermission
+from modules.analytics.services.stock_optimization_service import (
+    StockOptimizationService,
+)
+from modules.analytics.services.forecast_monitoring_service import (
+    ForecastMonitoringService,
+)
+from modules.analytics.services.permissions_service import (
+    require_analytics_permission,
+    AnalyticsPermission,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/analytics/predictive",
     tags=["predictive-analytics"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 
@@ -44,47 +59,57 @@ router = APIRouter(
 async def forecast_demand(
     request: DemandForecastRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Generate demand forecast for a product or category.
-    
+
     Analyzes historical sales data and applies machine learning models
     to predict future demand with confidence intervals.
     """
     try:
         service = DemandPredictionService(db)
         forecast = await service.forecast_demand(request)
-        
-        logger.info(f"Demand forecast generated for {request.entity_type} {request.entity_id}")
+
+        logger.info(
+            f"Demand forecast generated for {request.entity_type} {request.entity_id}"
+        )
         return forecast
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Demand forecast failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate demand forecast")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate demand forecast"
+        )
 
 
 @router.post("/stock-optimization", response_model=StockOptimizationResult)
 async def optimize_stock_levels(
     request: StockOptimizationRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS)
+    ),
 ):
     """
     Optimize stock levels for products.
-    
+
     Calculates optimal stock levels, reorder points, and safety stock
     based on demand forecasts and business constraints.
     """
     try:
         service = StockOptimizationService(db)
         result = await service.optimize_stock_levels(request)
-        
-        logger.info(f"Stock optimization completed for {len(result.recommendations)} products")
+
+        logger.info(
+            f"Stock optimization completed for {len(result.recommendations)} products"
+        )
         return result
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -97,11 +122,13 @@ async def create_batch_predictions(
     request: BatchPredictionRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Create batch predictions for multiple entities.
-    
+
     Processes multiple prediction requests asynchronously and
     optionally sends results to a callback URL.
     """
@@ -109,30 +136,28 @@ async def create_batch_predictions(
         # Validate batch size
         if len(request.predictions) > 100:
             raise HTTPException(
-                status_code=400,
-                detail="Maximum 100 predictions per batch"
+                status_code=400, detail="Maximum 100 predictions per batch"
             )
-        
+
         # Add to background tasks
         batch_id = str(uuid.uuid4())
         background_tasks.add_task(
-            process_batch_predictions,
-            batch_id,
-            request,
-            db,
-            current_user['id']
+            process_batch_predictions, batch_id, request, db, current_user["id"]
         )
-        
+
         return {
             "batch_id": batch_id,
             "status": "processing",
             "prediction_count": len(request.predictions),
-            "estimated_completion_time": datetime.now() + timedelta(minutes=len(request.predictions))
+            "estimated_completion_time": datetime.now()
+            + timedelta(minutes=len(request.predictions)),
         }
-        
+
     except Exception as e:
         logger.error(f"Batch prediction creation failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create batch predictions")
+        raise HTTPException(
+            status_code=500, detail="Failed to create batch predictions"
+        )
 
 
 @router.get("/forecast-accuracy", response_model=ForecastAccuracyReport)
@@ -141,29 +166,31 @@ async def get_forecast_accuracy_report(
     end_date: date = Query(..., description="End date for accuracy report"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Get forecast accuracy report for a time period.
-    
+
     Analyzes prediction accuracy across different models and entities,
     providing insights for model improvement.
     """
     try:
         service = ForecastMonitoringService(db)
         report = await service.generate_accuracy_report(
-            start_date,
-            end_date,
-            entity_type
+            start_date, end_date, entity_type
         )
-        
+
         return report
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Accuracy report generation failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate accuracy report")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate accuracy report"
+        )
 
 
 @router.post("/forecast-comparison", response_model=ForecastComparison)
@@ -173,30 +200,28 @@ async def compare_forecast_to_actuals(
     predictions: List[Dict[str, Any]] = None,
     actuals: List[Dict[str, Any]] = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Compare forecast predictions to actual values.
-    
+
     Tracks forecast accuracy and provides detailed comparison metrics.
     """
     try:
         if not predictions or not actuals:
             raise HTTPException(
-                status_code=400,
-                detail="Both predictions and actuals must be provided"
+                status_code=400, detail="Both predictions and actuals must be provided"
             )
-        
+
         service = ForecastMonitoringService(db)
         comparison = await service.track_forecast_accuracy(
-            entity_type,
-            entity_id,
-            predictions,
-            actuals
+            entity_type, entity_id, predictions, actuals
         )
-        
+
         return comparison
-        
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -210,42 +235,39 @@ async def get_prediction_alerts(
     severity: Optional[str] = Query(None, description="Filter by severity"),
     active_only: bool = Query(True, description="Show only active alerts"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Get active prediction alerts.
-    
+
     Returns alerts for stockout risks, demand spikes, and forecast anomalies.
     """
     try:
         # Query alerts from database (implementation depends on your alert storage)
         alerts = []
-        
+
         # Get recent anomalies
         service = ForecastMonitoringService(db)
-        
+
         if entity_type:
             anomaly_alerts = await service.detect_forecast_anomalies(
-                entity_type,
-                None,
-                recent_days=7
+                entity_type, None, recent_days=7
             )
             alerts.extend(anomaly_alerts)
-        
+
         # Filter by severity if requested
         if severity:
             alerts = [a for a in alerts if a.severity == severity]
-        
+
         # Filter active alerts
         if active_only:
             now = datetime.now()
-            alerts = [
-                a for a in alerts
-                if not a.expires_at or a.expires_at > now
-            ]
-        
+            alerts = [a for a in alerts if not a.expires_at or a.expires_at > now]
+
         return alerts
-        
+
     except Exception as e:
         logger.error(f"Failed to get prediction alerts: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve alerts")
@@ -257,17 +279,19 @@ async def analyze_trends(
     entity_id: int,
     lookback_days: int = Query(90, description="Days to analyze"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Analyze trends for a specific entity.
-    
+
     Identifies trend direction, seasonal patterns, and change points.
     """
     try:
         # Implementation for trend analysis
         # This would use the predictive models to analyze historical patterns
-        
+
         # Placeholder response
         return TrendAnalysis(
             entity_id=entity_id,
@@ -276,13 +300,13 @@ async def analyze_trends(
             trend_strength=0.65,
             change_points=[
                 datetime.now() - timedelta(days=30),
-                datetime.now() - timedelta(days=60)
+                datetime.now() - timedelta(days=60),
             ],
             seasonal_patterns=[],
             growth_rate=0.12,
-            volatility=0.08
+            volatility=0.08,
         )
-        
+
     except Exception as e:
         logger.error(f"Trend analysis failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to analyze trends")
@@ -293,45 +317,47 @@ async def get_predictive_insights(
     limit: int = Query(10, description="Maximum insights to return"),
     min_impact_score: float = Query(5.0, description="Minimum impact score"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Get actionable predictive insights.
-    
+
     Returns AI-generated insights based on forecast analysis and trends.
     """
     try:
         # This would analyze all recent forecasts and generate insights
         # Placeholder implementation
-        
+
         insights = []
-        
+
         # Example insight
-        insights.append(PredictiveInsight(
-            insight_id="ins_001",
-            insight_type="demand_trend",
-            title="Weekend demand surge expected",
-            description="Demand for beverages is predicted to increase by 35% this weekend",
-            impact_score=7.5,
-            affected_entities=[
-                {"type": "category", "id": 3, "name": "Beverages"}
-            ],
-            recommended_actions=[
-                {
-                    "action": "increase_stock",
-                    "description": "Increase beverage stock by 30%",
-                    "urgency": "high"
-                }
-            ],
-            confidence="high",
-            valid_until=datetime.now() + timedelta(days=3)
-        ))
-        
+        insights.append(
+            PredictiveInsight(
+                insight_id="ins_001",
+                insight_type="demand_trend",
+                title="Weekend demand surge expected",
+                description="Demand for beverages is predicted to increase by 35% this weekend",
+                impact_score=7.5,
+                affected_entities=[{"type": "category", "id": 3, "name": "Beverages"}],
+                recommended_actions=[
+                    {
+                        "action": "increase_stock",
+                        "description": "Increase beverage stock by 30%",
+                        "urgency": "high",
+                    }
+                ],
+                confidence="high",
+                valid_until=datetime.now() + timedelta(days=3),
+            )
+        )
+
         # Filter by impact score
         insights = [i for i in insights if i.impact_score >= min_impact_score]
-        
+
         return insights[:limit]
-        
+
     except Exception as e:
         logger.error(f"Failed to get predictive insights: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve insights")
@@ -342,31 +368,29 @@ async def train_prediction_models(
     request: ModelTrainingRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.ADMIN_ANALYTICS)
+    ),
 ):
     """
     Train or retrain prediction models.
-    
+
     Initiates model training with specified parameters and data range.
     """
     try:
         # Add to background tasks
         training_id = str(uuid.uuid4())
         background_tasks.add_task(
-            train_models_background,
-            training_id,
-            request,
-            db,
-            current_user['id']
+            train_models_background, training_id, request, db, current_user["id"]
         )
-        
+
         return {
             "training_id": training_id,
             "status": "training_started",
             "models": [m.value for m in request.model_types],
-            "estimated_completion_time": datetime.now() + timedelta(minutes=30)
+            "estimated_completion_time": datetime.now() + timedelta(minutes=30),
         }
-        
+
     except Exception as e:
         logger.error(f"Model training initiation failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to start model training")
@@ -376,26 +400,28 @@ async def train_prediction_models(
 async def export_predictions(
     request: PredictionExportRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.EXPORT_REPORTS)
+    ),
 ):
     """
     Export predictions to file.
-    
+
     Exports forecast data in various formats (CSV, Excel, JSON).
     """
     try:
         # Implementation would generate export file
         # Placeholder response
-        
+
         export_id = str(uuid.uuid4())
-        
+
         return {
             "export_id": export_id,
             "format": request.format,
             "download_url": f"/analytics/predictive/download/{export_id}",
-            "expires_at": datetime.now() + timedelta(hours=24)
+            "expires_at": datetime.now() + timedelta(hours=24),
         }
-        
+
     except Exception as e:
         logger.error(f"Prediction export failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to export predictions")
@@ -406,98 +432,93 @@ async def get_model_performance_metrics(
     model_type: Optional[str] = Query(None, description="Filter by model type"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD))
+    current_user: dict = Depends(
+        require_analytics_permission(AnalyticsPermission.VIEW_DASHBOARD)
+    ),
 ):
     """
     Get performance metrics for prediction models.
-    
+
     Returns accuracy metrics and performance statistics for different models.
     """
     try:
         # Query performance metrics from database
         # Placeholder implementation
-        
+
         performances = []
-        
+
         # Example performance
-        performances.append(ModelPerformance(
-            model_type="ensemble",
-            entity_type="product",
-            mae=5.2,
-            mape=12.3,
-            rmse=7.8,
-            r_squared=0.85,
-            training_samples=1000,
-            evaluation_period={
-                'start': date.today() - timedelta(days=30),
-                'end': date.today()
-            },
-            last_updated=datetime.now()
-        ))
-        
+        performances.append(
+            ModelPerformance(
+                model_type="ensemble",
+                entity_type="product",
+                mae=5.2,
+                mape=12.3,
+                rmse=7.8,
+                r_squared=0.85,
+                training_samples=1000,
+                evaluation_period={
+                    "start": date.today() - timedelta(days=30),
+                    "end": date.today(),
+                },
+                last_updated=datetime.now(),
+            )
+        )
+
         # Apply filters
         if model_type:
             performances = [p for p in performances if p.model_type == model_type]
         if entity_type:
             performances = [p for p in performances if p.entity_type == entity_type]
-        
+
         return performances
-        
+
     except Exception as e:
         logger.error(f"Failed to get model performance: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve model performance")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve model performance"
+        )
 
 
 # Background task functions
 
+
 async def process_batch_predictions(
-    batch_id: str,
-    request: BatchPredictionRequest,
-    db: Session,
-    user_id: int
+    batch_id: str, request: BatchPredictionRequest, db: Session, user_id: int
 ):
     """Process batch predictions in background"""
     try:
         service = DemandPredictionService(db)
         results = []
-        
+
         for pred_request in request.predictions:
             try:
                 forecast = await service.forecast_demand(pred_request)
-                results.append({
-                    "status": "success",
-                    "forecast": forecast
-                })
+                results.append({"status": "success", "forecast": forecast})
             except Exception as e:
-                results.append({
-                    "status": "error",
-                    "error": str(e)
-                })
-        
+                results.append({"status": "error", "error": str(e)})
+
         # Store results or send to callback URL
         if request.callback_url:
             # Send results to callback URL
             pass
-        
+
         logger.info(f"Batch prediction {batch_id} completed")
-        
+
     except Exception as e:
         logger.error(f"Batch prediction {batch_id} failed: {e}")
 
 
 async def train_models_background(
-    training_id: str,
-    request: ModelTrainingRequest,
-    db: Session,
-    user_id: int
+    training_id: str, request: ModelTrainingRequest, db: Session, user_id: int
 ):
     """Train models in background"""
     try:
         # Implementation for model training
         # This would retrain the specified models with new data
-        
+
         logger.info(f"Model training {training_id} started")
-        
+
         # Simulate training process
         # In real implementation, this would:
         # 1. Load historical data
@@ -505,9 +526,9 @@ async def train_models_background(
         # 3. Train each model type
         # 4. Evaluate performance
         # 5. Save trained models
-        
+
         logger.info(f"Model training {training_id} completed")
-        
+
     except Exception as e:
         logger.error(f"Model training {training_id} failed: {e}")
 

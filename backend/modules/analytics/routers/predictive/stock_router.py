@@ -16,16 +16,20 @@ from core.database import get_db
 from core.auth import get_current_user
 from modules.staff.models.staff_models import StaffMember
 from modules.analytics.schemas.predictive_analytics_schemas import (
-    StockOptimizationRequest, StockOptimizationResult,
-    InventoryHealthCheck, InventoryHealthReport
+    StockOptimizationRequest,
+    StockOptimizationResult,
+    InventoryHealthCheck,
+    InventoryHealthReport,
 )
-from modules.analytics.services.stock_optimization_service import StockOptimizationService
+from modules.analytics.services.stock_optimization_service import (
+    StockOptimizationService,
+)
 from modules.analytics.services.permissions_service import require_analytics_permission
 from modules.analytics.constants import (
     MAX_PRODUCTS_PER_OPTIMIZATION,
     DEFAULT_SERVICE_LEVEL,
     MIN_SERVICE_LEVEL,
-    MAX_SERVICE_LEVEL
+    MAX_SERVICE_LEVEL,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,17 +40,17 @@ router = APIRouter(prefix="/stock", tags=["predictive-stock"])
 async def optimize_stock_levels(
     request: StockOptimizationRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> StockOptimizationResult:
     """
     Optimize stock levels for selected products.
-    
+
     Args:
         request: Stock optimization parameters
-        
+
     Returns:
         StockOptimizationResult with recommendations
-        
+
     Example Response:
         {
             "recommendations": [
@@ -71,45 +75,44 @@ async def optimize_stock_levels(
                 "potential_cost_savings": 150.00
             }
         }
-    
+
     Raises:
         HTTPException: 400 if invalid parameters, 403 if unauthorized
     """
     require_analytics_permission(current_user, "manage_inventory")
-    
+
     # Validate request
     if len(request.product_ids) > MAX_PRODUCTS_PER_OPTIMIZATION:
         raise HTTPException(
             status_code=400,
-            detail=f"Maximum {MAX_PRODUCTS_PER_OPTIMIZATION} products per optimization"
+            detail=f"Maximum {MAX_PRODUCTS_PER_OPTIMIZATION} products per optimization",
         )
-    
+
     if request.service_level:
         if not MIN_SERVICE_LEVEL <= request.service_level <= MAX_SERVICE_LEVEL:
             raise HTTPException(
                 status_code=400,
-                detail=f"Service level must be between {MIN_SERVICE_LEVEL} and {MAX_SERVICE_LEVEL}"
+                detail=f"Service level must be between {MIN_SERVICE_LEVEL} and {MAX_SERVICE_LEVEL}",
             )
-    
+
     try:
         service = StockOptimizationService(db)
         result = await service.optimize_stock_levels(request)
-        
+
         logger.info(
             f"Stock optimization completed for {len(request.product_ids)} products "
             f"by user {current_user.id}"
         )
-        
+
         return result
-        
+
     except ValueError as e:
         logger.warning(f"Invalid optimization request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Stock optimization failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Stock optimization failed. Please try again later."
+            status_code=500, detail="Stock optimization failed. Please try again later."
         )
 
 
@@ -117,17 +120,17 @@ async def optimize_stock_levels(
 async def check_inventory_health(
     request: InventoryHealthCheck,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> InventoryHealthReport:
     """
     Perform comprehensive inventory health check.
-    
+
     Args:
         request: Health check parameters
-        
+
     Returns:
         InventoryHealthReport with issues and recommendations
-        
+
     Example Response:
         {
             "overall_health_score": 75.5,
@@ -159,38 +162,39 @@ async def check_inventory_health(
         }
     """
     require_analytics_permission(current_user, "view_inventory_analytics")
-    
+
     try:
         service = StockOptimizationService(db)
         report = await service.check_inventory_health(request)
-        
+
         return report
-        
+
     except Exception as e:
         logger.error(f"Inventory health check failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Health check failed. Please try again later."
+            status_code=500, detail="Health check failed. Please try again later."
         )
 
 
 @router.get("/reorder-alerts", response_model=List[dict])
 async def get_reorder_alerts(
     days_ahead: int = Query(7, ge=1, le=30, description="Days to look ahead"),
-    severity: Optional[str] = Query(None, description="Filter by severity: low, medium, high, critical"),
+    severity: Optional[str] = Query(
+        None, description="Filter by severity: low, medium, high, critical"
+    ),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> List[dict]:
     """
     Get products that need reordering within specified timeframe.
-    
+
     Args:
         days_ahead: Number of days to look ahead
         severity: Filter by alert severity
-        
+
     Returns:
         List of reorder alerts
-        
+
     Example Response:
         [
             {
@@ -207,21 +211,19 @@ async def get_reorder_alerts(
         ]
     """
     require_analytics_permission(current_user, "view_inventory_analytics")
-    
+
     try:
         service = StockOptimizationService(db)
         alerts = await service.get_reorder_alerts(
-            days_ahead=days_ahead,
-            severity_filter=severity
+            days_ahead=days_ahead, severity_filter=severity
         )
-        
+
         return alerts
-        
+
     except Exception as e:
         logger.error(f"Failed to get reorder alerts: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve reorder alerts."
+            status_code=500, detail="Failed to retrieve reorder alerts."
         )
 
 
@@ -230,22 +232,24 @@ async def calculate_eoq(
     product_id: int,
     annual_demand: float = Query(..., gt=0, description="Annual demand quantity"),
     ordering_cost: float = Query(..., gt=0, description="Cost per order"),
-    holding_cost_rate: float = Query(0.2, gt=0, le=1, description="Annual holding cost rate"),
+    holding_cost_rate: float = Query(
+        0.2, gt=0, le=1, description="Annual holding cost rate"
+    ),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> dict:
     """
     Calculate Economic Order Quantity for a product.
-    
+
     Args:
         product_id: Product to calculate EOQ for
         annual_demand: Expected annual demand
         ordering_cost: Fixed cost per order
         holding_cost_rate: Annual holding cost as percentage of product cost
-        
+
     Returns:
         EOQ calculation results
-        
+
     Example Response:
         {
             "product_id": 1,
@@ -259,24 +263,21 @@ async def calculate_eoq(
         }
     """
     require_analytics_permission(current_user, "view_inventory_analytics")
-    
+
     try:
         service = StockOptimizationService(db)
         result = await service.calculate_eoq_for_product(
             product_id=product_id,
             annual_demand=annual_demand,
             ordering_cost=ordering_cost,
-            holding_cost_rate=holding_cost_rate
+            holding_cost_rate=holding_cost_rate,
         )
-        
+
         return result
-        
+
     except ValueError as e:
         logger.warning(f"Invalid EOQ calculation request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"EOQ calculation failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail="EOQ calculation failed."
-        )
+        raise HTTPException(status_code=500, detail="EOQ calculation failed.")

@@ -11,15 +11,21 @@ from decimal import Decimal
 from uuid import UUID
 
 from modules.orders.enums.external_pos_enums import (
-    ExternalPOSProvider, ExternalPOSEventType, WebhookProcessingStatus,
-    PaymentStatus, PaymentMethod, AuthenticationType
+    ExternalPOSProvider,
+    ExternalPOSEventType,
+    WebhookProcessingStatus,
+    PaymentStatus,
+    PaymentMethod,
+    AuthenticationType,
 )
 
 
 # Provider Configuration Schemas
 
+
 class ExternalPOSProviderCreate(BaseModel):
     """Schema for creating an external POS provider"""
+
     provider_code: str = Field(..., min_length=2, max_length=50)
     provider_name: str = Field(..., min_length=2, max_length=100)
     webhook_endpoint_id: str = Field(..., min_length=2, max_length=100)
@@ -28,21 +34,22 @@ class ExternalPOSProviderCreate(BaseModel):
     settings: Optional[Dict[str, Any]] = None
     supported_events: List[str] = Field(default_factory=list)
     rate_limit_per_minute: int = Field(default=60, ge=1, le=1000)
-    
-    @validator('auth_config')
+
+    @validator("auth_config")
     def validate_auth_config(cls, v, values):
-        auth_type = values.get('auth_type')
+        auth_type = values.get("auth_type")
         if auth_type == AuthenticationType.HMAC_SHA256:
-            if 'webhook_secret' not in v:
-                raise ValueError('webhook_secret required for HMAC authentication')
+            if "webhook_secret" not in v:
+                raise ValueError("webhook_secret required for HMAC authentication")
         elif auth_type == AuthenticationType.API_KEY:
-            if 'api_key' not in v:
-                raise ValueError('api_key required for API key authentication')
+            if "api_key" not in v:
+                raise ValueError("api_key required for API key authentication")
         return v
 
 
 class ExternalPOSProviderUpdate(BaseModel):
     """Schema for updating an external POS provider"""
+
     provider_name: Optional[str] = Field(None, min_length=2, max_length=100)
     is_active: Optional[bool] = None
     auth_config: Optional[Dict[str, Any]] = None
@@ -53,6 +60,7 @@ class ExternalPOSProviderUpdate(BaseModel):
 
 class ExternalPOSProviderResponse(BaseModel):
     """Response schema for external POS provider"""
+
     id: int
     provider_code: str
     provider_name: str
@@ -64,15 +72,17 @@ class ExternalPOSProviderResponse(BaseModel):
     rate_limit_per_minute: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 # Webhook Event Schemas
 
+
 class WebhookEventResponse(BaseModel):
     """Response schema for webhook events"""
+
     id: int
     event_id: UUID
     provider_code: str
@@ -84,23 +94,26 @@ class WebhookEventResponse(BaseModel):
     processing_attempts: int
     last_error: Optional[str]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 class WebhookEventDetailResponse(WebhookEventResponse):
     """Detailed response for webhook event including payload"""
+
     request_headers: Dict[str, Any]
     request_body: Dict[str, Any]
     verification_details: Optional[Dict[str, Any]]
-    payment_updates: List['PaymentUpdateResponse']
+    payment_updates: List["PaymentUpdateResponse"]
 
 
 # Payment Update Schemas
 
+
 class PaymentUpdateResponse(BaseModel):
     """Response schema for payment updates"""
+
     id: int
     webhook_event_id: int
     external_transaction_id: str
@@ -120,15 +133,17 @@ class PaymentUpdateResponse(BaseModel):
     processed_at: Optional[datetime]
     processing_notes: Optional[str]
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 # Webhook Log Schemas
 
+
 class WebhookLogResponse(BaseModel):
     """Response schema for webhook logs"""
+
     id: int
     webhook_event_id: int
     log_level: str
@@ -136,15 +151,17 @@ class WebhookLogResponse(BaseModel):
     message: str
     details: Optional[Dict[str, Any]]
     occurred_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
 # Webhook Statistics Schemas
 
+
 class WebhookStatistics(BaseModel):
     """Statistics for webhook processing"""
+
     provider_code: str
     total_events: int
     processed_events: int
@@ -158,6 +175,7 @@ class WebhookStatistics(BaseModel):
 
 class WebhookHealthStatus(BaseModel):
     """Health status for webhook system"""
+
     status: str  # healthy, degraded, unhealthy
     providers: List[Dict[str, Any]]
     retry_scheduler_status: Dict[str, Any]
@@ -167,8 +185,10 @@ class WebhookHealthStatus(BaseModel):
 
 # Test Webhook Schemas
 
+
 class TestWebhookRequest(BaseModel):
     """Request to test a webhook endpoint"""
+
     event_type: ExternalPOSEventType = ExternalPOSEventType.PAYMENT_COMPLETED
     payment_amount: Decimal = Field(default=Decimal("10.00"), ge=0)
     order_id: Optional[str] = None
@@ -177,6 +197,7 @@ class TestWebhookRequest(BaseModel):
 
 class TestWebhookResponse(BaseModel):
     """Response for webhook test"""
+
     webhook_url: str
     headers: Dict[str, str]
     body: Dict[str, Any]
@@ -185,8 +206,10 @@ class TestWebhookResponse(BaseModel):
 
 # Configuration Management Schemas
 
+
 class WebhookConfigurationRequest(BaseModel):
     """Request to configure webhook settings"""
+
     retry_enabled: bool = True
     max_retry_attempts: int = Field(default=3, ge=1, le=10)
     retry_delay_seconds: List[int] = Field(default=[60, 300, 900])
@@ -197,6 +220,7 @@ class WebhookConfigurationRequest(BaseModel):
 
 class WebhookConfigurationResponse(BaseModel):
     """Response for webhook configuration"""
+
     retry_enabled: bool
     max_retry_attempts: int
     retry_delay_seconds: List[int]
@@ -208,8 +232,10 @@ class WebhookConfigurationResponse(BaseModel):
 
 # Order Matching Schemas
 
+
 class OrderMatchingRequest(BaseModel):
     """Request to manually match a payment to an order"""
+
     payment_update_id: int
     order_id: int
     notes: Optional[str] = None
@@ -217,6 +243,7 @@ class OrderMatchingRequest(BaseModel):
 
 class OrderMatchingResponse(BaseModel):
     """Response for order matching"""
+
     success: bool
     payment_update_id: int
     order_id: int

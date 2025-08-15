@@ -9,6 +9,7 @@ from enum import Enum
 
 class ExternalPOSProvider(str, Enum):
     """Supported external POS providers"""
+
     SQUARE = "square"
     STRIPE = "stripe"
     TOAST = "toast"
@@ -20,6 +21,7 @@ class ExternalPOSProvider(str, Enum):
 
 class ExternalPOSEventType(str, Enum):
     """Types of events from external POS systems"""
+
     # Payment events
     PAYMENT_COMPLETED = "payment.completed"
     PAYMENT_FAILED = "payment.failed"
@@ -27,21 +29,21 @@ class ExternalPOSEventType(str, Enum):
     PAYMENT_REFUNDED = "payment.refunded"
     PAYMENT_PARTIALLY_REFUNDED = "payment.partially_refunded"
     PAYMENT_VOIDED = "payment.voided"
-    
+
     # Order events
     ORDER_CREATED = "order.created"
     ORDER_UPDATED = "order.updated"
     ORDER_COMPLETED = "order.completed"
     ORDER_CANCELLED = "order.cancelled"
-    
+
     # Customer events
     CUSTOMER_CREATED = "customer.created"
     CUSTOMER_UPDATED = "customer.updated"
-    
+
     # Tip events
     TIP_ADDED = "tip.added"
     TIP_ADJUSTED = "tip.adjusted"
-    
+
     # Other
     TEST_NOTIFICATION = "test.notification"
     UNKNOWN = "unknown"
@@ -49,6 +51,7 @@ class ExternalPOSEventType(str, Enum):
 
 class WebhookProcessingStatus(str, Enum):
     """Status of webhook event processing"""
+
     PENDING = "pending"
     PROCESSING = "processing"
     PROCESSED = "processed"
@@ -60,6 +63,7 @@ class WebhookProcessingStatus(str, Enum):
 
 class PaymentStatus(str, Enum):
     """External payment status"""
+
     COMPLETED = "completed"
     PENDING = "pending"
     FAILED = "failed"
@@ -72,6 +76,7 @@ class PaymentStatus(str, Enum):
 
 class PaymentMethod(str, Enum):
     """Payment methods from external systems"""
+
     CREDIT_CARD = "credit_card"
     DEBIT_CARD = "debit_card"
     CASH = "cash"
@@ -85,6 +90,7 @@ class PaymentMethod(str, Enum):
 
 class AuthenticationType(str, Enum):
     """Types of webhook authentication"""
+
     HMAC_SHA256 = "hmac_sha256"
     HMAC_SHA512 = "hmac_sha512"
     API_KEY = "api_key"
@@ -95,12 +101,14 @@ class AuthenticationType(str, Enum):
 
 class SquareEventType(str, Enum):
     """Square-specific webhook event types"""
+
     PAYMENT_UPDATED = "payment.updated"
     PAYMENT_CREATED = "payment.created"
 
 
 class StripeEventType(str, Enum):
     """Stripe-specific webhook event types"""
+
     PAYMENT_INTENT_SUCCEEDED = "payment_intent.succeeded"
     PAYMENT_INTENT_PAYMENT_FAILED = "payment_intent.payment_failed"
     PAYMENT_INTENT_CREATED = "payment_intent.created"
@@ -109,18 +117,21 @@ class StripeEventType(str, Enum):
 
 class ToastEventType(str, Enum):
     """Toast-specific webhook event types"""
+
     PAYMENT_COMPLETED = "payment.completed"
     PAYMENT_VOIDED = "payment.voided"
 
 
 class CloverEventType(str, Enum):
     """Clover-specific webhook event types"""
+
     PAYMENT_PROCESSED = "payment.processed"
     PAYMENT_REFUNDED = "payment.refunded"
 
 
 class WebhookLogType(str, Enum):
     """Types of webhook log entries"""
+
     PROCESSING = "processing"
     PAYMENT_PROCESSING = "payment_processing"
     AUTHENTICATION = "authentication"
@@ -130,6 +141,7 @@ class WebhookLogType(str, Enum):
 
 class WebhookLogLevel(str, Enum):
     """Log levels for webhook events"""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"

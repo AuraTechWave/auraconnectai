@@ -1,15 +1,24 @@
 import pytest
 from decimal import Decimal
 from modules.orders.controllers.payment_reconciliation_controller import (  # noqa: E501
-    create_reconciliation, get_reconciliation_by_id, update_reconciliation,
-    list_reconciliations, reconcile_payments, resolve_discrepancy
+    create_reconciliation,
+    get_reconciliation_by_id,
+    update_reconciliation,
+    list_reconciliations,
+    reconcile_payments,
+    resolve_discrepancy,
 )
 from modules.orders.schemas.payment_reconciliation_schemas import (
-    PaymentReconciliationCreate, PaymentReconciliationUpdate,
-    ReconciliationRequest, ReconciliationFilter, ResolutionRequest
+    PaymentReconciliationCreate,
+    PaymentReconciliationUpdate,
+    ReconciliationRequest,
+    ReconciliationFilter,
+    ResolutionRequest,
 )
 from modules.orders.enums.payment_enums import (
-    ReconciliationStatus, DiscrepancyType, ReconciliationAction
+    ReconciliationStatus,
+    DiscrepancyType,
+    ReconciliationAction,
 )
 
 
@@ -22,7 +31,7 @@ class TestPaymentReconciliationController:
             external_payment_reference="PAY_CTRL_123",
             amount_expected=Decimal("30.00"),
             amount_received=Decimal("30.00"),
-            reconciliation_status=ReconciliationStatus.MATCHED
+            reconciliation_status=ReconciliationStatus.MATCHED,
         )
 
         result = await create_reconciliation(reconciliation_data, db_session)
@@ -38,7 +47,7 @@ class TestPaymentReconciliationController:
             external_payment_reference="PAY_CTRL_456",
             amount_expected=Decimal("25.00"),
             amount_received=Decimal("25.00"),
-            reconciliation_status=ReconciliationStatus.MATCHED
+            reconciliation_status=ReconciliationStatus.MATCHED,
         )
 
         created = await create_reconciliation(reconciliation_data, db_session)
@@ -55,18 +64,17 @@ class TestPaymentReconciliationController:
             amount_expected=Decimal("40.00"),
             amount_received=Decimal("35.00"),
             reconciliation_status=ReconciliationStatus.DISCREPANCY,
-            discrepancy_type=DiscrepancyType.AMOUNT_MISMATCH
+            discrepancy_type=DiscrepancyType.AMOUNT_MISMATCH,
         )
 
         created = await create_reconciliation(reconciliation_data, db_session)
 
         update_data = PaymentReconciliationUpdate(
             reconciliation_status=ReconciliationStatus.RESOLVED,
-            reconciliation_action=ReconciliationAction.MANUAL_REVIEW
+            reconciliation_action=ReconciliationAction.MANUAL_REVIEW,
         )
 
-        result = await update_reconciliation(created.id, update_data,
-                                             db_session)
+        result = await update_reconciliation(created.id, update_data, db_session)
 
         assert result.reconciliation_status == ReconciliationStatus.RESOLVED
         action = ReconciliationAction.MANUAL_REVIEW
@@ -79,7 +87,7 @@ class TestPaymentReconciliationController:
             external_payment_reference="PAY_CTRL_LIST",
             amount_expected=Decimal("20.00"),
             amount_received=Decimal("20.00"),
-            reconciliation_status=ReconciliationStatus.MATCHED
+            reconciliation_status=ReconciliationStatus.MATCHED,
         )
 
         await create_reconciliation(reconciliation_data, db_session)
@@ -97,8 +105,7 @@ class TestPaymentReconciliationController:
     @pytest.mark.asyncio
     async def test_reconcile_payments(self, db_session, sample_order):
         request = ReconciliationRequest(
-            order_ids=[sample_order.id],
-            amount_threshold=Decimal("0.01")
+            order_ids=[sample_order.id], amount_threshold=Decimal("0.01")
         )
 
         result = await reconcile_payments(request, db_session)
@@ -116,7 +123,7 @@ class TestPaymentReconciliationController:
             amount_expected=Decimal("50.00"),
             amount_received=Decimal("45.00"),
             reconciliation_status=ReconciliationStatus.DISCREPANCY,
-            discrepancy_type=DiscrepancyType.AMOUNT_MISMATCH
+            discrepancy_type=DiscrepancyType.AMOUNT_MISMATCH,
         )
 
         created = await create_reconciliation(reconciliation_data, db_session)
@@ -124,11 +131,10 @@ class TestPaymentReconciliationController:
         resolution_data = ResolutionRequest(
             reconciliation_action=ReconciliationAction.EXCEPTION_HANDLED,
             resolution_notes="Discount applied",
-            resolved_by=1
+            resolved_by=1,
         )
 
-        result = await resolve_discrepancy(created.id, resolution_data,
-                                           db_session)
+        result = await resolve_discrepancy(created.id, resolution_data, db_session)
 
         assert result.reconciliation_status == ReconciliationStatus.RESOLVED
         action = ReconciliationAction.EXCEPTION_HANDLED

@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+env/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.min.js
+*.min.css
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Migrations
+alembic/versions/
+migrations/
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
+*.cover
+
+# Environment
+.env
+.env.*
+
+# Package files
+package-lock.json
+yarn.lock
+poetry.lock
+
+# Generated files
+*.generated.*

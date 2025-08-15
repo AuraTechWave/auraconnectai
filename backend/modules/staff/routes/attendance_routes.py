@@ -1,7 +1,5 @@
 from fastapi import APIRouter
-from modules.staff.controllers.attendance_controller import (
-    log_attendance
-)
+from modules.staff.controllers.attendance_controller import log_attendance
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 

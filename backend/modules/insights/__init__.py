@@ -6,8 +6,11 @@ Insights module for business intelligence and analytics.
 
 from .routes.insights_routes import router as insights_router
 from .models.insight_models import (
-    Insight, InsightRating, InsightAction, 
-    InsightNotificationRule, InsightThread
+    Insight,
+    InsightRating,
+    InsightAction,
+    InsightNotificationRule,
+    InsightThread,
 )
 from .services.insights_service import InsightsService
 from .services.notification_service import InsightNotificationService
@@ -17,12 +20,12 @@ from .services.thread_service import InsightThreadService
 __all__ = [
     "insights_router",
     "Insight",
-    "InsightRating", 
+    "InsightRating",
     "InsightAction",
     "InsightNotificationRule",
     "InsightThread",
     "InsightsService",
     "InsightNotificationService",
     "InsightRatingService",
-    "InsightThreadService"
+    "InsightThreadService",
 ]

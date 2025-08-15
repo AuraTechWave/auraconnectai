@@ -25,7 +25,9 @@ def test_engine():
 @pytest.fixture
 def db_session(test_engine):
     """Create a database session for testing"""
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=test_engine
+    )
     session = TestingSessionLocal()
     try:
         yield session
@@ -48,7 +50,7 @@ def sample_customer(db_session):
         total_spent=500.0,
         total_orders=5,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(customer)
     db_session.commit()
@@ -69,7 +71,7 @@ def sample_order(db_session, sample_customer):
         total_amount=110.0,
         final_amount=110.0,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(order)
     db_session.commit()
@@ -92,7 +94,7 @@ def sample_promotion(db_session):
         max_uses=100,
         current_uses=0,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(promotion)
     db_session.commit()
@@ -110,7 +112,7 @@ def sample_coupon(db_session, sample_promotion):
         max_uses=10,
         current_uses=0,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(coupon)
     db_session.commit()
@@ -132,7 +134,7 @@ def sample_referral_program(db_session):
         max_referrals_per_customer=5,
         is_active=True,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(program)
     db_session.commit()
@@ -149,7 +151,7 @@ def sample_customer_referral(db_session, sample_customer, sample_referral_progra
         referral_code="REF123",
         status=ReferralStatus.ACTIVE,
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
     db_session.add(referral)
     db_session.commit()
@@ -161,6 +163,7 @@ def sample_customer_referral(db_session, sample_customer, sample_referral_progra
 def promotion_service(db_session):
     """Create a promotion service instance for testing"""
     from modules.promotions.services.promotion_service import PromotionService
+
     return PromotionService(db_session)
 
 
@@ -168,6 +171,7 @@ def promotion_service(db_session):
 def coupon_service(db_session):
     """Create a coupon service instance for testing"""
     from modules.promotions.services.coupon_service import CouponService
+
     return CouponService(db_session)
 
 
@@ -175,6 +179,7 @@ def coupon_service(db_session):
 def referral_service(db_session):
     """Create a referral service instance for testing"""
     from modules.promotions.services.referral_service import ReferralService
+
     return ReferralService(db_session)
 
 
@@ -182,6 +187,7 @@ def referral_service(db_session):
 def discount_service(db_session):
     """Create a discount service instance for testing"""
     from modules.promotions.services.discount_service import DiscountCalculationService
+
     return DiscountCalculationService(db_session)
 
 
@@ -189,74 +195,75 @@ def discount_service(db_session):
 def ab_testing_service(db_session):
     """Create an A/B testing service instance for testing"""
     from modules.promotions.services.ab_testing_service import ABTestingService
+
     return ABTestingService(db_session)
 
 
 # Test data factories
 class PromotionFactory:
     """Factory for creating test promotions"""
-    
+
     @staticmethod
     def create_percentage_promotion(db_session, **kwargs):
         defaults = {
-            'name': 'Test Percentage Promotion',
-            'description': 'Test promotion with percentage discount',
-            'promotion_type': PromotionType.PERCENTAGE_DISCOUNT,
-            'discount_type': DiscountType.PERCENTAGE,
-            'discount_value': 15.0,
-            'status': PromotionStatus.ACTIVE,
-            'start_date': datetime.utcnow() - timedelta(days=1),
-            'end_date': datetime.utcnow() + timedelta(days=30),
-            'max_uses': 100,
-            'current_uses': 0
+            "name": "Test Percentage Promotion",
+            "description": "Test promotion with percentage discount",
+            "promotion_type": PromotionType.PERCENTAGE_DISCOUNT,
+            "discount_type": DiscountType.PERCENTAGE,
+            "discount_value": 15.0,
+            "status": PromotionStatus.ACTIVE,
+            "start_date": datetime.utcnow() - timedelta(days=1),
+            "end_date": datetime.utcnow() + timedelta(days=30),
+            "max_uses": 100,
+            "current_uses": 0,
         }
         defaults.update(kwargs)
-        
+
         promotion = Promotion(**defaults)
         db_session.add(promotion)
         db_session.commit()
         db_session.refresh(promotion)
         return promotion
-    
+
     @staticmethod
     def create_fixed_amount_promotion(db_session, **kwargs):
         defaults = {
-            'name': 'Test Fixed Amount Promotion',
-            'description': 'Test promotion with fixed amount discount',
-            'promotion_type': PromotionType.FIXED_AMOUNT_DISCOUNT,
-            'discount_type': DiscountType.FIXED_AMOUNT,
-            'discount_value': 25.0,
-            'status': PromotionStatus.ACTIVE,
-            'start_date': datetime.utcnow() - timedelta(days=1),
-            'end_date': datetime.utcnow() + timedelta(days=30),
-            'max_uses': 50,
-            'current_uses': 0,
-            'minimum_order_amount': 100.0
+            "name": "Test Fixed Amount Promotion",
+            "description": "Test promotion with fixed amount discount",
+            "promotion_type": PromotionType.FIXED_AMOUNT_DISCOUNT,
+            "discount_type": DiscountType.FIXED_AMOUNT,
+            "discount_value": 25.0,
+            "status": PromotionStatus.ACTIVE,
+            "start_date": datetime.utcnow() - timedelta(days=1),
+            "end_date": datetime.utcnow() + timedelta(days=30),
+            "max_uses": 50,
+            "current_uses": 0,
+            "minimum_order_amount": 100.0,
         }
         defaults.update(kwargs)
-        
+
         promotion = Promotion(**defaults)
         db_session.add(promotion)
         db_session.commit()
         db_session.refresh(promotion)
         return promotion
-    
+
     @staticmethod
     def create_bogo_promotion(db_session, **kwargs):
         defaults = {
-            'name': 'Test BOGO Promotion',
-            'description': 'Test buy-one-get-one promotion',
-            'promotion_type': PromotionType.BUY_ONE_GET_ONE,
-            'discount_type': DiscountType.PERCENTAGE,
-            'discount_value': 100.0,  # 100% off on second item
-            'status': PromotionStatus.ACTIVE,
-            'start_date': datetime.utcnow() - timedelta(days=1),
-            'end_date': datetime.utcnow() + timedelta(days=30),
-            'max_uses': 25,
-            'current_uses': 0
+            "name": "Test BOGO Promotion",
+            "description": "Test buy-one-get-one promotion",
+            "promotion_type": PromotionType.BUY_ONE_GET_ONE,
+            "discount_type": DiscountType.PERCENTAGE,
+            "discount_value": 100.0,  # 100% off on second item
+            "status": PromotionStatus.ACTIVE,
+            "start_date": datetime.utcnow() - timedelta(days=1),
+            "end_date": datetime.utcnow() + timedelta(days=30),
+            "max_uses": 25,
+            "current_uses": 0,
         }
         defaults.update(kwargs)
-        
+
         promotion = Promotion(**defaults)
         db_session.add(promotion)
         db_session.commit()
@@ -266,18 +273,18 @@ class PromotionFactory:
 
 class CouponFactory:
     """Factory for creating test coupons"""
-    
+
     @staticmethod
     def create_coupon(db_session, promotion, **kwargs):
         defaults = {
-            'promotion_id': promotion.id,
-            'code': 'TESTCODE',
-            'status': CouponStatus.ACTIVE,
-            'max_uses': 10,
-            'current_uses': 0
+            "promotion_id": promotion.id,
+            "code": "TESTCODE",
+            "status": CouponStatus.ACTIVE,
+            "max_uses": 10,
+            "current_uses": 0,
         }
         defaults.update(kwargs)
-        
+
         coupon = Coupon(**defaults)
         db_session.add(coupon)
         db_session.commit()
@@ -287,20 +294,20 @@ class CouponFactory:
 
 class OrderFactory:
     """Factory for creating test orders"""
-    
+
     @staticmethod
     def create_order(db_session, customer, **kwargs):
         defaults = {
-            'customer_id': customer.id,
-            'order_number': f'ORD-{datetime.utcnow().timestamp()}',
-            'status': 'completed',
-            'subtotal': 100.0,
-            'tax_amount': 10.0,
-            'total_amount': 110.0,
-            'final_amount': 110.0
+            "customer_id": customer.id,
+            "order_number": f"ORD-{datetime.utcnow().timestamp()}",
+            "status": "completed",
+            "subtotal": 100.0,
+            "tax_amount": 10.0,
+            "total_amount": 110.0,
+            "final_amount": 110.0,
         }
         defaults.update(kwargs)
-        
+
         order = Order(**defaults)
         db_session.add(order)
         db_session.commit()

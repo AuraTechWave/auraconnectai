@@ -24,7 +24,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": True,
         "priority": 100,
         "terms_and_conditions": "Valid for new customers only. Cannot be combined with other offers. Minimum order $15.",
-        "icon": "welcome"
+        "icon": "welcome",
     },
     {
         "name": "birthday_special",
@@ -42,7 +42,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": True,
         "priority": 90,
         "terms_and_conditions": "Valid for 7 days from your birthday. Cannot be combined with other discounts.",
-        "icon": "birthday"
+        "icon": "birthday",
     },
     {
         "name": "order_milestone_10",
@@ -61,7 +61,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": False,
         "priority": 70,
         "terms_and_conditions": "Free delivery on your next order. Valid for 14 days.",
-        "icon": "milestone"
+        "icon": "milestone",
     },
     {
         "name": "high_spender_reward",
@@ -81,7 +81,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": True,
         "priority": 80,
         "terms_and_conditions": "15% off your next order up to $25 discount. Valid for 30 days.",
-        "icon": "vip"
+        "icon": "vip",
     },
     {
         "name": "tier_upgrade_gold",
@@ -99,7 +99,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": False,
         "priority": 60,
         "terms_and_conditions": "Bonus points automatically added to your account.",
-        "icon": "tier_upgrade"
+        "icon": "tier_upgrade",
     },
     {
         "name": "weekend_special",
@@ -119,7 +119,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": False,
         "priority": 50,
         "terms_and_conditions": "Valid on weekend orders only. Minimum order $20.",
-        "icon": "weekend"
+        "icon": "weekend",
     },
     {
         "name": "referral_reward",
@@ -137,7 +137,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": False,
         "priority": 65,
         "terms_and_conditions": "Earned when your referred friend completes their first order. Valid for 60 days.",
-        "icon": "referral"
+        "icon": "referral",
     },
     {
         "name": "large_order_bonus",
@@ -155,7 +155,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": False,
         "priority": 40,
         "terms_and_conditions": "Bonus points automatically awarded for orders over $50.",
-        "icon": "bonus"
+        "icon": "bonus",
     },
     {
         "name": "platinum_exclusive",
@@ -174,7 +174,7 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": True,
         "priority": 95,
         "terms_and_conditions": "Exclusive to Platinum and VIP members. Cannot be combined with other offers.",
-        "icon": "exclusive"
+        "icon": "exclusive",
     },
     {
         "name": "loyalty_anniversary",
@@ -192,8 +192,8 @@ DEFAULT_REWARD_TEMPLATES = [
         "is_featured": True,
         "priority": 85,
         "terms_and_conditions": "$25 gift card for completing one year as our customer. Valid for 30 days.",
-        "icon": "anniversary"
-    }
+        "icon": "anniversary",
+    },
 ]
 
 
@@ -208,7 +208,7 @@ DEFAULT_CAMPAIGNS = [
         "end_date": datetime.utcnow() + timedelta(days=365),
         "max_rewards_per_customer": 1,
         "is_active": True,
-        "is_automated": True
+        "is_automated": True,
     },
     {
         "name": "Inactive Customer Reactivation",
@@ -219,7 +219,7 @@ DEFAULT_CAMPAIGNS = [
         "end_date": datetime.utcnow() + timedelta(days=90),
         "max_rewards_per_customer": 1,
         "is_active": False,  # Manual activation
-        "is_automated": False
+        "is_automated": False,
     },
     {
         "name": "VIP Customer Appreciation",
@@ -230,8 +230,8 @@ DEFAULT_CAMPAIGNS = [
         "end_date": datetime.utcnow() + timedelta(days=30),
         "max_rewards_per_customer": 1,
         "is_active": False,  # Seasonal campaign
-        "is_automated": False
-    }
+        "is_automated": False,
+    },
 ]
 
 
@@ -239,35 +239,39 @@ def seed_default_rewards(db_session, rewards_engine):
     """Seed the database with default reward templates and campaigns"""
     try:
         from ..models.rewards_models import RewardTemplate, RewardCampaign
-        
+
         # Create reward templates
         created_templates = []
         for template_data in DEFAULT_REWARD_TEMPLATES:
-            existing = db_session.query(RewardTemplate).filter(
-                RewardTemplate.name == template_data["name"]
-            ).first()
-            
+            existing = (
+                db_session.query(RewardTemplate)
+                .filter(RewardTemplate.name == template_data["name"])
+                .first()
+            )
+
             if not existing:
                 template = rewards_engine.create_reward_template(template_data)
                 created_templates.append(template)
-        
+
         # Create campaigns (link to templates by name)
         created_campaigns = []
         for campaign_data in DEFAULT_CAMPAIGNS:
-            existing = db_session.query(RewardCampaign).filter(
-                RewardCampaign.name == campaign_data["name"]
-            ).first()
-            
+            existing = (
+                db_session.query(RewardCampaign)
+                .filter(RewardCampaign.name == campaign_data["name"])
+                .first()
+            )
+
             if not existing:
                 # Find the template to link to (this would need to be implemented based on campaign logic)
                 # For now, we'll skip campaign creation in the seed function
                 pass
-        
+
         return {
             "templates_created": len(created_templates),
-            "campaigns_created": len(created_campaigns)
+            "campaigns_created": len(created_campaigns),
         }
-        
+
     except Exception as e:
         print(f"Error seeding default rewards: {str(e)}")
         return {"error": str(e)}

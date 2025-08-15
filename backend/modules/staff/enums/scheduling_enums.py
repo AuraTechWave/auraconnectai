@@ -7,7 +7,7 @@ class ShiftStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
-    
+
 
 class ShiftType(str, Enum):
     REGULAR = "regular"
@@ -15,7 +15,7 @@ class ShiftType(str, Enum):
     HOLIDAY = "holiday"
     TRAINING = "training"
     MEETING = "meeting"
-    
+
 
 class RecurrenceType(str, Enum):
     NONE = "none"
@@ -23,7 +23,7 @@ class RecurrenceType(str, Enum):
     WEEKLY = "weekly"
     BIWEEKLY = "biweekly"
     MONTHLY = "monthly"
-    
+
 
 class DayOfWeek(int, Enum):
     MONDAY = 0
@@ -33,21 +33,21 @@ class DayOfWeek(int, Enum):
     FRIDAY = 4
     SATURDAY = 5
     SUNDAY = 6
-    
+
 
 class AvailabilityStatus(str, Enum):
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
     PREFERRED = "preferred"
     LIMITED = "limited"
-    
+
 
 class SwapStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
     CANCELLED = "cancelled"
-    
+
 
 class BreakType(str, Enum):
     MEAL = "meal"

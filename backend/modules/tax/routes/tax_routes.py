@@ -23,13 +23,10 @@ router.include_router(compliance_router, tags=["Tax Compliance"])
 
 # Keep original simple calculation endpoint for backward compatibility
 @router.post("/calculate", response_model=TaxCalculationResponse)
-async def calculate_tax(
-    request: TaxCalculationRequest,
-    db: Session = Depends(get_db)
-):
+async def calculate_tax(request: TaxCalculationRequest, db: Session = Depends(get_db)):
     """
     Calculate tax for draft order or cart data (Simple version).
-    
+
     For advanced multi-jurisdiction calculations, use /calculations/calculate
 
     - **location**: Location for jurisdiction-based tax rules

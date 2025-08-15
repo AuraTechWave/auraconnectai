@@ -6,7 +6,7 @@ from .equipment_models import (
     MaintenanceRecord,
     MaintenanceType,
     MaintenanceStatus,
-    EquipmentStatus
+    EquipmentStatus,
 )
 
 __all__ = [
@@ -14,5 +14,5 @@ __all__ = [
     "MaintenanceRecord",
     "MaintenanceType",
     "MaintenanceStatus",
-    "EquipmentStatus"
+    "EquipmentStatus",
 ]

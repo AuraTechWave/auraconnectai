@@ -8,6 +8,7 @@ from enum import Enum
 
 class CustomerStatus(str, Enum):
     """Customer account status"""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
@@ -16,6 +17,7 @@ class CustomerStatus(str, Enum):
 
 class CustomerTier(str, Enum):
     """Customer loyalty tier levels"""
+
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
@@ -25,6 +27,7 @@ class CustomerTier(str, Enum):
 
 class CommunicationChannel(str, Enum):
     """Communication channels"""
+
     EMAIL = "email"
     SMS = "sms"
     PUSH = "push"
@@ -33,6 +36,7 @@ class CommunicationChannel(str, Enum):
 # Base schemas
 class CustomerAddressBase(BaseModel):
     """Base schema for customer addresses"""
+
     label: Optional[str] = Field(None, max_length=50)
     address_line1: str = Field(..., max_length=255)
     address_line2: Optional[str] = Field(None, max_length=255)
@@ -49,11 +53,13 @@ class CustomerAddressBase(BaseModel):
 
 class CustomerAddressCreate(CustomerAddressBase):
     """Schema for creating a customer address"""
+
     pass
 
 
 class CustomerAddressUpdate(BaseModel):
     """Schema for updating a customer address"""
+
     label: Optional[str] = Field(None, max_length=50)
     address_line1: Optional[str] = Field(None, max_length=255)
     address_line2: Optional[str] = Field(None, max_length=255)
@@ -70,6 +76,7 @@ class CustomerAddressUpdate(BaseModel):
 
 class CustomerAddress(CustomerAddressBase):
     """Schema for customer address response"""
+
     id: int
     customer_id: int
     is_verified: bool
@@ -85,10 +92,11 @@ class CustomerAddress(CustomerAddressBase):
 # Customer schemas
 class CustomerBase(BaseModel):
     """Base schema for customer"""
+
     first_name: str = Field(..., max_length=100)
     last_name: str = Field(..., max_length=100)
     email: EmailStr
-    phone: Optional[constr(pattern=r'^\+?[1-9]\d{1,14}$')] = None
+    phone: Optional[constr(pattern=r"^\+?[1-9]\d{1,14}$")] = None
     date_of_birth: Optional[datetime] = None
     gender: Optional[str] = Field(None, max_length=20)
     dietary_preferences: Optional[List[str]] = None
@@ -103,23 +111,25 @@ class CustomerBase(BaseModel):
 
 class CustomerCreate(CustomerBase):
     """Schema for creating a customer"""
+
     password: Optional[str] = Field(None, min_length=8)
     referral_code: Optional[str] = None
     acquisition_source: Optional[str] = Field(None, max_length=100)
-    
-    @validator('password')
+
+    @validator("password")
     def validate_password(cls, v):
         if v and len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
+            raise ValueError("Password must be at least 8 characters long")
         return v
 
 
 class CustomerUpdate(BaseModel):
     """Schema for updating a customer"""
+
     first_name: Optional[str] = Field(None, max_length=100)
     last_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
-    phone: Optional[constr(pattern=r'^\+?[1-9]\d{1,14}$')] = None
+    phone: Optional[constr(pattern=r"^\+?[1-9]\d{1,14}$")] = None
     date_of_birth: Optional[datetime] = None
     gender: Optional[str] = Field(None, max_length=20)
     profile_image_url: Optional[str] = Field(None, max_length=500)
@@ -135,18 +145,21 @@ class CustomerUpdate(BaseModel):
 
 class CustomerStatusUpdate(BaseModel):
     """Schema for updating customer status"""
+
     status: CustomerStatus
     reason: Optional[str] = None
 
 
 class CustomerTierUpdate(BaseModel):
     """Schema for updating customer tier"""
+
     tier: CustomerTier
     reason: Optional[str] = None
 
 
 class Customer(CustomerBase):
     """Schema for customer response"""
+
     id: int
     phone_verified: bool
     email_verified: bool
@@ -169,7 +182,7 @@ class Customer(CustomerBase):
     created_at: datetime
     updated_at: datetime
     deleted_at: Optional[datetime]
-    
+
     # Computed properties
     full_name: str
     is_vip: bool
@@ -180,22 +193,25 @@ class Customer(CustomerBase):
 
 class CustomerWithAddresses(Customer):
     """Customer response with addresses"""
+
     addresses: List[CustomerAddress] = []
     default_address: Optional[CustomerAddress] = None
 
 
 class CustomerProfile(CustomerWithAddresses):
     """Complete customer profile with all related data"""
-    payment_methods: List['CustomerPaymentMethod'] = []
-    recent_orders: List['OrderSummary'] = []
-    favorite_items: List['MenuItemSummary'] = []
-    active_rewards: List['CustomerReward'] = []
+
+    payment_methods: List["CustomerPaymentMethod"] = []
+    recent_orders: List["OrderSummary"] = []
+    favorite_items: List["MenuItemSummary"] = []
+    active_rewards: List["CustomerReward"] = []
     preferences: Dict[str, Any] = {}
 
 
 # Payment method schemas
 class CustomerPaymentMethodBase(BaseModel):
     """Base schema for payment methods"""
+
     type: str = Field(..., max_length=50)
     label: Optional[str] = Field(None, max_length=100)
     is_default: bool = False
@@ -203,12 +219,14 @@ class CustomerPaymentMethodBase(BaseModel):
 
 class CustomerPaymentMethodCreate(CustomerPaymentMethodBase):
     """Schema for creating a payment method"""
+
     card_token: Optional[str] = None
     billing_address_id: Optional[int] = None
 
 
 class CustomerPaymentMethod(CustomerPaymentMethodBase):
     """Schema for payment method response"""
+
     id: int
     customer_id: int
     card_last4: Optional[str]
@@ -226,6 +244,7 @@ class CustomerPaymentMethod(CustomerPaymentMethodBase):
 # Notification schemas
 class CustomerNotificationCreate(BaseModel):
     """Schema for creating a notification"""
+
     customer_id: int
     type: str = Field(..., max_length=50)
     channel: CommunicationChannel
@@ -236,6 +255,7 @@ class CustomerNotificationCreate(BaseModel):
 
 class CustomerNotification(BaseModel):
     """Schema for notification response"""
+
     id: int
     customer_id: int
     type: str
@@ -257,6 +277,7 @@ class CustomerNotification(BaseModel):
 # Reward schemas
 class CustomerRewardBase(BaseModel):
     """Base schema for rewards"""
+
     type: str = Field(..., max_length=50)
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
@@ -272,11 +293,13 @@ class CustomerRewardBase(BaseModel):
 
 class CustomerRewardCreate(CustomerRewardBase):
     """Schema for creating a reward"""
+
     customer_id: int
 
 
 class CustomerReward(CustomerRewardBase):
     """Schema for reward response"""
+
     id: int
     customer_id: int
     status: str
@@ -293,6 +316,7 @@ class CustomerReward(CustomerRewardBase):
 # Preference schemas
 class CustomerPreferenceCreate(BaseModel):
     """Schema for creating a preference"""
+
     category: str = Field(..., max_length=50)
     preference_key: str = Field(..., max_length=100)
     preference_value: Any
@@ -302,6 +326,7 @@ class CustomerPreferenceCreate(BaseModel):
 
 class CustomerPreference(CustomerPreferenceCreate):
     """Schema for preference response"""
+
     id: int
     customer_id: int
     created_at: datetime
@@ -314,6 +339,7 @@ class CustomerPreference(CustomerPreferenceCreate):
 # Analytics schemas
 class CustomerAnalytics(BaseModel):
     """Customer analytics and insights"""
+
     customer_id: int
     total_orders: int
     total_spent: float
@@ -326,7 +352,7 @@ class CustomerAnalytics(BaseModel):
     lifetime_value: float
     churn_risk_score: Optional[float]  # 0-1 score
     last_order_days_ago: Optional[int]
-    
+
     class Config:
         from_attributes = True
 
@@ -334,6 +360,7 @@ class CustomerAnalytics(BaseModel):
 # Search and filter schemas
 class CustomerSearchParams(BaseModel):
     """Parameters for searching customers"""
+
     query: Optional[str] = Field(None, description="Search in name, email, phone")
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
@@ -350,16 +377,20 @@ class CustomerSearchParams(BaseModel):
     has_active_rewards: Optional[bool] = None
     location_id: Optional[int] = None
     tags: Optional[List[str]] = None
-    
+
     # Pagination
     page: int = Field(1, ge=1)
     page_size: int = Field(20, ge=1, le=100)
-    sort_by: str = Field("created_at", pattern="^(created_at|updated_at|last_order_date|total_spent|total_orders)$")
+    sort_by: str = Field(
+        "created_at",
+        pattern="^(created_at|updated_at|last_order_date|total_spent|total_orders)$",
+    )
     sort_order: str = Field("desc", pattern="^(asc|desc)$")
 
 
 class CustomerSearchResponse(BaseModel):
     """Response for customer search"""
+
     customers: List[Customer]
     total: int
     page: int
@@ -370,6 +401,7 @@ class CustomerSearchResponse(BaseModel):
 # Segment schemas
 class CustomerSegmentCreate(BaseModel):
     """Schema for creating a customer segment"""
+
     name: str = Field(..., max_length=100)
     description: Optional[str] = None
     criteria: Dict[str, Any]
@@ -378,6 +410,7 @@ class CustomerSegmentCreate(BaseModel):
 
 class CustomerSegmentUpdate(BaseModel):
     """Schema for updating a customer segment - all fields optional"""
+
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
     criteria: Optional[Dict[str, Any]] = None
@@ -387,6 +420,7 @@ class CustomerSegmentUpdate(BaseModel):
 
 class CustomerSegment(CustomerSegmentCreate):
     """Schema for segment response"""
+
     id: int
     is_active: bool
     member_count: int
@@ -401,6 +435,7 @@ class CustomerSegment(CustomerSegmentCreate):
 # Order history schemas (simplified)
 class OrderSummary(BaseModel):
     """Simplified order information for customer profile"""
+
     id: int
     order_number: str
     status: str
@@ -412,6 +447,7 @@ class OrderSummary(BaseModel):
 
 class MenuItemSummary(BaseModel):
     """Simplified menu item for favorites"""
+
     id: int
     name: str
     category: str

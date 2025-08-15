@@ -35,7 +35,7 @@ router.include_router(audit_router, prefix="/audit", tags=["Audit Trail"])
 async def payroll_health_check_v1():
     """
     Health check endpoint for payroll module v1.
-    
+
     Returns:
         dict: Health status with version information
     """
@@ -43,7 +43,7 @@ async def payroll_health_check_v1():
         "status": "healthy",
         "module": "payroll",
         "version": "1.0.0",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -51,7 +51,7 @@ async def payroll_health_check_v1():
 async def payroll_api_info():
     """
     Get API information and capabilities.
-    
+
     Returns:
         dict: API version, features, and deprecation notices
     """
@@ -66,14 +66,14 @@ async def payroll_api_info():
             "Webhook integrations",
             "Comprehensive audit trail",
             "Export capabilities",
-            "Background task processing"
+            "Background task processing",
         ],
         "deprecation_warnings": [],
         "rate_limits": {
             "tax_calculations": "100 requests/minute",
             "batch_processing": "10 requests/hour",
-            "exports": "3 concurrent requests"
+            "exports": "3 concurrent requests",
         },
         "documentation": "/docs#/Payroll%20v1",
-        "support": "payroll-api@auraconnect.ai"
+        "support": "payroll-api@auraconnect.ai",
     }

@@ -5,7 +5,7 @@ from .notification_service import ReservationNotificationService
 
 __all__ = [
     "ReservationService",
-    "WaitlistService", 
+    "WaitlistService",
     "AvailabilityService",
-    "ReservationNotificationService"
+    "ReservationNotificationService",
 ]

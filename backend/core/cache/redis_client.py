@@ -23,49 +23,55 @@ class RedisClient:
     """
     Redis client with connection pooling and error handling
     """
-    
+
     _pool: Optional[ConnectionPool] = None
     _client: Optional[Redis] = None
-    
+
     @classmethod
     def get_pool(cls) -> ConnectionPool:
         """Get or create Redis connection pool"""
         if cls._pool is None:
             settings = get_settings()
-            
+
             pool_kwargs = {
-                'host': settings.REDIS_HOST,
-                'port': settings.REDIS_PORT,
-                'db': settings.REDIS_DB,
-                'password': settings.REDIS_PASSWORD,
-                'decode_responses': False,  # We'll handle encoding/decoding
-                'max_connections': 50,
-                'socket_connect_timeout': 5,
-                'socket_timeout': 5,
-                'retry_on_timeout': True,
-                'health_check_interval': 30,
+                "host": settings.REDIS_HOST,
+                "port": settings.REDIS_PORT,
+                "db": settings.REDIS_DB,
+                "password": settings.REDIS_PASSWORD,
+                "decode_responses": False,  # We'll handle encoding/decoding
+                "max_connections": 50,
+                "socket_connect_timeout": 5,
+                "socket_timeout": 5,
+                "retry_on_timeout": True,
+                "health_check_interval": 30,
             }
-            
+
             # Use URL if provided, otherwise use individual settings
-            if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
+            if hasattr(settings, "REDIS_URL") and settings.REDIS_URL:
                 cls._pool = redis.ConnectionPool.from_url(
                     settings.REDIS_URL,
-                    **{k: v for k, v in pool_kwargs.items() if k not in ['host', 'port', 'db', 'password']}
+                    **{
+                        k: v
+                        for k, v in pool_kwargs.items()
+                        if k not in ["host", "port", "db", "password"]
+                    },
                 )
             else:
                 cls._pool = redis.ConnectionPool(**pool_kwargs)
-                
-            logger.info(f"Redis connection pool created: {settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}")
-        
+
+            logger.info(
+                f"Redis connection pool created: {settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+            )
+
         return cls._pool
-    
+
     @classmethod
     def get_client(cls) -> Redis:
         """Get Redis client instance"""
         if cls._client is None:
             cls._client = Redis(connection_pool=cls.get_pool())
         return cls._client
-    
+
     @classmethod
     def close(cls):
         """Close Redis connection pool"""
@@ -80,11 +86,11 @@ class RedisCache:
     """
     High-level Redis cache operations with serialization support
     """
-    
+
     def __init__(self, prefix: str = "cache", serializer: str = "json"):
         """
         Initialize Redis cache
-        
+
         Args:
             prefix: Key prefix for namespacing
             serializer: Serialization method ('json' or 'pickle')
@@ -92,28 +98,28 @@ class RedisCache:
         self.client = RedisClient.get_client()
         self.prefix = prefix
         self.serializer = serializer
-        
+
     def _make_key(self, key: str) -> str:
         """Create namespaced key"""
         return f"{self.prefix}:{key}"
-    
+
     def _serialize(self, value: Any) -> bytes:
         """Serialize value for storage"""
         if self.serializer == "json":
-            return json.dumps(value, default=str).encode('utf-8')
+            return json.dumps(value, default=str).encode("utf-8")
         elif self.serializer == "pickle":
             return pickle.dumps(value)
         else:
             raise ValueError(f"Unknown serializer: {self.serializer}")
-    
+
     def _deserialize(self, value: bytes) -> Any:
         """Deserialize value from storage"""
         if value is None:
             return None
-            
+
         try:
             if self.serializer == "json":
-                return json.loads(value.decode('utf-8'))
+                return json.loads(value.decode("utf-8"))
             elif self.serializer == "pickle":
                 return pickle.loads(value)
             else:
@@ -121,7 +127,7 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Failed to deserialize value: {e}")
             return None
-    
+
     def get(self, key: str) -> Optional[Any]:
         """Get value from cache"""
         try:
@@ -131,23 +137,23 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis GET error for key {key}: {e}")
             return None
-    
+
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """
         Set value in cache
-        
+
         Args:
             key: Cache key
             value: Value to cache
             ttl: Time to live in seconds
-            
+
         Returns:
             Success status
         """
         try:
             full_key = self._make_key(key)
             serialized = self._serialize(value)
-            
+
             if ttl:
                 return self.client.setex(full_key, ttl, serialized)
             else:
@@ -155,7 +161,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis SET error for key {key}: {e}")
             return False
-    
+
     def delete(self, key: str) -> bool:
         """Delete key from cache"""
         try:
@@ -164,7 +170,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis DELETE error for key {key}: {e}")
             return False
-    
+
     def delete_pattern(self, pattern: str) -> int:
         """Delete all keys matching pattern"""
         try:
@@ -176,7 +182,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis DELETE pattern error for {pattern}: {e}")
             return 0
-    
+
     def exists(self, key: str) -> bool:
         """Check if key exists"""
         try:
@@ -185,7 +191,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis EXISTS error for key {key}: {e}")
             return False
-    
+
     def expire(self, key: str, ttl: int) -> bool:
         """Set expiration on existing key"""
         try:
@@ -194,7 +200,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis EXPIRE error for key {key}: {e}")
             return False
-    
+
     def ttl(self, key: str) -> int:
         """Get remaining TTL for key"""
         try:
@@ -203,7 +209,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis TTL error for key {key}: {e}")
             return -2  # Key doesn't exist
-    
+
     def mget(self, keys: List[str]) -> Dict[str, Any]:
         """Get multiple values"""
         try:
@@ -217,16 +223,15 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis MGET error: {e}")
             return {}
-    
+
     def mset(self, mapping: Dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple values"""
         try:
             # Serialize all values
             serialized_mapping = {
-                self._make_key(k): self._serialize(v)
-                for k, v in mapping.items()
+                self._make_key(k): self._serialize(v) for k, v in mapping.items()
             }
-            
+
             if ttl:
                 # Use pipeline for atomic operation with TTL
                 pipe = self.client.pipeline()
@@ -239,7 +244,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis MSET error: {e}")
             return False
-    
+
     def incr(self, key: str, amount: int = 1) -> Optional[int]:
         """Increment counter"""
         try:
@@ -248,7 +253,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis INCR error for key {key}: {e}")
             return None
-    
+
     def decr(self, key: str, amount: int = 1) -> Optional[int]:
         """Decrement counter"""
         try:
@@ -257,7 +262,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis DECR error for key {key}: {e}")
             return None
-    
+
     def clear_namespace(self) -> int:
         """Clear all keys in this namespace"""
         try:
@@ -269,14 +274,14 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis CLEAR namespace error: {e}")
             return 0
-    
+
     def ping(self) -> bool:
         """Check Redis connection"""
         try:
             return self.client.ping()
         except RedisError:
             return False
-    
+
     def info(self) -> Dict[str, Any]:
         """Get Redis server info"""
         try:
@@ -284,7 +289,7 @@ class RedisCache:
         except RedisError as e:
             logger.error(f"Redis INFO error: {e}")
             return {}
-    
+
     def memory_usage(self, key: str) -> Optional[int]:
         """Get memory usage of a key in bytes"""
         try:

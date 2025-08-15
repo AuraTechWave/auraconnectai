@@ -3,5 +3,5 @@
 from .recipe_service import RecipeService
 from .recommendation_service import MenuRecommendationService
 
-__all__ = ['RecipeService']
-__all__.append('MenuRecommendationService')
+__all__ = ["RecipeService"]
+__all__.append("MenuRecommendationService")

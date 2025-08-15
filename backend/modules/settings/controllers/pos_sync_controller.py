@@ -1,5 +1,6 @@
 from modules.settings.services.pos_sync_service import (
-    get_pos_sync_settings, create_or_update_pos_sync_setting
+    get_pos_sync_settings,
+    create_or_update_pos_sync_setting,
 )
 
 

@@ -30,8 +30,7 @@ router = APIRouter(prefix="/api/v1/customers/segments", tags=["Customer Segments
 
 @router.get("/", response_model=List[CustomerSegmentSchema])
 def list_segments(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Return all customer segments."""
     service = CustomerSegmentService(db)
@@ -46,7 +45,7 @@ def list_segments(
 def create_segment(
     segment: CustomerSegmentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new customer segment and evaluate its membership."""
     service = CustomerSegmentService(db)
@@ -60,7 +59,7 @@ def create_segment(
 def get_segment(
     segment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     service = CustomerSegmentService(db)
     seg = service.get_segment(segment_id)
@@ -74,7 +73,7 @@ def update_segment(
     segment_id: int,
     segment_update: CustomerSegmentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Update an existing segment.
 
@@ -83,7 +82,9 @@ def update_segment(
     service = CustomerSegmentService(db)
     try:
         # Use dict() with exclude_unset for Pydantic v1 compatibility
-        return service.update_segment(segment_id, segment_update.dict(exclude_unset=True))
+        return service.update_segment(
+            segment_id, segment_update.dict(exclude_unset=True)
+        )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -92,7 +93,7 @@ def update_segment(
 def delete_segment(
     segment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     service = CustomerSegmentService(db)
     try:
@@ -110,7 +111,7 @@ def delete_segment(
 def evaluate_segment(
     segment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Trigger re-evaluation of a *dynamic* segment."""
     service = CustomerSegmentService(db)
@@ -124,7 +125,7 @@ def evaluate_segment(
 def list_segment_customers(
     segment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     service = CustomerSegmentService(db)
     try:

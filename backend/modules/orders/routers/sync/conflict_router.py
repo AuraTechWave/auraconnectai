@@ -15,11 +15,10 @@ import logging
 from core.database import get_db
 from core.auth import get_current_user
 from modules.staff.models.staff_models import StaffMember
-from modules.orders.models.sync_models import (
-    SyncConflict, OrderSyncStatus, SyncStatus
-)
+from modules.orders.models.sync_models import SyncConflict, OrderSyncStatus, SyncStatus
 from modules.orders.schemas.sync_schemas import (
-    SyncConflictResponse, ConflictResolutionRequest
+    SyncConflictResponse,
+    ConflictResolutionRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -31,19 +30,21 @@ async def get_sync_conflicts(
     status: str = Query("pending", description="Conflict resolution status"),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> List[SyncConflictResponse]:
     """
     Get unresolved sync conflicts.
-    
+
     Returns list of conflicts that need manual resolution.
     """
-    conflicts = db.query(SyncConflict).filter(
-        SyncConflict.resolution_status == status
-    ).order_by(
-        SyncConflict.detected_at.desc()
-    ).limit(limit).all()
-    
+    conflicts = (
+        db.query(SyncConflict)
+        .filter(SyncConflict.resolution_status == status)
+        .order_by(SyncConflict.detected_at.desc())
+        .limit(limit)
+        .all()
+    )
+
     return [SyncConflictResponse.from_orm(conflict) for conflict in conflicts]
 
 
@@ -52,36 +53,36 @@ async def resolve_conflict(
     conflict_id: int,
     resolution: ConflictResolutionRequest,
     db: Session = Depends(get_db),
-    current_user: StaffMember = Depends(get_current_user)
+    current_user: StaffMember = Depends(get_current_user),
 ) -> Dict[str, str]:
     """
     Resolve a sync conflict.
-    
+
     Allows manual resolution of sync conflicts by choosing
     which version to keep or merging changes.
     """
-    conflict = db.query(SyncConflict).filter(
-        SyncConflict.id == conflict_id
-    ).first()
-    
+    conflict = db.query(SyncConflict).filter(SyncConflict.id == conflict_id).first()
+
     if not conflict:
         raise HTTPException(status_code=404, detail="Conflict not found")
-    
+
     if conflict.resolution_status != "pending":
         raise HTTPException(status_code=400, detail="Conflict already resolved")
-    
+
     # Apply resolution
     conflict.resolution_method = resolution.resolution_method
     conflict.resolved_at = datetime.utcnow()
     conflict.resolved_by = current_user.id
     conflict.resolution_notes = resolution.notes
     conflict.resolution_status = "resolved"
-    
+
     # Update sync status based on resolution
-    sync_status = db.query(OrderSyncStatus).filter(
-        OrderSyncStatus.order_id == conflict.order_id
-    ).first()
-    
+    sync_status = (
+        db.query(OrderSyncStatus)
+        .filter(OrderSyncStatus.order_id == conflict.order_id)
+        .first()
+    )
+
     if sync_status:
         if resolution.resolution_method in ["local_wins", "merge"]:
             # Retry sync with resolved data
@@ -92,11 +93,11 @@ async def resolve_conflict(
             # Mark as synced since we're accepting remote version
             sync_status.sync_status = SyncStatus.SYNCED
             sync_status.synced_at = datetime.utcnow()
-    
+
     # Store final data
     if resolution.final_data:
         conflict.final_data = resolution.final_data
-    
+
     db.commit()
-    
+
     return {"status": "resolved", "conflict_id": conflict_id}

@@ -20,27 +20,29 @@ router = APIRouter(
 
 @router.get("/", response_model=RecommendationResponse)
 def get_menu_recommendations(
-    customer_id: Optional[int] = Query(None, description="Filter recommendations for a specific customer"),
-    max_results: int = Query(5, ge=1, le=50, description="Maximum number of recommendations to return"),
+    customer_id: Optional[int] = Query(
+        None, description="Filter recommendations for a specific customer"
+    ),
+    max_results: int = Query(
+        5, ge=1, le=50, description="Maximum number of recommendations to return"
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("menu:read"))
+    current_user: User = Depends(require_permission("menu:read")),
 ):
     """Fetch menu item recommendations.
 
     Recommendations are generated based on order history. If ``customer_id`` is provided,
     the algorithm prioritises that customer's past orders before falling back to global
     popularity.
-    
+
     Requires authentication and menu:read permission.
     """
     # Get the user's tenant IDs for scoping
-    tenant_ids = current_user.tenant_ids if hasattr(current_user, 'tenant_ids') else []
-    
+    tenant_ids = current_user.tenant_ids if hasattr(current_user, "tenant_ids") else []
+
     service = MenuRecommendationService(db)
     recs = service.get_recommendations(
-        customer_id=customer_id, 
-        max_results=max_results,
-        tenant_ids=tenant_ids
+        customer_id=customer_id, max_results=max_results, tenant_ids=tenant_ids
     )
 
     # Convert to schema objects
@@ -55,4 +57,6 @@ def get_menu_recommendations(
         for item, score in recs
     ]
 
-    return RecommendationResponse(recommendations=recommendations, generated_at=datetime.utcnow())
+    return RecommendationResponse(
+        recommendations=recommendations, generated_at=datetime.utcnow()
+    )

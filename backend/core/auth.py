@@ -39,6 +39,7 @@ security = HTTPBearer(auto_error=False)
 
 class TokenData(BaseModel):
     """Token payload data."""
+
     user_id: Optional[int] = None
     username: Optional[str] = None
     roles: List[str] = []
@@ -49,6 +50,7 @@ class TokenData(BaseModel):
 
 class User(BaseModel):
     """User model for authentication."""
+
     id: int
     username: str
     email: str
@@ -66,7 +68,7 @@ MOCK_USERS = {
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
         "roles": ["admin", "payroll_manager", "staff_manager"],
         "tenant_ids": [1, 2, 3],
-        "is_active": True
+        "is_active": True,
     },
     "payroll_clerk": {
         "id": 2,
@@ -75,7 +77,7 @@ MOCK_USERS = {
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
         "roles": ["payroll_clerk"],
         "tenant_ids": [1],
-        "is_active": True
+        "is_active": True,
     },
     "manager": {
         "id": 3,
@@ -84,8 +86,8 @@ MOCK_USERS = {
         "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
         "roles": ["manager", "staff_viewer"],
         "tenant_ids": [1],
-        "is_active": True
-    }
+        "is_active": True,
+    },
 }
 
 
@@ -94,7 +96,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     # Try enhanced password security first
     if password_security.verify_password(plain_password, hashed_password):
         return True
-    
+
     # Fallback to legacy method for existing passwords
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -133,9 +135,9 @@ def generate_token_id() -> str:
 
 
 def create_access_token(
-    data: dict, 
+    data: dict,
     expires_delta: Optional[timedelta] = None,
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
 ) -> str:
     """Create a JWT access token using secure configuration."""
     to_encode = data.copy()
@@ -143,19 +145,21 @@ def create_access_token(
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     # Add token tracking information
     token_id = generate_token_id()
-    to_encode.update({
-        "exp": expire,
-        "type": "access",
-        "jti": token_id,  # JWT ID for token tracking
-        "iat": datetime.utcnow().timestamp(),  # Issued at
-    })
-    
+    to_encode.update(
+        {
+            "exp": expire,
+            "type": "access",
+            "jti": token_id,  # JWT ID for token tracking
+            "iat": datetime.utcnow().timestamp(),  # Issued at
+        }
+    )
+
     if session_id:
         to_encode["session_id"] = session_id
-    
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
@@ -164,79 +168,83 @@ def create_refresh_token(data: dict, session_id: Optional[str] = None) -> str:
     """Create a JWT refresh token with longer expiration."""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    
+
     # Add token tracking information
     token_id = generate_token_id()
-    to_encode.update({
-        "exp": expire,
-        "type": "refresh",
-        "jti": token_id,  # JWT ID for token tracking
-        "iat": datetime.utcnow().timestamp(),  # Issued at
-    })
-    
+    to_encode.update(
+        {
+            "exp": expire,
+            "type": "refresh",
+            "jti": token_id,  # JWT ID for token tracking
+            "iat": datetime.utcnow().timestamp(),  # Issued at
+        }
+    )
+
     if session_id:
         to_encode["session_id"] = session_id
-    
+
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def verify_token(token: str, token_type: str = "access", check_blacklist: bool = True) -> Optional[TokenData]:
+def verify_token(
+    token: str, token_type: str = "access", check_blacklist: bool = True
+) -> Optional[TokenData]:
     """
     Verify and decode a JWT token with optional blacklist checking.
-    
+
     Args:
         token: JWT token to verify
         token_type: Expected token type ("access" or "refresh")
         check_blacklist: Whether to check if token is blacklisted
-        
+
     Returns:
         TokenData if valid, None otherwise
     """
     try:
         # Import here to avoid circular imports
         from .session_manager import session_manager
-        
+
         # Check blacklist if enabled
         if check_blacklist and session_manager.is_token_blacklisted(token):
             logger.warning("Attempted use of blacklisted token")
             return None
-        
+
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        
+
         # Check token type
         if payload.get("type") != token_type:
             return None
-            
+
         user_id: int = payload.get("sub")
         username: str = payload.get("username")
         roles: List[str] = payload.get("roles", [])
         tenant_ids: List[int] = payload.get("tenant_ids", [])
         session_id: str = payload.get("session_id")
         token_id: str = payload.get("jti")
-        
+
         if user_id is None:
             return None
-        
+
         # For refresh tokens, verify session exists and is valid
         if token_type == "refresh" and session_id:
             session = session_manager.get_session(session_id)
             if not session or not session.is_active:
                 logger.warning(f"Invalid session {session_id} for refresh token")
                 return None
-            
+
             # Verify the refresh token matches
             if session.refresh_token != token:
                 logger.warning(f"Refresh token mismatch for session {session_id}")
                 return None
-            
+
         return TokenData(
             user_id=user_id,
             username=username,
             roles=roles,
             tenant_ids=tenant_ids,
             session_id=session_id,
-            token_id=token_id
+            token_id=token_id,
         )
     except JWTError as e:
         logger.warning(f"JWT verification failed: {e}")
@@ -246,70 +254,69 @@ def verify_token(token: str, token_type: str = "access", check_blacklist: bool =
 def refresh_access_token(refresh_token: str) -> Optional[dict]:
     """
     Generate new access token from valid refresh token.
-    
+
     Args:
         refresh_token: Valid refresh token
-        
+
     Returns:
         Dictionary with new access token and metadata, or None if invalid
     """
     token_data = verify_token(refresh_token, token_type="refresh")
     if not token_data:
         return None
-    
+
     # Create new access token with same data
     new_token_data = {
         "sub": token_data.user_id,
-        "username": token_data.username, 
+        "username": token_data.username,
         "roles": token_data.roles,
-        "tenant_ids": token_data.tenant_ids
+        "tenant_ids": token_data.tenant_ids,
     }
-    
+
     access_token = create_access_token(new_token_data, session_id=token_data.session_id)
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "session_id": token_data.session_id
+        "session_id": token_data.session_id,
     }
 
 
-def create_user_session(
-    user: User,
-    request: Optional[Request] = None
-) -> dict:
+def create_user_session(user: User, request: Optional[Request] = None) -> dict:
     """
     Create a new authenticated session for a user.
-    
+
     Args:
         user: Authenticated user
         request: FastAPI request object for metadata
-        
+
     Returns:
         Dictionary with access token, refresh token, and session info
     """
     from .session_manager import session_manager
-    
+
     # Extract client information
     user_agent = None
     ip_address = None
     if request:
         user_agent = request.headers.get("user-agent")
         ip_address = request.client.host if request.client else None
-    
+
     # Create tokens
     token_data = {
         "sub": user.id,
         "username": user.username,
         "roles": user.roles,
-        "tenant_ids": user.tenant_ids
+        "tenant_ids": user.tenant_ids,
     }
-    
+
     # Create refresh token first (needed for session)
-    refresh_token_expires = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token_expires = datetime.utcnow() + timedelta(
+        days=REFRESH_TOKEN_EXPIRE_DAYS
+    )
     refresh_token = create_refresh_token(token_data)
-    
+
     # Create session
     session_id = session_manager.create_session(
         user_id=user.id,
@@ -317,14 +324,14 @@ def create_user_session(
         refresh_token=refresh_token,
         expires_at=refresh_token_expires,
         user_agent=user_agent,
-        ip_address=ip_address
+        ip_address=ip_address,
     )
-    
+
     # Create access token with session ID
     access_token = create_access_token(token_data, session_id=session_id)
-    
+
     logger.info(f"Created session {session_id} for user {user.username}")
-    
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -337,36 +344,36 @@ def create_user_session(
             "username": user.username,
             "email": user.email,
             "roles": user.roles,
-            "tenant_ids": user.tenant_ids
-        }
+            "tenant_ids": user.tenant_ids,
+        },
     }
 
 
 def logout_user(token: str, logout_all_sessions: bool = False) -> bool:
     """
     Logout user by revoking tokens and sessions.
-    
+
     Args:
         token: Access or refresh token
         logout_all_sessions: Whether to logout from all sessions
-        
+
     Returns:
         True if logout successful, False otherwise
     """
     from .session_manager import session_manager
-    
+
     try:
         # Try to get token data (could be access or refresh token)
         token_data = verify_token(token, "access", check_blacklist=False)
         if not token_data:
             token_data = verify_token(token, "refresh", check_blacklist=False)
-        
+
         if not token_data:
             return False
-        
+
         # Blacklist the current token
         session_manager.blacklist_token(token)
-        
+
         if logout_all_sessions:
             # Revoke all user sessions
             session_manager.revoke_all_user_sessions(token_data.user_id)
@@ -374,58 +381,69 @@ def logout_user(token: str, logout_all_sessions: bool = False) -> bool:
         elif token_data.session_id:
             # Revoke specific session
             session_manager.revoke_session(token_data.session_id)
-            logger.info(f"Logged out session {token_data.session_id} for user {token_data.username}")
-        
+            logger.info(
+                f"Logged out session {token_data.session_id} for user {token_data.username}"
+            )
+
         return True
-        
+
     except Exception as e:
         logger.error(f"Logout failed: {e}")
         return False
 
 
-async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> User:
+async def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> User:
     """Get current authenticated user."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     if not credentials:
         raise credentials_exception
-    
+
     token_data = verify_token(credentials.credentials)
     if token_data is None:
         raise credentials_exception
-    
+
     user = get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
-    
+
     return user
 
 
 def require_roles(required_roles: List[str]):
     """Dependency factory for role-based authorization."""
+
     def check_roles(current_user: User = Depends(get_current_user)) -> User:
         if not any(role in current_user.roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation requires one of these roles: {required_roles}"
+                detail=f"Operation requires one of these roles: {required_roles}",
             )
         return current_user
+
     return check_roles
 
 
 def require_tenant_access(tenant_id: int):
     """Dependency factory for tenant-based authorization."""
+
     def check_tenant_access(current_user: User = Depends(get_current_user)) -> User:
-        if tenant_id not in current_user.tenant_ids and "admin" not in current_user.roles:
+        if (
+            tenant_id not in current_user.tenant_ids
+            and "admin" not in current_user.roles
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied for this tenant"
+                detail="Access denied for this tenant",
             )
         return current_user
+
     return check_tenant_access
 
 
@@ -433,13 +451,16 @@ def require_tenant_access(tenant_id: int):
 require_admin = require_roles(["admin"])
 require_payroll_access = require_roles(["admin", "payroll_manager", "payroll_clerk"])
 require_payroll_write = require_roles(["admin", "payroll_manager"])
-require_staff_access = require_roles(["admin", "payroll_manager", "payroll_clerk", "manager", "staff_viewer"])
+require_staff_access = require_roles(
+    ["admin", "payroll_manager", "payroll_clerk", "manager", "staff_viewer"]
+)
+
 
 # Add permission function factory to support require_permission("tax.admin") pattern
 def require_permission(permission: str):
     """
     Create a dependency that requires specific permission.
-    
+
     Can be used in two ways:
     1. As a decorator: @require_permission("permission.name")
     2. As a dependency: Depends(require_permission("permission.name"))
@@ -488,14 +509,14 @@ def require_permission(permission: str):
         "ai.configure_alerts": ["admin", "ai_admin"],
     }
     roles = permission_role_map.get(permission, ["admin"])
-    
+
     # When used as decorator, just return the function as-is
     # The actual permission check happens via the current_user dependency
     def decorator(func):
         # Simply return the function unchanged
         # FastAPI will handle the dependency injection via the function parameters
         return func
-    
+
     return decorator
 
 
@@ -504,16 +525,17 @@ async def get_current_tenant() -> Optional[int]:
     """Get current tenant ID - placeholder for multi-tenant support"""
     return None
 
+
 # Optional authentication (for public endpoints that can be enhanced with auth)
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
     """Get current user if authenticated, None otherwise."""
     if not credentials:
         return None
-    
+
     token_data = verify_token(credentials.credentials)
     if token_data is None:
         return None
-    
+
     return get_user(username=token_data.username)

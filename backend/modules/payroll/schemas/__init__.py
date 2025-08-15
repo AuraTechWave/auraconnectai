@@ -12,12 +12,12 @@ from .payroll_tax_schemas import (
 )
 
 __all__ = [
-    'PayrollTaxCalculationRequest',
-    'PayrollTaxCalculationResponse',
-    'TaxApplicationDetail',
-    'TaxBreakdown',
-    'TaxRuleValidationRequest',
-    'TaxRuleValidationResponse',
-    'PayrollTaxServiceRequest',
-    'PayrollTaxServiceResponse',
+    "PayrollTaxCalculationRequest",
+    "PayrollTaxCalculationResponse",
+    "TaxApplicationDetail",
+    "TaxBreakdown",
+    "TaxRuleValidationRequest",
+    "TaxRuleValidationResponse",
+    "PayrollTaxServiceRequest",
+    "PayrollTaxServiceResponse",
 ]

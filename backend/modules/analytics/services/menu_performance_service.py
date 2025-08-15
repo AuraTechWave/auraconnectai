@@ -6,9 +6,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, text, case
 
-from ..schemas.analytics_schemas import (
-    MenuPerformanceResponse, SalesFilterRequest
-)
+from ..schemas.analytics_schemas import MenuPerformanceResponse, SalesFilterRequest
 from modules.orders.models.order_models import Order, OrderItem
 from modules.menu.models.recipe_models import Recipe
 from core.menu_models import MenuItem, MenuCategory
@@ -44,7 +42,9 @@ class MenuPerformanceService:
             menu_performance: List[MenuPerformanceResponse] = []
             for r in results:
                 # Python-side profit calculations for clarity / DB compatibility
-                profit = (r.revenue_generated or Decimal("0")) - (r.total_cost or Decimal("0"))
+                profit = (r.revenue_generated or Decimal("0")) - (
+                    r.total_cost or Decimal("0")
+                )
                 profit_margin: Optional[Decimal] = None
                 if r.revenue_generated and r.revenue_generated > 0:
                     profit_margin = (profit / r.revenue_generated) * 100
@@ -65,7 +65,8 @@ class MenuPerformanceService:
                         popularity_rank=r.popularity_rank,
                         revenue_rank=r.revenue_rank,
                         profit_rank=r.profit_rank,
-                        period_start=filters.date_from or (datetime.now().date() - timedelta(days=30)),
+                        period_start=filters.date_from
+                        or (datetime.now().date() - timedelta(days=30)),
                         period_end=filters.date_to or datetime.now().date(),
                     )
                 )
@@ -88,7 +89,9 @@ class MenuPerformanceService:
             self.db.query(
                 OrderItem.menu_item_id.label("menu_item_id"),
                 func.sum(OrderItem.quantity).label("quantity_sold"),
-                func.sum(OrderItem.price * OrderItem.quantity).label("revenue_generated"),
+                func.sum(OrderItem.price * OrderItem.quantity).label(
+                    "revenue_generated"
+                ),
                 func.avg(OrderItem.price).label("average_price"),
                 func.count(func.distinct(OrderItem.order_id)).label("order_frequency"),
                 # Cost — multiply quantity sold by recipe cost (fallback 0)
@@ -111,7 +114,9 @@ class MenuPerformanceService:
         if filters.staff_ids:
             metrics_sub = metrics_sub.filter(Order.staff_id.in_(filters.staff_ids))
         if filters.product_ids:
-            metrics_sub = metrics_sub.filter(OrderItem.menu_item_id.in_(filters.product_ids))
+            metrics_sub = metrics_sub.filter(
+                OrderItem.menu_item_id.in_(filters.product_ids)
+            )
         if filters.category_ids:
             # Need MenuItem join to filter by category before grouping. Use EXISTS.
             metrics_sub = metrics_sub.filter(
@@ -145,7 +150,11 @@ class MenuPerformanceService:
                 .over(order_by=desc(metrics_sub.c.revenue_generated))
                 .label("revenue_rank"),
                 func.rank()
-                .over(order_by=desc(metrics_sub.c.revenue_generated - metrics_sub.c.total_cost))
+                .over(
+                    order_by=desc(
+                        metrics_sub.c.revenue_generated - metrics_sub.c.total_cost
+                    )
+                )
                 .label("profit_rank"),
             )
             .join(MenuItem, MenuItem.id == metrics_sub.c.menu_item_id)

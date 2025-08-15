@@ -16,7 +16,7 @@ from .equipment_schemas import (
     MaintenanceSearchParams,
     EquipmentListResponse,
     MaintenanceListResponse,
-    MaintenanceSummary
+    MaintenanceSummary,
 )
 
 from .equipment_schemas_improved import (
@@ -34,7 +34,7 @@ from .equipment_schemas_improved import (
     MaintenanceSearchParams as MaintenanceSearchParamsImproved,
     EquipmentListResponse as EquipmentListResponseImproved,
     MaintenanceListResponse as MaintenanceListResponseImproved,
-    MaintenanceSummary as MaintenanceSummaryImproved
+    MaintenanceSummary as MaintenanceSummaryImproved,
 )
 
 __all__ = [
@@ -69,5 +69,5 @@ __all__ = [
     "MaintenanceSearchParamsImproved",
     "EquipmentListResponseImproved",
     "MaintenanceListResponseImproved",
-    "MaintenanceSummaryImproved"
+    "MaintenanceSummaryImproved",
 ]

@@ -99,10 +99,16 @@ def test_generate_demand_aware_schedule_respects_buffer():
     svc = SchedulingService(db)
 
     shifts_no_buf = svc.generate_demand_aware_schedule(
-        start_date=date(2025, 8, 18), end_date=date(2025, 8, 18), location_id=1, buffer_percentage=0.0
+        start_date=date(2025, 8, 18),
+        end_date=date(2025, 8, 18),
+        location_id=1,
+        buffer_percentage=0.0,
     )
     shifts_buf = svc.generate_demand_aware_schedule(
-        start_date=date(2025, 8, 18), end_date=date(2025, 8, 18), location_id=1, buffer_percentage=50.0
+        start_date=date(2025, 8, 18),
+        end_date=date(2025, 8, 18),
+        location_id=1,
+        buffer_percentage=50.0,
     )
 
     assert len(shifts_buf) >= len(shifts_no_buf)
@@ -112,7 +118,7 @@ def test_map_orders_to_role_requirements_handles_zero_productivity():
     """Test that zero productivity values are handled gracefully without crashing."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     # Test with a simple mock that includes zero productivity
     class MockConfig:
         def __init__(self):
@@ -128,40 +134,43 @@ def test_map_orders_to_role_requirements_handles_zero_productivity():
                 "Server": 2,
                 "Dishwasher": 1,
             }
-    
+
     # Mock the import and function
     import sys
-    original_module = sys.modules.get('modules.staff.services.scheduling_config')
-    
+
+    original_module = sys.modules.get("modules.staff.services.scheduling_config")
+
     mock_module = Mock()
     mock_module.load_scheduling_config = Mock(return_value=MockConfig())
-    sys.modules['modules.staff.services.scheduling_config'] = mock_module
-    
+    sys.modules["modules.staff.services.scheduling_config"] = mock_module
+
     try:
         # This should not raise ZeroDivisionError
         result = svc._map_orders_to_role_requirements(30, 1)
-        
+
         # Should still return requirements for valid roles
         assert len(result) > 0
         # Chef role should be skipped due to zero productivity
-        assert all(role_id != 2 for role_id in result.keys())  # Assuming Chef has role_id=2
-        
+        assert all(
+            role_id != 2 for role_id in result.keys()
+        )  # Assuming Chef has role_id=2
+
     finally:
         # Restore original module
         if original_module:
-            sys.modules['modules.staff.services.scheduling_config'] = original_module
+            sys.modules["modules.staff.services.scheduling_config"] = original_module
         else:
-            del sys.modules['modules.staff.services.scheduling_config']
+            del sys.modules["modules.staff.services.scheduling_config"]
 
 
 def test_map_orders_to_role_requirements_uses_restaurant_id():
     """Test that role filtering uses restaurant_id correctly."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     # Verify that the query uses restaurant_id filter
     result = svc._map_orders_to_role_requirements(30, 1)
-    
+
     # The mock should have been called with restaurant_id filter
     # This test verifies the fix for incorrect role filtering
     assert True  # If we get here without error, the restaurant_id filter worked
@@ -171,28 +180,36 @@ def test_generate_demand_aware_schedule_respects_min_hours_between_shifts():
     """Test that the schedule respects the min_hours_between_shifts parameter."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     # Mock the availability check to always return available
     svc.check_availability = Mock(return_value=(True, None))
-    
+
     # Mock the conflict detection methods to verify they're called with correct parameters
     detected_conflicts_calls = []
     generation_conflicts_calls = []
-    
-    def mock_detect_conflicts(staff_id, start_time, end_time, min_rest_hours, exclude_shift_id=None):
-        detected_conflicts_calls.append((staff_id, start_time, end_time, min_rest_hours))
+
+    def mock_detect_conflicts(
+        staff_id, start_time, end_time, min_rest_hours, exclude_shift_id=None
+    ):
+        detected_conflicts_calls.append(
+            (staff_id, start_time, end_time, min_rest_hours)
+        )
         return []  # No conflicts
-    
-    def mock_check_generation_conflicts(start_time, end_time, assigned_shifts, min_rest_hours):
-        generation_conflicts_calls.append((start_time, end_time, assigned_shifts, min_rest_hours))
+
+    def mock_check_generation_conflicts(
+        start_time, end_time, assigned_shifts, min_rest_hours
+    ):
+        generation_conflicts_calls.append(
+            (start_time, end_time, assigned_shifts, min_rest_hours)
+        )
         return False  # No conflicts
-    
+
     svc._detect_conflicts_with_custom_rest = mock_detect_conflicts
     svc._check_generation_conflicts = mock_check_generation_conflicts
     svc._calculate_weekly_hours = Mock(return_value=0.0)
     svc._calculate_generation_hours = Mock(return_value=0.0)
     svc.calculate_labor_cost = Mock(return_value=100.0)
-    
+
     shifts = svc.generate_demand_aware_schedule(
         start_date=date(2025, 8, 18),
         end_date=date(2025, 8, 18),
@@ -200,12 +217,12 @@ def test_generate_demand_aware_schedule_respects_min_hours_between_shifts():
         min_hours_between_shifts=12,  # Custom value
         buffer_percentage=0.0,
     )
-    
+
     # Verify that conflict detection was called with the custom rest period
     assert len(detected_conflicts_calls) > 0
     for call in detected_conflicts_calls:
         assert call[3] == 12  # min_rest_hours parameter
-    
+
     # Verify that generation conflict checking was called with the custom rest period
     assert len(generation_conflicts_calls) > 0
     for call in generation_conflicts_calls:
@@ -216,18 +233,18 @@ def test_detect_conflicts_with_custom_rest():
     """Test the custom conflict detection method with different rest periods."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     # Mock the database query to return no existing shifts
     svc.db.query = Mock()
     svc.db.query.return_value.filter.return_value.all.return_value = []
-    
+
     start_time = datetime(2025, 8, 18, 10, 0)
     end_time = datetime(2025, 8, 18, 18, 0)
-    
+
     # Test with different rest periods
     conflicts_8 = svc._detect_conflicts_with_custom_rest(1, start_time, end_time, 8)
     conflicts_12 = svc._detect_conflicts_with_custom_rest(1, start_time, end_time, 12)
-    
+
     # Both should return empty lists since no conflicts exist
     assert len(conflicts_8) == 0
     assert len(conflicts_12) == 0
@@ -237,27 +254,39 @@ def test_check_generation_conflicts():
     """Test the generation conflict checking method."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     start_time = datetime(2025, 8, 18, 10, 0)
     end_time = datetime(2025, 8, 18, 18, 0)
-    
+
     # Test with no assigned shifts
     has_conflicts = svc._check_generation_conflicts(start_time, end_time, [], 8)
     assert not has_conflicts
-    
+
     # Test with overlapping shift
     overlapping_shift = (datetime(2025, 8, 18, 12, 0), datetime(2025, 8, 18, 20, 0))
-    has_conflicts = svc._check_generation_conflicts(start_time, end_time, [overlapping_shift], 8)
+    has_conflicts = svc._check_generation_conflicts(
+        start_time, end_time, [overlapping_shift], 8
+    )
     assert has_conflicts
-    
+
     # Test with insufficient rest period
-    nearby_shift = (datetime(2025, 8, 18, 0, 0), datetime(2025, 8, 18, 8, 0))  # 2 hours rest
-    has_conflicts = svc._check_generation_conflicts(start_time, end_time, [nearby_shift], 8)
+    nearby_shift = (
+        datetime(2025, 8, 18, 0, 0),
+        datetime(2025, 8, 18, 8, 0),
+    )  # 2 hours rest
+    has_conflicts = svc._check_generation_conflicts(
+        start_time, end_time, [nearby_shift], 8
+    )
     assert has_conflicts
-    
+
     # Test with sufficient rest period
-    far_shift = (datetime(2025, 8, 18, 0, 0), datetime(2025, 8, 18, 1, 0))  # 9 hours rest
-    has_conflicts = svc._check_generation_conflicts(start_time, end_time, [far_shift], 8)
+    far_shift = (
+        datetime(2025, 8, 18, 0, 0),
+        datetime(2025, 8, 18, 1, 0),
+    )  # 9 hours rest
+    has_conflicts = svc._check_generation_conflicts(
+        start_time, end_time, [far_shift], 8
+    )
     assert not has_conflicts
 
 
@@ -265,13 +294,13 @@ def test_calculate_generation_hours():
     """Test the generation hours calculation method."""
     db = build_db_mock(peak=30)
     svc = SchedulingService(db)
-    
+
     reference_date = date(2025, 8, 18)  # Monday
-    
+
     # Test with no assigned shifts
     hours = svc._calculate_generation_hours(1, reference_date, [])
     assert hours == 0.0
-    
+
     # Test with shifts in the same week
     shifts_same_week = [
         (datetime(2025, 8, 18, 10, 0), datetime(2025, 8, 18, 18, 0)),  # Monday
@@ -279,7 +308,7 @@ def test_calculate_generation_hours():
     ]
     hours = svc._calculate_generation_hours(1, reference_date, shifts_same_week)
     assert hours == 16.0  # 8 hours each
-    
+
     # Test with shifts outside the week
     shifts_outside_week = [
         (datetime(2025, 8, 25, 10, 0), datetime(2025, 8, 25, 18, 0)),  # Next Monday

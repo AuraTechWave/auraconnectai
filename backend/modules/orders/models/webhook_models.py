@@ -1,11 +1,18 @@
-from sqlalchemy import (Column, Integer, String, ForeignKey, DateTime,
-                        Text, Boolean, Enum)
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Text,
+    Boolean,
+    Enum,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from core.database import Base
 from core.mixins import TimestampMixin
-from ..enums.webhook_enums import (WebhookEventType, WebhookStatus,
-                                   WebhookDeliveryStatus)
+from ..enums.webhook_enums import WebhookEventType, WebhookStatus, WebhookDeliveryStatus
 
 
 class WebhookConfiguration(Base, TimestampMixin):
@@ -20,10 +27,7 @@ class WebhookConfiguration(Base, TimestampMixin):
     headers = Column(JSONB, nullable=True)
     timeout_seconds = Column(Integer, default=30)
 
-    delivery_logs = relationship(
-        "WebhookDeliveryLog",
-        back_populates="webhook_config"
-    )
+    delivery_logs = relationship("WebhookDeliveryLog", back_populates="webhook_config")
 
 
 class WebhookDeliveryLog(Base, TimestampMixin):
@@ -31,23 +35,22 @@ class WebhookDeliveryLog(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, index=True)
     webhook_config_id = Column(
-        Integer,
-        ForeignKey("webhook_configurations.id"),
-        nullable=False, index=True
+        Integer, ForeignKey("webhook_configurations.id"), nullable=False, index=True
     )
-    order_id = Column(
-        Integer, ForeignKey("orders.id"),
-        nullable=False, index=True
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False, index=True)
+    event_type = Column(
+        Enum(
+            WebhookEventType,
+            values_callable=lambda obj: [e.value for e in obj],
+            create_type=False,
+        ),
+        nullable=False,
+        index=True,
     )
-    event_type = Column(Enum(WebhookEventType, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, index=True)
     status = Column(
-        Enum(WebhookStatus), nullable=False,
-        default=WebhookStatus.PENDING, index=True
+        Enum(WebhookStatus), nullable=False, default=WebhookStatus.PENDING, index=True
     )
-    delivery_status = Column(
-        Enum(WebhookDeliveryStatus),
-        nullable=True, index=True
-    )
+    delivery_status = Column(Enum(WebhookDeliveryStatus), nullable=True, index=True)
 
     payload = Column(JSONB, nullable=False)
     response_status_code = Column(Integer, nullable=True)
@@ -61,7 +64,6 @@ class WebhookDeliveryLog(Base, TimestampMixin):
     failed_at = Column(DateTime, nullable=True)
 
     webhook_config = relationship(
-        "WebhookConfiguration",
-        back_populates="delivery_logs"
+        "WebhookConfiguration", back_populates="delivery_logs"
     )
     order = relationship("Order")

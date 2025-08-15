@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, validator
 
 class ForecastType(str, Enum):
     """Types of forecasting models"""
+
     DEMAND = "demand"
     STOCK = "stock"
     REVENUE = "revenue"
@@ -25,6 +26,7 @@ class ForecastType(str, Enum):
 
 class TimeGranularity(str, Enum):
     """Time granularity for predictions"""
+
     HOURLY = "hourly"
     DAILY = "daily"
     WEEKLY = "weekly"
@@ -33,6 +35,7 @@ class TimeGranularity(str, Enum):
 
 class PredictionConfidence(str, Enum):
     """Confidence levels for predictions"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -41,6 +44,7 @@ class PredictionConfidence(str, Enum):
 
 class ModelType(str, Enum):
     """Available prediction models"""
+
     ARIMA = "arima"
     PROPHET = "prophet"
     LSTM = "lstm"
@@ -51,6 +55,7 @@ class ModelType(str, Enum):
 
 class SeasonalityType(str, Enum):
     """Types of seasonality patterns"""
+
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
@@ -62,8 +67,13 @@ class SeasonalityType(str, Enum):
 # Request Schemas
 class PredictionRequest(BaseModel):
     """Base request for predictions"""
-    entity_id: Optional[int] = Field(None, description="ID of specific entity (product/category)")
-    entity_type: str = Field(..., description="Type of entity: product, category, overall")
+
+    entity_id: Optional[int] = Field(
+        None, description="ID of specific entity (product/category)"
+    )
+    entity_type: str = Field(
+        ..., description="Type of entity: product, category, overall"
+    )
     forecast_type: ForecastType
     time_granularity: TimeGranularity = TimeGranularity.DAILY
     horizon_days: int = Field(7, ge=1, le=365, description="Forecast horizon in days")
@@ -74,26 +84,28 @@ class PredictionRequest(BaseModel):
 
 class DemandForecastRequest(PredictionRequest):
     """Request for demand forecasting"""
+
     include_external_factors: bool = True
     external_factors: Optional[Dict[str, Any]] = Field(
-        None,
-        description="External factors like weather, events, holidays"
+        None, description="External factors like weather, events, holidays"
     )
-    
+
     def __init__(self, **data):
-        data['forecast_type'] = ForecastType.DEMAND
+        data["forecast_type"] = ForecastType.DEMAND
         super().__init__(**data)
 
 
 class StockOptimizationRequest(BaseModel):
     """Request for stock optimization"""
+
     product_ids: Optional[List[int]] = None
     category_ids: Optional[List[int]] = None
     optimization_objective: str = Field(
-        "minimize_waste",
-        description="minimize_waste, maximize_availability, balanced"
+        "minimize_waste", description="minimize_waste, maximize_availability, balanced"
     )
-    service_level: float = Field(0.95, ge=0.5, le=0.99, description="Target service level")
+    service_level: float = Field(
+        0.95, ge=0.5, le=0.99, description="Target service level"
+    )
     lead_time_days: int = Field(2, ge=0, description="Supplier lead time")
     include_safety_stock: bool = True
     budget_constraint: Optional[Decimal] = None
@@ -101,6 +113,7 @@ class StockOptimizationRequest(BaseModel):
 
 class BatchPredictionRequest(BaseModel):
     """Request for batch predictions"""
+
     predictions: List[PredictionRequest]
     priority: str = Field("normal", description="normal, high, low")
     callback_url: Optional[str] = None
@@ -109,6 +122,7 @@ class BatchPredictionRequest(BaseModel):
 # Response Schemas
 class PredictionPoint(BaseModel):
     """Single prediction point"""
+
     timestamp: datetime
     predicted_value: float
     lower_bound: Optional[float] = None
@@ -118,6 +132,7 @@ class PredictionPoint(BaseModel):
 
 class ForecastMetadata(BaseModel):
     """Metadata about the forecast"""
+
     model_used: ModelType
     training_period: Dict[str, date]
     seasonality_detected: List[SeasonalityType]
@@ -128,6 +143,7 @@ class ForecastMetadata(BaseModel):
 
 class DemandForecast(BaseModel):
     """Demand forecast response"""
+
     entity_id: Optional[int]
     entity_type: str
     entity_name: str
@@ -139,6 +155,7 @@ class DemandForecast(BaseModel):
 
 class StockRecommendation(BaseModel):
     """Stock level recommendation"""
+
     product_id: int
     product_name: str
     current_stock: float
@@ -153,6 +170,7 @@ class StockRecommendation(BaseModel):
 
 class StockOptimizationResult(BaseModel):
     """Result of stock optimization"""
+
     optimization_id: str
     recommendations: List[StockRecommendation]
     total_investment_required: Decimal
@@ -161,6 +179,7 @@ class StockOptimizationResult(BaseModel):
 
 class BatchForecastResult(BaseModel):
     """Result of batch forecast request"""
+
     task_id: Optional[str] = None
     status: str
     message: Optional[str] = None
@@ -172,6 +191,7 @@ class BatchForecastResult(BaseModel):
 
 class InventoryHealthCheck(BaseModel):
     """Health check result for inventory item"""
+
     product_id: int
     product_name: str
     current_stock: float
@@ -185,6 +205,7 @@ class InventoryHealthCheck(BaseModel):
 
 class InventoryHealthReport(BaseModel):
     """Overall inventory health report"""
+
     report_id: str
     generated_at: datetime = Field(default_factory=datetime.now)
     total_products: int
@@ -200,6 +221,7 @@ class InventoryHealthReport(BaseModel):
 
 class PredictionAlert(BaseModel):
     """Alert for significant predictions"""
+
     alert_id: str
     alert_type: str = Field(..., description="stockout_risk, demand_spike, anomaly")
     severity: str = Field(..., description="low, medium, high, critical")
@@ -214,6 +236,7 @@ class PredictionAlert(BaseModel):
 
 class ModelPerformance(BaseModel):
     """Model performance metrics"""
+
     model_type: ModelType
     entity_type: str
     mae: float = Field(..., description="Mean Absolute Error")
@@ -227,6 +250,7 @@ class ModelPerformance(BaseModel):
 
 class ModelPerformanceReport(BaseModel):
     """Report containing model performance metrics for all models"""
+
     report_id: str
     generated_at: datetime = Field(default_factory=datetime.now)
     performance_metrics: List[ModelPerformance]
@@ -237,6 +261,7 @@ class ModelPerformanceReport(BaseModel):
 
 class ForecastComparison(BaseModel):
     """Comparison of forecast vs actuals"""
+
     entity_id: Optional[int]
     entity_name: str
     comparison_period: Dict[str, date]
@@ -248,6 +273,7 @@ class ForecastComparison(BaseModel):
 
 class SeasonalPattern(BaseModel):
     """Detected seasonal pattern"""
+
     pattern_type: SeasonalityType
     strength: float = Field(..., ge=0, le=1, description="Pattern strength")
     period: int = Field(..., description="Period in time units")
@@ -258,6 +284,7 @@ class SeasonalPattern(BaseModel):
 
 class TrendAnalysis(BaseModel):
     """Trend analysis results"""
+
     entity_id: Optional[int]
     entity_name: str
     trend_direction: str = Field(..., description="increasing, decreasing, stable")
@@ -270,10 +297,10 @@ class TrendAnalysis(BaseModel):
 
 class PredictiveInsight(BaseModel):
     """Actionable predictive insight"""
+
     insight_id: str
     insight_type: str = Field(
-        ...,
-        description="demand_trend, stock_risk, revenue_opportunity, anomaly"
+        ..., description="demand_trend, stock_risk, revenue_opportunity, anomaly"
     )
     title: str
     description: str
@@ -287,6 +314,7 @@ class PredictiveInsight(BaseModel):
 
 class ForecastAccuracyReport(BaseModel):
     """Report on forecast accuracy"""
+
     report_id: str
     period: Dict[str, date]
     overall_accuracy: float
@@ -299,6 +327,7 @@ class ForecastAccuracyReport(BaseModel):
 
 class RealTimePredictionUpdate(BaseModel):
     """Real-time prediction update via WebSocket"""
+
     update_id: str
     update_type: str = Field(..., description="forecast_update, alert, insight")
     entity_id: Optional[int]
@@ -309,6 +338,7 @@ class RealTimePredictionUpdate(BaseModel):
 
 class PredictionExportRequest(BaseModel):
     """Request to export predictions"""
+
     forecast_ids: List[str]
     format: str = Field("csv", description="csv, excel, json")
     include_metadata: bool = True
@@ -318,6 +348,7 @@ class PredictionExportRequest(BaseModel):
 
 class HistoricalDataRequest(BaseModel):
     """Request for historical data analysis"""
+
     entity_id: Optional[int]
     entity_type: str
     metric_type: str = Field(..., description="sales, stock_levels, revenue")
@@ -330,6 +361,7 @@ class HistoricalDataRequest(BaseModel):
 
 class ModelTrainingRequest(BaseModel):
     """Request to train or retrain models"""
+
     entity_ids: Optional[List[int]] = None
     entity_type: str
     model_types: List[ModelType]
