@@ -357,6 +357,13 @@ app.include_router(payment_router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(feedback_router, prefix="/api/v1", tags=["Customer Feedback"])
 app.include_router(reviews_router, prefix="/api/v1", tags=["Customer Reviews"])
 
+# SMS Notifications
+from modules.sms.routers import sms_router, template_router, opt_out_router, webhook_router as sms_webhook_router
+app.include_router(sms_router, tags=["SMS Notifications"])
+app.include_router(template_router, tags=["SMS Templates"])
+app.include_router(opt_out_router, tags=["SMS Opt-Out"])
+app.include_router(sms_webhook_router, tags=["SMS Webhooks"])
+
 # Loyalty & Rewards
 app.include_router(rewards_router, prefix="/api/v1", tags=["Loyalty & Rewards"])
 
