@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from decimal import Decimal
+from enum import Enum
 
 from ..models.table_models import (
     TableStatus,
@@ -399,3 +400,148 @@ class FloorHeatmapData(BaseModel):
     floor_name: str
     period: str  # e.g., "today", "week", "month"
     heatmap_data: List[Dict[str, Any]]  # Table positions with utilization intensity
+
+
+# Real-time Schemas
+class TurnTimeAlertLevel(str, Enum):
+    """Turn time alert levels"""
+    NORMAL = "normal"
+    WARNING = "warning"
+    CRITICAL = "critical"
+    EXCESSIVE = "excessive"
+
+
+class TurnTimeAlertResponse(BaseModel):
+    """Turn time alert response"""
+    
+    table_id: int
+    table_number: str
+    current_duration_minutes: int
+    expected_duration_minutes: int
+    overrun_minutes: int
+    progress_percentage: float
+    alert_level: TurnTimeAlertLevel
+    guest_count: int
+    server_name: Optional[str]
+    order_value: Optional[float]
+    session_start: datetime
+    
+    class Config:
+        use_enum_values = True
+
+
+class TableHeatMapItem(BaseModel):
+    """Individual table heat map data"""
+    
+    table_id: int
+    table_number: str
+    heat_score: float = Field(..., ge=0, le=100)
+    heat_color: str = Field(..., regex="^#[0-9A-Fa-f]{6}$")
+    occupancy_rate: float = Field(..., ge=0, le=100)
+    revenue_per_hour: float = Field(..., ge=0)
+    turn_count_today: int = Field(..., ge=0)
+    avg_turn_time_minutes: float = Field(..., ge=0)
+    status: TableStatus
+    position: Dict[str, int]  # {"x": 100, "y": 200}
+
+
+class TableHeatMapResponse(BaseModel):
+    """Heat map visualization response"""
+    
+    restaurant_id: int
+    period: str
+    heat_map: List[TableHeatMapItem]
+    summary: Dict[str, Any]
+    timestamp: datetime
+    
+    class Config:
+        use_enum_values = True
+
+
+class OccupancySummary(BaseModel):
+    """Current occupancy summary"""
+    
+    total_tables: int = Field(..., ge=0)
+    occupied_tables: int = Field(..., ge=0)
+    available_tables: int = Field(..., ge=0)
+    reserved_tables: int = Field(..., ge=0)
+    blocked_tables: int = Field(..., ge=0)
+    occupancy_rate: float = Field(..., ge=0, le=100)
+    current_guests: int = Field(..., ge=0)
+    avg_turn_time_today: float = Field(..., ge=0)
+    status_distribution: Dict[str, int]
+
+
+class RealtimeTableUpdate(BaseModel):
+    """Real-time table status update"""
+    
+    type: str  # "table_update", "session_update", "reservation_update"
+    update_type: Optional[str] = None  # "status_changed", etc.
+    table_id: Optional[int] = None
+    session_id: Optional[int] = None
+    reservation_id: Optional[int] = None
+    action: Optional[str] = None  # "started", "ended", "updated"
+    data: Dict[str, Any]
+    timestamp: datetime
+
+
+class WebSocketMessage(BaseModel):
+    """WebSocket message format"""
+    
+    type: str = Field(..., regex="^(initial_state|table_update|session_update|reservation_update|realtime_update|periodic_update|ping|pong|subscription_confirmed|floor_status|error)$")
+    data: Optional[Dict[str, Any]] = None
+    timestamp: datetime
+    sequence: Optional[int] = None
+
+
+class TurnTimeAnalytics(BaseModel):
+    """Turn time analytics response"""
+    
+    period: Dict[str, str]  # start and end dates
+    summary: Dict[str, Any]
+    table_analytics: List[Dict[str, Any]]
+
+
+class PeakHoursAnalysis(BaseModel):
+    """Peak hours analysis response"""
+    
+    date: str
+    peak_hour: Optional[Dict[str, Any]]
+    total_sessions: int
+    hourly_breakdown: List[Dict[str, Any]]
+    service_periods: List[Dict[str, Any]]
+    recommendations: List[str]
+
+
+class LiveStatusResponse(BaseModel):
+    """Comprehensive live status response"""
+    
+    floors: List[Dict[str, Any]]
+    analytics: Optional[Dict[str, Any]] = None
+    timestamp: datetime
+
+
+class ConnectionInfo(BaseModel):
+    """WebSocket connection information"""
+    
+    user_id: Optional[int]
+    role: Optional[str]
+    connected_at: datetime
+
+
+class WebSocketConnectionsResponse(BaseModel):
+    """Active WebSocket connections response"""
+    
+    restaurant_id: int
+    active_connections: int
+    connections: List[ConnectionInfo]
+    timestamp: datetime
+
+
+class BroadcastMessage(BaseModel):
+    """Message to broadcast to all connections"""
+    
+    type: str
+    data: Dict[str, Any]
+    priority: Optional[str] = "normal"  # "low", "normal", "high", "urgent"
+    target_roles: Optional[List[str]] = None  # Filter by user roles

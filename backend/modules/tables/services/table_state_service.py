@@ -238,6 +238,19 @@ class TableStateService:
         await db.commit()
         await db.refresh(session)
 
+        # Notify real-time service of session start
+        from ..websocket.table_websocket import notify_session_started
+        try:
+            await notify_session_started(
+                restaurant_id=restaurant_id,
+                session_id=session.id,
+                table_id=session.table_id,
+                guest_count=session.guest_count,
+                server_name=session.server.name if session.server else None
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send session start notification: {e}")
+
         return session
 
     async def _validate_combined_tables(
@@ -318,6 +331,19 @@ class TableStateService:
 
         await db.commit()
         await db.refresh(session)
+
+        # Notify real-time service of session end
+        from ..websocket.table_websocket import notify_session_ended
+        try:
+            duration_minutes = int((session.end_time - session.start_time).total_seconds() / 60)
+            await notify_session_ended(
+                restaurant_id=restaurant_id,
+                session_id=session.id,
+                table_id=session.table_id,
+                duration_minutes=duration_minutes
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send session end notification: {e}")
 
         return session
 
@@ -432,7 +458,21 @@ class TableStateService:
         db.add(log)
 
         # Update table status
+        old_status = table.status
         table.status = new_status
+
+        # Notify real-time service of status change
+        from ..websocket.table_websocket import notify_table_status_change
+        try:
+            await notify_table_status_change(
+                restaurant_id=table.restaurant_id,
+                table_id=table.id,
+                old_status=old_status,
+                new_status=new_status,
+                reason=reason
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send status change notification: {e}")
 
     def _validate_status_transition(
         self, current_status: TableStatus, new_status: TableStatus

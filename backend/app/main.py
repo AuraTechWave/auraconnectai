@@ -371,6 +371,10 @@ app.include_router(rewards_router, prefix="/api/v1", tags=["Loyalty & Rewards"])
 app.include_router(table_layout_router, prefix="/api/v1", tags=["Table Layout Management"])
 app.include_router(table_state_router, prefix="/api/v1", tags=["Table State Management"])
 
+# Table Real-time Features  
+from modules.tables.routers.realtime_table_router import router as realtime_table_router
+app.include_router(realtime_table_router, tags=["Table Real-time"])
+
 # Promotions & Marketing
 app.include_router(promotion_router, prefix="/api/v1", tags=["Promotions"])
 app.include_router(ab_testing_router, prefix="/api/v1/promotions", tags=["A/B Testing"])
@@ -401,6 +405,10 @@ async def startup_event():
     await start_queue_monitor()
     # Start priority monitor
     await start_priority_monitor()
+    
+    # Start table real-time services
+    from modules.tables.services.startup_service import start_table_services
+    await start_table_services()
 
 
 @app.on_event("shutdown")
@@ -416,6 +424,10 @@ async def shutdown_event():
     await stop_queue_monitor()
     # Stop priority monitor
     await stop_priority_monitor()
+    
+    # Stop table real-time services
+    from modules.tables.services.startup_service import stop_table_services
+    await stop_table_services()
 
 
 @app.get("/")
