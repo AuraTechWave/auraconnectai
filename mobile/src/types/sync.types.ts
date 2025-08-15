@@ -68,7 +68,7 @@ export interface SyncError {
   retryAfter?: number;
 }
 
-export type SyncErrorCode = 
+export type SyncErrorCode =
   | 'SYNC_NETWORK_ERROR'
   | 'SYNC_AUTH_ERROR'
   | 'SYNC_SERVER_ERROR'

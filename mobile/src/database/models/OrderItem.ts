@@ -1,7 +1,12 @@
 import { field, relation, json } from '@nozbe/watermelondb/decorators';
 import BaseModel from './BaseModel';
 
-export type OrderItemStatus = 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+export type OrderItemStatus =
+  | 'pending'
+  | 'preparing'
+  | 'ready'
+  | 'served'
+  | 'cancelled';
 
 interface Modifier {
   id: string;

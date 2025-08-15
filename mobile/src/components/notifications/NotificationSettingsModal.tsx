@@ -20,13 +20,12 @@ interface NotificationSettingsModalProps {
   onClose: () => void;
 }
 
-export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({
-  visible,
-  onClose,
-}) => {
+export const NotificationSettingsModal: React.FC<
+  NotificationSettingsModalProps
+> = ({ visible, onClose }) => {
   const notificationService = NotificationService.getInstance();
   const [preferences, setPreferences] = useState<NotificationPreferences>(
-    notificationService.getPreferences()
+    notificationService.getPreferences(),
   );
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
@@ -79,8 +78,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Notification Settings</Text>
@@ -92,7 +90,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>General</Text>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Enable Notifications</Text>
@@ -104,14 +102,16 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.enabled}
                 onValueChange={() => handleToggle('enabled')}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
               />
             </View>
           </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Notification Types</Text>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Order Updates</Text>
@@ -123,7 +123,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.orderUpdates}
                 onValueChange={() => handleToggle('orderUpdates')}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
                 disabled={!preferences.enabled}
               />
             </View>
@@ -139,7 +141,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.promotions}
                 onValueChange={() => handleToggle('promotions')}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
                 disabled={!preferences.enabled}
               />
             </View>
@@ -147,7 +151,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Alert Preferences</Text>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Sound</Text>
@@ -159,7 +163,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.sound}
                 onValueChange={() => handleToggle('sound')}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
                 disabled={!preferences.enabled}
               />
             </View>
@@ -175,7 +181,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.vibration}
                 onValueChange={() => handleToggle('vibration')}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
                 disabled={!preferences.enabled}
               />
             </View>
@@ -183,7 +191,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Do Not Disturb</Text>
-            
+
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
                 <Text style={styles.settingLabel}>Enable Do Not Disturb</Text>
@@ -195,7 +203,9 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 value={preferences.doNotDisturb.enabled}
                 onValueChange={handleDoNotDisturbToggle}
                 trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor={Platform.OS === 'ios' ? colors.white : colors.surface}
+                thumbColor={
+                  Platform.OS === 'ios' ? colors.white : colors.surface
+                }
                 disabled={!preferences.enabled}
               />
             </View>
@@ -204,27 +214,33 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               <>
                 <TouchableOpacity
                   style={styles.timeRow}
-                  onPress={() => setShowStartTimePicker(true)}
-                >
+                  onPress={() => setShowStartTimePicker(true)}>
                   <Text style={styles.timeLabel}>Start Time</Text>
                   <View style={styles.timeValue}>
                     <Text style={styles.timeText}>
                       {preferences.doNotDisturb.startTime}
                     </Text>
-                    <Icon name="chevron-right" size={20} color={colors.textSecondary} />
+                    <Icon
+                      name="chevron-right"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
                   </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.timeRow}
-                  onPress={() => setShowEndTimePicker(true)}
-                >
+                  onPress={() => setShowEndTimePicker(true)}>
                   <Text style={styles.timeLabel}>End Time</Text>
                   <View style={styles.timeValue}>
                     <Text style={styles.timeText}>
                       {preferences.doNotDisturb.endTime}
                     </Text>
-                    <Icon name="chevron-right" size={20} color={colors.textSecondary} />
+                    <Icon
+                      name="chevron-right"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
                   </View>
                 </TouchableOpacity>
               </>
@@ -235,14 +251,12 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.button, styles.cancelButton]}
-            onPress={onClose}
-          >
+            onPress={onClose}>
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
-            onPress={handleSave}
-          >
+            onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -253,7 +267,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         open={showStartTimePicker}
         date={getTimeFromString(preferences.doNotDisturb.startTime)}
         mode="time"
-        onConfirm={(date) => {
+        onConfirm={date => {
           handleTimeChange('start', date);
           setShowStartTimePicker(false);
         }}
@@ -265,7 +279,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         open={showEndTimePicker}
         date={getTimeFromString(preferences.doNotDisturb.endTime)}
         mode="time"
-        onConfirm={(date) => {
+        onConfirm={date => {
           handleTimeChange('end', date);
           setShowEndTimePicker(false);
         }}

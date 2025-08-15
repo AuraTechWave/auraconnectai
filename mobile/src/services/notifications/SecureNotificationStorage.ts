@@ -6,13 +6,15 @@ import { StoredNotification, NotificationPreferences } from './types';
 
 export class SecureNotificationStorage {
   // Notification History
-  static async saveNotificationHistory(notifications: StoredNotification[]): Promise<void> {
+  static async saveNotificationHistory(
+    notifications: StoredNotification[],
+  ): Promise<void> {
     try {
       const data = JSON.stringify(notifications);
       const toStore = NOTIFICATION_CONFIG.NOTIFICATION_HISTORY_ENCRYPT
         ? await encrypt(data)
         : data;
-      
+
       await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_HISTORY, toStore);
     } catch (error) {
       logger.error('Failed to save notification history', error);
@@ -22,7 +24,9 @@ export class SecureNotificationStorage {
 
   static async getNotificationHistory(): Promise<StoredNotification[]> {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_HISTORY);
+      const stored = await AsyncStorage.getItem(
+        STORAGE_KEYS.NOTIFICATION_HISTORY,
+      );
       if (!stored) return [];
 
       let data: string;
@@ -31,7 +35,9 @@ export class SecureNotificationStorage {
           data = await decrypt(stored);
         } catch (decryptError) {
           // Handle migration from unencrypted to encrypted
-          logger.warn('Failed to decrypt notification history, trying plain text');
+          logger.warn(
+            'Failed to decrypt notification history, trying plain text',
+          );
           data = stored;
         }
       } else {
@@ -46,14 +52,19 @@ export class SecureNotificationStorage {
   }
 
   // Notification Preferences
-  static async savePreferences(preferences: NotificationPreferences): Promise<void> {
+  static async savePreferences(
+    preferences: NotificationPreferences,
+  ): Promise<void> {
     try {
       const data = JSON.stringify(preferences);
       const toStore = NOTIFICATION_CONFIG.NOTIFICATION_PREFS_ENCRYPT
         ? await encrypt(data)
         : data;
-      
-      await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATION_PREFERENCES, toStore);
+
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.NOTIFICATION_PREFERENCES,
+        toStore,
+      );
     } catch (error) {
       logger.error('Failed to save notification preferences', error);
       throw error;
@@ -62,7 +73,9 @@ export class SecureNotificationStorage {
 
   static async getPreferences(): Promise<NotificationPreferences | null> {
     try {
-      const stored = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATION_PREFERENCES);
+      const stored = await AsyncStorage.getItem(
+        STORAGE_KEYS.NOTIFICATION_PREFERENCES,
+      );
       if (!stored) return null;
 
       let data: string;
@@ -90,7 +103,7 @@ export class SecureNotificationStorage {
       // Always encrypt FCM tokens
       const encrypted = await encrypt(token);
       await AsyncStorage.setItem(STORAGE_KEYS.FCM_TOKEN, encrypted);
-      
+
       if (__DEV__) {
         logger.debug('FCM token saved (encrypted)');
       }
@@ -122,17 +135,22 @@ export class SecureNotificationStorage {
   }
 
   // Batch operations for performance
-  static async trimNotificationHistory(maxSize: number = NOTIFICATION_CONFIG.MAX_STORED_NOTIFICATIONS): Promise<void> {
+  static async trimNotificationHistory(
+    maxSize: number = NOTIFICATION_CONFIG.MAX_STORED_NOTIFICATIONS,
+  ): Promise<void> {
     try {
       const notifications = await this.getNotificationHistory();
-      
+
       if (notifications.length > maxSize) {
         // Trim in batches to avoid performance issues
         const batchSize = NOTIFICATION_CONFIG.HISTORY_TRIM_BATCH_SIZE;
         const toRemove = notifications.length - maxSize;
-        
+
         for (let i = 0; i < toRemove; i += batchSize) {
-          const trimmed = notifications.slice(0, -Math.min(batchSize, toRemove - i));
+          const trimmed = notifications.slice(
+            0,
+            -Math.min(batchSize, toRemove - i),
+          );
           await this.saveNotificationHistory(trimmed);
         }
       }

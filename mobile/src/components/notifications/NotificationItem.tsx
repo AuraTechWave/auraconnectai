@@ -1,15 +1,12 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { formatDistanceToNow } from 'date-fns';
 import { colors, typography } from '@theme';
-import { StoredNotification, NotificationType } from '@services/notifications/types';
+import {
+  StoredNotification,
+  NotificationType,
+} from '@services/notifications/types';
 
 interface NotificationItemProps {
   notification: StoredNotification;
@@ -25,22 +22,44 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   const getIcon = () => {
     const iconMap: Record<string, { name: string; color: string }> = {
       [NotificationType.ORDER_CREATED]: { name: 'receipt', color: colors.info },
-      [NotificationType.ORDER_ACCEPTED]: { name: 'check-circle', color: colors.success },
-      [NotificationType.ORDER_PREPARING]: { name: 'chef-hat', color: colors.warning },
-      [NotificationType.ORDER_READY]: { name: 'bell-ring', color: colors.success },
-      [NotificationType.ORDER_COMPLETED]: { name: 'check-all', color: colors.textSecondary },
-      [NotificationType.ORDER_CANCELLED]: { name: 'close-circle', color: colors.error },
+      [NotificationType.ORDER_ACCEPTED]: {
+        name: 'check-circle',
+        color: colors.success,
+      },
+      [NotificationType.ORDER_PREPARING]: {
+        name: 'chef-hat',
+        color: colors.warning,
+      },
+      [NotificationType.ORDER_READY]: {
+        name: 'bell-ring',
+        color: colors.success,
+      },
+      [NotificationType.ORDER_COMPLETED]: {
+        name: 'check-all',
+        color: colors.textSecondary,
+      },
+      [NotificationType.ORDER_CANCELLED]: {
+        name: 'close-circle',
+        color: colors.error,
+      },
       [NotificationType.PROMOTION]: { name: 'tag', color: colors.primary },
-      [NotificationType.SYSTEM_UPDATE]: { name: 'information', color: colors.info },
+      [NotificationType.SYSTEM_UPDATE]: {
+        name: 'information',
+        color: colors.info,
+      },
     };
 
-    const iconConfig = iconMap[notification.data.type] || { 
-      name: 'bell', 
-      color: colors.textSecondary 
+    const iconConfig = iconMap[notification.data.type] || {
+      name: 'bell',
+      color: colors.textSecondary,
     };
 
     return (
-      <View style={[styles.iconContainer, { backgroundColor: iconConfig.color + '20' }]}>
+      <View
+        style={[
+          styles.iconContainer,
+          { backgroundColor: iconConfig.color + '20' },
+        ]}>
         <Icon name={iconConfig.name} size={24} color={iconConfig.color} />
       </View>
     );
@@ -55,43 +74,31 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        !notification.read && styles.unreadContainer,
-      ]}
+      style={[styles.container, !notification.read && styles.unreadContainer]}
       onPress={handlePress}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       {getIcon()}
-      
+
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text 
-            style={[
-              styles.title,
-              !notification.read && styles.unreadText,
-            ]} 
-            numberOfLines={1}
-          >
+          <Text
+            style={[styles.title, !notification.read && styles.unreadText]}
+            numberOfLines={1}>
             {notification.title}
           </Text>
           {!notification.read && <View style={styles.unreadDot} />}
         </View>
-        
+
         <Text style={styles.body} numberOfLines={2}>
           {notification.body}
         </Text>
-        
+
         <Text style={styles.time}>
           {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
         </Text>
       </View>
-      
-      <Icon 
-        name="chevron-right" 
-        size={20} 
-        color={colors.textSecondary} 
-      />
+
+      <Icon name="chevron-right" size={20} color={colors.textSecondary} />
     </TouchableOpacity>
   );
 };

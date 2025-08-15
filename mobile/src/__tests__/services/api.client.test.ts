@@ -11,11 +11,11 @@ jest.mock('@react-native-community/netinfo');
 
 describe('API Client', () => {
   let mockAxios: MockAdapter;
-  
+
   beforeEach(() => {
     mockAxios = new MockAdapter(axios);
     jest.clearAllMocks();
-    
+
     // Mock network as connected by default
     (NetInfo.fetch as jest.Mock).mockResolvedValue({ isConnected: true });
   });
@@ -72,11 +72,10 @@ describe('API Client', () => {
       const mockRefreshToken = 'mock-refresh-token';
       const newMockToken = 'new-mock-access-token';
 
-      (Keychain.getInternetCredentials as jest.Mock)
-        .mockResolvedValue({
-          username: mockRefreshToken,
-          password: mockToken,
-        });
+      (Keychain.getInternetCredentials as jest.Mock).mockResolvedValue({
+        username: mockRefreshToken,
+        password: mockToken,
+      });
 
       // All requests return 401 initially
       mockAxios.onGet('/test1').replyOnce(401);
@@ -186,10 +185,13 @@ describe('API Client', () => {
       mockAxios.onPost('/auth/refresh').reply(() => {
         return new Promise(resolve => {
           setTimeout(() => {
-            resolve([200, {
-              access_token: newMockToken,
-              refresh_token: mockRefreshToken,
-            }]);
+            resolve([
+              200,
+              {
+                access_token: newMockToken,
+                refresh_token: mockRefreshToken,
+              },
+            ]);
           }, 100);
         });
       });

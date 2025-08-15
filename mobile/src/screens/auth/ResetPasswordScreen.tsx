@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import {
-  TextInput,
-  Button,
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
@@ -31,7 +21,7 @@ export const ResetPasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<ResetPasswordRouteProp>();
   const { token } = route.params;
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -94,8 +84,10 @@ export const ResetPasswordScreen: React.FC = () => {
                 message: 'Password must be at least 8 characters',
               },
               pattern: {
-                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-                message: 'Password must contain uppercase, lowercase, number and special character',
+                value:
+                  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+                message:
+                  'Password must contain uppercase, lowercase, number and special character',
               },
             }}
             render={({ field: { onChange, onBlur, value } }) => (
@@ -127,8 +119,7 @@ export const ResetPasswordScreen: React.FC = () => {
             name="confirmPassword"
             rules={{
               required: 'Please confirm your password',
-              validate: value =>
-                value === password || 'Passwords do not match',
+              validate: value => value === password || 'Passwords do not match',
             }}
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput

@@ -68,7 +68,7 @@ class ErrorService {
     } else {
       // Server error
       const { status, data } = error.response;
-      
+
       switch (status) {
         case 400:
           appError = {

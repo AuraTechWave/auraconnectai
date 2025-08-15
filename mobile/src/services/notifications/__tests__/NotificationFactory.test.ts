@@ -16,14 +16,16 @@ describe('NotificationFactory', () => {
         {
           title: 'New Order',
           body: 'You have a new order',
-        }
+        },
       );
 
       expect(notification.id).toBe('order_123_order_created');
       expect(notification.title).toBe('New Order');
       expect(notification.body).toBe('You have a new order');
       expect(notification.data?.type).toBe(NotificationType.ORDER_CREATED);
-      expect(notification.android?.channelId).toBe(NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES);
+      expect(notification.android?.channelId).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
+      );
       expect(notification.android?.importance).toBe(AndroidImportance.HIGH);
     });
 
@@ -31,12 +33,12 @@ describe('NotificationFactory', () => {
       const createdNotification = NotificationFactory.createOrderNotification(
         NotificationType.ORDER_CREATED,
         { orderId: '123' },
-        { title: 'Test', body: 'Test' }
+        { title: 'Test', body: 'Test' },
       );
 
       const actions = createdNotification.android?.actions || [];
       const actionIds = actions.map(a => a.pressAction?.id);
-      
+
       expect(actionIds).toContain(NOTIFICATION_CONFIG.ACTIONS.VIEW_ORDER);
       expect(actionIds).toContain(NOTIFICATION_CONFIG.ACTIONS.ACCEPT_ORDER);
       expect(actionIds).toContain(NOTIFICATION_CONFIG.ACTIONS.REJECT_ORDER);
@@ -49,11 +51,13 @@ describe('NotificationFactory', () => {
           orderId: '123',
           items: '2x Burger, 1x Fries, 1x Coke',
         },
-        { title: 'Test', body: 'Test' }
+        { title: 'Test', body: 'Test' },
       );
 
       expect(notification.android?.style?.type).toBe(AndroidStyle.BIGTEXT);
-      expect(notification.android?.style?.text).toBe('2x Burger, 1x Fries, 1x Coke');
+      expect(notification.android?.style?.text).toBe(
+        '2x Burger, 1x Fries, 1x Coke',
+      );
     });
   });
 
@@ -63,7 +67,7 @@ describe('NotificationFactory', () => {
         'promo-123',
         'Special Offer',
         '50% off today!',
-        { promoCode: 'SAVE50' }
+        { promoCode: 'SAVE50' },
       );
 
       expect(notification.id).toBe('promo-123');
@@ -71,7 +75,9 @@ describe('NotificationFactory', () => {
       expect(notification.body).toBe('50% off today!');
       expect(notification.data?.type).toBe(NotificationType.PROMOTION);
       expect(notification.data?.promoCode).toBe('SAVE50');
-      expect(notification.android?.channelId).toBe(NOTIFICATION_CONFIG.CHANNELS.PROMOTIONS);
+      expect(notification.android?.channelId).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.PROMOTIONS,
+      );
       expect(notification.android?.vibrationPattern).toBe(false);
     });
   });
@@ -82,7 +88,7 @@ describe('NotificationFactory', () => {
         'sys-123',
         'System Update',
         'New version available',
-        { version: '2.0.0' }
+        { version: '2.0.0' },
       );
 
       expect(notification.id).toBe('sys-123');
@@ -90,25 +96,39 @@ describe('NotificationFactory', () => {
       expect(notification.body).toBe('New version available');
       expect(notification.data?.type).toBe(NotificationType.SYSTEM_UPDATE);
       expect(notification.data?.version).toBe('2.0.0');
-      expect(notification.android?.channelId).toBe(NOTIFICATION_CONFIG.CHANNELS.SYSTEM);
+      expect(notification.android?.channelId).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.SYSTEM,
+      );
       expect(notification.android?.importance).toBe(AndroidImportance.HIGH);
     });
   });
 
   describe('getChannelFromType', () => {
     it('should return order channel for order-related types', () => {
-      expect(NotificationFactory.getChannelFromType('order_created')).toBe(NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES);
-      expect(NotificationFactory.getChannelFromType('order_ready')).toBe(NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES);
-      expect(NotificationFactory.getChannelFromType('order_anything')).toBe(NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES);
+      expect(NotificationFactory.getChannelFromType('order_created')).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
+      );
+      expect(NotificationFactory.getChannelFromType('order_ready')).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
+      );
+      expect(NotificationFactory.getChannelFromType('order_anything')).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.ORDER_UPDATES,
+      );
     });
 
     it('should return promotion channel for promotion type', () => {
-      expect(NotificationFactory.getChannelFromType(NotificationType.PROMOTION)).toBe(NOTIFICATION_CONFIG.CHANNELS.PROMOTIONS);
+      expect(
+        NotificationFactory.getChannelFromType(NotificationType.PROMOTION),
+      ).toBe(NOTIFICATION_CONFIG.CHANNELS.PROMOTIONS);
     });
 
     it('should return system channel as default', () => {
-      expect(NotificationFactory.getChannelFromType('unknown')).toBe(NOTIFICATION_CONFIG.CHANNELS.SYSTEM);
-      expect(NotificationFactory.getChannelFromType('')).toBe(NOTIFICATION_CONFIG.CHANNELS.SYSTEM);
+      expect(NotificationFactory.getChannelFromType('unknown')).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.SYSTEM,
+      );
+      expect(NotificationFactory.getChannelFromType('')).toBe(
+        NOTIFICATION_CONFIG.CHANNELS.SYSTEM,
+      );
     });
   });
 
@@ -119,20 +139,28 @@ describe('NotificationFactory', () => {
 
       expect(messages.created.title).toBe('New Order Received');
       expect(messages.created.body(order)).toBe('Order #ORD-001 from John Doe');
-      
+
       expect(messages.ready.title).toBe('🔔 Order Ready!');
-      expect(messages.ready.body(order)).toBe('Order #ORD-001 for John Doe is ready');
-      
+      expect(messages.ready.body(order)).toBe(
+        'Order #ORD-001 for John Doe is ready',
+      );
+
       expect(messages.cancelled.title).toBe('Order Cancelled');
-      expect(messages.cancelled.body(order)).toBe('Order #ORD-001 has been cancelled');
+      expect(messages.cancelled.body(order)).toBe(
+        'Order #ORD-001 has been cancelled',
+      );
     });
 
     it('should handle walk-in customers', () => {
       const messages = NotificationFactory.getStatusMessages();
       const order = { orderNumber: 'ORD-002' };
 
-      expect(messages.created.body(order)).toBe('Order #ORD-002 from Walk-in Customer');
-      expect(messages.ready.body(order)).toBe('Order #ORD-002 for Walk-in Customer is ready');
+      expect(messages.created.body(order)).toBe(
+        'Order #ORD-002 from Walk-in Customer',
+      );
+      expect(messages.ready.body(order)).toBe(
+        'Order #ORD-002 for Walk-in Customer is ready',
+      );
     });
   });
 });

@@ -43,7 +43,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         logger.debug('Validating stored token');
         const userData = await authService.validateToken(token);
         setUser(userData);
-        logger.info('User authenticated', { userId: userData.id, username: userData.username });
+        logger.info('User authenticated', {
+          userId: userData.id,
+          username: userData.username,
+        });
       }
     } catch (error) {
       logger.warn('Token validation failed', error);
@@ -56,14 +59,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const login = async (username: string, password: string) => {
     logger.info('User login attempt', { username });
     const response = await authService.login(username, password);
-    
+
     // Store token securely
     await Keychain.setInternetCredentials(
       AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
       AUTH_CONFIG.TOKEN_KEY,
       response.access_token,
     );
-    
+
     // Store refresh token
     if (response.refresh_token) {
       await Keychain.setInternetCredentials(
@@ -72,11 +75,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
         response.refresh_token,
       );
     }
-    
+
     // Store user data
     storage.set(STORAGE_KEYS.USER, JSON.stringify(response.user));
     setUser(response.user);
-    logger.info('User login successful', { userId: response.user.id, username: response.user.username });
+    logger.info('User login successful', {
+      userId: response.user.id,
+      username: response.user.username,
+    });
   };
 
   const logout = async () => {
@@ -93,14 +99,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       if (credentials && credentials.password) {
         logger.debug('Refreshing auth token');
         const response = await authService.refreshToken(credentials.password);
-        
+
         // Update tokens
         await Keychain.setInternetCredentials(
           AUTH_CONFIG.TOKEN_STORAGE_SERVICE,
           AUTH_CONFIG.TOKEN_KEY,
           response.access_token,
         );
-        
+
         if (response.refresh_token) {
           await Keychain.setInternetCredentials(
             AUTH_CONFIG.TOKEN_STORAGE_SERVICE,

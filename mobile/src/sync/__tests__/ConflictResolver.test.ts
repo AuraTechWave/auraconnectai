@@ -36,12 +36,14 @@ describe('ConflictResolver', () => {
 
       const changes = {
         menu_items: {
-          updated: [{
-            id: 'server123',
-            localId: 'local123',
-            name: 'Server Item',
-            price: 15,
-          }],
+          updated: [
+            {
+              id: 'server123',
+              localId: 'local123',
+              name: 'Server Item',
+              price: 15,
+            },
+          ],
           created: [],
           deleted: [],
         },
@@ -68,11 +70,13 @@ describe('ConflictResolver', () => {
 
       const changes = {
         menu_items: {
-          updated: [{
-            id: 'server123',
-            localId: 'local123',
-            name: 'Server Item',
-          }],
+          updated: [
+            {
+              id: 'server123',
+              localId: 'local123',
+              name: 'Server Item',
+            },
+          ],
           created: [],
           deleted: [],
         },
@@ -131,40 +135,40 @@ describe('ConflictResolver', () => {
     it('should apply server wins strategy', async () => {
       resolver.setDefaultStrategy('server_wins');
       const conflict = createConflict();
-      
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+
+      const resolved = await resolver.resolveConflict(conflict);
+
       expect(resolved).toEqual(conflict.serverData);
     });
 
     it('should apply client wins strategy', async () => {
       resolver.setDefaultStrategy('client_wins');
       const conflict = createConflict();
-      
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+
+      const resolved = await resolver.resolveConflict(conflict);
+
       expect(resolved).toEqual(conflict.localData);
     });
 
     it('should apply last write wins strategy', async () => {
       resolver.setDefaultStrategy('last_write_wins');
-      
+
       // Test when local is newer
       const localNewer = createConflict({
         localData: { lastModified: Date.now() },
         serverData: { updated_at: Date.now() - 10000 },
       });
-      
-      let resolved = await resolver['resolveConflict'](localNewer);
+
+      let resolved = await resolver.resolveConflict(localNewer);
       expect(resolved).toEqual(localNewer.localData);
-      
+
       // Test when server is newer
       const serverNewer = createConflict({
         localData: { lastModified: Date.now() - 10000 },
         serverData: { updated_at: Date.now() },
       });
-      
-      resolved = await resolver['resolveConflict'](serverNewer);
+
+      resolved = await resolver.resolveConflict(serverNewer);
       expect(resolved).toEqual(serverNewer.serverData);
     });
   });
@@ -190,8 +194,8 @@ describe('ConflictResolver', () => {
         strategy: 'merge' as const,
       };
 
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+      const resolved = await resolver.resolveConflict(conflict);
+
       // Server status should win
       expect(resolved.status).toBe('ready');
       // Local notes should be preserved (newer)
@@ -218,8 +222,8 @@ describe('ConflictResolver', () => {
         strategy: 'merge' as const,
       };
 
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+      const resolved = await resolver.resolveConflict(conflict);
+
       // Server price and availability are authoritative
       expect(resolved.price).toBe(13.99);
       expect(resolved.isAvailable).toBe(false);
@@ -253,8 +257,8 @@ describe('ConflictResolver', () => {
         strategy: 'merge' as const,
       };
 
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+      const resolved = await resolver.resolveConflict(conflict);
+
       // Server loyalty points are authoritative
       expect(resolved.loyaltyPoints).toBe(150);
       // Preferences should be merged
@@ -281,7 +285,7 @@ describe('ConflictResolver', () => {
       };
 
       const result = await resolver.detectConflicts(changes);
-      
+
       expect(result.conflicts).toHaveLength(0);
       expect(result.resolved.orders.updated).toHaveLength(1);
     });
@@ -306,8 +310,8 @@ describe('ConflictResolver', () => {
         strategy: 'merge' as const,
       };
 
-      const resolved = await resolver['resolveConflict'](conflict);
-      
+      const resolved = await resolver.resolveConflict(conflict);
+
       // Non-null local values should be preserved
       expect(resolved.field1).toBe('value1');
       // Server non-null values should fill in

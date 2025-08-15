@@ -76,8 +76,7 @@ export const DrawerContent: React.FC<DrawerContentComponentProps> = props => {
           </Drawer.Section>
 
           <Drawer.Section title="Preferences">
-            <TouchableRipple
-              onPress={() => setNotifications(!notifications)}>
+            <TouchableRipple onPress={() => setNotifications(!notifications)}>
               <View style={styles.preference}>
                 <Text>Notifications</Text>
                 <View pointerEvents="none">
@@ -103,11 +102,7 @@ export const DrawerContent: React.FC<DrawerContentComponentProps> = props => {
       </DrawerContentScrollView>
 
       <Drawer.Section style={styles.bottomDrawerSection}>
-        <DrawerItem
-          icon="logout"
-          label="Sign Out"
-          onPress={handleLogout}
-        />
+        <DrawerItem icon="logout" label="Sign Out" onPress={handleLogout} />
       </Drawer.Section>
     </View>
   );

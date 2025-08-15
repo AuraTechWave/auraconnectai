@@ -30,7 +30,8 @@ const CustomToast = ({ type, text1, text2 }: any) => {
   const style = toastStyles[type as keyof typeof toastStyles];
 
   return (
-    <View style={[styles.container, { borderLeftColor: style.borderLeftColor }]}>
+    <View
+      style={[styles.container, { borderLeftColor: style.borderLeftColor }]}>
       <Icon name={style.icon} size={24} color={style.iconColor} />
       <View style={styles.textContainer}>
         <Text style={styles.title}>{text1}</Text>

@@ -11,14 +11,25 @@ jest.mock('@utils/logger');
 describe('SecureNotificationStorage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (encrypt as jest.Mock).mockImplementation((data) => Promise.resolve(`encrypted:${data}`));
-    (decrypt as jest.Mock).mockImplementation((data) => Promise.resolve(data.replace('encrypted:', '')));
+    (encrypt as jest.Mock).mockImplementation(data =>
+      Promise.resolve(`encrypted:${data}`),
+    );
+    (decrypt as jest.Mock).mockImplementation(data =>
+      Promise.resolve(data.replace('encrypted:', '')),
+    );
   });
 
   describe('saveNotificationHistory', () => {
     it('should encrypt and save notification history when encryption is enabled', async () => {
       const notifications = [
-        { id: '1', title: 'Test', body: 'Test body', data: {}, timestamp: Date.now(), read: false },
+        {
+          id: '1',
+          title: 'Test',
+          body: 'Test body',
+          data: {},
+          timestamp: Date.now(),
+          read: false,
+        },
       ];
 
       await SecureNotificationStorage.saveNotificationHistory(notifications);
@@ -26,7 +37,7 @@ describe('SecureNotificationStorage', () => {
       expect(encrypt).toHaveBeenCalledWith(JSON.stringify(notifications));
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         STORAGE_KEYS.NOTIFICATION_HISTORY,
-        `encrypted:${JSON.stringify(notifications)}`
+        `encrypted:${JSON.stringify(notifications)}`,
       );
     });
 
@@ -34,24 +45,39 @@ describe('SecureNotificationStorage', () => {
       const originalEncrypt = NOTIFICATION_CONFIG.NOTIFICATION_HISTORY_ENCRYPT;
       (NOTIFICATION_CONFIG as any).NOTIFICATION_HISTORY_ENCRYPT = false;
 
-      const notifications = [{ id: '1', title: 'Test', body: 'Test body', data: {}, timestamp: Date.now(), read: false }];
+      const notifications = [
+        {
+          id: '1',
+          title: 'Test',
+          body: 'Test body',
+          data: {},
+          timestamp: Date.now(),
+          read: false,
+        },
+      ];
       await SecureNotificationStorage.saveNotificationHistory(notifications);
 
       expect(encrypt).not.toHaveBeenCalled();
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         STORAGE_KEYS.NOTIFICATION_HISTORY,
-        JSON.stringify(notifications)
+        JSON.stringify(notifications),
       );
 
-      (NOTIFICATION_CONFIG as any).NOTIFICATION_HISTORY_ENCRYPT = originalEncrypt;
+      (NOTIFICATION_CONFIG as any).NOTIFICATION_HISTORY_ENCRYPT =
+        originalEncrypt;
     });
 
     it('should throw and log error on failure', async () => {
       const error = new Error('Storage error');
       (AsyncStorage.setItem as jest.Mock).mockRejectedValue(error);
 
-      await expect(SecureNotificationStorage.saveNotificationHistory([])).rejects.toThrow(error);
-      expect(logger.error).toHaveBeenCalledWith('Failed to save notification history', error);
+      await expect(
+        SecureNotificationStorage.saveNotificationHistory([]),
+      ).rejects.toThrow(error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to save notification history',
+        error,
+      );
     });
   });
 
@@ -75,7 +101,9 @@ describe('SecureNotificationStorage', () => {
 
       const result = await SecureNotificationStorage.getNotificationHistory();
 
-      expect(logger.warn).toHaveBeenCalledWith('Failed to decrypt notification history, trying plain text');
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to decrypt notification history, trying plain text',
+      );
       expect(result).toEqual(notifications);
     });
 
@@ -88,7 +116,9 @@ describe('SecureNotificationStorage', () => {
     });
 
     it('should return empty array on error', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockRejectedValue(new Error('Storage error'));
+      (AsyncStorage.getItem as jest.Mock).mockRejectedValue(
+        new Error('Storage error'),
+      );
 
       const result = await SecureNotificationStorage.getNotificationHistory();
 
@@ -106,7 +136,7 @@ describe('SecureNotificationStorage', () => {
       expect(encrypt).toHaveBeenCalledWith(token);
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
         STORAGE_KEYS.FCM_TOKEN,
-        'encrypted:test-fcm-token'
+        'encrypted:test-fcm-token',
       );
     });
 
@@ -132,7 +162,9 @@ describe('SecureNotificationStorage', () => {
   describe('getFCMToken', () => {
     it('should decrypt stored token', async () => {
       const token = 'test-fcm-token';
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(`encrypted:${token}`);
+      (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
+        `encrypted:${token}`,
+      );
 
       const result = await SecureNotificationStorage.getFCMToken();
 
@@ -161,7 +193,7 @@ describe('SecureNotificationStorage', () => {
       }));
 
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-        `encrypted:${JSON.stringify(notifications)}`
+        `encrypted:${JSON.stringify(notifications)}`,
       );
 
       await SecureNotificationStorage.trimNotificationHistory(100);
@@ -181,7 +213,7 @@ describe('SecureNotificationStorage', () => {
       }));
 
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(
-        `encrypted:${JSON.stringify(notifications)}`
+        `encrypted:${JSON.stringify(notifications)}`,
       );
 
       jest.clearAllMocks();
@@ -209,7 +241,10 @@ describe('SecureNotificationStorage', () => {
 
       await SecureNotificationStorage.clearAll();
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to clear notification data', error);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to clear notification data',
+        error,
+      );
     });
   });
 });

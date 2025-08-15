@@ -13,7 +13,7 @@ export const AnalyticsScreen: React.FC = () => {
           Analytics
         </Text>
       </View>
-      
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
@@ -23,7 +23,7 @@ export const AnalyticsScreen: React.FC = () => {
             <Text>Analytics charts will be implemented here</Text>
           </Card.Content>
         </Card>
-        
+
         <Card style={styles.card}>
           <Card.Title title="Performance Metrics" />
           <Card.Content>

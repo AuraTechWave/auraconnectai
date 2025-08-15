@@ -39,28 +39,28 @@ export const SYNC_CONFIG = {
   QUEUE_SIZE_WARNING_THRESHOLD: 800,
   QUEUE_CLEANUP_THRESHOLD: 900,
   QUEUE_ITEM_TTL: 7 * 24 * 60 * 60 * 1000, // 7 days
-  
+
   // Sync operations
   BATCH_SIZE: 100,
   PULL_URL: '/api/sync/pull',
   PUSH_URL: '/api/sync/push',
   DEFAULT_CONFLICT_STRATEGY: 'last_write_wins' as const,
-  
+
   // Sync timing
   SYNC_INTERVAL: 300000, // 5 minutes
   BACKGROUND_SYNC_INTERVAL: 900000, // 15 minutes
   SYNC_DEBOUNCE_DELAY: 1000, // 1 second
-  
+
   // Retry configuration
   MAX_RETRY_COUNT: 3,
   RETRY_BASE_DELAY: 1000, // 1 second
   RETRY_MAX_DELAY: 60000, // 1 minute
   RETRY_BACKOFF_FACTOR: 2,
-  
+
   // Performance
   SYNC_TIMEOUT: 30000, // 30 seconds
   CONCURRENT_OPERATIONS: 5,
-  
+
   // Security
   ENCRYPT_QUEUE: true,
   ENCRYPT_OFFLINE_DATA: ['payment_info', 'sensitive_notes', 'customer_data'],
@@ -99,7 +99,8 @@ export const UI_CONFIG = {
 // Security Configuration
 export const SECURITY_CONFIG = {
   MIN_PASSWORD_LENGTH: 8,
-  PASSWORD_REGEX: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+  PASSWORD_REGEX:
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
   SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
   ENABLE_BIOMETRICS: true,
   LOG_SENSITIVE_DATA: false,
@@ -137,45 +138,45 @@ export const NOTIFICATION_CONFIG = {
   MAX_STORED_NOTIFICATIONS: 100,
   NOTIFICATION_HISTORY_ENCRYPT: true,
   NOTIFICATION_PREFS_ENCRYPT: true,
-  
+
   // Channels
   CHANNELS: {
     ORDER_UPDATES: 'order_updates',
-    PROMOTIONS: 'promotions', 
+    PROMOTIONS: 'promotions',
     SYSTEM: 'system',
   },
-  
+
   // Sounds
   SOUNDS: {
     DEFAULT: 'default',
     ORDER_NOTIFICATION: 'order_notification',
     ORDER_READY: 'order_ready',
   },
-  
+
   // Vibration
   VIBRATION_PATTERNS: {
     DEFAULT: [0, 250, 250, 250],
     ORDER_READY: [0, 500, 250, 500],
     URGENT: [0, 300, 100, 300, 100, 300],
   },
-  
+
   // Priorities
   PRIORITIES: {
     ORDER: 'high',
     PROMOTION: 'normal',
     SYSTEM: 'high',
   },
-  
+
   // Timing
   AUTO_CANCEL_TIMEOUT: 30000, // 30 seconds
   TOKEN_RETRY_DELAY: 5000, // 5 seconds
   TOKEN_MAX_RETRIES: 3,
   HISTORY_TRIM_BATCH_SIZE: 10,
-  
+
   // Do Not Disturb
   DND_DEFAULT_START: '22:00',
   DND_DEFAULT_END: '07:00',
-  
+
   // Actions
   ACTIONS: {
     VIEW_ORDER: 'view_order',

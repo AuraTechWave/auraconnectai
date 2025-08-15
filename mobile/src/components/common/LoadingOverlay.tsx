@@ -36,10 +36,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
       statusBarTranslucent>
       <View style={styles.container}>
         <View
-          style={[
-            styles.content,
-            { backgroundColor: theme.colors.surface },
-          ]}>
+          style={[styles.content, { backgroundColor: theme.colors.surface }]}>
           {type === 'spinner' ? (
             <ActivityIndicator
               size="large"
@@ -56,7 +53,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
                 />
               }>
               <LottieView
-                source={lottieSource || require('@assets/animations/loading.json')}
+                source={
+                  lottieSource || require('@assets/animations/loading.json')
+                }
                 autoPlay
                 loop
                 style={styles.lottie}

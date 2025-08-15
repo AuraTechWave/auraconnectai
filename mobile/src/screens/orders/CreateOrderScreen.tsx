@@ -54,25 +54,30 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
       const existingIndex = prev.findIndex(
         item => item.menuItemId === menuItem.id,
       );
-      
+
       if (existingIndex >= 0) {
         const updated = [...prev];
         updated[existingIndex].quantity++;
         return updated;
       }
-      
-      return [...prev, {
-        menuItemId: menuItem.id,
-        menuItem,
-        quantity: 1,
-      }];
+
+      return [
+        ...prev,
+        {
+          menuItemId: menuItem.id,
+          menuItem,
+          quantity: 1,
+        },
+      ];
     });
   }, []);
 
   const handleUpdateQuantity = useCallback(
     (menuItemId: string, quantity: number) => {
       if (quantity <= 0) {
-        setOrderItems(prev => prev.filter(item => item.menuItemId !== menuItemId));
+        setOrderItems(prev =>
+          prev.filter(item => item.menuItemId !== menuItemId),
+        );
       } else {
         setOrderItems(prev =>
           prev.map(item =>
@@ -93,7 +98,7 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
     try {
       const ordersCollection = database.collections.get('orders');
       const orderItemsCollection = database.collections.get('order_items');
-      
+
       await database.write(async () => {
         // Create order
         const order = await ordersCollection.create(order => {
@@ -142,13 +147,22 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
         'Order Created',
         isOffline ? 'Order saved offline' : 'Order created successfully',
       );
-      
+
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create order:', error);
       Alert.alert('Error', 'Failed to create order. Please try again.');
     }
-  }, [orderItems, customerName, tableNumber, notes, calculateTotal, isOffline, queueOperation, navigation]);
+  }, [
+    orderItems,
+    customerName,
+    tableNumber,
+    notes,
+    calculateTotal,
+    isOffline,
+    queueOperation,
+    navigation,
+  ]);
 
   const renderMenuItem = (menuItem: MenuItem) => {
     const orderItem = orderItems.find(item => item.menuItemId === menuItem.id);
@@ -160,26 +174,24 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
           <Text style={styles.menuItemName}>{menuItem.name}</Text>
           <Text style={styles.menuItemPrice}>${menuItem.price.toFixed(2)}</Text>
         </View>
-        
+
         <View style={styles.quantityControls}>
           <TouchableOpacity
             style={styles.quantityButton}
             onPress={() => handleUpdateQuantity(menuItem.id, quantity - 1)}
-            disabled={quantity === 0}
-          >
+            disabled={quantity === 0}>
             <Icon
               name="minus"
               size={20}
               color={quantity === 0 ? colors.textSecondary : colors.text}
             />
           </TouchableOpacity>
-          
+
           <Text style={styles.quantity}>{quantity}</Text>
-          
+
           <TouchableOpacity
             style={styles.quantityButton}
-            onPress={() => handleAddItem(menuItem)}
-          >
+            onPress={() => handleAddItem(menuItem)}>
             <Icon name="plus" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -212,18 +224,23 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
   };
 
   // Group menu items by category
-  const menuItemsByCategory = menuItems.reduce((acc, item) => {
-    const categoryName = item.categoryName || 'Uncategorized';
-    if (!acc[categoryName]) {
-      acc[categoryName] = [];
-    }
-    acc[categoryName].push(item);
-    return acc;
-  }, {} as Record<string, MenuItem[]>);
+  const menuItemsByCategory = menuItems.reduce(
+    (acc, item) => {
+      const categoryName = item.categoryName || 'Uncategorized';
+      if (!acc[categoryName]) {
+        acc[categoryName] = [];
+      }
+      acc[categoryName].push(item);
+      return acc;
+    },
+    {} as Record<string, MenuItem[]>,
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-left" size={24} color={colors.text} />
@@ -285,10 +302,12 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.createButton, orderItems.length === 0 && styles.disabledButton]}
+          style={[
+            styles.createButton,
+            orderItems.length === 0 && styles.disabledButton,
+          ]}
           onPress={handleCreateOrder}
-          disabled={orderItems.length === 0}
-        >
+          disabled={orderItems.length === 0}>
           <Text style={styles.createButtonText}>Create Order</Text>
         </TouchableOpacity>
       </View>
@@ -300,10 +319,7 @@ const CreateOrderScreen: React.FC<CreateOrderScreenProps> = ({
 const enhance = withObservables([''], () => ({
   menuItems: database.collections
     .get('menu_items')
-    .query(
-      Q.where('is_active', true),
-      Q.where('is_deleted', false),
-    )
+    .query(Q.where('is_active', true), Q.where('is_deleted', false))
     .observe(),
 }));
 

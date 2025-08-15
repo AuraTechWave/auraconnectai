@@ -32,14 +32,16 @@ describe('Authentication Flow', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock MMKV
     mockStorage = {
       getString: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
     };
-    (MMKV as jest.MockedClass<typeof MMKV>).mockImplementation(() => mockStorage);
+    (MMKV as jest.MockedClass<typeof MMKV>).mockImplementation(
+      () => mockStorage,
+    );
   });
 
   const renderApp = () => {

@@ -53,10 +53,7 @@ export default class SyncLog extends Model {
     ).fetch();
   }
 
-  static recentSyncs(limit: number = 10) {
-    return this.query(
-      Q.sortBy('started_at', Q.desc),
-      Q.take(limit),
-    );
+  static recentSyncs(limit = 10) {
+    return this.query(Q.sortBy('started_at', Q.desc), Q.take(limit));
   }
 }

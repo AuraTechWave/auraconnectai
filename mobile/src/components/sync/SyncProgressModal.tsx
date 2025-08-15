@@ -67,10 +67,7 @@ export const SyncProgressModal: React.FC<SyncProgressModalProps> = ({
     return (
       <View style={styles.progressBarContainer}>
         <View
-          style={[
-            styles.progressBarFill,
-            { width: `${progress * 100}%` },
-          ]}
+          style={[styles.progressBarFill, { width: `${progress * 100}%` }]}
         />
       </View>
     );
@@ -98,11 +95,13 @@ export const SyncProgressModal: React.FC<SyncProgressModalProps> = ({
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.title}>Syncing...</Text>
           <Text style={styles.message}>
-            {syncState.progress?.message || 'Please wait while we sync your data'}
+            {syncState.progress?.message ||
+              'Please wait while we sync your data'}
           </Text>
           {renderProgress()}
           <Text style={styles.stats}>
-            {syncState.pendingChanges > 0 && `${syncState.pendingChanges} pending changes`}
+            {syncState.pendingChanges > 0 &&
+              `${syncState.pendingChanges} pending changes`}
           </Text>
         </>
       );
@@ -123,12 +122,9 @@ export const SyncProgressModal: React.FC<SyncProgressModalProps> = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          {renderContent()}
-        </View>
+        <View style={styles.container}>{renderContent()}</View>
       </View>
     </Modal>
   );

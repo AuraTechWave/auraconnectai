@@ -37,12 +37,26 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({ onPress }) => {
       case 'error':
         return <Icon name="alert-circle" size={20} color={colors.error} />;
       case 'offline':
-        return <Icon name="cloud-off-outline" size={20} color={colors.textSecondary} />;
+        return (
+          <Icon
+            name="cloud-off-outline"
+            size={20}
+            color={colors.textSecondary}
+          />
+        );
       default:
         if (syncState.pendingChanges > 0) {
-          return <Icon name="cloud-upload-outline" size={20} color={colors.warning} />;
+          return (
+            <Icon
+              name="cloud-upload-outline"
+              size={20}
+              color={colors.warning}
+            />
+          );
         }
-        return <Icon name="cloud-check-outline" size={20} color={colors.success} />;
+        return (
+          <Icon name="cloud-check-outline" size={20} color={colors.success} />
+        );
     }
   };
 
@@ -91,8 +105,7 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({ onPress }) => {
       style={styles.container}
       onPress={handlePress}
       activeOpacity={0.7}
-      disabled={syncState.status === 'syncing'}
-    >
+      disabled={syncState.status === 'syncing'}>
       <View style={styles.statusIcon}>{getStatusIcon()}</View>
       <View style={styles.textContainer}>
         <Text style={styles.statusText}>{getStatusText()}</Text>
