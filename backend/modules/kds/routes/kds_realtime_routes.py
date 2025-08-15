@@ -80,8 +80,26 @@ async def websocket_station_endpoint(
                 
                 elif data.get("type") == "update_status":
                     item_id = data.get("item_id")
-                    new_status = DisplayStatus[data.get("status").upper()]
+                    status_str = data.get("status")
                     staff_id = data.get("staff_id")
+                    
+                    # Validate status
+                    if not status_str:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Status is required",
+                        })
+                        continue
+                    
+                    try:
+                        new_status = DisplayStatus[status_str.upper()]
+                    except KeyError:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": f"Invalid status: {status_str}",
+                            "valid_statuses": [s.value for s in DisplayStatus],
+                        })
+                        continue
                     
                     await service.update_item_status(
                         item_id=item_id,

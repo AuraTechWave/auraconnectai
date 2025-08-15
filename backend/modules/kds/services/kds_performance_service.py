@@ -199,15 +199,23 @@ class KDSPerformanceService:
         
         total_items = total_items_query.count()
         
-        # Get unique orders
-        order_ids = self.db.query(KDSOrderItem.order_item_id).filter(
-            and_(
-                KDSOrderItem.received_at >= date_filter["start"],
-                KDSOrderItem.received_at <= date_filter["end"],
-            )
-        ).distinct().all()
+        # Get unique orders (need to join with OrderItem to get actual order_id)
+        from modules.orders.models.order_models import OrderItem
         
-        total_orders = len(order_ids)
+        unique_orders = (
+            self.db.query(OrderItem.order_id)
+            .join(KDSOrderItem, KDSOrderItem.order_item_id == OrderItem.id)
+            .filter(
+                and_(
+                    KDSOrderItem.received_at >= date_filter["start"],
+                    KDSOrderItem.received_at <= date_filter["end"],
+                )
+            )
+            .distinct()
+            .all()
+        )
+        
+        total_orders = len(unique_orders)
         
         # Average order time
         completed_items = total_items_query.filter(
@@ -260,12 +268,16 @@ class KDSPerformanceService:
     def get_real_time_metrics(self, station_id: Optional[int] = None) -> Dict[str, Any]:
         """Get real-time metrics for monitoring"""
         
-        base_query = self.db.query(KDSOrderItem)
+        from sqlalchemy.orm import joinedload
+        
+        base_query = self.db.query(KDSOrderItem).options(
+            joinedload(KDSOrderItem.station)
+        )
         
         if station_id:
             base_query = base_query.filter(KDSOrderItem.station_id == station_id)
         
-        # Current active items
+        # Current active items with station data loaded
         active_items = base_query.filter(
             KDSOrderItem.status.in_([DisplayStatus.PENDING, DisplayStatus.IN_PROGRESS])
         ).all()

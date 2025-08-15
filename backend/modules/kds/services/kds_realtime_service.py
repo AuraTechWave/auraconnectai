@@ -414,7 +414,11 @@ class KDSRealtimeService:
     ) -> List[Dict[str, Any]]:
         """Get display items for a station"""
         
-        query = self.db.query(KDSOrderItem).filter(
+        from sqlalchemy.orm import joinedload
+        
+        query = self.db.query(KDSOrderItem).options(
+            joinedload(KDSOrderItem.station)
+        ).filter(
             KDSOrderItem.station_id == station_id
         )
         
@@ -446,7 +450,8 @@ class KDSRealtimeService:
             elapsed_time = (datetime.utcnow() - item.received_at).total_seconds()
             
             # Determine display status (color coding)
-            station = self.db.query(KitchenStation).filter_by(id=station_id).first()
+            # Use the preloaded station relationship or fetch if not loaded
+            station = item.station if hasattr(item, 'station') and item.station else self.db.query(KitchenStation).filter_by(id=station_id).first()
             display_status = "normal"
             
             if station:
