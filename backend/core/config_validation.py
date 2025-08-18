@@ -11,6 +11,7 @@ import logging
 from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field, field_validator, ValidationInfo
+from .secrets import get_required_secret, get_optional_secret
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,7 @@ class EnvironmentConfig(BaseSettings):
     USE_IN_MEMORY_CACHE: bool = Field(default=False, env="USE_IN_MEMORY_CACHE")
 
     # Session configuration
-    SESSION_SECRET: str = Field(
-        default="dev-secret-change-in-production", env="SESSION_SECRET"
-    )
+    SESSION_SECRET: str = Field(default=None, env="SESSION_SECRET")
     SESSION_EXPIRE_MINUTES: int = Field(default=30, env="SESSION_EXPIRE_MINUTES")
 
     # Data-retention settings (security / compliance)
@@ -36,10 +35,8 @@ class EnvironmentConfig(BaseSettings):
     BIOMETRIC_RETENTION_DAYS: int = Field(default=730, env="BIOMETRIC_RETENTION_DAYS")
     ANALYTICS_RETENTION_DAYS: int = Field(default=365, env="ANALYTICS_RETENTION_DAYS")
 
-    # Security settings
-    SECRET_KEY: str = Field(
-        default="dev-secret-key-change-in-production", env="SECRET_KEY"
-    )
+    # Security settings  
+    SECRET_KEY: str = Field(default=None, env="SECRET_KEY")
     ALLOW_INSECURE_HTTP: bool = Field(default=True, env="ALLOW_INSECURE_HTTP")
 
     class Config:
@@ -74,21 +71,15 @@ class EnvironmentConfig(BaseSettings):
     @field_validator("SESSION_SECRET", "SECRET_KEY")
     def validate_secrets(cls, v, info):
         """Validate secret keys"""
-        env = info.data.get("ENVIRONMENT", "development")
         field_name = info.field_name
-
-        if env == "production" and "dev-secret" in v:
-            raise ValueError(
-                f"{field_name} must be changed from default value in production"
-            )
-
-        if env != "production" and "dev-secret" in v:
-            warnings.warn(
-                f"Using default {field_name}. This is acceptable for development "
-                "but MUST be changed for production.",
-                RuntimeWarning,
-            )
-
+        
+        # If not set, get from secure secrets management
+        if v is None:
+            if field_name == "SESSION_SECRET":
+                return get_required_secret("Session encryption secret", "SESSION_SECRET")
+            elif field_name == "SECRET_KEY":
+                return get_required_secret("Application secret key", "SECRET_KEY")
+        
         return v
 
     @field_validator("ALLOW_INSECURE_HTTP")

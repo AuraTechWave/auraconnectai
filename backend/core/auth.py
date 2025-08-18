@@ -15,11 +15,19 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 import secrets
 import logging
+from .secrets import get_required_secret
 
 logger = logging.getLogger(__name__)
 
 # Security Configuration - Environment Variables
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "development-secret-key-change-in-production")
+# Handle test environments gracefully
+if os.getenv('PYTEST_CURRENT_TEST') is not None:
+    # For tests, use environment variable or test default
+    SECRET_KEY = os.getenv("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+else:
+    # For non-test environments, require proper secret
+    SECRET_KEY = get_required_secret("JWT_SECRET_KEY", "JWT_SECRET_KEY")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -59,36 +67,45 @@ class User(BaseModel):
     is_active: bool = True
 
 
-# Mock user database (in production, this would be a real database)
-MOCK_USERS = {
-    "admin": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@auraconnect.ai",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-        "roles": ["admin", "payroll_manager", "staff_manager"],
-        "tenant_ids": [1, 2, 3],
-        "is_active": True,
-    },
-    "payroll_clerk": {
-        "id": 2,
-        "username": "payroll_clerk",
-        "email": "payroll@auraconnect.ai",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-        "roles": ["payroll_clerk"],
-        "tenant_ids": [1],
-        "is_active": True,
-    },
-    "manager": {
-        "id": 3,
-        "username": "manager",
-        "email": "manager@auraconnect.ai",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-        "roles": ["manager", "staff_viewer"],
-        "tenant_ids": [1],
-        "is_active": True,
-    },
-}
+# TODO: Replace with real database integration
+# This is a temporary placeholder for development only
+# In production, users should be managed through a proper database
+if os.getenv("ENVIRONMENT", "development").lower() == "development":
+    # Development-only mock users
+    logger.warning("Using mock users - DO NOT USE IN PRODUCTION")
+    MOCK_USERS = {
+        "admin": {
+            "id": 1,
+            "username": "admin",
+            "email": "admin@auraconnect.ai",
+            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+            "roles": ["admin", "payroll_manager", "staff_manager"],
+            "tenant_ids": [1, 2, 3],
+            "is_active": True,
+        },
+        "payroll_clerk": {
+            "id": 2,
+            "username": "payroll_clerk",
+            "email": "payroll@auraconnect.ai",
+            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+            "roles": ["payroll_clerk"],
+            "tenant_ids": [1],
+            "is_active": True,
+        },
+        "manager": {
+            "id": 3,
+            "username": "manager",
+            "email": "manager@auraconnect.ai",
+            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+            "roles": ["manager", "staff_viewer"],
+            "tenant_ids": [1],
+            "is_active": True,
+        },
+    }
+else:
+    # Production environment - no mock users allowed
+    MOCK_USERS = {}
+    logger.info("Mock users disabled in production environment")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -113,6 +130,11 @@ def needs_password_rehash(hashed_password: str) -> bool:
 
 def get_user(username: str) -> Optional[User]:
     """Get user by username."""
+    # In production, this should query the database
+    if os.getenv("ENVIRONMENT", "development").lower() != "development":
+        logger.error("Attempted to use mock user system in production")
+        return None
+    
     user_data = MOCK_USERS.get(username)
     if user_data:
         return User(**user_data)
@@ -121,6 +143,11 @@ def get_user(username: str) -> Optional[User]:
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
     """Authenticate user with username and password."""
+    # In production, this should query the database
+    if os.getenv("ENVIRONMENT", "development").lower() != "development":
+        logger.error("Attempted to use mock authentication in production")
+        return None
+    
     user_data = MOCK_USERS.get(username)
     if not user_data:
         return None
@@ -216,15 +243,21 @@ def verify_token(
         if payload.get("type") != token_type:
             return None
 
-        user_id: int = payload.get("sub")
+        # Handle sub as string (JWT standard) but convert to int for internal use
+        sub = payload.get("sub")
+        if sub is None:
+            return None
+        
+        try:
+            user_id: int = int(sub)
+        except (ValueError, TypeError):
+            return None
+            
         username: str = payload.get("username")
         roles: List[str] = payload.get("roles", [])
         tenant_ids: List[int] = payload.get("tenant_ids", [])
         session_id: str = payload.get("session_id")
         token_id: str = payload.get("jti")
-
-        if user_id is None:
-            return None
 
         # For refresh tokens, verify session exists and is valid
         if token_type == "refresh" and session_id:
@@ -267,7 +300,7 @@ def refresh_access_token(refresh_token: str) -> Optional[dict]:
 
     # Create new access token with same data
     new_token_data = {
-        "sub": token_data.user_id,
+        "sub": str(token_data.user_id),
         "username": token_data.username,
         "roles": token_data.roles,
         "tenant_ids": token_data.tenant_ids,
@@ -305,7 +338,7 @@ def create_user_session(user: User, request: Optional[Request] = None) -> dict:
 
     # Create tokens
     token_data = {
-        "sub": user.id,
+        "sub": str(user.id),
         "username": user.username,
         "roles": user.roles,
         "tenant_ids": user.tenant_ids,
