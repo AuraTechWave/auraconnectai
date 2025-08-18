@@ -938,7 +938,15 @@ class SettingsUIService:
             scopes=scopes,
             field_types=field_types,
             validation_rules={},  # TODO: Add validation rule definitions
-            presets=list(self.presets.keys()),
+            presets=[
+                {
+                    "key": key,
+                    "name": preset["name"],
+                    "description": preset["description"],
+                    "settings_count": len(preset["settings"])
+                }
+                for key, preset in self.presets.items()
+            ],
             permissions=permissions,
             feature_flags=feature_flags,
             ui_config=ui_config,
