@@ -14,31 +14,6 @@ import asyncio
 
 import os
 from core.config import settings
-
-# Add APP_VERSION if not in settings
-if not hasattr(settings, 'APP_VERSION'):
-    settings.APP_VERSION = os.getenv('APP_VERSION', '1.0.0')
-
-# Safely construct REDIS_URL if not in settings  
-if not hasattr(settings, 'REDIS_URL'):
-    # Check if redis_url is available
-    if hasattr(settings, 'redis_url') and settings.redis_url:
-        settings.REDIS_URL = settings.redis_url
-    else:
-        # Try to construct from individual components if they exist
-        try:
-            host = getattr(settings, 'REDIS_HOST', 'localhost')
-            port = getattr(settings, 'REDIS_PORT', 6379)
-            db = getattr(settings, 'REDIS_DB', 0)
-            password = getattr(settings, 'REDIS_PASSWORD', None)
-            
-            if password:
-                settings.REDIS_URL = f"redis://:{password}@{host}:{port}/{db}"
-            else:
-                settings.REDIS_URL = f"redis://{host}:{port}/{db}"
-        except Exception:
-            # If all else fails, use a default
-            settings.REDIS_URL = "redis://localhost:6379/0"
 from core.database import SessionLocal
 from ..models.health_models import SystemHealth, HealthMetric, ErrorLog, PerformanceMetric, Alert
 from ..schemas.health_schemas import (
@@ -57,6 +32,39 @@ class HealthService:
         self.db = db
         self.start_time = datetime.utcnow()
         self._redis_client = None
+        self._app_version = None
+        self._redis_url = None
+    
+    @property
+    def app_version(self) -> str:
+        """Get application version without modifying global settings"""
+        if self._app_version is None:
+            self._app_version = getattr(settings, 'APP_VERSION', None) or os.getenv('APP_VERSION', '1.0.0')
+        return self._app_version
+    
+    @property
+    def redis_url(self) -> str:
+        """Get Redis URL without modifying global settings"""
+        if self._redis_url is None:
+            # First check if REDIS_URL is already in settings
+            if hasattr(settings, 'REDIS_URL') and settings.REDIS_URL:
+                self._redis_url = settings.REDIS_URL
+            # Then check redis_url (lowercase)
+            elif hasattr(settings, 'redis_url') and settings.redis_url:
+                self._redis_url = settings.redis_url
+            else:
+                # Construct from components
+                host = getattr(settings, 'REDIS_HOST', 'localhost')
+                port = getattr(settings, 'REDIS_PORT', 6379)
+                db = getattr(settings, 'REDIS_DB', 0)
+                password = getattr(settings, 'REDIS_PASSWORD', None)
+                
+                if password:
+                    self._redis_url = f"redis://:{password}@{host}:{port}/{db}"
+                else:
+                    self._redis_url = f"redis://{host}:{port}/{db}"
+        
+        return self._redis_url
     
     @property
     def redis_client(self):
@@ -64,7 +72,7 @@ class HealthService:
         if self._redis_client is None:
             try:
                 self._redis_client = redis.from_url(
-                    settings.REDIS_URL,
+                    self.redis_url,  # Use property instead of settings.REDIS_URL
                     decode_responses=True,
                     socket_connect_timeout=5
                 )
@@ -133,7 +141,7 @@ class HealthService:
         return HealthCheckResponse(
             status=overall_status,
             timestamp=datetime.utcnow(),
-            version=settings.APP_VERSION,
+            version=self.app_version,  # Use property instead of global settings
             uptime_seconds=uptime_seconds,
             components=components,
             checks_passed=len(components) - unhealthy_count - degraded_count,
