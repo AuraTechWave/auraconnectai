@@ -54,8 +54,12 @@ async def get_settings_dashboard(
     # Validate permissions
     if scope == SettingScope.SYSTEM:
         check_permission(current_user, Permission.SYSTEM_ADMIN)
-    elif scope == SettingScope.RESTAURANT and restaurant_id != current_user.restaurant_id:
-        check_permission(current_user, Permission.SETTINGS_MANAGE_ALL)
+    elif scope == SettingScope.RESTAURANT:
+        # Handle None restaurant_id cases
+        if restaurant_id and current_user.restaurant_id and restaurant_id != current_user.restaurant_id:
+            check_permission(current_user, Permission.SETTINGS_MANAGE_ALL)
+        elif not current_user.restaurant_id:
+            raise HTTPException(status_code=403, detail="User not associated with any restaurant")
     
     service = SettingsUIService(db)
     return service.get_settings_dashboard(
