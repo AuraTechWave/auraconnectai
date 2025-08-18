@@ -15,13 +15,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, field_validator, Field, model_validator
 import logging
 
 from core.database import get_db
 from core.auth import get_current_user
 from core.rbac_service import get_rbac_service, RBACService
-from core.auth import User
+from core.rbac_models import RBACUser as User
 from core.password_security import (
     password_security,
     PasswordValidationResult,
@@ -44,7 +44,7 @@ class PasswordResetRequestModel(BaseModel):
 
     email: str = Field(..., description="User's email address")
 
-    @validator("email")
+    @field_validator("email")
     def validate_email(cls, v):
         if not validate_email_address(v):
             raise ValueError("Invalid email address format")
@@ -60,11 +60,11 @@ class PasswordResetConfirmModel(BaseModel):
     )
     confirm_password: str = Field(..., description="Password confirmation")
 
-    @validator("confirm_password")
-    def passwords_match(cls, v, values):
-        if "new_password" in values and v != values["new_password"]:
+    @model_validator(mode='after')
+    def passwords_match(self):
+        if self.new_password != self.confirm_password:
             raise ValueError("Passwords do not match")
-        return v
+        return self
 
 
 class PasswordChangeModel(BaseModel):
@@ -76,11 +76,11 @@ class PasswordChangeModel(BaseModel):
     )
     confirm_password: str = Field(..., description="Password confirmation")
 
-    @validator("confirm_password")
-    def passwords_match(cls, v, values):
-        if "new_password" in values and v != values["new_password"]:
+    @model_validator(mode='after')
+    def passwords_match(self):
+        if self.new_password != self.confirm_password:
             raise ValueError("Passwords do not match")
-        return v
+        return self
 
 
 class PasswordValidationModel(BaseModel):
