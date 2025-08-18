@@ -20,7 +20,7 @@ from app.main import app
 from core.auth import (
     create_access_token, create_refresh_token, verify_token,
     SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_DAYS, generate_token_id, isTokenExpired
+    REFRESH_TOKEN_EXPIRE_DAYS, generate_token_id
 )
 from core.session_manager import session_manager
 
@@ -65,7 +65,7 @@ class TestTokenGeneration:
     def test_create_access_token(self, test_user):
         """Test access token creation."""
         token_data = {
-            "sub": test_user["id"],
+            "sub": str(test_user["id"]),
             "username": test_user["username"],
             "roles": test_user["roles"],
             "tenant_ids": test_user["tenant_ids"]
@@ -86,7 +86,7 @@ class TestTokenGeneration:
     def test_create_refresh_token(self, test_user):
         """Test refresh token creation."""
         token_data = {
-            "sub": test_user["id"],
+            "sub": str(test_user["id"]),
             "username": test_user["username"],
             "roles": test_user["roles"],
             "tenant_ids": test_user["tenant_ids"]
@@ -110,7 +110,7 @@ class TestTokenGeneration:
     def test_verify_valid_token(self, test_user):
         """Test verification of valid token."""
         token_data = {
-            "sub": test_user["id"],
+            "sub": str(test_user["id"]),
             "username": test_user["username"],
             "roles": test_user["roles"],
             "tenant_ids": test_user["tenant_ids"]
@@ -133,7 +133,7 @@ class TestTokenGeneration:
     def test_verify_wrong_token_type(self, test_user):
         """Test verification with wrong token type."""
         token_data = {
-            "sub": test_user["id"],
+            "sub": str(test_user["id"]),
             "username": test_user["username"]
         }
         
@@ -145,7 +145,7 @@ class TestTokenGeneration:
     def test_token_expiration(self, test_user):
         """Test token expiration."""
         token_data = {
-            "sub": test_user["id"],
+            "sub": str(test_user["id"]),
             "username": test_user["username"]
         }
         
@@ -438,13 +438,12 @@ class TestTokenHelpers:
     def test_is_token_expired(self):
         """Test token expiration checking."""
         # Create expired token
-        expired_token_data = {"sub": 1, "username": "test"}
+        expired_token_data = {"sub": "1", "username": "test"}
         expired_token = create_access_token(
             expired_token_data,
             expires_delta=timedelta(seconds=-10)  # Already expired
         )
         
-        # This would need the frontend isTokenExpired function
-        # Just verify token can't be verified
+        # Verify token can't be verified when expired
         verified = verify_token(expired_token, "access", check_blacklist=False)
         assert verified is None
