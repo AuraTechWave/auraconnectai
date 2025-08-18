@@ -151,6 +151,10 @@ from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_pri
 # ========== GDPR Compliance ==========
 from modules.gdpr.routes.gdpr_routes import router as gdpr_router
 
+# ========== Health Monitoring ==========
+from modules.health.routes.health_routes import router as health_router
+from modules.health.metrics.performance_middleware import PerformanceMiddleware
+
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
     title="AuraConnect AI - Restaurant Management API",
@@ -241,6 +245,10 @@ app.add_middleware(TenantIsolationMiddleware)
 # 5. Rate limiting middleware (first to execute)
 # Protects against DDoS and abuse before other processing
 app.add_middleware(RateLimitMiddleware)
+
+# 6. Performance monitoring middleware
+# Tracks request performance and errors
+app.add_middleware(PerformanceMiddleware)
 
 # ========== Include all routers with proper order (auth first) ==========
 
@@ -350,6 +358,9 @@ app.include_router(customer_segment_router)
 
 # GDPR Compliance
 app.include_router(gdpr_router)
+
+# Health Monitoring
+app.include_router(health_router)
 
 # Reservations & Waitlist (Enhanced System)
 app.include_router(enhanced_reservation_router, prefix="/api/v1", tags=["Reservations"])
