@@ -8,6 +8,7 @@ import { DashboardScreen } from '@screens/dashboard/DashboardScreen';
 import { OrdersNavigator } from './OrdersNavigator';
 import { StaffNavigator } from './StaffNavigator';
 import { MenuNavigator } from './MenuNavigator';
+import { InventoryNavigator } from './InventoryNavigator';
 import { AnalyticsScreen } from '@screens/analytics/AnalyticsScreen';
 import { DrawerContent } from '@components/navigation/DrawerContent';
 
@@ -16,6 +17,7 @@ export type MainTabParamList = {
   Orders: undefined;
   Staff: undefined;
   Menu: undefined;
+  Inventory: undefined;
   Analytics: undefined;
 };
 
@@ -84,6 +86,15 @@ const TabNavigator: React.FC = () => {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="food-variant" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Inventory"
+        component={InventoryNavigator}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="package-variant" size={size} color={color} />
           ),
         }}
       />

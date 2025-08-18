@@ -1,25 +1,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text } from 'react-native';
-
-// Placeholder screens - to be implemented
-const StaffListScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Staff List</Text>
-  </View>
-);
-
-const StaffDetailsScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Staff Details</Text>
-  </View>
-);
-
-const ScheduleScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Schedule</Text>
-  </View>
-);
+import { StaffListScreen } from '@screens/staff/StaffListScreen';
+import { StaffDetailsScreen } from '@screens/staff/StaffDetailsScreen';
+import { ScheduleScreen } from '@screens/staff/ScheduleScreen';
 
 export type StaffStackParamList = {
   StaffList: undefined;
