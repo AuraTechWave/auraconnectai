@@ -99,9 +99,57 @@ def run_auth_coverage():
 
 def main():
     """Main entry point."""
-    # Change to backend directory
-    if os.path.exists('backend'):
-        os.chdir('backend')
+    # Find the correct backend directory
+    current_dir = os.getcwd()
+    backend_dir = None
+    
+    # Check if we're already in the backend directory
+    if os.path.exists('core/auth.py') and os.path.exists('tests'):
+        backend_dir = current_dir
+        print(f"✓ Already in backend directory: {backend_dir}")
+    # Check if backend is a subdirectory
+    elif os.path.exists('backend') and os.path.exists('backend/core/auth.py'):
+        backend_dir = os.path.join(current_dir, 'backend')
+        os.chdir(backend_dir)
+        print(f"✓ Changed to backend directory: {backend_dir}")
+    # Check if we're in a subdirectory of backend
+    elif 'backend' in current_dir:
+        # Try to find the backend root
+        path_parts = current_dir.split(os.sep)
+        for i, part in enumerate(path_parts):
+            if part == 'backend':
+                potential_backend = os.sep.join(path_parts[:i+1])
+                if os.path.exists(os.path.join(potential_backend, 'core/auth.py')):
+                    backend_dir = potential_backend
+                    os.chdir(backend_dir)
+                    print(f"✓ Changed to backend root: {backend_dir}")
+                    break
+    
+    if not backend_dir:
+        print("❌ Error: Could not find the backend directory!")
+        print(f"Current directory: {current_dir}")
+        print("Please run this script from the project root or backend directory.")
+        sys.exit(1)
+    
+    # Verify we have the expected structure
+    required_paths = [
+        'core/auth.py',
+        'modules/auth/routes/auth_routes.py',
+        'tests/test_auth_jwt.py'
+    ]
+    
+    missing_paths = []
+    for path in required_paths:
+        if not os.path.exists(path):
+            missing_paths.append(path)
+    
+    if missing_paths:
+        print("❌ Error: Missing required files in backend directory!")
+        print("Missing files:")
+        for path in missing_paths:
+            print(f"  - {path}")
+        print(f"Current directory: {os.getcwd()}")
+        sys.exit(1)
     
     # Install coverage if needed
     try:
