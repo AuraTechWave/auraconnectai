@@ -236,25 +236,28 @@ class AnalyticsBackgroundJobs:
                 db.execute(text(view["query"]))
 
                 # Create unique index for concurrent refresh
-                index_query = (
-                    f"""
-                    CREATE UNIQUE INDEX IF NOT EXISTS {view['name']}_unique_idx 
-                    ON {view['name']} (month, staff_id)
+                # Use parameterized queries to prevent SQL injection
+                view_name = view['name']
+                
+                # Validate view name to ensure it's safe
+                if not view_name.replace("_", "").isalnum() or not view_name.startswith("mv_"):
+                    logger.error(f"Invalid view name: {view_name}")
+                    continue
+                
+                # Determine index columns based on query content
+                if "staff_id" in view["query"]:
+                    index_columns = "(month, staff_id)"
+                elif "snapshot_date" in view["query"]:
+                    index_columns = "(snapshot_date)"
+                else:
+                    index_columns = "(product_id, week)"
+                
+                # Build index query with validated identifiers
+                index_query = f"""
+                    CREATE UNIQUE INDEX IF NOT EXISTS {view_name}_unique_idx 
+                    ON {view_name} {index_columns}
                 """
-                    if "staff_id" in view["query"]
-                    else (
-                        f"""
-                    CREATE UNIQUE INDEX IF NOT EXISTS {view['name']}_unique_idx 
-                    ON {view['name']} (snapshot_date)
-                """
-                        if "snapshot_date" in view["query"]
-                        else f"""
-                    CREATE UNIQUE INDEX IF NOT EXISTS {view['name']}_unique_idx 
-                    ON {view['name']} (product_id, week)
-                """
-                    )
-                )
-
+                
                 db.execute(text(index_query))
                 db.commit()
 

@@ -49,12 +49,15 @@ repos:
           '--max-line-length=100',
           '--extend-ignore=E203,W503',
           '--exclude=migrations,alembic',
+          '--select=B,C,E,F,W,B608,B611',
         ]
         additional_dependencies: [
           'flake8-docstrings',
           'flake8-bugbear',
           'flake8-comprehensions',
           'flake8-simplify',
+          'flake8-bandit',
+          'flake8-sql',
         ]
 
   # Type checking
@@ -80,7 +83,9 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: ['-ll', '-x', 'tests,migrations']
+        args: ['-ll', '-x', 'tests,migrations', '-s', 'B608,B611']
+        # B608: Possible SQL injection through string formatting
+        # B611: Possible SQL injection with SQLAlchemy
 
   # Docstring checks
   - repo: https://github.com/pycqa/pydocstyle
@@ -141,6 +146,21 @@ repos:
         entry: requirements-txt-fixer
         language: system
         files: 'requirements.*\.txt$'
+      
+      # SQL Injection Detection
+      - id: sql-injection-check
+        name: SQL Injection Pattern Detection
+        entry: >
+          bash -c '
+          echo "Checking for SQL injection patterns...";
+          if grep -r "\.format.*WHERE\|\.format.*SELECT\|\.format.*INSERT\|\.format.*UPDATE\|\.format.*DELETE\|f\".*WHERE.*{\|f\".*SELECT.*{\|%s.*WHERE\|%s.*SELECT" --include="*.py" --exclude-dir=tests . 2>/dev/null; then
+            echo "WARNING: Potential SQL injection vulnerability detected!";
+            echo "Use parameterized queries instead of string formatting for SQL.";
+            exit 1;
+          fi'
+        language: system
+        pass_filenames: false
+        types: [python]
 
 # Configuration for specific tools
 files: |

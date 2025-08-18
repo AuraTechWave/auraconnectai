@@ -15,6 +15,7 @@ from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, text
 import uuid
+from .secure_query_builder import SecureQueryBuilder
 
 from core.database import get_db
 from modules.analytics.schemas.predictive_analytics_schemas import (
@@ -190,20 +191,33 @@ class DemandPredictionService:
         else:  # Monthly
             start_date = end_date - timedelta(days=730)
 
-        # Build query based on entity type
+        # Build query based on entity type using secure query builder
         if entity_type == "product":
-            query = self._build_product_demand_query(
-                entity_id, start_date, end_date, granularity
-            )
+            query_template, base_params = SecureQueryBuilder.build_product_demand_query(granularity)
+            params = {
+                **base_params,
+                "product_id": entity_id,
+                "start_date": start_date,
+                "end_date": end_date
+            }
         elif entity_type == "category":
-            query = self._build_category_demand_query(
-                entity_id, start_date, end_date, granularity
-            )
+            query_template, base_params = SecureQueryBuilder.build_category_demand_query(granularity)
+            params = {
+                **base_params,
+                "category_id": entity_id,
+                "start_date": start_date,
+                "end_date": end_date
+            }
         else:  # overall
-            query = self._build_overall_demand_query(start_date, end_date, granularity)
+            query_template, base_params = SecureQueryBuilder.build_overall_demand_query(granularity)
+            params = {
+                **base_params,
+                "start_date": start_date,
+                "end_date": end_date
+            }
 
-        # Execute query and return DataFrame
-        result = self.db.execute(text(query))
+        # Execute query with parameters and return DataFrame
+        result = self.db.execute(text(query_template), params)
         df = pd.DataFrame(result.fetchall())
 
         if df.empty:
@@ -219,96 +233,11 @@ class DemandPredictionService:
 
         return df
 
-    def _build_product_demand_query(
-        self,
-        product_id: int,
-        start_date: date,
-        end_date: date,
-        granularity: TimeGranularity,
-    ) -> str:
-        """Build SQL query for product demand data"""
+    # NOTE: Query building methods have been moved to SecureQueryBuilder
+    # to prevent SQL injection vulnerabilities. The old methods that used
+    # string formatting have been removed.
 
-        date_trunc = {
-            TimeGranularity.HOURLY: "hour",
-            TimeGranularity.DAILY: "day",
-            TimeGranularity.WEEKLY: "week",
-            TimeGranularity.MONTHLY: "month",
-        }[granularity]
 
-        return f"""
-        SELECT 
-            DATE_TRUNC('{date_trunc}', o.created_at) as date,
-            SUM(oi.quantity) as demand,
-            COUNT(DISTINCT o.id) as order_count,
-            AVG(oi.unit_price) as avg_price
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
-        WHERE oi.menu_item_id = {product_id}
-            AND o.created_at >= '{start_date}'
-            AND o.created_at <= '{end_date}'
-            AND o.status NOT IN ('cancelled', 'failed')
-        GROUP BY DATE_TRUNC('{date_trunc}', o.created_at)
-        ORDER BY date
-        """
-
-    def _build_category_demand_query(
-        self,
-        category_id: int,
-        start_date: date,
-        end_date: date,
-        granularity: TimeGranularity,
-    ) -> str:
-        """Build SQL query for category demand data"""
-
-        date_trunc = {
-            TimeGranularity.HOURLY: "hour",
-            TimeGranularity.DAILY: "day",
-            TimeGranularity.WEEKLY: "week",
-            TimeGranularity.MONTHLY: "month",
-        }[granularity]
-
-        return f"""
-        SELECT 
-            DATE_TRUNC('{date_trunc}', o.created_at) as date,
-            SUM(oi.quantity) as demand,
-            COUNT(DISTINCT o.id) as order_count,
-            COUNT(DISTINCT oi.menu_item_id) as product_variety
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
-        JOIN menu_items mi ON oi.menu_item_id = mi.id
-        WHERE mi.category_id = {category_id}
-            AND o.created_at >= '{start_date}'
-            AND o.created_at <= '{end_date}'
-            AND o.status NOT IN ('cancelled', 'failed')
-        GROUP BY DATE_TRUNC('{date_trunc}', o.created_at)
-        ORDER BY date
-        """
-
-    def _build_overall_demand_query(
-        self, start_date: date, end_date: date, granularity: TimeGranularity
-    ) -> str:
-        """Build SQL query for overall demand data"""
-
-        date_trunc = {
-            TimeGranularity.HOURLY: "hour",
-            TimeGranularity.DAILY: "day",
-            TimeGranularity.WEEKLY: "week",
-            TimeGranularity.MONTHLY: "month",
-        }[granularity]
-
-        return f"""
-        SELECT 
-            DATE_TRUNC('{date_trunc}', created_at) as date,
-            COUNT(*) as demand,
-            SUM(total_amount) as revenue,
-            COUNT(DISTINCT customer_id) as unique_customers
-        FROM orders
-        WHERE created_at >= '{start_date}'
-            AND created_at <= '{end_date}'
-            AND status NOT IN ('cancelled', 'failed')
-        GROUP BY DATE_TRUNC('{date_trunc}', created_at)
-        ORDER BY date
-        """
 
     def _prepare_time_series(self, data: pd.DataFrame) -> pd.Series:
         """Prepare time series data for modeling"""
