@@ -19,7 +19,7 @@ class QueryLogger:
     """SQL Query Logger for development and debugging"""
 
     def __init__(self):
-        self.enabled = settings.ENVIRONMENT == "development" or settings.DEBUG
+        self.enabled = settings.environment == "development" or settings.debug
         self.slow_query_threshold = 1.0  # 1 second
         self.query_stats: Dict[str, Any] = {
             "total_queries": 0,
@@ -34,7 +34,7 @@ class QueryLogger:
     def setup_logging(self):
         """Setup SQL query logging for development"""
         # Configure SQLAlchemy engine logging
-        if settings.LOG_SQL_QUERIES:
+        if getattr(settings, 'LOG_SQL_QUERIES', False):
             logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
 
             # Setup custom formatter for SQL queries
@@ -106,7 +106,7 @@ def setup_query_logging(engine: Engine):
         tables = extract_tables_from_query(statement)
         conn.info.setdefault("query_tables", []).append(tables)
 
-        if settings.LOG_SQL_QUERIES:
+        if getattr(settings, 'LOG_SQL_QUERIES', False):
             logger.debug("Start Query: %s", statement)
 
     @event.listens_for(engine, "after_cursor_execute")
@@ -131,7 +131,7 @@ def setup_query_logging(engine: Engine):
                 f"SLOW QUERY ({total_time:.3f}s): {statement[:200]}..."
             )
 
-        if settings.LOG_SQL_QUERIES:
+        if getattr(settings, 'LOG_SQL_QUERIES', False):
             logger.debug("Query Complete in %.3fs", total_time)
 
     @event.listens_for(Pool, "connect")

@@ -10,10 +10,8 @@ from app.startup import run_startup_checks
 
 # ========== Authentication & Authorization ==========
 from modules.auth.routes.auth_routes import router as auth_router
-# TODO: Fix RBAC routes - SQLAlchemy/Pydantic mismatch
-# from modules.auth.routes.rbac_routes import router as rbac_router
-# TODO: Fix password routes - SQLAlchemy/Pydantic mismatch
-# from modules.auth.routes.password_routes import router as password_router
+from modules.auth.routes.rbac_routes import router as rbac_router
+from modules.auth.routes.password_routes import router as password_router
 
 # ========== Staff Management ==========
 from modules.staff.routes.staff_routes import router as staff_router
@@ -244,8 +242,8 @@ app.add_middleware(RateLimitMiddleware)
 
 # Authentication & Authorization
 app.include_router(auth_router)
-# app.include_router(rbac_router)  # TODO: Fix RBAC routes
-# app.include_router(password_router)  # TODO: Fix password routes
+app.include_router(rbac_router)
+app.include_router(password_router)
 
 # Staff Management
 app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API

@@ -661,8 +661,8 @@ class RBACService:
 
 
 # Dependency function for FastAPI
-def get_rbac_service(db: Session = None) -> RBACService:
+from fastapi import Depends
+
+def get_rbac_service(db: Session = Depends(get_db)) -> RBACService:
     """Get RBAC service instance."""
-    if db is None:
-        db = next(get_db())
     return RBACService(db)

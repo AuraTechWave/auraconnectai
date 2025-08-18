@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from core.database import get_db
 from core.auth import get_current_user, require_admin
 from core.rbac_service import RBACService, get_rbac_service
-from core.auth import User, RBACRole, RBACPermission, RBACSession
+from core.rbac_models import RBACUser as User, RBACRole, RBACPermission, RBACSession
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/rbac", tags=["RBAC Management"])
@@ -183,7 +183,7 @@ async def create_user(
             accessible_tenant_ids=user_data.accessible_tenant_ids,
             default_tenant_id=user_data.default_tenant_id,
         )
-        return UserResponse.from_orm(user)
+        return UserResponse.model_validate(user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -239,7 +239,7 @@ async def list_users(
     total_pages = (total_count + page_size - 1) // page_size
 
     return PaginatedUserResponse(
-        items=[UserResponse.from_orm(user) for user in users],
+        items=[UserResponse.model_validate(user) for user in users],
         total_count=total_count,
         page=page,
         page_size=page_size,
@@ -257,7 +257,7 @@ async def get_user(
     user = rbac_service.get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 
 @router.get("/users/{user_id}/permissions", response_model=UserPermissionsResponse)
@@ -303,7 +303,7 @@ async def create_role(
             parent_role_id=role_data.parent_role_id,
             tenant_ids=role_data.tenant_ids,
         )
-        return RoleResponse.from_orm(role)
+        return RoleResponse.model_validate(role)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -317,7 +317,7 @@ async def list_roles(
 ):
     """List all roles."""
     roles = rbac_service.db.query(RBACRole).offset(skip).limit(limit).all()
-    return [RoleResponse.from_orm(role) for role in roles]
+    return [RoleResponse.model_validate(role) for role in roles]
 
 
 @router.get("/roles/{role_id}", response_model=RoleResponse)
@@ -330,7 +330,7 @@ async def get_role(
     role = rbac_service.get_role_by_id(role_id)
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
-    return RoleResponse.from_orm(role)
+    return RoleResponse.model_validate(role)
 
 
 # Permission Management Endpoints
@@ -351,7 +351,7 @@ async def list_permissions(
         query = query.filter(RBACPermission.resource == resource)
 
     permissions = query.offset(skip).limit(limit).all()
-    return [PermissionResponse.from_orm(perm) for perm in permissions]
+    return [PermissionResponse.model_validate(perm) for perm in permissions]
 
 
 @router.get("/permissions/{permission_id}", response_model=PermissionResponse)
@@ -370,7 +370,7 @@ async def get_permission(
     if not permission:
         raise HTTPException(status_code=404, detail="Permission not found")
 
-    return PermissionResponse.from_orm(permission)
+    return PermissionResponse.model_validate(permission)
 
 
 # Role Assignment Endpoints

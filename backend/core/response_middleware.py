@@ -199,7 +199,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     code="VALIDATION_ERROR",
                     errors=[ErrorDetail(code="VALIDATION_ERROR", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True, mode='json'))
+                ).model_dump(exclude_none=True, mode='json')
             )
         except PermissionError as e:
             # Handle permission errors
@@ -210,7 +210,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     code="FORBIDDEN",
                     errors=[ErrorDetail(code="FORBIDDEN", message=str(e))],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True, mode='json'))
+                ).model_dump(exclude_none=True, mode='json')
             )
         except KeyError as e:
             # Handle missing key errors
@@ -221,7 +221,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     code="BAD_REQUEST",
                     errors=[ErrorDetail(code="MISSING_FIELD", message=f"Field {str(e)} is required")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True, mode='json'))
+                ).model_dump(exclude_none=True, mode='json')
             )
         except Exception as e:
             # Handle all other exceptions
@@ -235,5 +235,5 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     code="INTERNAL_ERROR",
                     errors=[ErrorDetail(code="INTERNAL_ERROR", message="Internal server error")],
                     meta={"request_id": getattr(request.state, "request_id", None)}
-                ).model_dump(exclude_none=True, mode='json'))
+                ).model_dump(exclude_none=True, mode='json')
             )
