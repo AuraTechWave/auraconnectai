@@ -19,9 +19,26 @@ from core.config import settings
 if not hasattr(settings, 'APP_VERSION'):
     settings.APP_VERSION = os.getenv('APP_VERSION', '1.0.0')
 
-# Add REDIS_URL if not in settings  
+# Safely construct REDIS_URL if not in settings  
 if not hasattr(settings, 'REDIS_URL'):
-    settings.REDIS_URL = settings.redis_url or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+    # Check if redis_url is available
+    if hasattr(settings, 'redis_url') and settings.redis_url:
+        settings.REDIS_URL = settings.redis_url
+    else:
+        # Try to construct from individual components if they exist
+        try:
+            host = getattr(settings, 'REDIS_HOST', 'localhost')
+            port = getattr(settings, 'REDIS_PORT', 6379)
+            db = getattr(settings, 'REDIS_DB', 0)
+            password = getattr(settings, 'REDIS_PASSWORD', None)
+            
+            if password:
+                settings.REDIS_URL = f"redis://:{password}@{host}:{port}/{db}"
+            else:
+                settings.REDIS_URL = f"redis://{host}:{port}/{db}"
+        except Exception:
+            # If all else fails, use a default
+            settings.REDIS_URL = "redis://localhost:6379/0"
 from core.database import SessionLocal
 from ..models.health_models import SystemHealth, HealthMetric, ErrorLog, PerformanceMetric, Alert
 from ..schemas.health_schemas import (

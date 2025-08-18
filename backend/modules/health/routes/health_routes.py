@@ -4,6 +4,7 @@ Health monitoring API endpoints.
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
 
@@ -80,20 +81,14 @@ async def get_performance_metrics(
     """
     check_permission(current_user, Permission.SYSTEM_ADMIN)
     
-    # Build query
+    # Build query - use database-agnostic approach
+    # First get basic aggregates
     query = db.query(
         PerformanceMetric.endpoint,
         PerformanceMetric.method,
         func.avg(PerformanceMetric.response_time_ms).label("avg_response_time"),
-        func.percentile_cont(0.5).within_group(
-            PerformanceMetric.response_time_ms
-        ).label("p50_response_time"),
-        func.percentile_cont(0.95).within_group(
-            PerformanceMetric.response_time_ms
-        ).label("p95_response_time"),
-        func.percentile_cont(0.99).within_group(
-            PerformanceMetric.response_time_ms
-        ).label("p99_response_time"),
+        func.min(PerformanceMetric.response_time_ms).label("min_response_time"),
+        func.max(PerformanceMetric.response_time_ms).label("max_response_time"),
         func.count(PerformanceMetric.id).label("request_count"),
         func.count(PerformanceMetric.id).filter(
             PerformanceMetric.status_code >= 400
@@ -114,13 +109,27 @@ async def get_performance_metrics(
     for result in results:
         error_rate = (result.error_count / result.request_count * 100) if result.request_count > 0 else 0
         
+        # For percentiles, we need to fetch all response times for this endpoint
+        # This is less efficient but database-agnostic
+        response_times = db.query(PerformanceMetric.response_time_ms).filter(
+            PerformanceMetric.endpoint == result.endpoint,
+            PerformanceMetric.method == result.method,
+            PerformanceMetric.created_at >= datetime.utcnow() - timedelta(minutes=time_window_minutes)
+        ).order_by(PerformanceMetric.response_time_ms).all()
+        
+        # Calculate percentiles in Python
+        response_times_list = [rt[0] for rt in response_times]
+        p50 = _calculate_percentile(response_times_list, 0.5)
+        p95 = _calculate_percentile(response_times_list, 0.95)
+        p99 = _calculate_percentile(response_times_list, 0.99)
+        
         metrics.append(PerformanceMetrics(
             endpoint=result.endpoint,
             method=result.method,
             avg_response_time_ms=result.avg_response_time or 0,
-            p50_response_time_ms=result.p50_response_time or 0,
-            p95_response_time_ms=result.p95_response_time or 0,
-            p99_response_time_ms=result.p99_response_time or 0,
+            p50_response_time_ms=p50,
+            p95_response_time_ms=p95,
+            p99_response_time_ms=p99,
             request_count=result.request_count,
             error_count=result.error_count,
             error_rate=error_rate,
@@ -128,6 +137,15 @@ async def get_performance_metrics(
         ))
     
     return metrics
+
+
+def _calculate_percentile(sorted_list: List[float], percentile: float) -> float:
+    """Calculate percentile from a sorted list"""
+    if not sorted_list:
+        return 0.0
+    
+    index = int(percentile * (len(sorted_list) - 1))
+    return sorted_list[index]
 
 
 @router.post("/alerts", response_model=AlertResponse)
@@ -414,7 +432,3 @@ async def get_monitoring_dashboard(
         active_alerts=active_alerts,
         error_summary=error_summary
     )
-
-
-# Import func from sqlalchemy
-from sqlalchemy import func
