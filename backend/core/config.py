@@ -9,10 +9,11 @@ import os
 from typing import List, Optional
 
 try:
-    from pydantic.v1 import BaseSettings, validator
+    from pydantic.v1 import BaseSettings, validator, Field
 except ImportError:
-    from pydantic import BaseSettings, validator
+    from pydantic import BaseSettings, validator, Field
 from functools import lru_cache
+from .secrets import get_required_secret, get_optional_secret
 
 
 class Settings(BaseSettings):
@@ -24,14 +25,33 @@ class Settings(BaseSettings):
     """
 
     # Database Configuration
-    database_url: str = "postgresql://user:password@localhost:5432/auraconnect"
+    database_url: str = Field(default=None)
     database_test_url: Optional[str] = None
+    
+    def __init__(self, **values):
+        # Override database_url to use secure secret management
+        # Only in non-test environments
+        if not values.get('database_url') and os.getenv('PYTEST_CURRENT_TEST') is None:
+            values['database_url'] = get_required_secret(
+                "Database connection URL", 
+                "DATABASE_URL"
+            )
+        elif not values.get('database_url'):
+            # For tests, use a default test database URL
+            values['database_url'] = os.getenv('DATABASE_URL', 'postgresql://test:test@localhost/test')
+        super().__init__(**values)
 
-    # JWT Authentication - MUST be overridden in production
-    jwt_secret_key: str = "dev-secret-change-in-production"
+    # JWT Authentication
+    jwt_secret_key: str = Field(default=None)
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
+    
+    @validator("jwt_secret_key", pre=True, always=True)
+    def set_jwt_secret(cls, v):
+        if v is None:
+            return get_required_secret("JWT secret key", "JWT_SECRET_KEY")
+        return v
 
     # API Security & Rate Limiting
     api_rate_limit_per_minute: int = 60
@@ -144,17 +164,6 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = False
 
-    @validator("jwt_secret_key")
-    def validate_jwt_secret(cls, v, values):
-        """Ensure JWT secret is not using default in production."""
-        if (
-            values.get("environment") == "production"
-            and v == "dev-secret-change-in-production"
-        ):
-            raise ValueError(
-                "JWT_SECRET_KEY must be set to a secure value in production"
-            )
-        return v
 
     @validator("cors_origins", pre=True)
     def parse_cors_origins(cls, v):
@@ -212,8 +221,7 @@ def validate_production_config():
     if settings.is_production:
         security_issues = []
 
-        if settings.jwt_secret_key == "dev-secret-change-in-production":
-            security_issues.append("JWT_SECRET_KEY is using default value")
+        # JWT secret validation is now handled in secrets.py
 
         if settings.debug:
             security_issues.append("DEBUG is enabled in production")

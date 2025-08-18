@@ -13,6 +13,7 @@ from core.database import engine, Base
 from sqlalchemy import text
 import sqlalchemy as sa
 import warnings
+from core.startup_validation import validate_startup_security
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,14 @@ def run_startup_checks():
     logger.info("Starting AuraConnect Backend")
     logger.info(f"Environment: {config.ENVIRONMENT}")
     logger.info("=" * 60)
+    
+    # Run security validation first
+    try:
+        validate_startup_security()
+    except Exception as e:
+        logger.critical(f"Security validation failed: {e}")
+        if config.ENVIRONMENT == "production":
+            sys.exit(1)
     
     validator = StartupValidator()
     passed, errors, warnings = validator.validate_all()
