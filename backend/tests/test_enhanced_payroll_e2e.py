@@ -45,15 +45,23 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
 @pytest.fixture(scope="module")
 def client():
-    """Create test client with database setup."""
+    """Create test client with database setup and isolated dependency overrides."""
+    # Set up the database
     Base.metadata.create_all(bind=engine)
+    
+    # Set up the override
+    app.dependency_overrides[get_db] = override_get_db
+    
+    # Create the test client
     with TestClient(app) as test_client:
         yield test_client
+    
+    # Clean up the override
+    app.dependency_overrides.clear()
+    
+    # Clean up the database
     Base.metadata.drop_all(bind=engine)
 
 
