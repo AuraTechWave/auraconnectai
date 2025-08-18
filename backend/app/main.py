@@ -126,6 +126,8 @@ from modules.loyalty.routers.rewards_router import router as rewards_router
 # ========== Table Management ==========
 from modules.tables.routers.table_layout_router import router as table_layout_router
 from modules.tables.routers.table_state_router import router as table_state_router
+from modules.tables.routes.analytics_routes import router as table_analytics_router
+from modules.tables.routes.websocket_routes import router as table_websocket_router
 
 # ========== Promotions & Marketing ==========
 from modules.promotions.routers.promotion_router import router as promotion_router
@@ -368,6 +370,8 @@ app.include_router(rewards_router, prefix="/api/v1", tags=["Loyalty & Rewards"])
 # Table Management
 app.include_router(table_layout_router, prefix="/api/v1", tags=["Table Layout Management"])
 app.include_router(table_state_router, prefix="/api/v1", tags=["Table State Management"])
+app.include_router(table_analytics_router, prefix="/api/v1/tables", tags=["Table Analytics"])
+app.include_router(table_websocket_router, prefix="/api/v1/tables", tags=["Table WebSocket"])
 
 # Promotions & Marketing
 app.include_router(promotion_router, prefix="/api/v1", tags=["Promotions"])
