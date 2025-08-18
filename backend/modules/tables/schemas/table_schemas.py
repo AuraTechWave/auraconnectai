@@ -399,3 +399,106 @@ class FloorHeatmapData(BaseModel):
     floor_name: str
     period: str  # e.g., "today", "week", "month"
     heatmap_data: List[Dict[str, Any]]  # Table positions with utilization intensity
+
+
+# Real-time Update Schemas
+class RealtimeTableStatus(BaseModel):
+    """Real-time table status update"""
+
+    id: int
+    table_number: str
+    floor_id: int
+    status: TableStatus
+    capacity: Dict[str, int]
+    position: Dict[str, int]
+    current_session: Optional[Dict[str, Any]]
+    features: Dict[str, bool]
+
+
+class RealtimeTurnTimeUpdate(BaseModel):
+    """Real-time turn time update"""
+
+    turn_times: Dict[int, float]  # table_id -> minutes
+    average_turn_time: float
+    active_tables: int
+    timestamp: datetime
+
+
+class RealtimeHeatMapData(BaseModel):
+    """Real-time heat map data"""
+
+    data: List[Dict[str, Any]]
+    period_days: int
+    max_occupancy_score: float
+    timestamp: datetime
+
+
+class RealtimeOccupancyUpdate(BaseModel):
+    """Real-time occupancy status update"""
+
+    overview: Dict[str, Any]
+    turn_times: Dict[str, Any]
+    status_breakdown: Dict[str, int]
+    timestamp: datetime
+
+
+class RealtimeAlert(BaseModel):
+    """Real-time alert notification"""
+
+    type: str  # long_turn_time, high_occupancy, etc.
+    severity: str  # info, warning, error
+    table_id: Optional[int]
+    table_number: Optional[str]
+    message: str
+    data: Dict[str, Any]
+
+
+class WebSocketMessage(BaseModel):
+    """WebSocket message format"""
+
+    type: str
+    data: Optional[Dict[str, Any]]
+    table_id: Optional[int]
+    timestamp: datetime
+    message: Optional[str]
+
+
+class WebSocketSubscription(BaseModel):
+    """WebSocket subscription request"""
+
+    type: str
+    floor_id: Optional[int]
+    table_ids: Optional[List[int]]
+    update_types: Optional[List[str]]
+
+
+# Turn Time Analytics Schemas
+class TurnTimeAnalytics(BaseModel):
+    """Turn time analytics response"""
+
+    analytics: Dict[str, Dict[str, Any]]
+    overall: Dict[str, Any]
+
+
+class TablePerformanceMetrics(BaseModel):
+    """Table performance metrics"""
+
+    table: Dict[str, Any]
+    performance: Dict[str, Any]
+
+
+class PeakHoursAnalysis(BaseModel):
+    """Peak hours analysis"""
+
+    heat_map: List[Dict[str, Any]]
+    peak_hours: List[Dict[str, Any]]
+    analysis_period_days: int
+
+
+class CurrentAnalytics(BaseModel):
+    """Current real-time analytics"""
+
+    overview: Dict[str, Any]
+    turn_times: Dict[str, Any]
+    status_breakdown: Dict[str, int]
+    timestamp: datetime
