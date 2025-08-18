@@ -313,7 +313,7 @@ class RealtimeTableManager:
         query = (
             select(
                 TableSession.table_id,
-                func.extract('epoch', datetime.utcnow() - TableSession.start_time) / 60
+                func.extract('epoch', func.current_timestamp() - TableSession.start_time) / 60
             )
             .join(Table)
             .where(
@@ -373,7 +373,7 @@ class RealtimeTableManager:
                         'epoch', 
                         func.coalesce(
                             TableSession.end_time, 
-                            datetime.utcnow()
+                            func.current_timestamp()
                         ) - TableSession.start_time
                     ) / 60
                 ).label('avg_duration')
@@ -464,7 +464,7 @@ class RealtimeTableManager:
                         TableSession.end_time.is_(None),
                         func.extract(
                             'epoch', 
-                            datetime.utcnow() - TableSession.start_time
+                            func.current_timestamp() - TableSession.start_time
                         ) / 60 > avg_turn_time * 1.5  # 50% over average
                     )
                 )
