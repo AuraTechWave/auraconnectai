@@ -76,7 +76,7 @@ class TestTokenGeneration:
         
         # Decode and verify
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        assert payload["sub"] == test_user["id"]
+        assert payload["sub"] == str(test_user["id"])
         assert payload["username"] == test_user["username"]
         assert payload["type"] == "access"
         assert "exp" in payload
@@ -97,7 +97,7 @@ class TestTokenGeneration:
         
         # Decode and verify
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        assert payload["sub"] == test_user["id"]
+        assert payload["sub"] == str(test_user["id"])
         assert payload["type"] == "refresh"
         assert payload["session_id"] == "test_session_123"
         assert "exp" in payload

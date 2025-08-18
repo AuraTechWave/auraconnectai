@@ -81,14 +81,14 @@ def run_auth_coverage():
             parts = line.split()
             if len(parts) >= 4:
                 try:
-                    coverage_percent = int(parts[-1].rstrip('%'))
+                    coverage_percent = float(parts[-1].rstrip('%'))
                     print(f"\n🎯 Total Coverage: {coverage_percent}%")
                     
                     if coverage_percent >= 90:
                         print("✅ Achieved 90%+ coverage requirement!")
                         return True
                     else:
-                        print(f"❌ Below 90% requirement (need {90 - coverage_percent}% more)")
+                        print(f"❌ Below 90% requirement (need {90 - coverage_percent:.1f}% more)")
                         return False
                 except ValueError:
                     pass
