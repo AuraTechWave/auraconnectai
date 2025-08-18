@@ -1,0 +1,31 @@
+[flake8]
+# Basic configuration
+max-line-length = 88
+extend-ignore = E203, W503
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    migrations,
+    .pytest_cache
+
+# SQL Injection Prevention Rules
+# Using flake8-bandit for security checks
+per-file-ignores =
+    # Ignore import issues in __init__ files
+    **/__init__.py:F401,F403
+    
+# Enable SQL injection detection
+# B608: Possible SQL injection vector through string-based query construction
+# B611: Possible SQL injection with SQLAlchemy
+select = B,C,E,F,W,B608,B611
+
+# Additional security plugins to install:
+# pip install flake8-bandit flake8-sql
+
+# Custom error messages for SQL-related issues
+# These will be caught by flake8-sql plugin
+sql-excepted-names = id, name
