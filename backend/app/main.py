@@ -71,6 +71,8 @@ from modules.payroll.routes.tax_calculation_routes import router as payroll_tax_
 
 # ========== Settings & Configuration ==========
 from modules.settings.routes.pos_sync_routes import router as pos_sync_router
+from modules.settings.routes.settings_routes import router as settings_router
+from modules.settings.routes.settings_ui_routes import router as settings_ui_router
 
 # ========== POS Integration ==========
 from modules.pos.routes.pos_routes import router as pos_router
@@ -304,6 +306,8 @@ app.include_router(role_pay_rates_router, prefix="/api/v1/payroll", tags=["Role 
 app.include_router(payroll_tax_calc_router, prefix="/api/v1/payroll", tags=["Payroll Tax Calculations"])
 
 # Settings & POS
+app.include_router(settings_router)
+app.include_router(settings_ui_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
 
