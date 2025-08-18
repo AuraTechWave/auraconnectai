@@ -142,9 +142,8 @@ class HealthService:
             
             response_time_ms = (time.time() - start_time) * 1000
             
-            # Get PostgreSQL version
-            version_result = self.db.execute(text("SELECT version()"))
-            version = version_result.scalar()
+            # Get database version (database-agnostic)
+            version = self._get_database_version()
             
             # Determine status
             if response_time_ms > 1000:
@@ -284,10 +283,8 @@ class HealthService:
         # Disk usage
         disk = psutil.disk_usage('/')
         
-        # Database connections
-        db_connections = self.db.query(func.count()).select_from(
-            text("pg_stat_activity")
-        ).scalar() or 0
+        # Database connections - use database-agnostic approach
+        db_connections = self._get_database_connection_count()
         
         # Request metrics from last 5 minutes
         recent_metrics = self.db.query(
@@ -445,3 +442,66 @@ class HealthService:
         # This would integrate with notification services
         # For now, just log it
         logger.critical(f"CRITICAL ALERT: {alert.title} - {alert.description}")
+    
+    def _get_database_connection_count(self) -> int:
+        """Get database connection count in a database-agnostic way"""
+        try:
+            # Get the database URL to determine the backend
+            db_url = str(self.db.bind.url)
+            
+            if "postgresql" in db_url or "postgres" in db_url:
+                # PostgreSQL-specific query
+                result = self.db.execute(
+                    text("SELECT count(*) FROM pg_stat_activity")
+                )
+                return result.scalar() or 0
+            elif "mysql" in db_url or "mariadb" in db_url:
+                # MySQL/MariaDB-specific query
+                result = self.db.execute(
+                    text("SELECT COUNT(*) FROM information_schema.processlist")
+                )
+                return result.scalar() or 0
+            elif "sqlite" in db_url:
+                # SQLite doesn't have a connection count concept
+                # Return 1 for the current connection
+                return 1
+            else:
+                # Unknown database, try to get from connection pool
+                pool = self.db.get_bind().pool
+                if hasattr(pool, 'size'):
+                    return pool.size()
+                elif hasattr(pool, 'checkedout'):
+                    return pool.checkedout()
+                else:
+                    # Default to 0 if we can't determine
+                    return 0
+                    
+        except Exception as e:
+            logger.warning(f"Could not get database connection count: {e}")
+            # Return 0 on error rather than failing the entire metrics collection
+            return 0
+    
+    def _get_database_version(self) -> Optional[str]:
+        """Get database version in a database-agnostic way"""
+        try:
+            db_url = str(self.db.bind.url)
+            
+            if "postgresql" in db_url or "postgres" in db_url:
+                # PostgreSQL version
+                result = self.db.execute(text("SELECT version()"))
+                return result.scalar()
+            elif "mysql" in db_url or "mariadb" in db_url:
+                # MySQL/MariaDB version
+                result = self.db.execute(text("SELECT VERSION()"))
+                return result.scalar()
+            elif "sqlite" in db_url:
+                # SQLite version
+                result = self.db.execute(text("SELECT sqlite_version()"))
+                return f"SQLite {result.scalar()}"
+            else:
+                # Unknown database
+                return "Unknown"
+                
+        except Exception as e:
+            logger.warning(f"Could not get database version: {e}")
+            return None
