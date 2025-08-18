@@ -403,7 +403,9 @@ export const InventoryCountScreen: React.FC = () => {
             <View style={styles.summaryRow}>
               <Text variant="bodyMedium">Accuracy:</Text>
               <Text variant="bodyMedium" style={styles.summaryValue}>
-                {((session.itemsCounted - session.discrepancies) / session.itemsCounted * 100).toFixed(1)}%
+                {session.itemsCounted > 0 
+                  ? `${((session.itemsCounted - session.discrepancies) / session.itemsCounted * 100).toFixed(1)}%`
+                  : 'N/A'}
               </Text>
             </View>
           </View>
