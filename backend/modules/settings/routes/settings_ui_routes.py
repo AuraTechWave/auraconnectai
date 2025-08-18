@@ -215,7 +215,7 @@ async def import_settings(
     )
 
 
-@router.post("/search", response_model=List[SettingsUIResponse])
+@router.post("/search")
 async def search_settings(
     request: SettingsSearchRequest,
     db: Session = Depends(get_db),

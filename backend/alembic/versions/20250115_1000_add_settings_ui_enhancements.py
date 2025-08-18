@@ -12,7 +12,7 @@ import json
 
 # revision identifiers, used by Alembic.
 revision = 'add_settings_ui_enhancements'
-down_revision = None
+down_revision = 'add_scheduled_at_column'
 branch_labels = None
 depends_on = None
 

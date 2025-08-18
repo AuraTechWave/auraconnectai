@@ -184,6 +184,17 @@ class SettingsUIService:
         
         groups = groups_query.order_by(SettingGroup.sort_order).all()
         
+        # Get all settings for the scope
+        settings_query = self.db.query(Setting).filter(Setting.scope == scope)
+        settings = settings_query.all()
+        settings_map = {s.key: s for s in settings}
+        
+        # Get all definitions
+        definitions = self.db.query(SettingDefinition).filter(
+            SettingDefinition.is_active == True
+        ).all()
+        definitions_map = {d.key: d for d in definitions}
+        
         sections = []
         total_settings = 0
         modified_count = 0
@@ -195,7 +206,19 @@ class SettingsUIService:
                 continue
             
             section_settings = []
-            # ... Build section settings ...
+            
+            # Build section settings from group's setting keys
+            for setting_key in group.settings:
+                definition = definitions_map.get(setting_key)
+                if definition:
+                    setting = settings_map.get(setting_key)
+                    ui_field = self._create_ui_field(setting, definition)
+                    section_settings.append(ui_field)
+                    
+                    if ui_field.is_modified:
+                        modified_count += 1
+                    if ui_field.has_error:
+                        has_errors = True
             
             if section_settings:
                 section = SettingsSection(
@@ -494,6 +517,327 @@ class SettingsUIService:
             user=user,
             validate_only=False,
         )
+    
+    def import_settings(
+        self,
+        data: Dict[str, Any],
+        scope: SettingScope,
+        merge_strategy: str,
+        validate_only: bool,
+        restaurant_id: Optional[int],
+        user: User,
+    ) -> SettingsBulkOperationResponse:
+        """Import settings from JSON data"""
+        
+        # Extract settings from data
+        settings_data = data.get("settings", {})
+        if not settings_data:
+            raise CoreValidationError("No settings found in import data")
+        
+        # Convert to setting changes
+        changes = []
+        for key, value in settings_data.items():
+            # Skip if merge_strategy is skip_existing and setting exists
+            if merge_strategy == "skip_existing":
+                existing = self.db.query(Setting).filter(
+                    and_(
+                        Setting.key == key,
+                        Setting.scope == scope,
+                        Setting.restaurant_id == restaurant_id,
+                    )
+                ).first()
+                
+                if existing:
+                    continue
+            
+            change = SettingChange(
+                key=key,
+                value=value,
+                scope=scope,
+            )
+            changes.append(change)
+        
+        # Apply changes
+        return self.bulk_update_settings(
+            settings=changes,
+            scope=scope,
+            restaurant_id=restaurant_id,
+            location_id=None,
+            user_id=None,
+            user=user,
+            validate_only=validate_only,
+        )
+    
+    def export_settings(
+        self,
+        scope: SettingScope,
+        categories: Optional[List[SettingCategory]],
+        include_sensitive: bool,
+        include_metadata: bool,
+        restaurant_id: Optional[int],
+        user: User,
+    ) -> Dict[str, Any]:
+        """Export settings to JSON format"""
+        
+        # Query settings
+        settings_query = self.db.query(Setting).filter(Setting.scope == scope)
+        
+        if restaurant_id:
+            settings_query = settings_query.filter(Setting.restaurant_id == restaurant_id)
+        
+        if categories:
+            settings_query = settings_query.filter(Setting.category.in_(categories))
+        
+        if not include_sensitive:
+            settings_query = settings_query.filter(Setting.is_sensitive == False)
+        
+        settings = settings_query.all()
+        
+        # Build export data
+        export_data = {
+            "version": "1.0",
+            "exported_at": datetime.utcnow().isoformat(),
+            "scope": scope.value,
+            "restaurant_id": restaurant_id,
+            "settings": {}
+        }
+        
+        for setting in settings:
+            value = json.loads(setting.value) if setting.value else None
+            export_data["settings"][setting.key] = value
+            
+            if include_metadata:
+                export_data.setdefault("metadata", {})[setting.key] = {
+                    "category": setting.category.value,
+                    "label": setting.label,
+                    "description": setting.description,
+                    "value_type": setting.value_type.value,
+                    "is_sensitive": setting.is_sensitive,
+                    "modified_at": setting.modified_at.isoformat() if setting.modified_at else None,
+                }
+        
+        return export_data
+    
+    def search_settings(
+        self,
+        query: str,
+        scope: Optional[SettingScope],
+        categories: Optional[List[SettingCategory]],
+        include_advanced: bool,
+        user: User,
+    ) -> List[Dict[str, Any]]:
+        """Search settings by key, label, or description"""
+        
+        # Get all definitions matching search
+        definitions_query = self.db.query(SettingDefinition).filter(
+            SettingDefinition.is_active == True
+        )
+        
+        if scope:
+            definitions_query = definitions_query.filter(SettingDefinition.scope == scope)
+        
+        if categories:
+            definitions_query = definitions_query.filter(
+                SettingDefinition.category.in_(categories)
+            )
+        
+        # Search in key, label, and description
+        search_pattern = f"%{query.lower()}%"
+        definitions_query = definitions_query.filter(
+            or_(
+                func.lower(SettingDefinition.key).like(search_pattern),
+                func.lower(SettingDefinition.label).like(search_pattern),
+                func.lower(SettingDefinition.description).like(search_pattern),
+            )
+        )
+        
+        definitions = definitions_query.all()
+        
+        # Get current values for found settings
+        setting_keys = [d.key for d in definitions]
+        settings = self.db.query(Setting).filter(
+            Setting.key.in_(setting_keys)
+        ).all()
+        settings_map = {s.key: s for s in settings}
+        
+        # Build search results
+        results = []
+        for definition in definitions:
+            # Skip advanced if not requested
+            if not include_advanced and definition.ui_config.get("advanced", False):
+                continue
+            
+            setting = settings_map.get(definition.key)
+            ui_field = self._create_ui_field(setting, definition)
+            
+            results.append({
+                "key": definition.key,
+                "label": definition.label,
+                "description": definition.description,
+                "category": definition.category.value,
+                "value": ui_field.value,
+                "field_type": ui_field.field_type.value,
+                "is_modified": ui_field.is_modified,
+            })
+        
+        return results
+    
+    def compare_with_template(
+        self,
+        template_id: int,
+        scope: SettingScope,
+        restaurant_id: Optional[int],
+        user: User,
+    ) -> SettingsComparisonResponse:
+        """Compare current settings with a template"""
+        
+        # Get template
+        template = self.db.query(ConfigurationTemplate).filter(
+            ConfigurationTemplate.id == template_id
+        ).first()
+        
+        if not template:
+            raise NotFoundError("Configuration template", template_id)
+        
+        # Get current settings
+        current_settings_query = self.db.query(Setting).filter(
+            Setting.scope == scope
+        )
+        
+        if restaurant_id:
+            current_settings_query = current_settings_query.filter(
+                Setting.restaurant_id == restaurant_id
+            )
+        
+        current_settings = current_settings_query.all()
+        current_map = {s.key: json.loads(s.value) if s.value else None for s in current_settings}
+        
+        # Compare with template
+        differences = []
+        template_settings = template.settings
+        
+        # Find differences and missing settings
+        for key, template_value in template_settings.items():
+            current_value = current_map.get(key)
+            
+            if key not in current_map:
+                # Setting is missing
+                definition = self.db.query(SettingDefinition).filter(
+                    SettingDefinition.key == key
+                ).first()
+                
+                differences.append(SettingDifference(
+                    key=key,
+                    label=definition.label if definition else key,
+                    current_value=None,
+                    template_value=template_value,
+                    is_missing=True,
+                    category=definition.category if definition else SettingCategory.GENERAL,
+                ))
+            elif current_value != template_value:
+                # Values differ
+                definition = self.db.query(SettingDefinition).filter(
+                    SettingDefinition.key == key
+                ).first()
+                
+                differences.append(SettingDifference(
+                    key=key,
+                    label=definition.label if definition else key,
+                    current_value=current_value,
+                    template_value=template_value,
+                    category=definition.category if definition else SettingCategory.GENERAL,
+                ))
+        
+        # Find extra settings (in current but not in template)
+        for key, current_value in current_map.items():
+            if key not in template_settings:
+                setting = next(s for s in current_settings if s.key == key)
+                differences.append(SettingDifference(
+                    key=key,
+                    label=setting.label,
+                    current_value=current_value,
+                    template_value=None,
+                    is_extra=True,
+                    category=setting.category,
+                ))
+        
+        # Count differences
+        missing_count = sum(1 for d in differences if d.is_missing)
+        extra_count = sum(1 for d in differences if d.is_extra)
+        different_count = len(differences) - missing_count - extra_count
+        
+        return SettingsComparisonResponse(
+            template_name=template.name,
+            template_description=template.description,
+            differences=differences,
+            missing_count=missing_count,
+            extra_count=extra_count,
+            different_count=different_count,
+            can_apply=True,  # TODO: Check permissions
+        )
+    
+    def get_pending_changes(
+        self,
+        scope: SettingScope,
+        restaurant_id: Optional[int],
+        user: User,
+    ) -> Dict[str, Any]:
+        """Get settings with pending changes or requiring restart"""
+        
+        # Get settings that require restart
+        restart_settings = self.db.query(Setting).join(
+            SettingDefinition,
+            Setting.key == SettingDefinition.key
+        ).filter(
+            and_(
+                Setting.scope == scope,
+                SettingDefinition.requires_restart == True,
+                Setting.modified_at > Setting.created_at,  # Has been modified
+            )
+        )
+        
+        if restaurant_id:
+            restart_settings = restart_settings.filter(
+                Setting.restaurant_id == restaurant_id
+            )
+        
+        restart_settings = restart_settings.all()
+        
+        # Build pending changes list
+        pending_changes = []
+        for setting in restart_settings:
+            definition = self.db.query(SettingDefinition).filter(
+                SettingDefinition.key == setting.key
+            ).first()
+            
+            # Get original value from history
+            original_history = self.db.query(SettingHistory).filter(
+                and_(
+                    SettingHistory.setting_key == setting.key,
+                    SettingHistory.change_type == "create",
+                )
+            ).order_by(SettingHistory.changed_at).first()
+            
+            original_value = json.loads(original_history.new_value) if original_history else None
+            current_value = json.loads(setting.value) if setting.value else None
+            
+            pending_changes.append(PendingChange(
+                key=setting.key,
+                label=setting.label,
+                current_value=original_value,
+                new_value=current_value,
+                requires_restart=True,
+                requires_confirmation=definition.is_sensitive if definition else False,
+                impact_description=f"Changing {setting.label} requires a system restart",
+            ))
+        
+        return {
+            "requires_restart": len(pending_changes) > 0,
+            "settings": pending_changes,
+            "restart_message": "The following settings require a restart to take effect",
+            "can_restart_now": False,  # TODO: Check system status
+            "estimated_downtime_seconds": 60,  # TODO: Calculate based on system
+        }
     
     def get_ui_metadata(self, user: User) -> UIMetadataResponse:
         """Get UI metadata for settings interface"""
