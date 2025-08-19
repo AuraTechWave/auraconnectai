@@ -1,0 +1,188 @@
+{
+  "tabs": {
+    "name": "Tabs",
+    "description": "Navigation component for switching between different views or content panels",
+    "variants": {
+      "standard": {
+        "description": "Default tabs with underline indicator",
+        "styles": {
+          "container": {
+            "borderBottom": "1px solid $colors.semantic.border.light"
+          },
+          "indicator": {
+            "height": "2px",
+            "background": "$colors.semantic.primary.base",
+            "position": "absolute",
+            "bottom": 0,
+            "transition": "$animations.transition.default"
+          }
+        }
+      },
+      "pills": {
+        "description": "Rounded pill-style tabs",
+        "styles": {
+          "container": {
+            "background": "$colors.semantic.surface.subtle",
+            "padding": "$spacing.component.padding.xs",
+            "borderRadius": "$borders.radius.lg",
+            "display": "inline-flex",
+            "gap": "$spacing.component.gap.xs"
+          },
+          "tab": {
+            "borderRadius": "$borders.radius.md"
+          },
+          "activeTab": {
+            "background": "$colors.semantic.surface.card",
+            "boxShadow": "$shadows.elevation.1"
+          }
+        }
+      },
+      "vertical": {
+        "description": "Vertical tab layout",
+        "styles": {
+          "container": {
+            "flexDirection": "column",
+            "borderRight": "1px solid $colors.semantic.border.light",
+            "borderBottom": "none"
+          },
+          "indicator": {
+            "width": "2px",
+            "height": "auto",
+            "right": 0,
+            "bottom": "auto"
+          }
+        }
+      }
+    },
+    "anatomy": {
+      "container": {
+        "display": "flex",
+        "position": "relative",
+        "minHeight": "48px"
+      },
+      "list": {
+        "display": "flex",
+        "margin": 0,
+        "padding": 0,
+        "listStyle": "none",
+        "position": "relative",
+        "alignItems": "stretch"
+      },
+      "tab": {
+        "position": "relative",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "padding": "$spacing.component.padding.md $spacing.component.padding.lg",
+        "minHeight": "48px",
+        "fontSize": "$typography.fontSize.base",
+        "fontWeight": "$typography.fontWeight.medium",
+        "color": "$colors.semantic.text.secondary",
+        "background": "transparent",
+        "border": "none",
+        "cursor": "pointer",
+        "transition": "$animations.transition.fast",
+        "whiteSpace": "nowrap",
+        "textDecoration": "none",
+        "gap": "$spacing.component.gap.sm",
+        "hover": {
+          "color": "$colors.semantic.text.primary",
+          "background": "$colors.semantic.surface.hover"
+        },
+        "active": {
+          "color": "$colors.semantic.primary.base",
+          "fontWeight": "$typography.fontWeight.semibold"
+        },
+        "disabled": {
+          "opacity": 0.5,
+          "cursor": "not-allowed",
+          "pointerEvents": "none"
+        }
+      },
+      "icon": {
+        "width": "20px",
+        "height": "20px",
+        "flexShrink": 0
+      },
+      "badge": {
+        "marginLeft": "$spacing.component.margin.sm",
+        "padding": "2px 6px",
+        "fontSize": "$typography.fontSize.xs",
+        "fontWeight": "$typography.fontWeight.semibold",
+        "borderRadius": "$borders.radius.full",
+        "background": "$colors.semantic.primary.base",
+        "color": "$colors.semantic.primary.contrast",
+        "minWidth": "20px",
+        "textAlign": "center"
+      },
+      "panel": {
+        "padding": "$spacing.component.padding.lg",
+        "outline": "none",
+        "animation": "fadeIn $animations.duration.fast $animations.easing.easeOut"
+      }
+    },
+    "sizes": {
+      "small": {
+        "tab": {
+          "padding": "$spacing.component.padding.sm $spacing.component.padding.md",
+          "fontSize": "$typography.fontSize.sm",
+          "minHeight": "36px"
+        },
+        "icon": {
+          "width": "16px",
+          "height": "16px"
+        }
+      },
+      "large": {
+        "tab": {
+          "padding": "$spacing.component.padding.lg $spacing.component.padding.xl",
+          "fontSize": "$typography.fontSize.lg",
+          "minHeight": "56px"
+        },
+        "icon": {
+          "width": "24px",
+          "height": "24px"
+        }
+      }
+    },
+    "scrollable": {
+      "container": {
+        "overflowX": "auto",
+        "overflowY": "hidden",
+        "scrollbarWidth": "thin",
+        "webkitOverflowScrolling": "touch"
+      },
+      "scrollButton": {
+        "position": "sticky",
+        "background": "$colors.semantic.surface.card",
+        "borderRadius": "$borders.radius.md",
+        "padding": "$spacing.component.padding.sm",
+        "boxShadow": "$shadows.elevation.1",
+        "zIndex": 1
+      },
+      "gradient": {
+        "position": "absolute",
+        "top": 0,
+        "bottom": 0,
+        "width": "24px",
+        "pointerEvents": "none",
+        "background": "linear-gradient(to right, $colors.semantic.surface.card, transparent)"
+      }
+    },
+    "accessibility": {
+      "role": "tablist",
+      "tabRole": "tab",
+      "panelRole": "tabpanel",
+      "ariaSelected": "true/false for active tab",
+      "ariaControls": "ID of associated panel",
+      "ariaLabelledby": "ID of associated tab",
+      "keyboard": {
+        "tab": "Move focus to next element",
+        "arrow": "Navigate between tabs",
+        "home": "Focus first tab",
+        "end": "Focus last tab",
+        "enter": "Activate focused tab"
+      }
+    }
+  }
+}
