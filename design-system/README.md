@@ -157,27 +157,46 @@ Each component specification includes:
 
 ### White-labeling
 
-The design system supports white-labeling through theme overrides:
+The design system supports white-labeling through theme overrides with built-in security:
 
 ```javascript
+import { applyTheme, validateTheme } from '@auraconnect/design-system';
+
+// Theme validation ensures only allowed properties are modified
 const whiteLabelTheme = {
-  ...baseTheme,
-  colors: {
-    ...baseTheme.colors,
-    semantic: {
-      ...baseTheme.colors.semantic,
-      primary: clientBrandColors.primary,
-      secondary: clientBrandColors.secondary
-    }
-  },
-  typography: {
-    ...baseTheme.typography,
-    fontFamily: {
-      primary: clientFonts.primary
+  name: 'Client Brand',
+  extends: 'light',
+  overrides: {
+    colors: {
+      semantic: {
+        primary: {
+          base: '#0066CC', // Must be valid hex color
+          light: '#E6F0FF',
+          dark: '#0052A3',
+          contrast: '#FFFFFF'
+        }
+      }
+    },
+    typography: {
+      fontFamily: {
+        primary: 'Inter, -apple-system, sans-serif' // Sanitized
+      }
     }
   }
 };
+
+// Validate and apply theme
+if (validateTheme(whiteLabelTheme)) {
+  applyTheme(whiteLabelTheme);
+}
 ```
+
+**Security Features:**
+- ✓ Whitelist of overridable properties
+- ✓ Color format validation (hex, rgb, hsl)
+- ✓ Font family sanitization
+- ✓ No script execution in theme values
+- ✓ JSON schema validation
 
 ## Accessibility
 

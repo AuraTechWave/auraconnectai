@@ -1,7 +1,7 @@
 {
   "name": "Dark Theme",
   "description": "Dark theme for AuraConnect Admin Dashboard",
-  "extends": "../tokens",
+  "extends": "base",
   "overrides": {
     "colors": {
       "semantic": {

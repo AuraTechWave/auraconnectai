@@ -1,7 +1,7 @@
 {
   "name": "Blue Brand Theme",
   "description": "Example custom brand theme with blue accent colors",
-  "extends": "./light",
+  "extends": "light",
   "overrides": {
     "colors": {
       "semantic": {
