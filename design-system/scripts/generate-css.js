@@ -31,22 +31,51 @@ const generateCSSVariables = (obj, prefix = '') => {
   return css;
 };
 
-// Generate theme-specific CSS
+// Generate theme-specific CSS with error handling
 const generateThemeCSS = (theme, tokens) => {
-  const themeData = JSON.parse(fs.readFileSync(path.join(__dirname, `../themes/${theme}.json`), 'utf8'));
-  let css = '';
-  
-  // Apply overrides to tokens
-  const mergedTokens = JSON.parse(JSON.stringify(tokens));
-  if (themeData.overrides) {
-    Object.keys(themeData.overrides).forEach(category => {
-      Object.assign(mergedTokens[category], themeData.overrides[category]);
-    });
+  try {
+    const themePath = path.join(__dirname, `../themes/${theme}.json`);
+    
+    if (!fs.existsSync(themePath)) {
+      console.error(`❌ Theme file not found: ${theme}.json`);
+      return generateCSSVariables(tokens); // Return base tokens as fallback
+    }
+    
+    const themeData = JSON.parse(fs.readFileSync(themePath, 'utf8'));
+    let css = '';
+    
+    // Apply overrides to tokens
+    const mergedTokens = JSON.parse(JSON.stringify(tokens));
+    if (themeData.overrides) {
+      Object.keys(themeData.overrides).forEach(category => {
+        if (mergedTokens[category]) {
+          // Deep merge to preserve token structure
+          mergeDeep(mergedTokens[category], themeData.overrides[category]);
+        } else {
+          console.warn(`⚠️  Unknown token category in theme overrides: ${category}`);
+        }
+      });
+    }
+    
+    css += generateCSSVariables(mergedTokens);
+    
+    return css;
+  } catch (error) {
+    console.error(`❌ Error generating theme CSS for ${theme}:`, error.message);
+    return generateCSSVariables(tokens); // Return base tokens as fallback
   }
-  
-  css += generateCSSVariables(mergedTokens);
-  
-  return css;
+};
+
+// Helper function for deep merging
+const mergeDeep = (target, source) => {
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (!target[key]) target[key] = {};
+      mergeDeep(target[key], source[key]);
+    } else {
+      target[key] = source[key];
+    }
+  }
 };
 
 // Main CSS generation
@@ -133,7 +162,7 @@ ${generateThemeCSS('dark', tokens)}
   // Write main CSS file
   fs.writeFileSync(path.join(distDir, 'tokens.css'), mainCSS);
   
-  // Generate component CSS
+  // Generate component CSS with error handling
   let componentCSS = `/**
  * AuraConnect Design System - Component Styles
  * Uses CSS variables defined in tokens.css
@@ -160,38 +189,76 @@ ${generateThemeCSS('dark', tokens)}
   line-height: var(--typography-lineHeight-normal);
 }
 
-/* Component imports */
-${fs.readFileSync(path.join(__dirname, '../examples/react/Button.tsx'), 'utf8')
-  .match(/export const buttonStyles = `([^`]+)`/)?.[1] || ''}
-
-${fs.readFileSync(path.join(__dirname, '../examples/react/Modal.tsx'), 'utf8')
-  .match(/export const modalStyles = `([^`]+)`/)?.[1] || ''}
-
-${fs.readFileSync(path.join(__dirname, '../examples/react/Tabs.tsx'), 'utf8')
-  .match(/export const tabsStyles = `([^`]+)`/)?.[1] || ''}
+/* Component styles */
 `;
+
+  // Extract component styles with error handling
+  const componentFiles = [
+    { file: 'Button.tsx', varName: 'buttonStyles' },
+    { file: 'Modal.tsx', varName: 'modalStyles' },
+    { file: 'Tabs.tsx', varName: 'tabsStyles' }
+  ];
+
+  for (const { file, varName } of componentFiles) {
+    try {
+      const filePath = path.join(__dirname, '../examples/react', file);
+      
+      if (!fs.existsSync(filePath)) {
+        console.warn(`⚠️  Component file not found: ${file}`);
+        componentCSS += `\n/* ${file} styles not found */\n`;
+        continue;
+      }
+      
+      const content = fs.readFileSync(filePath, 'utf8');
+      const regex = new RegExp(`export const ${varName} = \\\`([^\\`]+)\\\``, 's');
+      const match = content.match(regex);
+      
+      if (match && match[1]) {
+        componentCSS += `\n/* ${file} styles */\n${match[1]}\n`;
+      } else {
+        console.warn(`⚠️  Could not extract ${varName} from ${file}`);
+        componentCSS += `\n/* Could not extract ${varName} from ${file} */\n`;
+      }
+    } catch (error) {
+      console.error(`❌ Error processing ${file}:`, error.message);
+      componentCSS += `\n/* Error processing ${file}: ${error.message} */\n`;
+    }
+  }
 
   // Write component CSS
   fs.writeFileSync(path.join(distDir, 'components.css'), componentCSS);
   
-  // Generate minified version
-  const minifiedCSS = mainCSS.replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\s+/g, ' ')
-    .replace(/\s*{\s*/g, '{')
-    .replace(/\s*}\s*/g, '}')
-    .replace(/\s*:\s*/g, ':')
-    .replace(/\s*;\s*/g, ';')
-    .trim();
+  // Generate minified version with error handling
+  try {
+    const minifiedCSS = mainCSS.replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*{\s*/g, '{')
+      .replace(/\s*}\s*/g, '}')
+      .replace(/\s*:\s*/g, ':')
+      .replace(/\s*;\s*/g, ';')
+      .trim();
+    
+    fs.writeFileSync(path.join(distDir, 'tokens.min.css'), minifiedCSS);
+  } catch (error) {
+    console.error('❌ Error minifying CSS:', error.message);
+  }
   
-  fs.writeFileSync(path.join(distDir, 'tokens.min.css'), minifiedCSS);
-  
-  // Generate theme files
-  ['light', 'dark', 'blue-brand'].forEach(theme => {
-    if (fs.existsSync(path.join(__dirname, `../themes/${theme}.json`))) {
-      const themeCSS = `:root {\n${generateThemeCSS(theme, tokens)}\n}`;
-      fs.writeFileSync(path.join(distDir, `theme-${theme}.css`), themeCSS);
+  // Generate theme files with error handling
+  const themes = ['light', 'dark', 'blue-brand'];
+  for (const theme of themes) {
+    try {
+      const themePath = path.join(__dirname, `../themes/${theme}.json`);
+      if (fs.existsSync(themePath)) {
+        const themeCSS = `:root {\n${generateThemeCSS(theme, tokens)}\n}`;
+        fs.writeFileSync(path.join(distDir, `theme-${theme}.css`), themeCSS);
+        console.log(`✅ Generated theme-${theme}.css`);
+      } else {
+        console.warn(`⚠️  Theme file not found: ${theme}.json`);
+      }
+    } catch (error) {
+      console.error(`❌ Error generating theme ${theme}:`, error.message);
     }
-  });
+  }
   
   console.log('✅ CSS files generated successfully');
 };

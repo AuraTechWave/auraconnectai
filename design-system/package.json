@@ -48,7 +48,9 @@
     },
     "./themes/*": "./dist/themes/*.js",
     "./css": "./dist/css/tokens.css",
-    "./tailwind": "./dist/tailwind.preset.js"
+    "./tailwind": "./dist/tailwind.preset.js",
+    "./validator": "./src/client-validator.js",
+    "./resolver": "./dist/resolver.js"
   },
   "publishConfig": {
     "access": "public"

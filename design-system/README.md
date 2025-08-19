@@ -59,14 +59,20 @@ import typography from '@auraconnect/design-system/tokens/typography.json';
 #### 2. Apply Theme
 
 ```javascript
-import { themes } from '@auraconnect/design-system/themes';
+// Client-side theme application (browser-safe)
+import { applyTheme, resolveTokens } from '@auraconnect/design-system/resolver';
+import { validateTheme, sanitizeTheme } from '@auraconnect/design-system/validator';
+import lightTheme from '@auraconnect/design-system/themes/light.json';
+import darkTheme from '@auraconnect/design-system/themes/dark.json';
 
-// Apply light theme
-const theme = themes.light;
+// Apply themes safely
+applyTheme(lightTheme); // Returns true if successful
+applyTheme(darkTheme);  
 
-// Apply to CSS variables
-Object.entries(theme.colors.semantic).forEach(([key, value]) => {
-  document.documentElement.style.setProperty(`--color-${key}`, value);
+// Or manually apply CSS variables
+const theme = lightTheme;
+Object.entries(theme.overrides.colors.semantic).forEach(([key, value]) => {
+  document.documentElement.style.setProperty(`--colors-semantic-${key}`, value);
 });
 ```
 

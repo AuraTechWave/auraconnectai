@@ -33,6 +33,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Input sanitization for custom themes
 - Restricted white-label overrides to prevent code injection
 
+## [1.0.1] - 2025-08-19
+
+### Fixed
+- Removed Node.js dependencies from client-side code (resolver.js)
+- Added robust error handling to CSS extraction script
+- Created separate client-side validator module for browser compatibility
+- Added fallback mechanisms for missing theme files
+- Improved error messages and logging throughout build process
+- Added deep merge functionality for theme overrides
+- Fixed regex escaping in client-side validation code
+
+### Security
+- Isolated theme validation logic to prevent runtime errors in browsers
+- Enhanced sanitization for font family values
+
 ## Unreleased
 
 ### Planned
