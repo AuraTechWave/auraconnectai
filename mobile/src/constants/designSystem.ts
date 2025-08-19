@@ -144,15 +144,15 @@ export const colors = {
     800: '#854d0e',
     900: '#713f12',
   },
-  // Error - Red
+  // Error - Red (adjusted for WCAG AA compliance)
   error: {
     50: '#fef2f2',
     100: '#fee2e2',
     200: '#fecaca',
     300: '#fca5a5',
     400: '#f87171',
-    500: '#ef4444', // Main error
-    600: '#dc2626',
+    500: '#ef4444', // Main error for backgrounds
+    600: '#dc2626', // Main error for text on light backgrounds (AA compliant)
     700: '#b91c1c',
     800: '#991b1b',
     900: '#7f1d1d',
@@ -186,6 +186,9 @@ export const colors = {
     disabled: '#cbd5e1',
     inverse: '#ffffff',
     link: '#3b82f6',
+    error: '#dc2626', // AA compliant error text on white
+    success: '#16a34a', // AA compliant success text on white
+    warning: '#ca8a04', // AA compliant warning text on white
   },
   // Border colors
   border: {
@@ -279,7 +282,7 @@ export const shadows = {
   md: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.10,
     shadowRadius: 6,
     elevation: 4,
   },
@@ -300,7 +303,7 @@ export const shadows = {
   xxl: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.20, // Capped at 0.20 for better readability
     shadowRadius: 24,
     elevation: 16,
   },

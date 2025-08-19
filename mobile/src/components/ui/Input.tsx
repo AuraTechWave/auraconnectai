@@ -278,7 +278,7 @@ export const Input: React.FC<InputProps> = ({
 const styles = StyleSheet.create({
   errorText: {
     fontSize: typography.fontSize.caption,
-    color: colors.error[500],
+    color: colors.text.error, // Use AA compliant error text color
     marginTop: spacing.xxs,
     marginLeft: spacing.xs,
   },
