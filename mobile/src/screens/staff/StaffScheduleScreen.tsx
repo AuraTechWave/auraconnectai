@@ -381,10 +381,26 @@ const StaffScheduleScreen: React.FC = () => {
   const renderQuickStats = () => {
     const todayShifts = shifts.filter(shift => isToday(shift.date));
     const swapRequests = shifts.filter(shift => shift.status === 'swap-requested');
+    
+    // Calculate total hours with proper time calculation
     const totalHours = shifts.reduce((acc, shift) => {
-      const start = parseInt(shift.startTime.split(':')[0]);
-      const end = parseInt(shift.endTime.split(':')[0]);
-      return acc + (end - start);
+      const [startHour, startMin] = shift.startTime.split(':').map(Number);
+      const [endHour, endMin] = shift.endTime.split(':').map(Number);
+      
+      // Convert to minutes for accurate calculation
+      let startMinutes = startHour * 60 + startMin;
+      let endMinutes = endHour * 60 + endMin;
+      
+      // Handle shifts crossing midnight
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60; // Add 24 hours in minutes
+      }
+      
+      // Calculate duration in minutes and subtract break time
+      const durationMinutes = endMinutes - startMinutes - shift.breakMinutes;
+      
+      // Convert to hours (decimal)
+      return acc + (durationMinutes / 60);
     }, 0);
 
     return (
@@ -413,7 +429,7 @@ const StaffScheduleScreen: React.FC = () => {
             size={24}
             color={colors.success[500]}
           />
-          <Text style={styles.statValue}>{totalHours}h</Text>
+          <Text style={styles.statValue}>{totalHours.toFixed(1)}h</Text>
           <Text style={styles.statLabel}>Total Hours</Text>
         </View>
       </View>

@@ -4,6 +4,7 @@ import OrdersScreen from '../screens/orders/OrdersScreen';
 import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
 import CreateOrderScreen from '../screens/orders/CreateOrderScreen';
 import OfflineOrdersScreen from '../screens/orders/OfflineOrdersScreen';
+import ProcessPaymentScreen from '../screens/orders/ProcessPaymentScreen';
 import { colors } from '../constants/designSystem';
 
 export type OrdersStackParamList = {
@@ -58,6 +59,14 @@ export const OrdersNavigator: React.FC = () => {
         component={OfflineOrdersScreen}
         options={{ 
           title: 'Offline Orders',
+        }}
+      />
+      <Stack.Screen
+        name="ProcessPayment"
+        component={ProcessPaymentScreen}
+        options={{ 
+          title: 'Process Payment',
+          presentation: 'modal',
         }}
       />
     </Stack.Navigator>
