@@ -152,3 +152,6 @@ export const darkTheme: MD3Theme = {
     },
   },
 };
+
+// Export colors and typography for backward compatibility
+export { colors, typography } from './designSystem';

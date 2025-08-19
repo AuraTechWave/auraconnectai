@@ -1,0 +1,177 @@
+{
+  "name": "Base Theme",
+  "description": "Base theme tokens for AuraConnect",
+  "tokens": {
+    "colors": {
+      "brand": {
+        "primary": {
+          "50": "#ECF2FF",
+          "100": "#DBEAFE",
+          "200": "#BFDBFE",
+          "300": "#93C5FD",
+          "400": "#60A5FA",
+          "500": "#5D87FF",
+          "600": "#4570EA",
+          "700": "#1D4ED8",
+          "800": "#1E40AF",
+          "900": "#1E3A8A"
+        },
+        "secondary": {
+          "50": "#E8F7FF",
+          "100": "#D6F0FF",
+          "200": "#ADE2FF",
+          "300": "#7AD0FF",
+          "400": "#49BEFF",
+          "500": "#3AA0E0",
+          "600": "#2B82C4",
+          "700": "#1C66A8",
+          "800": "#184E80",
+          "900": "#143658"
+        }
+      },
+      "semantic": {
+        "success": {
+          "50": "#E6FFED",
+          "100": "#C8FFD8",
+          "200": "#90FFB1",
+          "300": "#59FF8A",
+          "400": "#39CB7F",
+          "500": "#2FA96A",
+          "600": "#258755",
+          "700": "#1B6540",
+          "800": "#11432B",
+          "900": "#072116"
+        },
+        "warning": {
+          "50": "#FFF8E1",
+          "100": "#FFECB3",
+          "200": "#FFE082",
+          "300": "#FFD54F",
+          "400": "#FFCE2C",
+          "500": "#F9B800",
+          "600": "#F57C00",
+          "700": "#EF6C00",
+          "800": "#E65100",
+          "900": "#BF360C"
+        },
+        "error": {
+          "50": "#FFEEF1",
+          "100": "#FFDCE0",
+          "200": "#FFB9C1",
+          "300": "#FF95A2",
+          "400": "#FF6E7F",
+          "500": "#E55865",
+          "600": "#DC2626",
+          "700": "#B91C1C",
+          "800": "#991B1B",
+          "900": "#7F1D1D"
+        },
+        "info": {
+          "50": "#E8F7FF",
+          "100": "#D6F0FF",
+          "200": "#ADE2FF",
+          "300": "#7AD0FF",
+          "400": "#49BEFF",
+          "500": "#3AA0E0",
+          "600": "#2B82C4",
+          "700": "#1C66A8",
+          "800": "#184E80",
+          "900": "#143658"
+        }
+      },
+      "neutral": {
+        "0": "#FFFFFF",
+        "50": "#FAFAFA",
+        "100": "#F8FAFC",
+        "200": "#F1F5F9",
+        "300": "#E5EAEF",
+        "400": "#CBD5E1",
+        "500": "#94A3B8",
+        "600": "#64748B",
+        "700": "#475569",
+        "800": "#2A3547",
+        "900": "#1E293B",
+        "1000": "#0F172A"
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "sans": "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+        "mono": "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace"
+      },
+      "fontSize": {
+        "xs": "0.75rem",
+        "sm": "0.875rem",
+        "base": "1rem",
+        "lg": "1.125rem",
+        "xl": "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "1.875rem",
+        "4xl": "2.25rem",
+        "5xl": "3rem"
+      },
+      "fontWeight": {
+        "light": "300",
+        "regular": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
+      },
+      "lineHeight": {
+        "tight": "1.25",
+        "normal": "1.5",
+        "relaxed": "1.75",
+        "loose": "2"
+      }
+    },
+    "spacing": {
+      "0": "0",
+      "1": "0.25rem",
+      "2": "0.5rem",
+      "3": "0.75rem",
+      "4": "1rem",
+      "5": "1.25rem",
+      "6": "1.5rem",
+      "8": "2rem",
+      "10": "2.5rem",
+      "12": "3rem",
+      "16": "4rem",
+      "20": "5rem",
+      "24": "6rem"
+    },
+    "borderRadius": {
+      "none": "0",
+      "sm": "0.125rem",
+      "base": "0.25rem",
+      "md": "0.375rem",
+      "lg": "0.5rem",
+      "xl": "0.75rem",
+      "2xl": "1rem",
+      "3xl": "1.5rem",
+      "full": "9999px"
+    },
+    "boxShadow": {
+      "none": "none",
+      "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      "base": "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+      "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+      "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+      "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+    },
+    "animation": {
+      "duration": {
+        "fast": "150ms",
+        "normal": "250ms",
+        "slow": "350ms",
+        "slower": "500ms"
+      },
+      "easing": {
+        "linear": "linear",
+        "in": "cubic-bezier(0.4, 0, 1, 1)",
+        "out": "cubic-bezier(0, 0, 0.2, 1)",
+        "inOut": "cubic-bezier(0.4, 0, 0.2, 1)"
+      }
+    }
+  }
+}
