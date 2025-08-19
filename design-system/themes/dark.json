@@ -1,0 +1,85 @@
+{
+  "name": "Dark Theme",
+  "description": "Dark theme for AuraConnect Admin Dashboard",
+  "extends": "../tokens",
+  "overrides": {
+    "colors": {
+      "semantic": {
+        "background": {
+          "primary": "#1C1F2E",
+          "secondary": "#252836",
+          "tertiary": "#2A2D3E"
+        },
+        "surface": {
+          "card": "#252836",
+          "subtle": "#2A2D3E",
+          "hover": "rgba(255, 255, 255, 0.06)",
+          "selected": "rgba(93, 135, 255, 0.16)",
+          "disabled": "#1C1F2E"
+        },
+        "text": {
+          "primary": "#F8FAFC",
+          "secondary": "#B8BCC8",
+          "tertiary": "#8B92A8",
+          "disabled": "#5A6174",
+          "inverse": "#2A3547"
+        },
+        "border": {
+          "default": "#393C4E",
+          "light": "#2A2D3E",
+          "dark": "#4A4D5E"
+        },
+        "primary": {
+          "base": "#5D87FF",
+          "light": "rgba(93, 135, 255, 0.16)",
+          "dark": "#7B9FFF",
+          "contrast": "#FFFFFF"
+        },
+        "secondary": {
+          "base": "#49BEFF",
+          "light": "rgba(73, 190, 255, 0.16)",
+          "dark": "#6BCEFF",
+          "contrast": "#FFFFFF"
+        },
+        "success": {
+          "base": "#39CB7F",
+          "light": "rgba(57, 203, 127, 0.16)",
+          "dark": "#5BD599",
+          "contrast": "#FFFFFF"
+        },
+        "warning": {
+          "base": "#FFCE2C",
+          "light": "rgba(255, 206, 44, 0.16)",
+          "dark": "#FFD754",
+          "contrast": "#2A3547"
+        },
+        "error": {
+          "base": "#FF6E7F",
+          "light": "rgba(255, 110, 127, 0.16)",
+          "dark": "#FF8A98",
+          "contrast": "#FFFFFF"
+        },
+        "info": {
+          "base": "#49BEFF",
+          "light": "rgba(73, 190, 255, 0.16)",
+          "dark": "#6BCEFF",
+          "contrast": "#FFFFFF"
+        }
+      }
+    },
+    "shadows": {
+      "elevation": {
+        "0": "none",
+        "1": "0px 1px 2px rgba(0, 0, 0, 0.3)",
+        "2": "0px 2px 4px rgba(0, 0, 0, 0.4)",
+        "3": "0px 3px 6px rgba(0, 0, 0, 0.5)",
+        "4": "0px 4px 8px rgba(0, 0, 0, 0.6)",
+        "5": "0px 6px 12px rgba(0, 0, 0, 0.7)",
+        "6": "0px 8px 16px rgba(0, 0, 0, 0.8)",
+        "7": "0px 12px 24px rgba(0, 0, 0, 0.9)",
+        "8": "0px 16px 32px rgba(0, 0, 0, 1)",
+        "9": "0px 24px 48px rgba(0, 0, 0, 1)"
+      }
+    }
+  }
+}

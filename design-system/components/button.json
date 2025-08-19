@@ -1,0 +1,159 @@
+{
+  "button": {
+    "name": "Button",
+    "description": "Interactive element that triggers an action when clicked",
+    "variants": {
+      "contained": {
+        "description": "High emphasis button with solid background",
+        "styles": {
+          "base": {
+            "borderRadius": "$borders.radius.md",
+            "fontFamily": "$typography.fontFamily.primary",
+            "fontWeight": "$typography.fontWeight.semibold",
+            "letterSpacing": "$typography.letterSpacing.wide",
+            "textTransform": "none",
+            "transition": "$animations.transition.default",
+            "cursor": "pointer",
+            "border": "none",
+            "display": "inline-flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "gap": "$spacing.component.gap.sm",
+            "whiteSpace": "nowrap"
+          },
+          "states": {
+            "hover": {
+              "transform": "translateY(-1px)",
+              "boxShadow": "$shadows.elevation.2"
+            },
+            "active": {
+              "transform": "translateY(0)",
+              "boxShadow": "$shadows.elevation.1"
+            },
+            "focus": {
+              "outline": "none",
+              "boxShadow": "$shadows.focus.primary"
+            },
+            "disabled": {
+              "opacity": 0.6,
+              "cursor": "not-allowed",
+              "transform": "none",
+              "boxShadow": "none"
+            }
+          }
+        }
+      },
+      "outlined": {
+        "description": "Medium emphasis button with border",
+        "styles": {
+          "base": {
+            "background": "transparent",
+            "border": "1px solid",
+            "borderColor": "$colors.semantic.border.default"
+          }
+        }
+      },
+      "text": {
+        "description": "Low emphasis text-only button",
+        "styles": {
+          "base": {
+            "background": "transparent",
+            "border": "none",
+            "padding": "$spacing.component.padding.sm"
+          }
+        }
+      }
+    },
+    "sizes": {
+      "small": {
+        "padding": "6px 16px",
+        "fontSize": "$typography.fontSize.sm",
+        "lineHeight": "$typography.lineHeight.normal",
+        "minHeight": "32px"
+      },
+      "medium": {
+        "padding": "8px 20px",
+        "fontSize": "$typography.fontSize.base",
+        "lineHeight": "$typography.lineHeight.normal",
+        "minHeight": "40px"
+      },
+      "large": {
+        "padding": "12px 28px",
+        "fontSize": "$typography.fontSize.lg",
+        "lineHeight": "$typography.lineHeight.normal",
+        "minHeight": "48px"
+      }
+    },
+    "colors": {
+      "primary": {
+        "contained": {
+          "background": "$colors.semantic.primary.base",
+          "color": "$colors.semantic.primary.contrast",
+          "hover": {
+            "background": "$colors.semantic.primary.dark"
+          }
+        },
+        "outlined": {
+          "borderColor": "$colors.semantic.primary.base",
+          "color": "$colors.semantic.primary.base",
+          "hover": {
+            "background": "$colors.semantic.primary.light",
+            "borderColor": "$colors.semantic.primary.dark"
+          }
+        },
+        "text": {
+          "color": "$colors.semantic.primary.base",
+          "hover": {
+            "background": "$colors.semantic.primary.light"
+          }
+        }
+      },
+      "secondary": {
+        "contained": {
+          "background": "$colors.semantic.secondary.base",
+          "color": "$colors.semantic.secondary.contrast",
+          "hover": {
+            "background": "$colors.semantic.secondary.dark"
+          }
+        }
+      },
+      "success": {
+        "contained": {
+          "background": "$colors.semantic.success.base",
+          "color": "$colors.semantic.success.contrast",
+          "hover": {
+            "background": "$colors.semantic.success.dark"
+          }
+        }
+      },
+      "warning": {
+        "contained": {
+          "background": "$colors.semantic.warning.base",
+          "color": "$colors.semantic.warning.contrast",
+          "hover": {
+            "background": "$colors.semantic.warning.dark"
+          }
+        }
+      },
+      "error": {
+        "contained": {
+          "background": "$colors.semantic.error.base",
+          "color": "$colors.semantic.error.contrast",
+          "hover": {
+            "background": "$colors.semantic.error.dark"
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "role": "button",
+      "ariaLabel": "Required for icon-only buttons",
+      "focusVisible": "Always show focus ring",
+      "keyboard": {
+        "enter": "Activate button",
+        "space": "Activate button"
+      },
+      "minTouchTarget": "44x44px for mobile"
+    }
+  }
+}
