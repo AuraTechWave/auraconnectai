@@ -1,0 +1,270 @@
+{
+  "notification": {
+    "name": "Notification",
+    "description": "Component for displaying alerts, toasts, and system messages",
+    "types": {
+      "alert": {
+        "description": "Inline alert messages",
+        "anatomy": {
+          "container": {
+            "display": "flex",
+            "padding": "$spacing.component.padding.md",
+            "borderRadius": "$borders.radius.md",
+            "border": "1px solid",
+            "gap": "$spacing.component.gap.md",
+            "position": "relative"
+          },
+          "icon": {
+            "width": "20px",
+            "height": "20px",
+            "flexShrink": 0
+          },
+          "content": {
+            "flex": 1
+          },
+          "title": {
+            "fontSize": "$typography.fontSize.base",
+            "fontWeight": "$typography.fontWeight.semibold",
+            "marginBottom": "$spacing.component.margin.xs"
+          },
+          "message": {
+            "fontSize": "$typography.fontSize.sm",
+            "lineHeight": "$typography.lineHeight.relaxed"
+          },
+          "actions": {
+            "display": "flex",
+            "gap": "$spacing.component.gap.sm",
+            "marginTop": "$spacing.component.margin.sm"
+          },
+          "closeButton": {
+            "position": "absolute",
+            "top": "$spacing.component.padding.sm",
+            "right": "$spacing.component.padding.sm",
+            "width": "20px",
+            "height": "20px",
+            "padding": "0",
+            "background": "transparent",
+            "border": "none",
+            "cursor": "pointer",
+            "color": "inherit",
+            "opacity": 0.6,
+            "hover": {
+              "opacity": 1
+            }
+          }
+        }
+      },
+      "toast": {
+        "description": "Temporary floating notifications",
+        "anatomy": {
+          "container": {
+            "position": "fixed",
+            "zIndex": 1200,
+            "pointerEvents": "none"
+          },
+          "wrapper": {
+            "display": "flex",
+            "flexDirection": "column",
+            "gap": "$spacing.component.gap.md",
+            "padding": "$spacing.component.padding.md"
+          },
+          "toast": {
+            "display": "flex",
+            "alignItems": "flex-start",
+            "padding": "$spacing.component.padding.md",
+            "background": "$colors.semantic.surface.card",
+            "borderRadius": "$borders.radius.md",
+            "boxShadow": "$shadows.elevation.4",
+            "minWidth": "300px",
+            "maxWidth": "500px",
+            "pointerEvents": "auto",
+            "gap": "$spacing.component.gap.md",
+            "animation": "slideIn $animations.duration.normal $animations.easing.easeOut"
+          },
+          "progressBar": {
+            "position": "absolute",
+            "bottom": 0,
+            "left": 0,
+            "height": "3px",
+            "background": "currentColor",
+            "opacity": 0.3,
+            "borderRadius": "0 0 $borders.radius.md $borders.radius.md",
+            "animation": "shrinkWidth var(--duration) linear"
+          }
+        }
+      },
+      "snackbar": {
+        "description": "Bottom notification bar",
+        "anatomy": {
+          "container": {
+            "position": "fixed",
+            "bottom": "$spacing.component.padding.lg",
+            "left": "50%",
+            "transform": "translateX(-50%)",
+            "zIndex": 1200
+          },
+          "content": {
+            "display": "flex",
+            "alignItems": "center",
+            "padding": "$spacing.component.padding.md $spacing.component.padding.lg",
+            "background": "$colors.primitive.gray.900",
+            "color": "$colors.primitive.white",
+            "borderRadius": "$borders.radius.md",
+            "boxShadow": "$shadows.elevation.6",
+            "gap": "$spacing.component.gap.md",
+            "minWidth": "300px",
+            "animation": "slideUp $animations.duration.normal $animations.easing.easeOut"
+          },
+          "action": {
+            "marginLeft": "auto",
+            "color": "$colors.semantic.primary.light",
+            "fontWeight": "$typography.fontWeight.semibold",
+            "cursor": "pointer",
+            "hover": {
+              "color": "$colors.primitive.white"
+            }
+          }
+        }
+      }
+    },
+    "variants": {
+      "info": {
+        "container": {
+          "background": "$colors.semantic.info.light",
+          "borderColor": "$colors.semantic.info.base",
+          "color": "$colors.semantic.info.dark"
+        },
+        "icon": {
+          "color": "$colors.semantic.info.base"
+        }
+      },
+      "success": {
+        "container": {
+          "background": "$colors.semantic.success.light",
+          "borderColor": "$colors.semantic.success.base",
+          "color": "$colors.semantic.success.dark"
+        },
+        "icon": {
+          "color": "$colors.semantic.success.base"
+        }
+      },
+      "warning": {
+        "container": {
+          "background": "$colors.semantic.warning.light",
+          "borderColor": "$colors.semantic.warning.base",
+          "color": "$colors.semantic.warning.dark"
+        },
+        "icon": {
+          "color": "$colors.semantic.warning.base"
+        }
+      },
+      "error": {
+        "container": {
+          "background": "$colors.semantic.error.light",
+          "borderColor": "$colors.semantic.error.base",
+          "color": "$colors.semantic.error.dark"
+        },
+        "icon": {
+          "color": "$colors.semantic.error.base"
+        }
+      }
+    },
+    "positions": {
+      "topLeft": {
+        "top": 0,
+        "left": 0
+      },
+      "topCenter": {
+        "top": 0,
+        "left": "50%",
+        "transform": "translateX(-50%)"
+      },
+      "topRight": {
+        "top": 0,
+        "right": 0
+      },
+      "bottomLeft": {
+        "bottom": 0,
+        "left": 0
+      },
+      "bottomCenter": {
+        "bottom": 0,
+        "left": "50%",
+        "transform": "translateX(-50%)"
+      },
+      "bottomRight": {
+        "bottom": 0,
+        "right": 0
+      }
+    },
+    "animations": {
+      "slideIn": {
+        "from": {
+          "opacity": 0,
+          "transform": "translateX(100%)"
+        },
+        "to": {
+          "opacity": 1,
+          "transform": "translateX(0)"
+        }
+      },
+      "slideUp": {
+        "from": {
+          "opacity": 0,
+          "transform": "translateX(-50%) translateY(100%)"
+        },
+        "to": {
+          "opacity": 1,
+          "transform": "translateX(-50%) translateY(0)"
+        }
+      },
+      "fadeIn": {
+        "from": {
+          "opacity": 0
+        },
+        "to": {
+          "opacity": 1
+        }
+      },
+      "shrinkWidth": {
+        "from": {
+          "width": "100%"
+        },
+        "to": {
+          "width": "0%"
+        }
+      }
+    },
+    "features": {
+      "stacking": {
+        "offset": "8px",
+        "maxVisible": 5,
+        "reverse": false
+      },
+      "duration": {
+        "short": 3000,
+        "medium": 5000,
+        "long": 8000,
+        "persistent": null
+      },
+      "dismissible": {
+        "swipeThreshold": 50,
+        "opacity": 0.5
+      },
+      "pauseOnHover": {
+        "resumeOnLeave": true
+      }
+    },
+    "accessibility": {
+      "role": "alert",
+      "ariaLive": "polite",
+      "ariaAtomic": "true",
+      "announcements": {
+        "info": "Information",
+        "success": "Success",
+        "warning": "Warning",
+        "error": "Error"
+      }
+    }
+  }
+}

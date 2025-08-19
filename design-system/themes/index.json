@@ -1,0 +1,45 @@
+{
+  "themes": {
+    "light": {
+      "name": "Light",
+      "description": "Default light theme",
+      "path": "./light.json",
+      "default": true
+    },
+    "dark": {
+      "name": "Dark",
+      "description": "Dark theme for low-light environments",
+      "path": "./dark.json"
+    },
+    "blueBrand": {
+      "name": "Blue Brand",
+      "description": "Custom brand theme example",
+      "path": "./blue-brand.json"
+    }
+  },
+  "configuration": {
+    "defaultTheme": "light",
+    "autoDetect": true,
+    "persistence": {
+      "enabled": true,
+      "key": "auraconnect-theme"
+    },
+    "transitions": {
+      "enabled": true,
+      "duration": "300ms",
+      "properties": ["background-color", "color", "border-color", "box-shadow"]
+    }
+  },
+  "customization": {
+    "allowUserThemes": true,
+    "whiteLabelConfig": {
+      "enabled": true,
+      "overridable": [
+        "colors.semantic.primary",
+        "colors.semantic.secondary",
+        "typography.fontFamily.primary",
+        "borders.radius"
+      ]
+    }
+  }
+}

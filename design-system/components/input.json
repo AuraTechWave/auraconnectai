@@ -1,0 +1,249 @@
+{
+  "input": {
+    "name": "Input",
+    "description": "Form input component for collecting user data",
+    "variants": {
+      "outlined": {
+        "description": "Default input with border",
+        "styles": {
+          "wrapper": {
+            "position": "relative"
+          },
+          "input": {
+            "background": "$colors.semantic.surface.card",
+            "border": "1px solid $colors.semantic.border.default",
+            "borderRadius": "$borders.radius.md",
+            "color": "$colors.semantic.text.primary",
+            "transition": "$animations.transition.fast",
+            "focus": {
+              "borderColor": "$colors.semantic.primary.base",
+              "boxShadow": "$shadows.focus.primary"
+            },
+            "hover": {
+              "borderColor": "$colors.semantic.primary.dark"
+            }
+          }
+        }
+      },
+      "filled": {
+        "description": "Input with filled background",
+        "styles": {
+          "input": {
+            "background": "$colors.semantic.surface.subtle",
+            "border": "1px solid transparent",
+            "borderBottomColor": "$colors.semantic.border.default",
+            "borderRadius": "$borders.radius.md $borders.radius.md 0 0",
+            "focus": {
+              "borderBottomColor": "$colors.semantic.primary.base",
+              "borderBottomWidth": "2px"
+            }
+          }
+        }
+      },
+      "underlined": {
+        "description": "Minimal input with underline only",
+        "styles": {
+          "input": {
+            "background": "transparent",
+            "border": "none",
+            "borderBottom": "1px solid $colors.semantic.border.default",
+            "borderRadius": "0",
+            "paddingLeft": "0",
+            "paddingRight": "0",
+            "focus": {
+              "borderBottomColor": "$colors.semantic.primary.base",
+              "borderBottomWidth": "2px"
+            }
+          }
+        }
+      }
+    },
+    "anatomy": {
+      "wrapper": {
+        "position": "relative",
+        "width": "100%"
+      },
+      "label": {
+        "display": "block",
+        "marginBottom": "$spacing.component.margin.sm",
+        "fontSize": "$typography.fontSize.sm",
+        "fontWeight": "$typography.fontWeight.medium",
+        "color": "$colors.semantic.text.primary"
+      },
+      "input": {
+        "width": "100%",
+        "padding": "$spacing.component.padding.md",
+        "fontSize": "$typography.fontSize.base",
+        "fontFamily": "$typography.fontFamily.primary",
+        "lineHeight": "$typography.lineHeight.normal",
+        "outline": "none",
+        "disabled": {
+          "background": "$colors.semantic.surface.disabled",
+          "color": "$colors.semantic.text.disabled",
+          "cursor": "not-allowed",
+          "opacity": 0.6
+        },
+        "error": {
+          "borderColor": "$colors.semantic.error.base",
+          "focus": {
+            "boxShadow": "$shadows.focus.error"
+          }
+        }
+      },
+      "helperText": {
+        "marginTop": "$spacing.component.margin.xs",
+        "fontSize": "$typography.fontSize.xs",
+        "color": "$colors.semantic.text.secondary",
+        "lineHeight": "$typography.lineHeight.normal"
+      },
+      "errorText": {
+        "marginTop": "$spacing.component.margin.xs",
+        "fontSize": "$typography.fontSize.xs",
+        "color": "$colors.semantic.error.base",
+        "lineHeight": "$typography.lineHeight.normal"
+      },
+      "prefix": {
+        "position": "absolute",
+        "left": "$spacing.component.padding.md",
+        "top": "50%",
+        "transform": "translateY(-50%)",
+        "color": "$colors.semantic.text.secondary",
+        "pointerEvents": "none"
+      },
+      "suffix": {
+        "position": "absolute",
+        "right": "$spacing.component.padding.md",
+        "top": "50%",
+        "transform": "translateY(-50%)",
+        "color": "$colors.semantic.text.secondary"
+      },
+      "icon": {
+        "width": "20px",
+        "height": "20px",
+        "color": "$colors.semantic.text.secondary"
+      },
+      "clearButton": {
+        "width": "20px",
+        "height": "20px",
+        "padding": "0",
+        "background": "transparent",
+        "border": "none",
+        "cursor": "pointer",
+        "color": "$colors.semantic.text.secondary",
+        "hover": {
+          "color": "$colors.semantic.text.primary"
+        }
+      }
+    },
+    "sizes": {
+      "small": {
+        "input": {
+          "padding": "$spacing.component.padding.sm",
+          "fontSize": "$typography.fontSize.sm"
+        },
+        "icon": {
+          "width": "16px",
+          "height": "16px"
+        }
+      },
+      "large": {
+        "input": {
+          "padding": "$spacing.component.padding.lg",
+          "fontSize": "$typography.fontSize.lg"
+        },
+        "icon": {
+          "width": "24px",
+          "height": "24px"
+        }
+      }
+    },
+    "types": {
+      "text": {
+        "inputMode": "text"
+      },
+      "email": {
+        "inputMode": "email",
+        "autoComplete": "email"
+      },
+      "password": {
+        "autoComplete": "current-password"
+      },
+      "number": {
+        "inputMode": "numeric",
+        "pattern": "[0-9]*"
+      },
+      "tel": {
+        "inputMode": "tel",
+        "autoComplete": "tel"
+      },
+      "url": {
+        "inputMode": "url",
+        "autoComplete": "url"
+      },
+      "search": {
+        "inputMode": "search",
+        "autoComplete": "off"
+      }
+    },
+    "states": {
+      "withIcon": {
+        "input": {
+          "paddingLeft": "44px"
+        }
+      },
+      "withClear": {
+        "input": {
+          "paddingRight": "44px"
+        }
+      },
+      "required": {
+        "label": {
+          "after": {
+            "content": "*",
+            "color": "$colors.semantic.error.base",
+            "marginLeft": "$spacing.component.margin.xs"
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "ariaLabel": "Required if no visible label",
+      "ariaDescribedby": "ID of helper or error text",
+      "ariaInvalid": "true/false for validation state",
+      "ariaRequired": "true/false for required fields",
+      "keyboard": {
+        "tab": "Focus input",
+        "escape": "Clear input (if clearable)"
+      }
+    }
+  },
+  "textarea": {
+    "name": "Textarea",
+    "description": "Multi-line text input component",
+    "extends": "input",
+    "styles": {
+      "minHeight": "100px",
+      "resize": "vertical",
+      "paddingTop": "$spacing.component.padding.md",
+      "paddingBottom": "$spacing.component.padding.md"
+    },
+    "features": {
+      "autoResize": {
+        "minHeight": "100px",
+        "maxHeight": "400px"
+      },
+      "characterCount": {
+        "container": {
+          "display": "flex",
+          "justifyContent": "space-between",
+          "alignItems": "flex-start"
+        },
+        "counter": {
+          "fontSize": "$typography.fontSize.xs",
+          "color": "$colors.semantic.text.secondary",
+          "marginTop": "$spacing.component.margin.xs"
+        }
+      }
+    }
+  }
+}

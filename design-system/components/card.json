@@ -1,0 +1,145 @@
+{
+  "card": {
+    "name": "Card",
+    "description": "Container component that groups related content and actions",
+    "variants": {
+      "elevated": {
+        "description": "Card with shadow elevation",
+        "styles": {
+          "base": {
+            "background": "$colors.semantic.surface.card",
+            "borderRadius": "$borders.radius.lg",
+            "boxShadow": "$shadows.elevation.2",
+            "transition": "$animations.transition.default",
+            "overflow": "hidden"
+          },
+          "hover": {
+            "boxShadow": "$shadows.elevation.4"
+          }
+        }
+      },
+      "outlined": {
+        "description": "Card with border",
+        "styles": {
+          "base": {
+            "background": "$colors.semantic.surface.card",
+            "borderRadius": "$borders.radius.lg",
+            "border": "1px solid $colors.semantic.border.default",
+            "boxShadow": "none"
+          }
+        }
+      },
+      "filled": {
+        "description": "Card with subtle background",
+        "styles": {
+          "base": {
+            "background": "$colors.semantic.surface.subtle",
+            "borderRadius": "$borders.radius.lg",
+            "border": "none",
+            "boxShadow": "none"
+          }
+        }
+      }
+    },
+    "anatomy": {
+      "header": {
+        "padding": "$spacing.component.padding.lg",
+        "borderBottom": "1px solid $colors.semantic.border.light",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "gap": "$spacing.component.gap.md"
+      },
+      "media": {
+        "position": "relative",
+        "width": "100%",
+        "aspectRatio": "16/9",
+        "overflow": "hidden",
+        "backgroundColor": "$colors.semantic.surface.subtle"
+      },
+      "content": {
+        "padding": "$spacing.component.padding.lg",
+        "variants": {
+          "withMedia": {
+            "paddingTop": "$spacing.component.padding.md"
+          }
+        }
+      },
+      "actions": {
+        "padding": "$spacing.component.padding.lg",
+        "paddingTop": "0",
+        "display": "flex",
+        "gap": "$spacing.component.gap.sm",
+        "justifyContent": "flex-end"
+      },
+      "title": {
+        "fontSize": "$typography.variants.h5.fontSize",
+        "fontWeight": "$typography.variants.h5.fontWeight",
+        "lineHeight": "$typography.variants.h5.lineHeight",
+        "color": "$colors.semantic.text.primary",
+        "marginBottom": "$spacing.component.margin.xs"
+      },
+      "subtitle": {
+        "fontSize": "$typography.variants.body2.fontSize",
+        "fontWeight": "$typography.variants.body2.fontWeight",
+        "lineHeight": "$typography.variants.body2.lineHeight",
+        "color": "$colors.semantic.text.secondary",
+        "marginBottom": "$spacing.component.margin.sm"
+      },
+      "body": {
+        "fontSize": "$typography.variants.body1.fontSize",
+        "fontWeight": "$typography.variants.body1.fontWeight",
+        "lineHeight": "$typography.variants.body1.lineHeight",
+        "color": "$colors.semantic.text.primary"
+      }
+    },
+    "modifiers": {
+      "interactive": {
+        "cursor": "pointer",
+        "transition": "$animations.transition.default",
+        "hover": {
+          "transform": "translateY(-2px)"
+        },
+        "active": {
+          "transform": "translateY(0)"
+        }
+      },
+      "selected": {
+        "borderColor": "$colors.semantic.primary.base",
+        "borderWidth": "2px",
+        "boxShadow": "$shadows.focus.primary"
+      },
+      "disabled": {
+        "opacity": 0.6,
+        "pointerEvents": "none",
+        "cursor": "not-allowed"
+      }
+    },
+    "sizes": {
+      "small": {
+        "header": {
+          "padding": "$spacing.component.padding.md"
+        },
+        "content": {
+          "padding": "$spacing.component.padding.md"
+        }
+      },
+      "large": {
+        "header": {
+          "padding": "$spacing.component.padding.xl"
+        },
+        "content": {
+          "padding": "$spacing.component.padding.xl"
+        }
+      }
+    },
+    "accessibility": {
+      "role": "article",
+      "ariaLabel": "Descriptive label for screen readers",
+      "keyboard": {
+        "tab": "Navigate between interactive elements",
+        "enter": "Activate if interactive"
+      }
+    }
+  }
+}

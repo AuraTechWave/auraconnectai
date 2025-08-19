@@ -1,0 +1,199 @@
+{
+  "table": {
+    "name": "Table",
+    "description": "Component for displaying tabular data with sorting, filtering, and pagination",
+    "structure": {
+      "container": {
+        "background": "$colors.semantic.surface.card",
+        "borderRadius": "$borders.radius.lg",
+        "boxShadow": "$shadows.elevation.1",
+        "overflow": "hidden"
+      },
+      "wrapper": {
+        "overflowX": "auto",
+        "overflowY": "hidden",
+        "webkitOverflowScrolling": "touch"
+      },
+      "table": {
+        "width": "100%",
+        "borderCollapse": "collapse",
+        "fontSize": "$typography.fontSize.sm",
+        "color": "$colors.semantic.text.primary"
+      }
+    },
+    "anatomy": {
+      "header": {
+        "row": {
+          "background": "$colors.semantic.surface.subtle",
+          "borderBottom": "2px solid $colors.semantic.border.default"
+        },
+        "cell": {
+          "padding": "$spacing.component.padding.md",
+          "fontWeight": "$typography.fontWeight.semibold",
+          "textAlign": "left",
+          "color": "$colors.semantic.text.primary",
+          "whiteSpace": "nowrap",
+          "position": "sticky",
+          "top": 0,
+          "zIndex": 10,
+          "background": "inherit"
+        },
+        "sortable": {
+          "cursor": "pointer",
+          "userSelect": "none",
+          "display": "flex",
+          "alignItems": "center",
+          "gap": "$spacing.component.gap.xs",
+          "hover": {
+            "color": "$colors.semantic.primary.base"
+          }
+        },
+        "sortIcon": {
+          "width": "16px",
+          "height": "16px",
+          "opacity": 0.5,
+          "transition": "$animations.transition.fast"
+        }
+      },
+      "body": {
+        "row": {
+          "borderBottom": "1px solid $colors.semantic.border.light",
+          "transition": "$animations.transition.fast",
+          "hover": {
+            "background": "$colors.semantic.surface.hover"
+          }
+        },
+        "cell": {
+          "padding": "$spacing.component.padding.md",
+          "verticalAlign": "middle"
+        },
+        "clickableRow": {
+          "cursor": "pointer",
+          "hover": {
+            "background": "$colors.semantic.primary.light"
+          }
+        },
+        "selectedRow": {
+          "background": "$colors.semantic.primary.light",
+          "borderColor": "$colors.semantic.primary.base"
+        }
+      },
+      "footer": {
+        "row": {
+          "background": "$colors.semantic.surface.subtle",
+          "borderTop": "2px solid $colors.semantic.border.default"
+        },
+        "cell": {
+          "padding": "$spacing.component.padding.md",
+          "fontWeight": "$typography.fontWeight.semibold"
+        }
+      }
+    },
+    "variants": {
+      "striped": {
+        "body": {
+          "row": {
+            "nthChild": "odd",
+            "background": "$colors.semantic.surface.subtle"
+          }
+        }
+      },
+      "dense": {
+        "header": {
+          "cell": {
+            "padding": "$spacing.component.padding.sm"
+          }
+        },
+        "body": {
+          "cell": {
+            "padding": "$spacing.component.padding.sm"
+          }
+        }
+      },
+      "borderless": {
+        "container": {
+          "boxShadow": "none",
+          "border": "none"
+        },
+        "body": {
+          "row": {
+            "border": "none"
+          }
+        }
+      }
+    },
+    "features": {
+      "pagination": {
+        "container": {
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "space-between",
+          "padding": "$spacing.component.padding.md",
+          "borderTop": "1px solid $colors.semantic.border.light",
+          "background": "$colors.semantic.surface.card"
+        },
+        "info": {
+          "fontSize": "$typography.fontSize.sm",
+          "color": "$colors.semantic.text.secondary"
+        },
+        "controls": {
+          "display": "flex",
+          "gap": "$spacing.component.gap.sm"
+        }
+      },
+      "checkbox": {
+        "width": "40px",
+        "padding": "$spacing.component.padding.sm"
+      },
+      "actions": {
+        "width": "100px",
+        "textAlign": "right"
+      },
+      "empty": {
+        "padding": "$spacing.component.padding.xl",
+        "textAlign": "center",
+        "color": "$colors.semantic.text.secondary",
+        "minHeight": "200px",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "flexDirection": "column",
+        "gap": "$spacing.component.gap.md"
+      },
+      "loading": {
+        "opacity": 0.6,
+        "pointerEvents": "none",
+        "position": "relative",
+        "overlay": {
+          "position": "absolute",
+          "top": 0,
+          "left": 0,
+          "right": 0,
+          "bottom": 0,
+          "background": "rgba(255, 255, 255, 0.8)",
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "center"
+        }
+      }
+    },
+    "responsive": {
+      "mobile": {
+        "fontSize": "$typography.fontSize.xs",
+        "cellPadding": "$spacing.component.padding.sm",
+        "minWidth": "600px"
+      }
+    },
+    "accessibility": {
+      "role": "table",
+      "ariaLabel": "Required for complex tables",
+      "scope": "col/row for headers",
+      "ariaSort": "ascending/descending/none",
+      "keyboard": {
+        "tab": "Navigate between interactive elements",
+        "arrow": "Navigate cells in screen reader mode",
+        "space": "Select row with checkbox"
+      }
+    }
+  }
+}

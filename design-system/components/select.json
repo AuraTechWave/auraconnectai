@@ -1,0 +1,254 @@
+{
+  "select": {
+    "name": "Select",
+    "description": "Dropdown selection component for choosing from predefined options",
+    "anatomy": {
+      "trigger": {
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "width": "100%",
+        "padding": "$spacing.component.padding.md",
+        "background": "$colors.semantic.surface.card",
+        "border": "1px solid $colors.semantic.border.default",
+        "borderRadius": "$borders.radius.md",
+        "fontSize": "$typography.fontSize.base",
+        "fontFamily": "$typography.fontFamily.primary",
+        "color": "$colors.semantic.text.primary",
+        "cursor": "pointer",
+        "transition": "$animations.transition.fast",
+        "gap": "$spacing.component.gap.sm",
+        "hover": {
+          "borderColor": "$colors.semantic.primary.dark"
+        },
+        "focus": {
+          "borderColor": "$colors.semantic.primary.base",
+          "boxShadow": "$shadows.focus.primary"
+        },
+        "disabled": {
+          "background": "$colors.semantic.surface.disabled",
+          "color": "$colors.semantic.text.disabled",
+          "cursor": "not-allowed",
+          "opacity": 0.6
+        }
+      },
+      "icon": {
+        "width": "20px",
+        "height": "20px",
+        "transition": "$animations.transition.fast",
+        "color": "$colors.semantic.text.secondary",
+        "open": {
+          "transform": "rotate(180deg)"
+        }
+      },
+      "placeholder": {
+        "color": "$colors.semantic.text.disabled"
+      },
+      "menu": {
+        "position": "absolute",
+        "top": "100%",
+        "left": 0,
+        "right": 0,
+        "marginTop": "$spacing.component.margin.xs",
+        "background": "$colors.semantic.surface.card",
+        "border": "1px solid $colors.semantic.border.default",
+        "borderRadius": "$borders.radius.md",
+        "boxShadow": "$shadows.elevation.4",
+        "maxHeight": "300px",
+        "overflowY": "auto",
+        "zIndex": 1000,
+        "animation": "slideDown $animations.duration.fast $animations.easing.easeOut"
+      },
+      "option": {
+        "padding": "$spacing.component.padding.md",
+        "fontSize": "$typography.fontSize.base",
+        "color": "$colors.semantic.text.primary",
+        "cursor": "pointer",
+        "transition": "$animations.transition.fast",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": "$spacing.component.gap.sm",
+        "hover": {
+          "background": "$colors.semantic.surface.hover"
+        },
+        "selected": {
+          "background": "$colors.semantic.primary.light",
+          "color": "$colors.semantic.primary.base",
+          "fontWeight": "$typography.fontWeight.medium"
+        },
+        "disabled": {
+          "color": "$colors.semantic.text.disabled",
+          "cursor": "not-allowed",
+          "opacity": 0.6
+        }
+      },
+      "group": {
+        "label": {
+          "padding": "$spacing.component.padding.sm $spacing.component.padding.md",
+          "fontSize": "$typography.fontSize.xs",
+          "fontWeight": "$typography.fontWeight.semibold",
+          "color": "$colors.semantic.text.secondary",
+          "textTransform": "uppercase",
+          "letterSpacing": "$typography.letterSpacing.wider"
+        },
+        "divider": {
+          "height": "1px",
+          "background": "$colors.semantic.border.light",
+          "margin": "$spacing.component.margin.sm 0"
+        }
+      },
+      "search": {
+        "padding": "$spacing.component.padding.md",
+        "borderBottom": "1px solid $colors.semantic.border.light",
+        "input": {
+          "width": "100%",
+          "padding": "$spacing.component.padding.sm",
+          "border": "1px solid $colors.semantic.border.default",
+          "borderRadius": "$borders.radius.sm",
+          "fontSize": "$typography.fontSize.sm",
+          "outline": "none",
+          "focus": {
+            "borderColor": "$colors.semantic.primary.base"
+          }
+        }
+      },
+      "empty": {
+        "padding": "$spacing.component.padding.lg",
+        "textAlign": "center",
+        "color": "$colors.semantic.text.secondary",
+        "fontSize": "$typography.fontSize.sm"
+      },
+      "checkIcon": {
+        "width": "16px",
+        "height": "16px",
+        "color": "$colors.semantic.primary.base",
+        "marginLeft": "auto"
+      }
+    },
+    "variants": {
+      "native": {
+        "description": "Native HTML select element",
+        "styles": {
+          "appearance": "none",
+          "backgroundImage": "url('data:image/svg+xml,...')",
+          "backgroundPosition": "right 12px center",
+          "backgroundRepeat": "no-repeat",
+          "paddingRight": "40px"
+        }
+      },
+      "custom": {
+        "description": "Custom dropdown with enhanced features",
+        "features": [
+          "Search/filter",
+          "Multi-select",
+          "Option groups",
+          "Custom option rendering",
+          "Keyboard navigation"
+        ]
+      }
+    },
+    "features": {
+      "multiSelect": {
+        "trigger": {
+          "display": "flex",
+          "flexWrap": "wrap",
+          "gap": "$spacing.component.gap.xs",
+          "minHeight": "40px"
+        },
+        "tag": {
+          "display": "inline-flex",
+          "alignItems": "center",
+          "padding": "2px 8px",
+          "background": "$colors.semantic.primary.light",
+          "color": "$colors.semantic.primary.base",
+          "borderRadius": "$borders.radius.sm",
+          "fontSize": "$typography.fontSize.sm",
+          "gap": "$spacing.component.gap.xs"
+        },
+        "removeButton": {
+          "width": "14px",
+          "height": "14px",
+          "padding": "0",
+          "background": "transparent",
+          "border": "none",
+          "cursor": "pointer",
+          "color": "$colors.semantic.primary.base",
+          "hover": {
+            "color": "$colors.semantic.primary.dark"
+          }
+        },
+        "checkbox": {
+          "width": "16px",
+          "height": "16px",
+          "marginRight": "$spacing.component.margin.sm"
+        }
+      },
+      "async": {
+        "loading": {
+          "display": "flex",
+          "alignItems": "center",
+          "justifyContent": "center",
+          "padding": "$spacing.component.padding.lg",
+          "color": "$colors.semantic.text.secondary"
+        },
+        "loadMore": {
+          "padding": "$spacing.component.padding.md",
+          "textAlign": "center",
+          "color": "$colors.semantic.primary.base",
+          "cursor": "pointer",
+          "hover": {
+            "background": "$colors.semantic.surface.hover"
+          }
+        }
+      },
+      "creatable": {
+        "createOption": {
+          "padding": "$spacing.component.padding.md",
+          "color": "$colors.semantic.primary.base",
+          "fontWeight": "$typography.fontWeight.medium",
+          "borderTop": "1px solid $colors.semantic.border.light"
+        }
+      }
+    },
+    "sizes": {
+      "small": {
+        "trigger": {
+          "padding": "$spacing.component.padding.sm",
+          "fontSize": "$typography.fontSize.sm"
+        },
+        "icon": {
+          "width": "16px",
+          "height": "16px"
+        }
+      },
+      "large": {
+        "trigger": {
+          "padding": "$spacing.component.padding.lg",
+          "fontSize": "$typography.fontSize.lg"
+        },
+        "icon": {
+          "width": "24px",
+          "height": "24px"
+        }
+      }
+    },
+    "accessibility": {
+      "role": "combobox",
+      "ariaExpanded": "true/false",
+      "ariaHaspopup": "listbox",
+      "ariaActivedescendant": "ID of focused option",
+      "listRole": "listbox",
+      "optionRole": "option",
+      "ariaSelected": "true/false for options",
+      "keyboard": {
+        "enter": "Open menu / Select option",
+        "space": "Open menu / Toggle selection",
+        "escape": "Close menu",
+        "arrow": "Navigate options",
+        "home": "Focus first option",
+        "end": "Focus last option",
+        "type": "Search by typing"
+      }
+    }
+  }
+}

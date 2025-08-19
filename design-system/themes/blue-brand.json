@@ -1,0 +1,36 @@
+{
+  "name": "Blue Brand Theme",
+  "description": "Example custom brand theme with blue accent colors",
+  "extends": "light",
+  "overrides": {
+    "colors": {
+      "semantic": {
+        "primary": {
+          "base": "#0066CC",
+          "light": "#E6F0FF",
+          "dark": "#0052A3",
+          "contrast": "#FFFFFF"
+        },
+        "secondary": {
+          "base": "#00A3E0",
+          "light": "#E6F7FF",
+          "dark": "#0082B3",
+          "contrast": "#FFFFFF"
+        }
+      }
+    },
+    "typography": {
+      "fontFamily": {
+        "primary": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+      }
+    },
+    "borders": {
+      "radius": {
+        "sm": "2px",
+        "md": "4px",
+        "lg": "8px",
+        "xl": "12px"
+      }
+    }
+  }
+}

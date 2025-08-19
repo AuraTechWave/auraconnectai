@@ -1,0 +1,233 @@
+{
+  "modal": {
+    "name": "Modal",
+    "description": "Overlay dialog component for focused content and interactions",
+    "anatomy": {
+      "backdrop": {
+        "position": "fixed",
+        "top": 0,
+        "left": 0,
+        "right": 0,
+        "bottom": 0,
+        "background": "rgba(42, 53, 71, 0.6)",
+        "backdropFilter": "blur(4px)",
+        "zIndex": 1100,
+        "animation": "fadeIn $animations.duration.fast $animations.easing.easeOut"
+      },
+      "container": {
+        "position": "fixed",
+        "top": "50%",
+        "left": "50%",
+        "transform": "translate(-50%, -50%)",
+        "maxWidth": "90vw",
+        "maxHeight": "90vh",
+        "width": "100%",
+        "zIndex": 1101,
+        "animation": "slideUp $animations.duration.normal $animations.easing.easeOut"
+      },
+      "content": {
+        "background": "$colors.semantic.surface.card",
+        "borderRadius": "$borders.radius.lg",
+        "boxShadow": "$shadows.elevation.8",
+        "display": "flex",
+        "flexDirection": "column",
+        "maxHeight": "90vh",
+        "overflow": "hidden"
+      },
+      "header": {
+        "padding": "$spacing.component.padding.lg",
+        "borderBottom": "1px solid $colors.semantic.border.light",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "gap": "$spacing.component.gap.md",
+        "flexShrink": 0
+      },
+      "title": {
+        "fontSize": "$typography.variants.h5.fontSize",
+        "fontWeight": "$typography.variants.h5.fontWeight",
+        "lineHeight": "$typography.variants.h5.lineHeight",
+        "color": "$colors.semantic.text.primary",
+        "margin": 0
+      },
+      "closeButton": {
+        "width": "32px",
+        "height": "32px",
+        "padding": "0",
+        "background": "transparent",
+        "border": "none",
+        "borderRadius": "$borders.radius.md",
+        "cursor": "pointer",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "color": "$colors.semantic.text.secondary",
+        "transition": "$animations.transition.fast",
+        "hover": {
+          "background": "$colors.semantic.surface.hover",
+          "color": "$colors.semantic.text.primary"
+        }
+      },
+      "body": {
+        "padding": "$spacing.component.padding.lg",
+        "overflowY": "auto",
+        "flex": 1,
+        "color": "$colors.semantic.text.primary"
+      },
+      "footer": {
+        "padding": "$spacing.component.padding.lg",
+        "borderTop": "1px solid $colors.semantic.border.light",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "flex-end",
+        "gap": "$spacing.component.gap.md",
+        "flexShrink": 0
+      }
+    },
+    "sizes": {
+      "small": {
+        "container": {
+          "maxWidth": "400px"
+        }
+      },
+      "medium": {
+        "container": {
+          "maxWidth": "600px"
+        }
+      },
+      "large": {
+        "container": {
+          "maxWidth": "900px"
+        }
+      },
+      "fullscreen": {
+        "container": {
+          "maxWidth": "100vw",
+          "maxHeight": "100vh",
+          "width": "100vw",
+          "height": "100vh"
+        },
+        "content": {
+          "borderRadius": 0,
+          "maxHeight": "100vh"
+        }
+      }
+    },
+    "variants": {
+      "centered": {
+        "footer": {
+          "justifyContent": "center"
+        }
+      },
+      "danger": {
+        "header": {
+          "background": "$colors.semantic.error.light",
+          "borderBottomColor": "$colors.semantic.error.base"
+        },
+        "title": {
+          "color": "$colors.semantic.error.base"
+        }
+      },
+      "minimal": {
+        "header": {
+          "border": "none",
+          "paddingBottom": 0
+        },
+        "footer": {
+          "border": "none",
+          "paddingTop": 0
+        }
+      }
+    },
+    "features": {
+      "draggable": {
+        "header": {
+          "cursor": "move",
+          "userSelect": "none"
+        }
+      },
+      "resizable": {
+        "handle": {
+          "position": "absolute",
+          "bottom": 0,
+          "right": 0,
+          "width": "16px",
+          "height": "16px",
+          "cursor": "nwse-resize"
+        }
+      },
+      "stacked": {
+        "backdrop": {
+          "background": "transparent"
+        },
+        "previousModal": {
+          "transform": "scale(0.95)",
+          "opacity": 0.8
+        }
+      }
+    },
+    "animations": {
+      "fadeIn": {
+        "from": {
+          "opacity": 0
+        },
+        "to": {
+          "opacity": 1
+        }
+      },
+      "slideUp": {
+        "from": {
+          "opacity": 0,
+          "transform": "translate(-50%, -40%)"
+        },
+        "to": {
+          "opacity": 1,
+          "transform": "translate(-50%, -50%)"
+        }
+      },
+      "scaleIn": {
+        "from": {
+          "opacity": 0,
+          "transform": "translate(-50%, -50%) scale(0.9)"
+        },
+        "to": {
+          "opacity": 1,
+          "transform": "translate(-50%, -50%) scale(1)"
+        }
+      }
+    },
+    "responsive": {
+      "mobile": {
+        "container": {
+          "margin": "$spacing.component.margin.md",
+          "maxWidth": "calc(100vw - 32px)",
+          "maxHeight": "calc(100vh - 32px)"
+        },
+        "fullHeight": {
+          "container": {
+            "margin": 0,
+            "maxWidth": "100vw",
+            "maxHeight": "100vh",
+            "bottom": 0,
+            "top": "auto",
+            "transform": "translateX(-50%)",
+            "borderRadius": "$borders.radius.lg $borders.radius.lg 0 0"
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "role": "dialog",
+      "ariaModal": "true",
+      "ariaLabelledby": "ID of title element",
+      "ariaDescribedby": "ID of body element",
+      "focusTrap": "Keep focus within modal",
+      "restoreFocus": "Return focus to trigger element on close",
+      "keyboard": {
+        "escape": "Close modal",
+        "tab": "Navigate focusable elements",
+        "shiftTab": "Navigate backwards"
+      }
+    }
+  }
+}
