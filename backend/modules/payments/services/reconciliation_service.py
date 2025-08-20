@@ -215,7 +215,7 @@ class PaymentReconciliationService:
         method_data = {}
         
         for payment in payments:
-            method = payment.method or "unknown"
+            method = payment.payment_method or "unknown"
             
             if method not in method_data:
                 method_data[method] = {

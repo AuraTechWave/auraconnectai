@@ -227,7 +227,7 @@ class TipRecord(Base, TimestampMixin):
     __tablename__ = "tip_records"
     
     id = Column(Integer, primary_key=True, index=True)
-    employee_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    staff_id = Column(Integer, ForeignKey("staff_members.id"), nullable=False, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
     payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True, index=True)
     
@@ -262,7 +262,7 @@ class TipRecord(Base, TimestampMixin):
     location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
     
     # Relationships
-    employee = relationship("User", foreign_keys=[employee_id])
+    staff = relationship("Staff", foreign_keys=[staff_id])
     order = relationship("Order", foreign_keys=[order_id])
     payment = relationship("Payment", foreign_keys=[payment_id])
     shift = relationship("Shift", foreign_keys=[shift_id])
@@ -271,7 +271,7 @@ class TipRecord(Base, TimestampMixin):
     location = relationship("Location", foreign_keys=[location_id])
     
     __table_args__ = (
-        Index("ix_tip_records_employee_date", "employee_id", "tip_date"),
+        Index("ix_tip_records_staff_date", "staff_id", "tip_date"),
         Index("ix_tip_records_payroll_period", "payroll_period_id", "is_processed"),
         Index("ix_tip_records_restaurant", "restaurant_id"),
     )
