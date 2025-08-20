@@ -415,16 +415,15 @@ class WebhookService:
 
         # Send order tracking notification if status changed
         if old_status != status:
-            # TODO: Fix order_tracking_service instance
-            # await order_tracking_service.track_payment_event(
-            #     db=db,
-            #     order_id=payment.order_id,
-            #     payment_id=payment.id,
-            #     event_type='payment_status_changed',
-            #     old_status=old_status.value,
-            #     new_status=status.value
-            # )
-            pass
+            from ...orders.services.order_tracking_service import order_tracking_service
+            await order_tracking_service.track_payment_event(
+                db=db,
+                order_id=payment.order_id,
+                payment_id=payment.id,
+                event_type='payment_status_changed',
+                old_status=old_status.value,
+                new_status=status.value
+            )
 
     async def _update_refund_status(
         self,

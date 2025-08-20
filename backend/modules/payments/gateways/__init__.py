@@ -13,8 +13,7 @@ from .base import (
 )
 from .stripe_gateway import StripeGateway
 
-# from .square_gateway import SquareGateway  # TODO: Fix Square SDK imports
-SquareGateway = None  # Temporary placeholder
+from .square_gateway import SquareGateway
 from .paypal_gateway import PayPalGateway
 
 __all__ = [

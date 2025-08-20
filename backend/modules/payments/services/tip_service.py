@@ -14,8 +14,7 @@ from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order
 from ...staff.models.staff_models import Staff, StaffRole
 
-# TODO: TipRecord model needs to be created in payroll module
-# from ...payroll.models.payroll_models import TipRecord
+from ...payroll.models.payroll_models import TipRecord
 from ..monitoring.split_bill_metrics import SplitBillMetrics, track_tip_distribution
 
 logger = logging.getLogger(__name__)
@@ -190,6 +189,8 @@ class TipService:
                     amount=staff_dist["amount"],
                     distribution_id=distribution.id,
                     date=date.today(),
+                    order_id=distribution.order_id,
+                    payment_id=distribution.payment_id,
                 )
 
             # Update distribution
@@ -341,24 +342,56 @@ class TipService:
         amount: Decimal,
         distribution_id: int,
         date: date,
+        order_id: Optional[int] = None,
+        payment_id: Optional[int] = None,
     ):
         """Create a tip record for payroll processing"""
 
-        # Check if TipRecord exists in payroll module
-        # TODO: Uncomment when TipRecord is created in payroll module
-        # try:
-        #     tip_record = TipRecord(
-        #         staff_id=staff_id,
-        #         amount=amount,
-        #         date=date,
-        #         distribution_id=distribution_id,
-        #         status='pending'
-        #     )
-        #     db.add(tip_record)
-        # except Exception as e:
-        #     # Log but don't fail if payroll module doesn't have TipRecord
-        #     logger.warning(f"Could not create tip record: {e}")
-        logger.warning("TipRecord not implemented yet - skipping tip record creation")
+        # Get restaurant_id from the order or payment
+        restaurant_id = None
+        location_id = None
+        
+        if order_id:
+            order_result = await db.execute(
+                select(Order).where(Order.id == order_id)
+            )
+            order = order_result.scalar_one_or_none()
+            if order:
+                restaurant_id = order.restaurant_id
+                location_id = order.location_id
+        elif payment_id:
+            payment_result = await db.execute(
+                select(Payment).where(Payment.id == payment_id)
+                .options(selectinload(Payment.order))
+            )
+            payment = payment_result.scalar_one_or_none()
+            if payment and payment.order:
+                restaurant_id = payment.order.restaurant_id
+                location_id = payment.order.location_id
+        
+        # If we still don't have restaurant_id, log error and skip
+        if not restaurant_id:
+            logger.error(f"Cannot create tip record without restaurant_id for staff {staff_id}")
+            return
+
+        # Create tip record for payroll processing
+        try:
+            tip_record = TipRecord(
+                staff_id=staff_id,
+                tip_amount=amount,
+                tip_date=date,
+                tip_type='card',  # Default to card for now
+                is_processed=False,
+                source_system='payment_system',
+                restaurant_id=restaurant_id,
+                location_id=location_id,
+                order_id=order_id,
+                payment_id=payment_id,
+            )
+            db.add(tip_record)
+        except Exception as e:
+            # Log but don't fail if there's an issue
+            logger.warning(f"Could not create tip record: {e}")
 
     async def get_staff_tips_summary(
         self, db: AsyncSession, staff_id: int, start_date: date, end_date: date

@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from .payment_endpoints import router as payment_endpoints_router
 from .split_bill_endpoints import router as split_bill_router
 from .refund_endpoints import router as refund_router
+from .reconciliation_endpoints import router as reconciliation_router
 
 # Create main payment router
 payment_router = APIRouter()
@@ -12,5 +13,6 @@ payment_router = APIRouter()
 payment_router.include_router(payment_endpoints_router)
 payment_router.include_router(split_bill_router)
 payment_router.include_router(refund_router)
+payment_router.include_router(reconciliation_router)
 
 __all__ = ["payment_router"]
