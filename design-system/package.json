@@ -19,6 +19,7 @@
     "build:exports": "node scripts/build-exports.js",
     "watch": "style-dictionary build --watch",
     "validate": "node scripts/validate-schemas.js",
+    "verify": "node scripts/verify-build.js",
     "test": "jest",
     "test:contrast": "node scripts/test-contrast.js",
     "prepublishOnly": "npm run build && npm run validate"
