@@ -79,14 +79,18 @@ const OrderDetailsScreen: React.FC = () => {
   const orderId = route.params?.orderId;
   const orderIdString = typeof orderId === 'number' ? orderId.toString() : orderId;
   
-  // Guard against undefined orderId
-  if (!orderId) {
-    // Handle missing orderId - navigate back or show error
-    React.useEffect(() => {
+  // Check if orderId is missing (null or undefined, but not 0)
+  const isOrderIdMissing = orderId === null || orderId === undefined;
+  
+  React.useEffect(() => {
+    if (isOrderIdMissing) {
       Alert.alert('Error', 'Order ID is missing', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
-    }, []);
+    }
+  }, [isOrderIdMissing, navigation]);
+  
+  if (isOrderIdMissing) {
     return null;
   }
 
@@ -146,7 +150,7 @@ const OrderDetailsScreen: React.FC = () => {
       duration: animations.duration.normal,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const statusColors: Record<string, string> = {
     pending: colors.warning[500],
