@@ -75,7 +75,27 @@ const OrderDetailsScreen: React.FC = () => {
   const [additionalNotes, setAdditionalNotes] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock data - replace with actual data fetching based on route.params.orderId
+  // Type guard for orderId - support both string and number for backward compatibility
+  const orderId = route.params?.orderId;
+  const orderIdString = typeof orderId === 'number' ? orderId.toString() : orderId;
+  
+  // Check if orderId is missing (null or undefined, but not 0)
+  const isOrderIdMissing = orderId === null || orderId === undefined;
+  
+  React.useEffect(() => {
+    if (isOrderIdMissing) {
+      Alert.alert('Error', 'Order ID is missing', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    }
+  }, [isOrderIdMissing, navigation]);
+  
+  if (isOrderIdMissing) {
+    return null;
+  }
+
+  // Mock data - replace with actual data fetching based on orderIdString
+  // TODO: Use orderIdString for API call: fetchOrder(orderIdString)
   const [order] = useState<OrderDetails>({
     id: '1',
     orderNumber: '#ORD-001',
@@ -130,7 +150,7 @@ const OrderDetailsScreen: React.FC = () => {
       duration: animations.duration.normal,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [fadeAnim]);
 
   const statusColors: Record<string, string> = {
     pending: colors.warning[500],
@@ -472,7 +492,7 @@ const OrderDetailsScreen: React.FC = () => {
                   variant="primary"
                   size="small"
                   icon="credit-card"
-                  onPress={() => navigation.navigate('ProcessPayment', { orderId: order.id })}
+                  onPress={() => navigation.navigate('ProcessPayment', { orderId: orderIdString })}
                 />
               )}
             </View>

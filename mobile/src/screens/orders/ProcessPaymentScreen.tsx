@@ -34,7 +34,25 @@ interface PaymentMethod {
 const ProcessPaymentScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { orderId } = route.params;
+  
+  // Type guard for orderId - support both string and number for backward compatibility
+  const orderId = route.params?.orderId;
+  const orderIdString = typeof orderId === 'number' ? orderId.toString() : orderId;
+  
+  // Check if orderId is missing (null or undefined, but not 0)
+  const isOrderIdMissing = orderId === null || orderId === undefined;
+  
+  React.useEffect(() => {
+    if (isOrderIdMissing) {
+      Alert.alert('Error', 'Order ID is missing', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    }
+  }, [isOrderIdMissing, navigation]);
+  
+  if (isOrderIdMissing) {
+    return null;
+  }
 
   const [selectedMethod, setSelectedMethod] = useState<string>('card');
   const [tipAmount, setTipAmount] = useState<string>('');
@@ -44,7 +62,8 @@ const ProcessPaymentScreen: React.FC = () => {
   const [emailReceipt, setEmailReceipt] = useState(true);
   const [splitPayment, setSplitPayment] = useState(false);
 
-  // Mock order data - replace with actual data fetching
+  // Mock order data - replace with actual data fetching using orderIdString
+  // TODO: Use orderIdString for API call: fetchOrder(orderIdString)
   const orderData = {
     orderNumber: '#ORD-001',
     subtotal: 30.96,
@@ -85,7 +104,7 @@ const ProcessPaymentScreen: React.FC = () => {
           {
             text: 'OK',
             onPress: () => {
-              navigation.navigate('OrderDetails', { orderId, paymentProcessed: true });
+              navigation.navigate('OrderDetails', { orderId: orderIdString, paymentProcessed: true });
             },
           },
         ]
