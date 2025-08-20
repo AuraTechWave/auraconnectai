@@ -75,7 +75,11 @@ const OrderDetailsScreen: React.FC = () => {
   const [additionalNotes, setAdditionalNotes] = useState('');
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Mock data - replace with actual data fetching based on route.params.orderId
+  // Type guard for orderId - support both string and number for backward compatibility
+  const orderId = route.params?.orderId;
+  const orderIdString = typeof orderId === 'number' ? orderId.toString() : orderId;
+
+  // Mock data - replace with actual data fetching based on orderIdString
   const [order] = useState<OrderDetails>({
     id: '1',
     orderNumber: '#ORD-001',

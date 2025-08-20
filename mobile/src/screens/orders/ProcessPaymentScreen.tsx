@@ -34,7 +34,10 @@ interface PaymentMethod {
 const ProcessPaymentScreen: React.FC = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { orderId } = route.params;
+  
+  // Type guard for orderId - support both string and number for backward compatibility
+  const orderId = route.params?.orderId;
+  const orderIdString = typeof orderId === 'number' ? orderId.toString() : orderId;
 
   const [selectedMethod, setSelectedMethod] = useState<string>('card');
   const [tipAmount, setTipAmount] = useState<string>('');

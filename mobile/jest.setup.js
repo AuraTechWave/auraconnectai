@@ -98,5 +98,8 @@ jest.mock('react-native-toast-message', () => ({
   show: jest.fn(),
 }));
 
+// Mock MaterialCommunityIcons
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'MaterialCommunityIcons');
+
 // Silence the warning: Animated: `useNativeDriver` is not supported
 jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
