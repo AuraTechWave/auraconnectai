@@ -1,0 +1,50 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@auraconnect.ai
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@auraconnect.ai
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+
+---
+# Certificate for AuraConnect domains
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: auraconnect-tls
+  namespace: auraconnect
+spec:
+  secretName: auraconnect-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: auraconnect.ai
+  dnsNames:
+  - auraconnect.ai
+  - www.auraconnect.ai
+  - api.auraconnect.ai
+  duration: 2160h # 90 days
+  renewBefore: 720h # 30 days before expiry

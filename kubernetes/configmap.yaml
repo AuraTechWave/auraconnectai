@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auraconnect-config
+  namespace: auraconnect
+data:
+  # Application Configuration
+  ENVIRONMENT: "production"
+  PORT: "8000"
+  
+  # Database Configuration (non-sensitive)
+  POSTGRES_DB: "auraconnect"
+  POSTGRES_USER: "auraconnect"
+  
+  # Redis Configuration (non-sensitive)
+  REDIS_DB: "0"
+  
+  # JWT Configuration (non-sensitive)
+  JWT_ALGORITHM: "HS256"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+  JWT_REFRESH_TOKEN_EXPIRE_DAYS: "7"
+  
+  # CORS Configuration
+  CORS_ORIGINS: "https://auraconnect.ai,https://www.auraconnect.ai"
+  
+  # Email Configuration (non-sensitive)
+  SMTP_HOST: "smtp.gmail.com"
+  SMTP_PORT: "587"
+  EMAIL_FROM: "noreply@auraconnect.ai"
+  
+  # AWS Configuration (non-sensitive)
+  AWS_REGION: "us-east-1"
+  
+  # Feature Flags
+  ENABLE_WEBHOOKS: "true"
+  ENABLE_WEBSOCKETS: "true"
+  ENABLE_BACKGROUND_JOBS: "true"
+  
+  # Frontend Configuration
+  REACT_APP_ENVIRONMENT: "production"
+  REACT_APP_API_URL: "https://api.auraconnect.ai"
+  REACT_APP_WEBSOCKET_URL: "wss://api.auraconnect.ai"
