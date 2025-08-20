@@ -54,15 +54,15 @@ class PaymentActionService:
             }
 
             # Track the event
-            # TODO: Fix order_tracking_service instance
-            # await order_tracking_service.track_payment_event(
-            #     db=db,
-            #     order_id=payment.order_id,
-            #     payment_id=payment.id,
-            #     event_type='payment_action_required',
-            #     action_type=action_type,
-            #     action_url=action_url
-            # )
+            from ...orders.services.order_tracking_service import order_tracking_service
+            await order_tracking_service.track_payment_event(
+                db=db,
+                order_id=payment.order_id,
+                payment_id=payment.id,
+                event_type='payment_action_required',
+                action_type=action_type,
+                action_url=action_url
+            )
 
             await db.commit()
 
@@ -126,14 +126,14 @@ class PaymentActionService:
                 payment.failure_message = "User action was not completed successfully"
 
             # Track the event
-            # TODO: Fix order_tracking_service instance
-            # await order_tracking_service.track_payment_event(
-            #     db=db,
-            #     order_id=payment.order_id,
-            #     payment_id=payment.id,
-            #     event_type='payment_action_completed',
-            #     success=success
-            # )
+            from ...orders.services.order_tracking_service import order_tracking_service
+            await order_tracking_service.track_payment_event(
+                db=db,
+                order_id=payment.order_id,
+                payment_id=payment.id,
+                event_type='payment_action_completed',
+                success=success
+            )
 
             await db.commit()
             return payment
@@ -176,14 +176,14 @@ class PaymentActionService:
                     payment.failure_message = "Payment action expired"
 
                     # Track cancellation
-                    # TODO: Fix order_tracking_service instance
-                    # await order_tracking_service.track_payment_event(
-                    #     db=db,
-                    #     order_id=payment.order_id,
-                    #     payment_id=payment.id,
-                    #     event_type='payment_cancelled',
-                    #     reason='action_expired'
-                    # )
+                    from ...orders.services.order_tracking_service import order_tracking_service
+                    await order_tracking_service.track_payment_event(
+                        db=db,
+                        order_id=payment.order_id,
+                        payment_id=payment.id,
+                        event_type='payment_cancelled',
+                        reason='action_expired'
+                    )
 
                 await db.commit()
 

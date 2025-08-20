@@ -3,6 +3,7 @@ from .payroll_models import (
     PayrollPolicy,
     EmployeePayment,
     EmployeePaymentTaxApplication,
+    TipRecord,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "PayrollPolicy",
     "EmployeePayment",
     "EmployeePaymentTaxApplication",
+    "TipRecord",
 ]

@@ -10,6 +10,7 @@ from sqlalchemy import (
     Enum,
     UniqueConstraint,
     Index,
+    Date,
 )
 from sqlalchemy.orm import relationship
 from core.database import Base
@@ -219,3 +220,59 @@ class EmployeePaymentTaxApplication(Base, TimestampMixin):
         Index("ix_tax_applications_tax_rule_id", "tax_rule_id"),
         Index("ix_tax_applications_calculation_date", "calculation_date"),
     )
+
+
+class TipRecord(Base, TimestampMixin):
+    """Records tips received by employees from various payment sources"""
+    __tablename__ = "tip_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True, index=True)
+    payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True, index=True)
+    
+    # Tip details
+    tip_amount = Column(Numeric(10, 2), nullable=False)
+    tip_type = Column(String(20), nullable=False)  # 'cash', 'card', 'app'
+    tip_date = Column(Date, nullable=False, index=True)
+    shift_id = Column(Integer, ForeignKey("shifts.id"), nullable=True)
+    
+    # Distribution details
+    is_pooled = Column(Boolean, default=False)
+    pool_percentage = Column(Numeric(5, 2), nullable=True)
+    distributed_amount = Column(Numeric(10, 2), nullable=True)
+    
+    # Payroll integration
+    payroll_period_id = Column(Integer, ForeignKey("payroll_periods.id"), nullable=True)
+    is_processed = Column(Boolean, default=False)
+    processed_date = Column(DateTime, nullable=True)
+    
+    # Tax tracking
+    is_cash = Column(Boolean, default=False)
+    reported_to_irs = Column(Boolean, default=False)
+    reporting_date = Column(Date, nullable=True)
+    
+    # Metadata
+    source_system = Column(String(50), nullable=True)  # 'pos', 'manual', 'app'
+    reference_number = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    
+    # Tenant isolation
+    restaurant_id = Column(Integer, ForeignKey("restaurants.id"), nullable=False, index=True)
+    location_id = Column(Integer, ForeignKey("locations.id"), nullable=True)
+    
+    # Relationships
+    employee = relationship("User", foreign_keys=[employee_id])
+    order = relationship("Order", foreign_keys=[order_id])
+    payment = relationship("Payment", foreign_keys=[payment_id])
+    shift = relationship("Shift", foreign_keys=[shift_id])
+    payroll_period = relationship("PayrollPeriod", foreign_keys=[payroll_period_id])
+    restaurant = relationship("Restaurant", foreign_keys=[restaurant_id])
+    location = relationship("Location", foreign_keys=[location_id])
+    
+    __table_args__ = (
+        Index("ix_tip_records_employee_date", "employee_id", "tip_date"),
+        Index("ix_tip_records_payroll_period", "payroll_period_id", "is_processed"),
+        Index("ix_tip_records_restaurant", "restaurant_id"),
+    )
+

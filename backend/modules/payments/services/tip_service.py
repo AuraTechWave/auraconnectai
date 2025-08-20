@@ -14,8 +14,7 @@ from ..models.payment_models import Payment, PaymentStatus
 from ...orders.models.order_models import Order
 from ...staff.models.staff_models import Staff, StaffRole
 
-# TODO: TipRecord model needs to be created in payroll module
-# from ...payroll.models.payroll_models import TipRecord
+from ...payroll.models.payroll_models import TipRecord
 from ..monitoring.split_bill_metrics import SplitBillMetrics, track_tip_distribution
 
 logger = logging.getLogger(__name__)
@@ -344,21 +343,21 @@ class TipService:
     ):
         """Create a tip record for payroll processing"""
 
-        # Check if TipRecord exists in payroll module
-        # TODO: Uncomment when TipRecord is created in payroll module
-        # try:
-        #     tip_record = TipRecord(
-        #         staff_id=staff_id,
-        #         amount=amount,
-        #         date=date,
-        #         distribution_id=distribution_id,
-        #         status='pending'
-        #     )
-        #     db.add(tip_record)
-        # except Exception as e:
-        #     # Log but don't fail if payroll module doesn't have TipRecord
-        #     logger.warning(f"Could not create tip record: {e}")
-        logger.warning("TipRecord not implemented yet - skipping tip record creation")
+        # Create tip record for payroll processing
+        try:
+            tip_record = TipRecord(
+                employee_id=staff_id,
+                tip_amount=amount,
+                tip_date=date,
+                tip_type='card',  # Default to card for now
+                is_processed=False,
+                source_system='payment_system',
+                restaurant_id=1,  # TODO: Get from context
+            )
+            db.add(tip_record)
+        except Exception as e:
+            # Log but don't fail if there's an issue
+            logger.warning(f"Could not create tip record: {e}")
 
     async def get_staff_tips_summary(
         self, db: AsyncSession, staff_id: int, start_date: date, end_date: date

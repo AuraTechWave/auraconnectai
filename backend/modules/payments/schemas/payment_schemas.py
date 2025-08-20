@@ -191,3 +191,44 @@ class PaymentStats(BaseModel):
     gateway_breakdown: Dict[str, Dict[str, Any]]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReconciliationReportResponse(BaseModel):
+    """Daily reconciliation report response"""
+    
+    report_date: str
+    generated_at: str
+    summary: Dict[str, Any]
+    by_gateway: Dict[str, Dict[str, Any]]
+    refunds: Dict[str, Any]
+    discrepancies: List[Dict[str, Any]]
+    hourly_breakdown: Dict[int, Dict[str, Any]]
+    payment_methods: Dict[str, Dict[str, Any]]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SettlementReportResponse(BaseModel):
+    """Gateway settlement report response"""
+    
+    gateway: str
+    period: Dict[str, str]
+    generated_at: str
+    summary: Dict[str, Any]
+    daily_breakdown: Dict[str, Dict[str, Any]]
+    payment_ids: List[int]
+    refund_ids: List[int]
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FinancialSummaryResponse(BaseModel):
+    """Financial summary report response"""
+    
+    period: Dict[str, Any]
+    generated_at: str
+    summary: Dict[str, Any]
+    by_gateway: List[Dict[str, Any]]
+    trends: Dict[str, Any]
+    
+    model_config = ConfigDict(from_attributes=True)
