@@ -34,6 +34,9 @@ from modules.analytics.schemas.pos_analytics_schemas import (
 from .pos.base_service import POSAnalyticsBaseService
 from .pos_trends_service import POSTrendsService
 from .pos_alerts_service import POSAlertsService
+from .optimized_queries import OptimizedAnalyticsQueries
+from ..utils.query_monitor import monitor_query_performance
+from ..utils.cache_manager import cached_query
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +51,7 @@ class POSDashboardService(POSAnalyticsBaseService):
         self.trends_service = POSTrendsService(db)
         self.alerts_service = POSAlertsService(db)
 
+    @monitor_query_performance("pos_dashboard.get_dashboard_data")
     async def get_dashboard_data(
         self,
         start_date: datetime,
@@ -171,6 +175,8 @@ class POSDashboardService(POSAnalyticsBaseService):
             time_range=f"{start_date.isoformat()} to {end_date.isoformat()}",
         )
 
+    @monitor_query_performance("pos_dashboard.get_provider_summaries")
+    @cached_query("pos_provider_summaries", ttl=300)
     async def _get_provider_summaries(
         self,
         start_date: datetime,
@@ -178,73 +184,19 @@ class POSDashboardService(POSAnalyticsBaseService):
         provider_ids: Optional[List[int]] = None,
         include_offline: bool = True,
     ) -> List[POSProviderSummary]:
-        """Get summary metrics for each provider"""
+        """Get summary metrics for each provider using optimized queries"""
 
-        # Use materialized view or optimized query
-        query = (
-            self.db.query(
-                ExternalPOSProvider.id,
-                ExternalPOSProvider.provider_name,
-                ExternalPOSProvider.provider_code,
-                ExternalPOSProvider.is_active,
-                func.sum(POSAnalyticsSnapshot.total_transactions).label(
-                    "total_transactions"
-                ),
-                func.sum(POSAnalyticsSnapshot.successful_transactions).label(
-                    "successful_transactions"
-                ),
-                func.sum(POSAnalyticsSnapshot.failed_transactions).label(
-                    "failed_transactions"
-                ),
-                func.sum(POSAnalyticsSnapshot.total_transaction_value).label(
-                    "total_value"
-                ),
-                func.sum(POSAnalyticsSnapshot.total_syncs).label("total_syncs"),
-                func.sum(POSAnalyticsSnapshot.successful_syncs).label(
-                    "successful_syncs"
-                ),
-                func.sum(POSAnalyticsSnapshot.total_webhooks).label("total_webhooks"),
-                func.sum(POSAnalyticsSnapshot.successful_webhooks).label(
-                    "successful_webhooks"
-                ),
-                func.avg(POSAnalyticsSnapshot.uptime_percentage).label("uptime"),
-                func.avg(POSAnalyticsSnapshot.average_sync_time_ms).label(
-                    "avg_sync_time"
-                ),
-                func.avg(POSAnalyticsSnapshot.average_webhook_processing_time_ms).label(
-                    "avg_webhook_time"
-                ),
-            )
-            .join(
-                POSAnalyticsSnapshot,
-                POSAnalyticsSnapshot.provider_id == ExternalPOSProvider.id,
-            )
-            .filter(
-                POSAnalyticsSnapshot.snapshot_date >= start_date.date(),
-                POSAnalyticsSnapshot.snapshot_date <= end_date.date(),
-            )
+        # Use the optimized query that eliminates N+1 patterns
+        results = OptimizedAnalyticsQueries.get_provider_summaries_optimized(
+            self.db,
+            start_date,
+            end_date,
+            provider_ids,
+            include_offline,
         )
-
-        if provider_ids:
-            query = query.filter(ExternalPOSProvider.id.in_(provider_ids))
-
-        if not include_offline:
-            query = query.filter(ExternalPOSProvider.is_active == True)
-
-        query = query.group_by(
-            ExternalPOSProvider.id,
-            ExternalPOSProvider.provider_name,
-            ExternalPOSProvider.provider_code,
-            ExternalPOSProvider.is_active,
-        )
-
-        results = query.all()
 
         summaries = []
         for row in results:
-            # Get terminal stats
-            terminal_stats = self._get_provider_terminal_stats(row.id)
-
             # Calculate rates
             total_tx = row.total_transactions or 0
             success_tx = row.successful_transactions or 0
@@ -262,19 +214,14 @@ class POSDashboardService(POSAnalyticsBaseService):
                 (success_webhooks / total_webhooks * 100) if total_webhooks > 0 else 0.0
             )
 
-            # Calculate health status
+            # Calculate health status using terminal stats from the optimized query
+            terminal_stats = {
+                "total": row.total_terminals or 0,
+                "active": row.active_terminals or 0,
+                "offline": row.offline_terminals or 0,
+            }
             health_status = self._calculate_provider_health_status(
                 terminal_stats, tx_success_rate, row.uptime or 100.0
-            )
-
-            # Count active alerts
-            active_alerts = (
-                self.db.query(POSAnalyticsAlert)
-                .filter(
-                    POSAnalyticsAlert.provider_id == row.id,
-                    POSAnalyticsAlert.is_active == True,
-                )
-                .count()
             )
 
             summaries.append(
@@ -283,9 +230,9 @@ class POSDashboardService(POSAnalyticsBaseService):
                     provider_name=row.provider_name,
                     provider_code=row.provider_code,
                     is_active=row.is_active,
-                    total_terminals=terminal_stats["total"],
-                    active_terminals=terminal_stats["active"],
-                    offline_terminals=terminal_stats["offline"],
+                    total_terminals=row.total_terminals or 0,
+                    active_terminals=row.active_terminals or 0,
+                    offline_terminals=row.offline_terminals or 0,
                     total_transactions=total_tx,
                     successful_transactions=success_tx,
                     failed_transactions=row.failed_transactions or 0,
@@ -298,7 +245,7 @@ class POSDashboardService(POSAnalyticsBaseService):
                     webhook_success_rate=webhook_success_rate,
                     overall_health_status=health_status,
                     uptime_percentage=row.uptime or 100.0,
-                    active_alerts=active_alerts,
+                    active_alerts=row.active_alerts or 0,
                 )
             )
 
