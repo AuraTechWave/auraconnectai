@@ -27,10 +27,9 @@ from .security_config import (
     DISABLED_API_VERSIONS,
     IS_PRODUCTION
 )
-from .audit_logger import AuditLogger
+from .audit_logger import audit_logger
 
 logger = logging.getLogger(__name__)
-audit_logger = AuditLogger()
 
 
 class SecurityMiddleware(BaseHTTPMiddleware):
@@ -213,19 +212,18 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             # Only capture body for certain content types
             content_type = request.headers.get("content-type", "")
             if "application/json" in content_type:
-                # Read body (this consumes the stream, so we need to restore it)
+                # FastAPI/Starlette automatically caches the body after first read
+                # No need to manually restore it
                 body = await request.body()
                 
                 # Parse JSON
                 if body:
-                    body_json = json.loads(body)
-                    
-                    # Restore body for downstream processing
-                    async def receive():
-                        return {"type": "http.request", "body": body}
-                    request._receive = receive
-                    
-                    return body_json
+                    try:
+                        body_json = json.loads(body)
+                        return body_json
+                    except json.JSONDecodeError:
+                        logger.warning("Request body is not valid JSON")
+                        return None
         except Exception as e:
             logger.warning(f"Failed to capture request body for audit: {e}")
         

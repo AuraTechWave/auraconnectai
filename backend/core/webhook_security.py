@@ -159,8 +159,10 @@ class WebhookSignatureValidator:
         # Create payload to sign
         if timestamp:
             # Include timestamp in signature to prevent replay attacks
-            payload = f"{timestamp}.{body.decode('utf-8')}"
-            payload_bytes = payload.encode('utf-8')
+            # Combine timestamp and body at the bytes level to avoid encoding issues
+            timestamp_bytes = timestamp.encode('utf-8')
+            separator_bytes = b'.'
+            payload_bytes = timestamp_bytes + separator_bytes + body
         else:
             payload_bytes = body
         
