@@ -10,7 +10,7 @@ module.exports = {
     'prettier',
   ],
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'jsx-a11y', 'prettier'],
+  plugins: ['@typescript-eslint', 'react', 'react-hooks', 'jsx-a11y', 'prettier', 'unused-imports'],
   parserOptions: {
     ecmaFeatures: {
       jsx: true,
@@ -24,9 +24,16 @@ module.exports = {
     'react/prop-types': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    '@typescript-eslint/no-unused-vars': 'off', // Handled by unused-imports
+    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-vars': [
+      'warn',
+      {
+        vars: 'all',
+        varsIgnorePattern: '^_',
+        args: 'after-used',
+        argsIgnorePattern: '^_',
+      },
     ],
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'react-hooks/rules-of-hooks': 'error',
@@ -65,10 +72,21 @@ module.exports = {
     'jsx-a11y/scope': 'off',
     'jsx-a11y/tabindex-no-positive': 'off',
     // Custom React Native accessibility rules
-    'react-native/no-unused-styles': 'warn',
+    'react-native/no-unused-styles': 'error',
     'react-native/no-inline-styles': 'warn',
     'react-native/no-color-literals': 'off',
     'react-native/no-raw-text': 'off',
+    // Performance-related rules
+    'react/jsx-no-bind': [
+      'warn',
+      {
+        allowArrowFunctions: true,
+        allowBind: false,
+        ignoreRefs: true,
+      },
+    ],
+    'react/no-did-mount-set-state': 'error',
+    'react/no-did-update-set-state': 'error',
   },
   settings: {
     react: {

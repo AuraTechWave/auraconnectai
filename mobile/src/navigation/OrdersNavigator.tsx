@@ -9,10 +9,10 @@ import { colors } from '../constants/designSystem';
 
 export type OrdersStackParamList = {
   OrdersList: undefined;
-  OrderDetails: { orderId: string | number }; // Support both for backward compatibility
+  OrderDetails: { orderId: string };
   CreateOrder: undefined;
   OfflineOrders: undefined;
-  ProcessPayment: { orderId: string | number }; // Support both for backward compatibility
+  ProcessPayment: { orderId: string };
 };
 
 const Stack = createNativeStackNavigator<OrdersStackParamList>();
