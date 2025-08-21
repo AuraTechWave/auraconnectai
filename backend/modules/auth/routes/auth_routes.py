@@ -22,6 +22,7 @@ from core.auth import (
 )
 from core.session_manager import session_manager
 from core.rbac_service import RBACService, get_rbac_service
+from core.auth_rate_limiter import check_auth_rate_limit
 
 
 class Token(BaseModel):
@@ -75,7 +76,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login", response_model=Token)
 async def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None
+    request: Request,
+    form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """
     Authenticate user and return JWT access and refresh tokens.
@@ -105,9 +107,16 @@ async def login_for_access_token(
          -d "username=admin&password=secret"
     ```
     """
-    # Rate limiting check could be added here
+    # Check rate limit
+    await check_auth_rate_limit(request, "login", form_data.username)
+    
+    # Authenticate user
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
+        # Record failed attempt for rate limiting
+        rate_limiter = request.app.state.auth_rate_limiter
+        await rate_limiter.record_failed_attempt(request, "login", form_data.username)
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -115,10 +124,18 @@ async def login_for_access_token(
         )
 
     if not user.is_active:
+        # Record failed attempt for disabled account
+        rate_limiter = request.app.state.auth_rate_limiter
+        await rate_limiter.record_failed_attempt(request, "login", form_data.username)
+        
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is disabled",
         )
+    
+    # Record successful attempt
+    rate_limiter = request.app.state.auth_rate_limiter
+    await rate_limiter.record_successful_attempt(request, "login", form_data.username)
 
     # Create session with tokens
     session_data = create_user_session(user, request)
