@@ -22,6 +22,8 @@ interface AvatarProps {
   status?: 'online' | 'offline' | 'busy' | 'away';
   onPress?: () => void;
   style?: ViewStyle;
+  accessible?: boolean;
+  accessibilityLabel?: string;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({
@@ -35,6 +37,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   status,
   onPress,
   style,
+  accessible = true,
+  accessibilityLabel,
 }) => {
   const getSize = (): number => {
     const sizes: Record<string, number> = {
@@ -173,8 +177,20 @@ export const Avatar: React.FC<AvatarProps> = ({
     );
   };
 
+  const getAccessibilityLabel = () => {
+    if (accessibilityLabel) return accessibilityLabel;
+    if (name) return `${name}'s avatar${status ? `, ${status}` : ''}`;
+    if (icon) return `${icon} avatar${status ? `, ${status}` : ''}`;
+    return `User avatar${status ? `, ${status}` : ''}`;
+  };
+
   const avatarContent = (
-    <View style={[getAvatarStyle(), style]}>
+    <View 
+      style={[getAvatarStyle(), style]}
+      accessible={accessible}
+      accessibilityRole={onPress ? 'button' : 'image'}
+      accessibilityLabel={getAccessibilityLabel()}
+    >
       {renderContent()}
       {status && <View style={getStatusStyle()} />}
     </View>
@@ -182,7 +198,11 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   if (onPress) {
     return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <TouchableOpacity 
+        onPress={onPress} 
+        activeOpacity={0.7}
+        accessible={false} // Avatar itself handles accessibility
+      >
         {avatarContent}
       </TouchableOpacity>
     );

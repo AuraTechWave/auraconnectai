@@ -1,0 +1,45 @@
+{
+  "font": {
+    "family": {
+      "primary": { "value": "System" },
+      "secondary": { "value": "System" },
+      "mono": { "value": "Courier" }
+    },
+    "size": {
+      "tiny": { "value": 10 },
+      "caption": { "value": 12 },
+      "body": { "value": 14 },
+      "bodyLarge": { "value": 16 },
+      "subtitle": { "value": 18 },
+      "title": { "value": 20 },
+      "h3": { "value": 24 },
+      "h2": { "value": 28 },
+      "h1": { "value": 32 },
+      "display": { "value": 48 }
+    },
+    "weight": {
+      "regular": { "value": "400" },
+      "medium": { "value": "500" },
+      "semiBold": { "value": "600" },
+      "bold": { "value": "700" }
+    },
+    "lineHeight": {
+      "tiny": { "value": 14 },
+      "caption": { "value": 16 },
+      "body": { "value": 20 },
+      "bodyLarge": { "value": 24 },
+      "subtitle": { "value": 26 },
+      "title": { "value": 28 },
+      "h3": { "value": 32 },
+      "h2": { "value": 36 },
+      "h1": { "value": 40 },
+      "display": { "value": 56 }
+    },
+    "letterSpacing": {
+      "tight": { "value": -0.5 },
+      "normal": { "value": 0 },
+      "wide": { "value": 0.5 },
+      "wider": { "value": 1 }
+    }
+  }
+}

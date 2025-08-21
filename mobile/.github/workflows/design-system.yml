@@ -1,0 +1,74 @@
+name: Design System Build
+
+on:
+  push:
+    paths:
+      - 'mobile/design-system/**'
+      - '.github/workflows/design-system.yml'
+  pull_request:
+    paths:
+      - 'mobile/design-system/**'
+      - '.github/workflows/design-system.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: mobile/design-system/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd mobile/design-system
+        npm ci
+    
+    - name: Build design tokens
+      run: |
+        cd mobile/design-system
+        npm run build
+    
+    - name: Verify generated files
+      run: |
+        echo "Checking generated React Native tokens..."
+        test -f mobile/src/constants/generated/tokens.js || exit 1
+        
+        echo "Checking TypeScript definitions..."
+        test -f mobile/design-system/build/ts/index.d.ts || exit 1
+        
+        echo "Checking iOS files..."
+        test -f mobile/design-system/build/ios/DesignTokens.h || exit 1
+        test -f mobile/design-system/build/ios/DesignTokens.m || exit 1
+        
+        echo "Checking Android files..."
+        test -f mobile/design-system/build/android/design_tokens_colors.xml || exit 1
+        test -f mobile/design-system/build/android/design_tokens_dimens.xml || exit 1
+        
+        echo "✅ All design token files generated successfully!"
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: design-tokens
+        path: |
+          mobile/src/constants/generated/
+          mobile/design-system/build/
+        retention-days: 7
+    
+    - name: Comment PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Design tokens built successfully! Check the artifacts for the generated files.'
+          })

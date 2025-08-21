@@ -197,6 +197,18 @@ const OfflineOrdersScreen: React.FC<OfflineOrdersScreenProps> = ({
             colors={[colors.primary]}
           />
         }
+        // Performance optimizations
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        initialNumToRender={10}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
+        onEndReachedThreshold={0.5}
+        getItemLayout={(data, index) => ({
+          length: 120, // Estimated height of order item
+          offset: 120 * index,
+          index,
+        })}
       />
 
       <TouchableOpacity

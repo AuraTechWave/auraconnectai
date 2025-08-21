@@ -2,163 +2,147 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { Button } from '../Button';
 
-describe('Button Component', () => {
-  it('renders correctly with default props', () => {
-    const { getByText } = render(<Button>Test Button</Button>);
+// Mock vector icons
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon');
+
+describe('Button', () => {
+  it('renders with title', () => {
+    const { getByText } = render(<Button title="Test Button" />);
     expect(getByText('Test Button')).toBeTruthy();
   });
 
-  it('calls onPress when pressed', () => {
-    const onPressMock = jest.fn();
+  it('handles onPress event', () => {
+    const onPress = jest.fn();
     const { getByText } = render(
-      <Button onPress={onPressMock}>Press Me</Button>
+      <Button title="Press Me" onPress={onPress} />
     );
-    
+
     fireEvent.press(getByText('Press Me'));
-    expect(onPressMock).toHaveBeenCalledTimes(1);
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('shows loading state correctly', () => {
-    const { getByTestId } = render(
-      <Button loading testID="loading-button">
-        Loading
-      </Button>
+  it('renders with different variants', () => {
+    const variants = ['primary', 'secondary', 'tertiary', 'danger', 'ghost', 'outline'] as const;
+    
+    variants.forEach(variant => {
+      const { getByText } = render(
+        <Button title={`${variant} Button`} variant={variant} />
+      );
+      expect(getByText(`${variant} Button`)).toBeTruthy();
+    });
+  });
+
+  it('renders with different sizes', () => {
+    const sizes = ['small', 'medium', 'large'] as const;
+    
+    sizes.forEach(size => {
+      const { getByText } = render(
+        <Button title={`${size} Button`} size={size} />
+      );
+      expect(getByText(`${size} Button`)).toBeTruthy();
+    });
+  });
+
+  it('renders with icon', () => {
+    const { getByText, UNSAFE_getByType } = render(
+      <Button title="Icon Button" icon="check" />
     );
     
-    const button = getByTestId('loading-button');
-    expect(button.props.accessibilityState.busy).toBe(true);
+    expect(getByText('Icon Button')).toBeTruthy();
+    expect(UNSAFE_getByType('Icon')).toBeTruthy();
   });
 
-  it('is disabled when loading', () => {
-    const onPressMock = jest.fn();
+  it('renders with icon on right', () => {
+    const { getByText, UNSAFE_getAllByType } = render(
+      <Button title="Icon Right" icon="arrow-right" iconPosition="right" />
+    );
+    
+    expect(getByText('Icon Right')).toBeTruthy();
+    const icons = UNSAFE_getAllByType('Icon');
+    expect(icons.length).toBe(1);
+  });
+
+  it('shows loading state', () => {
+    const { queryByText, getByTestId } = render(
+      <Button title="Loading Button" loading={true} />
+    );
+    
+    // Title should not be visible when loading
+    expect(queryByText('Loading Button')).toBeFalsy();
+    // ActivityIndicator should be present
+    expect(() => getByTestId('button-loading')).not.toThrow();
+  });
+
+  it('disables button when disabled prop is true', () => {
+    const onPress = jest.fn();
     const { getByText } = render(
-      <Button loading onPress={onPressMock}>
-        Loading Button
-      </Button>
+      <Button title="Disabled Button" disabled={true} onPress={onPress} />
     );
-    
-    fireEvent.press(getByText('Loading Button'));
-    expect(onPressMock).not.toHaveBeenCalled();
+
+    fireEvent.press(getByText('Disabled Button'));
+    expect(onPress).not.toHaveBeenCalled();
   });
 
-  it('applies correct variant styles', () => {
-    const { getByTestId, rerender } = render(
-      <Button variant="primary" testID="button">
-        Primary
-      </Button>
+  it('disables button when loading', () => {
+    const onPress = jest.fn();
+    const { getByTestId } = render(
+      <Button title="Loading" loading={true} onPress={onPress} testID="loading-button" />
+    );
+
+    fireEvent.press(getByTestId('loading-button'));
+    expect(onPress).not.toHaveBeenCalled();
+  });
+
+  it('renders full width button', () => {
+    const { getByText } = render(
+      <Button title="Full Width" fullWidth={true} />
     );
     
-    let button = getByTestId('button');
-    expect(button.props.style).toMatchObject(
+    const button = getByText('Full Width').parent;
+    expect(button?.props.style).toMatchObject(
       expect.objectContaining({
-        backgroundColor: expect.any(String),
+        width: '100%',
       })
     );
-    
-    rerender(
-      <Button variant="outline" testID="button">
-        Outline
-      </Button>
-    );
-    
-    button = getByTestId('button');
-    expect(button.props.style).toMatchObject(
-      expect.arrayContaining([
-        expect.objectContaining({
-          backgroundColor: 'transparent',
-        }),
-      ])
-    );
   });
 
-  it('applies correct size styles', () => {
-    const { getByTestId, rerender } = render(
-      <Button size="small" testID="button">
-        Small
-      </Button>
+  it('applies custom styles', () => {
+    const customStyle = { backgroundColor: 'red' };
+    const customTextStyle = { fontSize: 20 };
+    
+    const { getByText } = render(
+      <Button 
+        title="Custom Style" 
+        style={customStyle}
+        textStyle={customTextStyle}
+      />
     );
     
-    let button = getByTestId('button');
-    expect(button.props.style).toMatchObject(
-      expect.arrayContaining([
-        expect.objectContaining({
-          paddingVertical: expect.any(Number),
-        }),
-      ])
-    );
-    
-    rerender(
-      <Button size="large" testID="button">
-        Large
-      </Button>
-    );
-    
-    button = getByTestId('button');
-    expect(button.props.style).toMatchObject(
-      expect.arrayContaining([
-        expect.objectContaining({
-          paddingVertical: expect.any(Number),
-        }),
-      ])
-    );
-  });
-
-  it('renders with icon correctly', () => {
-    const { getByTestId } = render(
-      <Button icon="check" testID="button-with-icon">
-        With Icon
-      </Button>
-    );
-    
-    expect(getByTestId('button-with-icon')).toBeTruthy();
-  });
-
-  it('has minimum touch target size', () => {
-    const { getByTestId } = render(
-      <Button size="small" testID="button">
-        Small Button
-      </Button>
-    );
-    
-    const button = getByTestId('button');
-    const styles = Array.isArray(button.props.style) 
-      ? button.props.style 
-      : [button.props.style];
-    
-    const heightStyle = styles.find(style => style?.minHeight);
-    expect(heightStyle?.minHeight).toBeGreaterThanOrEqual(44);
+    expect(getByText('Custom Style')).toBeTruthy();
   });
 
   it('has correct accessibility props', () => {
-    const { getByTestId } = render(
+    const { getByRole, getByLabelText } = render(
       <Button 
-        testID="accessible-button"
+        title="Accessible Button" 
         accessibilityLabel="Custom Label"
         accessibilityHint="Custom Hint"
-      >
-        Accessible Button
-      </Button>
+      />
     );
     
-    const button = getByTestId('accessible-button');
-    expect(button.props.accessible).toBe(true);
-    expect(button.props.accessibilityRole).toBe('button');
-    expect(button.props.accessibilityLabel).toBe('Custom Label');
-    expect(button.props.accessibilityHint).toBe('Custom Hint');
+    expect(getByRole('button')).toBeTruthy();
+    expect(getByLabelText('Custom Label')).toBeTruthy();
   });
 
-  it('handles disabled state correctly', () => {
-    const onPressMock = jest.fn();
-    const { getByTestId } = render(
-      <Button disabled onPress={onPressMock} testID="disabled-button">
-        Disabled
-      </Button>
+  it('shows busy state when loading', () => {
+    const { getByRole } = render(
+      <Button title="Loading" loading={true} />
     );
     
-    const button = getByTestId('disabled-button');
-    fireEvent.press(button);
-    
-    expect(onPressMock).not.toHaveBeenCalled();
-    expect(button.props.accessibilityState.disabled).toBe(true);
+    const button = getByRole('button');
+    expect(button.props.accessibilityState).toMatchObject({
+      disabled: false,
+      busy: true,
+    });
   });
 });

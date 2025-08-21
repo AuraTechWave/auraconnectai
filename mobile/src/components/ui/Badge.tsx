@@ -9,6 +9,8 @@ interface BadgeProps {
   dot?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessible?: boolean;
+  accessibilityLabel?: string;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
@@ -18,6 +20,8 @@ export const Badge: React.FC<BadgeProps> = ({
   dot = false,
   style,
   textStyle,
+  accessible = true,
+  accessibilityLabel,
 }) => {
   const getBadgeStyle = (): ViewStyle => {
     const sizeStyles: Record<string, ViewStyle> = {
@@ -100,11 +104,23 @@ export const Badge: React.FC<BadgeProps> = ({
   };
 
   if (dot) {
-    return <View style={[getBadgeStyle(), style]} />;
+    return (
+      <View 
+        style={[getBadgeStyle(), style]} 
+        accessible={accessible}
+        accessibilityRole="none"
+        accessibilityLabel={accessibilityLabel || `${variant} indicator`}
+      />
+    );
   }
 
   return (
-    <View style={[getBadgeStyle(), style]}>
+    <View 
+      style={[getBadgeStyle(), style]}
+      accessible={accessible}
+      accessibilityRole="text"
+      accessibilityLabel={accessibilityLabel || `${label}`}
+    >
       <Text style={[getTextStyle(), textStyle]}>{label}</Text>
     </View>
   );

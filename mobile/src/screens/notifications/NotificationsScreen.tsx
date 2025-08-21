@@ -207,6 +207,18 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
             colors={[colors.primary]}
           />
         }
+        // Performance optimizations
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        initialNumToRender={10}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
+        onEndReachedThreshold={0.5}
+        getItemLayout={(data, index) => ({
+          length: 100, // Estimated height of notification item
+          offset: 100 * index,
+          index,
+        })}
       />
 
       <NotificationSettingsModal

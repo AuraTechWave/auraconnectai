@@ -276,6 +276,8 @@ const OrderDetailsScreen: React.FC = () => {
                   label={order.status.toUpperCase()}
                   style={{ backgroundColor: statusColors[order.status] }}
                   textStyle={{ color: colors.text.inverse }}
+                  accessible={true}
+                  accessibilityLabel={`Order status: ${order.status}`}
                 />
                 <Menu
                   visible={menuVisible}
@@ -285,17 +287,37 @@ const OrderDetailsScreen: React.FC = () => {
                       icon="dots-vertical"
                       size={24}
                       onPress={() => setMenuVisible(true)}
+                      accessible={true}
+                      accessibilityLabel="More options"
+                      accessibilityHint="Tap to open order actions menu"
                     />
                   }
                 >
-                  <Menu.Item onPress={handleShare} title="Share" leadingIcon="share" />
-                  <Menu.Item onPress={handlePrint} title="Print" leadingIcon="printer" />
+                  <Menu.Item 
+                    onPress={handleShare} 
+                    title="Share" 
+                    leadingIcon="share"
+                    accessible={true}
+                    accessibilityLabel="Share order"
+                    accessibilityHint="Tap to share order details" 
+                  />
+                  <Menu.Item 
+                    onPress={handlePrint} 
+                    title="Print" 
+                    leadingIcon="printer"
+                    accessible={true}
+                    accessibilityLabel="Print order"
+                    accessibilityHint="Tap to print order receipt" 
+                  />
                   <Divider />
                   <Menu.Item
                     onPress={handleCancel}
                     title="Cancel Order"
                     leadingIcon="close-circle"
                     titleStyle={{ color: colors.error[500] }}
+                    accessible={true}
+                    accessibilityLabel="Cancel order"
+                    accessibilityHint="Tap to cancel this order"
                   />
                 </Menu>
               </View>
@@ -493,6 +515,9 @@ const OrderDetailsScreen: React.FC = () => {
                   size="small"
                   icon="credit-card"
                   onPress={() => navigation.navigate('ProcessPayment', { orderId: orderIdString })}
+                  accessible={true}
+                  accessibilityLabel="Process payment"
+                  accessibilityHint="Tap to process payment for this order"
                 />
               )}
             </View>

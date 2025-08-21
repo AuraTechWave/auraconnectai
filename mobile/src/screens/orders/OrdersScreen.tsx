@@ -160,10 +160,14 @@ export default function OrdersScreen() {
     return format(date, 'MMM dd');
   };
 
-  const renderOrderCard = ({ item }: { item: Order }) => (
+  const renderOrderCard = useCallback(({ item }: { item: Order }) => (
     <TouchableOpacity
       activeOpacity={0.7}
       onPress={() => navigation.navigate('OrderDetails', { orderId: item.id })}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={`Order ${item.orderNumber} from ${item.customerName}`}
+      accessibilityHint={`Tap to view details for order ${item.orderNumber}. Status: ${item.status}, Total: $${item.totalAmount.toFixed(2)}`}
     >
       <Card variant="elevated" style={styles.orderCard}>
         <View style={styles.orderHeader}>
@@ -176,6 +180,8 @@ export default function OrdersScreen() {
                   variant="error"
                   size="small"
                   style={{ marginLeft: spacing.xs }}
+                  accessible={true}
+                  accessibilityLabel={`Priority: ${item.priority}`}
                 />
               )}
             </View>
@@ -186,6 +192,8 @@ export default function OrdersScreen() {
               label={item.status.replace('_', ' ').toUpperCase()}
               style={{ backgroundColor: statusColors[item.status] }}
               textStyle={{ color: colors.text.inverse }}
+              accessible={true}
+              accessibilityLabel={`Order status: ${item.status.replace('_', ' ')}`}
             />
           </View>
         </View>
@@ -196,6 +204,8 @@ export default function OrdersScreen() {
               name={item.customerName}
               size="small"
               source={item.customerAvatar ? { uri: item.customerAvatar } : undefined}
+              accessible={true}
+              accessibilityLabel={`Customer: ${item.customerName}`}
             />
             <View style={styles.customerInfo}>
               <Text style={styles.customerName}>{item.customerName}</Text>
@@ -275,7 +285,7 @@ export default function OrdersScreen() {
         </CardContent>
       </Card>
     </TouchableOpacity>
-  );
+  ), [navigation, statusColors, orderTypeIcons, priorityColors]);
 
   return (
     <View style={styles.container}>
@@ -286,6 +296,9 @@ export default function OrdersScreen() {
           value={searchQuery}
           style={styles.searchBar}
           icon="magnify"
+          accessible={true}
+          accessibilityLabel="Search orders"
+          accessibilityHint="Enter order number, customer name, or table number to search"
         />
         
         <View style={styles.filterRow}>
@@ -298,6 +311,11 @@ export default function OrdersScreen() {
               selected={selectedStatus === 'all'}
               onPress={() => setSelectedStatus('all')}
               style={styles.filterChip}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedStatus === 'all' }}
+              accessibilityLabel="All orders filter"
+              accessibilityHint="Tap to show all orders"
             >
               All Orders
             </Chip>
@@ -305,6 +323,11 @@ export default function OrdersScreen() {
               selected={selectedStatus === 'pending'}
               onPress={() => setSelectedStatus('pending')}
               style={styles.filterChip}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedStatus === 'pending' }}
+              accessibilityLabel="Pending orders filter"
+              accessibilityHint="Tap to show only pending orders"
             >
               Pending
             </Chip>
@@ -312,6 +335,11 @@ export default function OrdersScreen() {
               selected={selectedStatus === 'preparing'}
               onPress={() => setSelectedStatus('preparing')}
               style={styles.filterChip}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedStatus === 'preparing' }}
+              accessibilityLabel="Preparing orders filter"
+              accessibilityHint="Tap to show orders being prepared"
             >
               Preparing
             </Chip>
@@ -319,6 +347,11 @@ export default function OrdersScreen() {
               selected={selectedStatus === 'ready'}
               onPress={() => setSelectedStatus('ready')}
               style={styles.filterChip}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedStatus === 'ready' }}
+              accessibilityLabel="Ready orders filter"
+              accessibilityHint="Tap to show orders ready for pickup"
             >
               Ready
             </Chip>
@@ -326,6 +359,11 @@ export default function OrdersScreen() {
               selected={selectedStatus === 'completed'}
               onPress={() => setSelectedStatus('completed')}
               style={styles.filterChip}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedStatus === 'completed' }}
+              accessibilityLabel="Completed orders filter"
+              accessibilityHint="Tap to show completed orders"
             >
               Completed
             </Chip>
@@ -366,6 +404,18 @@ export default function OrdersScreen() {
             </Text>
           </View>
         }
+        // Performance optimizations
+        windowSize={10}
+        maxToRenderPerBatch={5}
+        initialNumToRender={10}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
+        onEndReachedThreshold={0.5}
+        getItemLayout={(data, index) => ({
+          length: 280, // Estimated height of order card
+          offset: 280 * index,
+          index,
+        })}
       />
 
       <FAB
@@ -373,6 +423,10 @@ export default function OrdersScreen() {
         style={styles.fab}
         onPress={() => navigation.navigate('CreateOrder')}
         label="New Order"
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel="Create new order"
+        accessibilityHint="Tap to create a new order"
       />
     </View>
   );

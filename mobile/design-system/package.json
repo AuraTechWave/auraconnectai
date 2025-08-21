@@ -1,0 +1,25 @@
+{
+  "name": "@auraconnect/design-tokens",
+  "version": "1.0.0",
+  "description": "Design tokens for AuraConnect mobile app",
+  "main": "build/js/tokens.js",
+  "types": "build/ts/index.d.ts",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "nodemon --watch tokens --ext json --exec npm run build",
+    "clean": "rm -rf build ../src/constants/generated",
+    "prebuild": "npm run clean"
+  },
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "style-dictionary",
+    "react-native"
+  ],
+  "author": "AuraConnect",
+  "license": "MIT",
+  "devDependencies": {
+    "style-dictionary": "^3.9.0",
+    "nodemon": "^3.0.0"
+  }
+}

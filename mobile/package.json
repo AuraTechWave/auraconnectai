@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit",
     "pod-install": "cd ios && pod install",
     "clean": "react-native-clean-project",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "design:build": "cd design-system && npm run build",
+    "design:watch": "cd design-system && npm run watch",
+    "design:install": "cd design-system && npm install"
   },
   "dependencies": {
     "react": "18.2.0",

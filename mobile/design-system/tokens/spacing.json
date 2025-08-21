@@ -1,0 +1,35 @@
+{
+  "spacing": {
+    "xxs": { "value": 2 },
+    "xs": { "value": 4 },
+    "sm": { "value": 8 },
+    "md": { "value": 16 },
+    "lg": { "value": 24 },
+    "xl": { "value": 32 },
+    "xxl": { "value": 48 },
+    "xxxl": { "value": 64 }
+  },
+  "size": {
+    "border": {
+      "thin": { "value": 1 },
+      "medium": { "value": 2 },
+      "thick": { "value": 4 }
+    },
+    "radius": {
+      "xs": { "value": 2 },
+      "sm": { "value": 4 },
+      "md": { "value": 8 },
+      "lg": { "value": 16 },
+      "xl": { "value": 24 },
+      "full": { "value": 9999 }
+    },
+    "icon": {
+      "xs": { "value": 12 },
+      "sm": { "value": 16 },
+      "md": { "value": 20 },
+      "lg": { "value": 24 },
+      "xl": { "value": 32 },
+      "xxl": { "value": 48 }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "time": {
+    "instant": { "value": 0 },
+    "fast": { "value": 100 },
+    "normal": { "value": 200 },
+    "slow": { "value": 300 },
+    "slower": { "value": 400 }
+  },
+  "easing": {
+    "linear": { "value": "linear" },
+    "easeIn": { "value": "ease-in" },
+    "easeOut": { "value": "ease-out" },
+    "easeInOut": { "value": "ease-in-out" },
+    "spring": { "value": "cubic-bezier(0.175, 0.885, 0.32, 1.275)" }
+  }
+}
