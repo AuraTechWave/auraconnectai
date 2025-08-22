@@ -81,9 +81,19 @@ class Settings(BaseSettings):
     smtp_password: Optional[str] = None
 
     # Environment Settings
-    environment: str = "development"
-    debug: bool = True
-    log_level: str = "INFO"
+    environment: str = Field(default="development", env="ENVIRONMENT")
+    debug: bool = Field(default=False)  # Default to False for safety
+    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    
+    @validator("debug", pre=True, always=True)
+    def set_debug_based_on_environment(cls, v, values):
+        """Set debug based on environment if not explicitly set."""
+        env = values.get("environment", "development").lower()
+        if env == "production":
+            return False  # Never allow debug in production
+        elif env == "development" and v is None:
+            return True  # Default to True in development
+        return v
 
     # External POS Webhook Configuration
     WEBHOOK_MAX_RETRY_ATTEMPTS: int = 3

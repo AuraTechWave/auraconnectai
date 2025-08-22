@@ -178,9 +178,12 @@ class WebhookAuthService:
             return False, "Invalid timestamp", None
 
         # Compute expected signature
-        signed_payload = f"{timestamp}.{body.decode('utf-8')}"
+        # Combine timestamp and body at bytes level to avoid UTF-8 decoding issues
+        timestamp_bytes = timestamp.encode('utf-8')
+        separator_bytes = b'.'
+        signed_payload = timestamp_bytes + separator_bytes + body
         expected_signature = hmac.new(
-            secret.encode(), signed_payload.encode(), hashlib.sha256
+            secret.encode(), signed_payload, hashlib.sha256
         ).hexdigest()
 
         # Check if any provided signature matches

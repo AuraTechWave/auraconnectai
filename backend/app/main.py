@@ -250,6 +250,11 @@ app.add_middleware(RateLimitMiddleware)
 # Tracks request performance and errors
 app.add_middleware(PerformanceMiddleware)
 
+# 7. Security middleware (must be after other middleware)
+# Applies security headers, audit logging, and API version checks
+from core.security_middleware import SecurityMiddleware
+app.add_middleware(SecurityMiddleware)
+
 # ========== Include all routers with proper order (auth first) ==========
 
 # Authentication & Authorization
@@ -408,6 +413,26 @@ async def startup_event():
     # Run startup validation checks
     passed, warnings = run_startup_checks()
     
+    # Initialize security services
+    from core.auth_rate_limiter import AuthRateLimiter
+    from core.audit_logger import audit_logger
+    from core.webhook_security import webhook_validator
+    from core.config import get_settings
+    
+    settings = get_settings()
+    
+    # Initialize auth rate limiter
+    app.state.auth_rate_limiter = AuthRateLimiter(
+        redis_url=getattr(settings, 'redis_url', None)
+    )
+    await app.state.auth_rate_limiter.initialize()
+    
+    # Initialize audit logger
+    await audit_logger.initialize(settings.database_url)
+    
+    # Initialize webhook validator
+    app.state.webhook_validator = webhook_validator
+    
     # Start order sync scheduler
     await start_sync_scheduler()
     # Start webhook retry scheduler
@@ -423,6 +448,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on application shutdown"""
+    # Close audit logger
+    from core.audit_logger import audit_logger
+    await audit_logger.close()
+    
     # Stop order sync scheduler
     await stop_sync_scheduler()
     # Stop webhook retry scheduler
@@ -440,23 +469,20 @@ def read_root():
     return {"message": "AuraConnect backend is running"}
 
 
-@app.get("/test-token")
-async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_error=False))):
-    """Test endpoint to debug token issues - DISABLED IN PRODUCTION"""
-    import os
-    
-    # Disable in production
-    if os.getenv("ENVIRONMENT", "development").lower() == "production":
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    from core.auth import verify_token, SECRET_KEY
+# Debug endpoints protected by decorator
+from core.security_config import protect_debug_endpoint
+
+@app.get("/debug/token")
+@protect_debug_endpoint(allowed_envs=["development"])
+async def debug_token(authorization: Optional[str] = Depends(HTTPBearer(auto_error=False))):
+    """Debug endpoint for token verification - Only available in development"""
+    from core.auth import verify_token
     
     if not authorization:
         return {"error": "No authorization header"}
     
     token = authorization.credentials
     
-    # Try to decode without verification first
     try:
         from jose import jwt
         # Decode without verification to see the payload
@@ -464,22 +490,19 @@ async def test_token(authorization: Optional[str] = Depends(HTTPBearer(auto_erro
         
         # Now try with verification
         try:
-            payload_verified = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             token_data = verify_token(token)
             
             return {
                 "status": "success",
-                "payload_unverified": payload_unverified,
-                "payload_verified": payload_verified,
-                "token_data": token_data.__dict__ if token_data else None,
-                "secret_key_preview": SECRET_KEY[:10] + "..."
+                "payload": payload_unverified,
+                "token_valid": True,
+                "user_id": token_data.user_id if token_data else None
             }
         except Exception as e:
             return {
                 "status": "verification_failed",
-                "payload_unverified": payload_unverified,
-                "error": str(e),
-                "secret_key_preview": SECRET_KEY[:10] + "..."
+                "payload": payload_unverified,
+                "error": str(e)
             }
     except Exception as e:
         return {
