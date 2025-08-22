@@ -36,6 +36,9 @@ from ..schemas.analytics_schemas import (
 )
 from modules.orders.models.order_models import Order, OrderItem
 from modules.staff.models.staff_models import StaffMember
+from .optimized_queries import OptimizedAnalyticsQueries
+from ..utils.query_monitor import monitor_query_performance
+from ..utils.cache_manager import cached_query
 
 # Custom exceptions replaced with standard Python exceptions
 
@@ -65,6 +68,7 @@ class SalesReportService:
         self.db = db
         self.access_logger = CrossTenantAccessLogger(db)
 
+    @monitor_query_performance("sales_report.generate_summary")
     def generate_sales_summary(
         self, filters: SalesFilterRequest
     ) -> SalesSummaryResponse:
@@ -185,22 +189,31 @@ class SalesReportService:
     def generate_staff_performance_report(
         self, filters: SalesFilterRequest, page: int = 1, per_page: int = 50
     ) -> List[StaffPerformanceResponse]:
-        """Generate staff performance analytics"""
+        """Generate staff performance analytics using optimized queries"""
 
         try:
-            # Build query for staff performance
-            query = self._build_staff_performance_query(filters)
+            # Get date range for the query
+            start_date = filters.date_from or (datetime.now().date() - timedelta(days=30))
+            end_date = filters.date_to or datetime.now().date()
+
+            # Use optimized query that combines staff metrics with shift hours
+            results = OptimizedAnalyticsQueries.get_staff_performance_with_shifts(
+                self.db,
+                start_date,
+                end_date,
+                filters.staff_ids,
+            )
 
             # Apply pagination
             offset = (page - 1) * per_page
-            results = query.offset(offset).limit(per_page).all()
+            paginated_results = results[offset : offset + per_page]
 
             staff_performance = []
-            for result in results:
+            for result in paginated_results:
                 # Calculate additional metrics
                 orders_per_hour = None
                 if result.total_hours and result.total_hours > 0:
-                    orders_per_hour = result.orders_handled / result.total_hours
+                    orders_per_hour = result.orders_handled / float(result.total_hours)
 
                 staff_performance.append(
                     StaffPerformanceResponse(
@@ -213,9 +226,8 @@ class SalesReportService:
                         average_processing_time=result.average_processing_time,
                         revenue_rank=result.revenue_rank,
                         order_count_rank=result.order_count_rank,
-                        period_start=filters.date_from
-                        or (datetime.now().date() - timedelta(days=30)),
-                        period_end=filters.date_to or datetime.now().date(),
+                        period_start=start_date,
+                        period_end=end_date,
                     )
                 )
 
@@ -228,15 +240,13 @@ class SalesReportService:
     def generate_product_performance_report(
         self, filters: SalesFilterRequest, page: int = 1, per_page: int = 50
     ) -> List[ProductPerformanceResponse]:
-        """Generate product performance analytics"""
+        """Generate product performance analytics using optimized queries"""
 
         try:
-            # Build query for product performance
-            query = self._build_product_performance_query(filters)
-
-            # Apply pagination
-            offset = (page - 1) * per_page
-            results = query.offset(offset).limit(per_page).all()
+            # Use optimized query that eliminates N+1 patterns
+            results = OptimizedAnalyticsQueries.get_product_performance_with_categories(
+                self.db, filters, page, per_page
+            )
 
             # Calculate total revenue for market share calculations
             total_revenue = self._get_total_revenue(filters)
@@ -352,6 +362,8 @@ class SalesReportService:
 
     # Private helper methods
 
+    @monitor_query_performance("sales_report.calculate_metrics")
+    @cached_query("sales_metrics", ttl=600, key_params=["filters"])
     def _calculate_sales_metrics(
         self, filters: SalesFilterRequest
     ) -> SalesCalculationResult:

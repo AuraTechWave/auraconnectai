@@ -32,6 +32,7 @@ from modules.analytics.utils.performance_monitor import (
     PerformanceMonitor,
     check_performance_threshold,
 )
+from .optimized_queries import OptimizedAnalyticsQueries
 
 logger = logging.getLogger(__name__)
 
@@ -446,32 +447,20 @@ class AIInsightsService:
     async def _analyze_customer_patterns(
         self, start_date: date, end_date: date
     ) -> CustomerInsight:
-        """Analyze customer behavior patterns"""
+        """Analyze customer behavior patterns using optimized batch processing"""
 
-        # Get customer order patterns
-        customer_data = (
-            self.db.query(
-                Order.customer_id,
-                func.count(Order.id).label("order_count"),
-                func.sum(Order.total_amount).label("total_spent"),
-                func.min(Order.order_date).label("first_order"),
-                func.max(Order.order_date).label("last_order"),
-            )
-            .filter(
-                and_(
-                    Order.order_date >= start_date,
-                    Order.order_date <= end_date,
-                    Order.status.in_(["completed", "paid"]),
-                )
-            )
-            .group_by(Order.customer_id)
-            .all()
+        # Use optimized batch processing to avoid memory issues with large datasets
+        customer_metrics = OptimizedAnalyticsQueries.get_customer_insights_batch(
+            self.db, start_date, end_date, batch_size=1000
         )
+        
+        # Convert to list for further processing
+        customer_data = list(customer_metrics.values())
 
         # Analyze patterns
         patterns_detected = []
         total_customers = len(customer_data)
-        repeat_customers = sum(1 for c in customer_data if c.order_count > 1)
+        repeat_customers = sum(1 for c in customer_data if c["order_count"] > 1)
 
         # Calculate metrics
         repeat_customer_rate = (
@@ -483,22 +472,14 @@ class AIInsightsService:
 
         for customer in customer_data:
             # Calculate order frequency (orders per month)
-            days_active = (customer.last_order - customer.first_order).days + 1
+            days_active = customer["days_active"]
             months_active = max(days_active / 30, 1)
-            frequency = customer.order_count / months_active
+            frequency = customer["order_count"] / months_active
             order_frequencies.append(frequency)
 
-            # Segment customers
-            if customer.order_count == 1:
-                segment = "one_time"
-            elif customer.order_count <= 5:
-                segment = "occasional"
-            elif customer.order_count <= 10:
-                segment = "regular"
-            else:
-                segment = "vip"
-
-            lifetime_values[segment].append(float(customer.total_spent))
+            # Use pre-calculated segment from optimized query
+            segment = customer["segment"]
+            lifetime_values[segment].append(float(customer["total_spent"]))
 
         avg_order_frequency = (
             statistics.mean(order_frequencies) if order_frequencies else 0
@@ -526,9 +507,9 @@ class AIInsightsService:
         churn_risk_segments = []
 
         # Check for customers who haven't ordered recently
-        recent_threshold = datetime.now().date() - timedelta(days=60)
+        recent_threshold = datetime.now() - timedelta(days=60)
         at_risk_count = sum(
-            1 for c in customer_data if c.last_order.date() < recent_threshold
+            1 for c in customer_data if c["last_order"] < recent_threshold
         )
 
         if at_risk_count > total_customers * 0.2:
