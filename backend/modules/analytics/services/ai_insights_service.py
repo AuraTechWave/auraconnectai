@@ -507,7 +507,7 @@ class AIInsightsService:
         churn_risk_segments = []
 
         # Check for customers who haven't ordered recently
-        recent_threshold = datetime.now().date() - timedelta(days=60)
+        recent_threshold = datetime.now() - timedelta(days=60)
         at_risk_count = sum(
             1 for c in customer_data if c["last_order"] < recent_threshold
         )

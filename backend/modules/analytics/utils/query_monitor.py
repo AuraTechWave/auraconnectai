@@ -207,11 +207,18 @@ def monitor_query_performance(query_name: Optional[str] = None):
                     details["error"] = str(error)
                 
                 # Record synchronously (create async task)
-                loop = asyncio.new_event_loop()
-                loop.run_until_complete(
-                    query_monitor.record_query(name, execution_time, details)
-                )
-                loop.close()
+                try:
+                    # Try to get the current event loop
+                    loop = asyncio.get_running_loop()
+                    # Schedule the coroutine to run asynchronously
+                    asyncio.create_task(
+                        query_monitor.record_query(name, execution_time, details)
+                    )
+                except RuntimeError:
+                    # No event loop running, use asyncio.run()
+                    asyncio.run(
+                        query_monitor.record_query(name, execution_time, details)
+                    )
         
         # Return appropriate wrapper based on function type
         if asyncio.iscoroutinefunction(func):
@@ -248,18 +255,32 @@ def setup_sqlalchemy_query_logging(engine: Engine, slow_query_threshold: float =
             )
             
             # Also record in our monitor
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(
-                query_monitor.record_query(
-                    "raw_sql_query",
-                    total_time,
-                    {
-                        "statement": statement[:500],
-                        "parameter_count": len(parameters) if parameters else 0
-                    }
+            try:
+                # Try to get the current event loop
+                loop = asyncio.get_running_loop()
+                # Schedule the coroutine to run asynchronously
+                asyncio.create_task(
+                    query_monitor.record_query(
+                        "raw_sql_query",
+                        total_time,
+                        {
+                            "statement": statement[:500],
+                            "parameter_count": len(parameters) if parameters else 0
+                        }
+                    )
                 )
-            )
-            loop.close()
+            except RuntimeError:
+                # No event loop running, use asyncio.run()
+                asyncio.run(
+                    query_monitor.record_query(
+                        "raw_sql_query",
+                        total_time,
+                        {
+                            "statement": statement[:500],
+                            "parameter_count": len(parameters) if parameters else 0
+                        }
+                    )
+                )
 
 
 class QueryOptimizationHints:

@@ -187,10 +187,25 @@ def cached_query(
         @wraps(func)
         def sync_wrapper(*args, **kwargs) -> Any:
             # For synchronous functions, run in event loop
-            loop = asyncio.new_event_loop()
-            result = loop.run_until_complete(async_wrapper(*args, **kwargs))
-            loop.close()
-            return result
+            try:
+                # Try to get the current event loop
+                loop = asyncio.get_running_loop()
+                # If we're already in an async context, we can't block
+                # Instead, schedule the task and return a placeholder
+                # This is a limitation of mixing sync/async code
+                import warnings
+                warnings.warn(
+                    "Synchronous cache decorator called from async context. "
+                    "Consider using the async version of the function.",
+                    RuntimeWarning
+                )
+                # Schedule the task to run but don't wait for it
+                asyncio.create_task(async_wrapper(*args, **kwargs))
+                # Return the computed result directly without caching
+                return func(*args, **kwargs)
+            except RuntimeError:
+                # No event loop running, safe to use asyncio.run()
+                return asyncio.run(async_wrapper(*args, **kwargs))
         
         # Return appropriate wrapper
         if asyncio.iscoroutinefunction(func):
