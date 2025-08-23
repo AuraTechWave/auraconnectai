@@ -1,0 +1,48 @@
+{
+  "typography": {
+    "fontFamily": {
+      "base": { "value": "System" },
+      "mono": { "value": "Courier New" }
+    },
+    "fontSize": {
+      "tiny": { "value": 10 },
+      "caption": { "value": 12 },
+      "body": { "value": 14 },
+      "bodyLarge": { "value": 16 },
+      "subtitle": { "value": 18 },
+      "h6": { "value": 20 },
+      "h5": { "value": 24 },
+      "h4": { "value": 28 },
+      "h3": { "value": 32 },
+      "h2": { "value": 40 },
+      "h1": { "value": 48 },
+      "display": { "value": 56 }
+    },
+    "fontWeight": {
+      "light": { "value": "300" },
+      "regular": { "value": "400" },
+      "medium": { "value": "500" },
+      "semiBold": { "value": "600" },
+      "bold": { "value": "700" }
+    },
+    "lineHeight": {
+      "tiny": { "value": 12 },
+      "caption": { "value": 16 },
+      "body": { "value": 20 },
+      "bodyLarge": { "value": 24 },
+      "subtitle": { "value": 24 },
+      "h6": { "value": 28 },
+      "h5": { "value": 32 },
+      "h4": { "value": 36 },
+      "h3": { "value": 40 },
+      "h2": { "value": 48 },
+      "h1": { "value": 56 },
+      "display": { "value": 64 }
+    },
+    "letterSpacing": {
+      "tight": { "value": -0.5 },
+      "normal": { "value": 0 },
+      "wide": { "value": 0.5 }
+    }
+  }
+}

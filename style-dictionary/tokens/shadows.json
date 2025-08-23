@@ -1,0 +1,54 @@
+{
+  "shadows": {
+    "sm": {
+      "shadowColor": { "value": "#000000" },
+      "shadowOffset": {
+        "width": { "value": 0 },
+        "height": { "value": 1 }
+      },
+      "shadowOpacity": { "value": 0.18 },
+      "shadowRadius": { "value": 1.0 },
+      "elevation": { "value": 1 }
+    },
+    "md": {
+      "shadowColor": { "value": "#000000" },
+      "shadowOffset": {
+        "width": { "value": 0 },
+        "height": { "value": 2 }
+      },
+      "shadowOpacity": { "value": 0.20 },
+      "shadowRadius": { "value": 1.41 },
+      "elevation": { "value": 2 }
+    },
+    "lg": {
+      "shadowColor": { "value": "#000000" },
+      "shadowOffset": {
+        "width": { "value": 0 },
+        "height": { "value": 3 }
+      },
+      "shadowOpacity": { "value": 0.22 },
+      "shadowRadius": { "value": 2.22 },
+      "elevation": { "value": 3 }
+    },
+    "xl": {
+      "shadowColor": { "value": "#000000" },
+      "shadowOffset": {
+        "width": { "value": 0 },
+        "height": { "value": 4 }
+      },
+      "shadowOpacity": { "value": 0.23 },
+      "shadowRadius": { "value": 2.62 },
+      "elevation": { "value": 4 }
+    },
+    "xxl": {
+      "shadowColor": { "value": "#000000" },
+      "shadowOffset": {
+        "width": { "value": 0 },
+        "height": { "value": 5 }
+      },
+      "shadowOpacity": { "value": 0.25 },
+      "shadowRadius": { "value": 3.84 },
+      "elevation": { "value": 5 }
+    }
+  }
+}

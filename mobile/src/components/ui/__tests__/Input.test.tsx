@@ -214,4 +214,106 @@ describe('Input Component', () => {
     expect(input.props.autoCorrect).toBe(false);
     expect(input.props.maxLength).toBe(50);
   });
+
+  describe('Accessibility', () => {
+    it('has correct accessibility properties', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Test input"
+          label="Test Label"
+          accessibilityLabel="Custom Label"
+          accessibilityHint="Custom Hint"
+        />
+      );
+      
+      const input = getByPlaceholderText('Test input');
+      expect(input.props.accessible).toBe(true);
+      expect(input.props.accessibilityLabel).toBe('Custom Label');
+      expect(input.props.accessibilityHint).toBe('Custom Hint');
+    });
+
+    it('uses label as accessibilityLabel when not provided', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Test input"
+          label="Email Address"
+        />
+      );
+      
+      const input = getByPlaceholderText('Test input');
+      expect(input.props.accessibilityLabel).toBe('Email Address');
+    });
+
+    it('uses placeholder as accessibilityLabel when label not provided', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Enter your email"
+        />
+      );
+      
+      const input = getByPlaceholderText('Enter your email');
+      expect(input.props.accessibilityLabel).toBe('Enter your email');
+    });
+
+    it('has correct accessibility state when disabled', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Test input"
+          disabled={true}
+        />
+      );
+      
+      const input = getByPlaceholderText('Test input');
+      expect(input.props.accessibilityState.disabled).toBe(true);
+    });
+
+    it('error text has alert role', () => {
+      const { getByText } = render(
+        <Input 
+          placeholder="Test input"
+          error="This field is required"
+        />
+      );
+      
+      const errorText = getByText('This field is required');
+      expect(errorText.props.accessibilityRole).toBe('alert');
+      expect(errorText.props.accessibilityLiveRegion).toBe('polite');
+    });
+
+    it('helper text has text role', () => {
+      const { getByText } = render(
+        <Input 
+          placeholder="Test input"
+          helper="Enter at least 8 characters"
+        />
+      );
+      
+      const helperText = getByText('Enter at least 8 characters');
+      expect(helperText.props.accessibilityRole).toBe('text');
+    });
+
+    it('uses helper as accessibilityHint when provided', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Test input"
+          helper="Password must be 8 characters"
+        />
+      );
+      
+      const input = getByPlaceholderText('Test input');
+      expect(input.props.accessibilityHint).toBe('Password must be 8 characters');
+    });
+
+    it('includes value in accessibilityValue', () => {
+      const { getByPlaceholderText } = render(
+        <Input 
+          placeholder="Test input"
+          value="test@example.com"
+        />
+      );
+      
+      const input = getByPlaceholderText('Test input');
+      expect(input.props.accessibilityValue.text).toBe('test@example.com');
+    });
+  });
 });

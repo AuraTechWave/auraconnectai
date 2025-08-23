@@ -24,6 +24,8 @@ interface ButtonProps extends TouchableOpacityProps {
   children?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -38,6 +40,8 @@ export const Button: React.FC<ButtonProps> = ({
   children,
   style,
   textStyle,
+  accessibilityLabel,
+  accessibilityHint,
   onPress,
   ...props
 }) => {
@@ -191,6 +195,14 @@ export const Button: React.FC<ButtonProps> = ({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title || 'Button'}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{
+        disabled: isDisabled,
+        busy: loading,
+      }}
       {...props}
     >
       {renderContent()}

@@ -25,6 +25,8 @@ interface InputProps extends TextInputProps {
   variant?: 'outlined' | 'filled' | 'underlined';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -39,6 +41,8 @@ export const Input: React.FC<InputProps> = ({
   variant = 'outlined',
   size = 'medium',
   disabled = false,
+  accessibilityLabel,
+  accessibilityHint,
   value,
   onFocus,
   onBlur,
@@ -244,6 +248,15 @@ export const Input: React.FC<InputProps> = ({
           onBlur={handleBlur}
           editable={!disabled}
           placeholderTextColor={colors.text.tertiary}
+          accessible={true}
+          accessibilityLabel={accessibilityLabel || label || props.placeholder || 'Text input'}
+          accessibilityHint={accessibilityHint || helper}
+          accessibilityState={{
+            disabled: disabled,
+          }}
+          accessibilityValue={{
+            text: value,
+          }}
           {...props}
         />
         {rightIcon && (
@@ -262,12 +275,21 @@ export const Input: React.FC<InputProps> = ({
         )}
       </View>
       {error && (
-        <Text style={styles.errorText}>
+        <Text 
+          style={styles.errorText}
+          accessible={true}
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+        >
           {error}
         </Text>
       )}
       {helper && !error && (
-        <Text style={styles.helperText}>
+        <Text 
+          style={styles.helperText}
+          accessible={true}
+          accessibilityRole="text"
+        >
           {helper}
         </Text>
       )}
