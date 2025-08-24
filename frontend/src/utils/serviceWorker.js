@@ -7,6 +7,12 @@ const isLocalhost = Boolean(
 );
 
 export function register(config) {
+  // Only register service worker in production
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Service Worker registration skipped in development');
+    return;
+  }
+
   if ('serviceWorker' in navigator) {
     const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href);
     if (publicUrl.origin !== window.location.origin) {
@@ -14,9 +20,10 @@ export function register(config) {
     }
 
     window.addEventListener('load', () => {
-      const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
+      const swUrl = `${process.env.PUBLIC_URL}/serviceWorker.js`;
 
       if (isLocalhost) {
+        // This is running on localhost. Check if a service worker still exists or not.
         checkValidServiceWorker(swUrl, config);
         navigator.serviceWorker.ready.then(() => {
           console.log(
@@ -24,6 +31,7 @@ export function register(config) {
           );
         });
       } else {
+        // Is not localhost. Just register service worker
         registerValidSW(swUrl, config);
       }
     });
@@ -42,14 +50,19 @@ function registerValidSW(swUrl, config) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
+              // At this point, the updated precached content has been fetched,
+              // but the previous service worker will still serve the older
+              // content until all client tabs are closed.
               console.log(
-                'New content is available and will be used when all tabs are closed.'
+                'New content is available and will be used when all tabs for this page are closed.'
               );
 
+              // Show update notification to user
               if (config && config.onUpdate) {
                 config.onUpdate(registration);
               }
             } else {
+              // At this point, everything has been precached.
               console.log('Content is cached for offline use.');
 
               if (config && config.onSuccess) {
@@ -66,21 +79,25 @@ function registerValidSW(swUrl, config) {
 }
 
 function checkValidServiceWorker(swUrl, config) {
+  // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl, {
     headers: { 'Service-Worker': 'script' },
   })
     .then((response) => {
+      // Ensure service worker exists, and that we really are getting a JS file.
       const contentType = response.headers.get('content-type');
       if (
         response.status === 404 ||
         (contentType != null && contentType.indexOf('javascript') === -1)
       ) {
+        // No service worker found. Probably a different app. Reload the page.
         navigator.serviceWorker.ready.then((registration) => {
           registration.unregister().then(() => {
             window.location.reload();
           });
         });
       } else {
+        // Service worker found. Proceed as normal.
         registerValidSW(swUrl, config);
       }
     })
@@ -101,11 +118,12 @@ export function unregister() {
   }
 }
 
-export function cacheMenuData(urls) {
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'CACHE_MENU_DATA',
-      urls,
-    });
+// Helper to prompt user for update
+export function promptUserToUpdate(registration) {
+  if (window.confirm('New version available! Would you like to update?')) {
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    window.location.reload();
   }
 }
