@@ -1,19 +1,28 @@
-// Native WebSocket service for order updates
+// WebSocket service for real-time order updates
+// Supports both native WebSocket and Socket.io
 
+import { io, Socket } from 'socket.io-client';
 import { authManager } from '../utils/auth';
-import { OrderEvent } from '../types/order.types';
+import { OrderEvent, Order } from '../types/order.types';
 
 class WebSocketService {
+  // Socket.io implementation
+  private socket: Socket | null = null;
+  
+  // Native WebSocket implementation (fallback)
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000; // Start with 1 second
-  private listeners: Map<string, Set<(event: OrderEvent) => void>> = new Map();
-  private isIntentionallyClosed = false;
+  private reconnectDelay = 1000;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private isIntentionallyClosed = false;
   
-  // Use environment variable or derive from API URL
+  // Shared event listeners
+  private listeners: Map<string, Set<Function>> = new Map();
+  private useSocketIO = true; // Default to Socket.io
+  
+  // Get WebSocket URL based on environment
   private getWebSocketUrl(): string {
     const wsUrl = process.env.REACT_APP_WEBSOCKET_URL;
     if (wsUrl) return wsUrl;
@@ -25,9 +34,48 @@ class WebSocketService {
       .replace('https://', 'wss://');
   }
   
-  connect(orderId?: number): void {
+  // Main connect method - tries Socket.io first, falls back to native WebSocket
+  connect(restaurantId?: string | number, orderId?: number): void {
+    if (this.useSocketIO) {
+      this.connectSocketIO(restaurantId?.toString());
+    } else {
+      this.connectNativeWebSocket(orderId);
+    }
+  }
+  
+  // Socket.io connection
+  private connectSocketIO(restaurantId?: string): void {
+    if (this.socket?.connected) {
+      console.log('Socket.io already connected');
+      return;
+    }
+    
+    const wsUrl = this.getWebSocketUrl();
+    const token = authManager.getAccessToken();
+    
+    if (!token) {
+      console.error('No auth token available for WebSocket connection');
+      return;
+    }
+    
+    this.socket = io(wsUrl, {
+      auth: {
+        token,
+        restaurant_id: restaurantId
+      },
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: this.maxReconnectAttempts,
+      reconnectionDelay: this.reconnectDelay,
+    });
+    
+    this.setupSocketIOHandlers();
+  }
+  
+  // Native WebSocket connection (fallback)
+  private connectNativeWebSocket(orderId?: number): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log('Native WebSocket already connected');
       return;
     }
     
@@ -39,7 +87,6 @@ class WebSocketService {
       return;
     }
     
-    // Build WebSocket URL with auth token and optional order ID
     const baseUrl = this.getWebSocketUrl();
     const params = new URLSearchParams({ token });
     if (orderId) params.append('order_id', orderId.toString());
@@ -48,46 +95,129 @@ class WebSocketService {
     
     try {
       this.ws = new WebSocket(wsUrl);
-      
-      this.ws.onopen = () => {
-        console.log('WebSocket connected');
-        this.reconnectAttempts = 0;
-        this.reconnectDelay = 1000;
-        this.startHeartbeat();
-      };
-      
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data) as OrderEvent;
-          this.notifyListeners(data);
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
-        }
-      };
-      
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-      
-      this.ws.onclose = (event) => {
-        console.log('WebSocket closed:', event.code, event.reason);
-        this.stopHeartbeat();
-        
-        if (!this.isIntentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.scheduleReconnect();
-        }
-      };
+      this.setupNativeWebSocketHandlers();
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
+      // Try Socket.io as fallback
+      this.useSocketIO = true;
+      this.connect();
     }
   }
   
+  // Socket.io event handlers
+  private setupSocketIOHandlers(): void {
+    if (!this.socket) return;
+    
+    this.socket.on('connect', () => {
+      console.log('Socket.io connected');
+      this.emit('connected', true);
+    });
+    
+    this.socket.on('disconnect', () => {
+      console.log('Socket.io disconnected');
+      this.emit('connected', false);
+    });
+    
+    this.socket.on('order:new', (order: Order) => {
+      this.emit('order:new', order);
+      this.emit('order:event', { type: 'created', order_id: order.id, order });
+    });
+    
+    this.socket.on('order:updated', (order: Order) => {
+      this.emit('order:updated', order);
+      this.emit('order:event', { type: 'updated', order_id: order.id, order });
+    });
+    
+    this.socket.on('order:status_changed', (data: { orderId: string; status: string; order: Order }) => {
+      this.emit('order:status_changed', data);
+      this.emit('order:event', { 
+        type: 'status_changed', 
+        order_id: parseInt(data.orderId), 
+        status: data.status,
+        order: data.order 
+      });
+    });
+    
+    this.socket.on('order:cancelled', (order: Order) => {
+      this.emit('order:cancelled', order);
+      this.emit('order:event', { type: 'cancelled', order_id: order.id, order });
+    });
+    
+    this.socket.on('error', (error: any) => {
+      console.error('Socket.io error:', error);
+      this.emit('error', error);
+    });
+  }
+  
+  // Native WebSocket event handlers
+  private setupNativeWebSocketHandlers(): void {
+    if (!this.ws) return;
+    
+    this.ws.onopen = () => {
+      console.log('Native WebSocket connected');
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000;
+      this.startHeartbeat();
+      this.emit('connected', true);
+    };
+    
+    this.ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data) as OrderEvent;
+        this.handleNativeWebSocketMessage(data);
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
+    
+    this.ws.onerror = (error) => {
+      console.error('Native WebSocket error:', error);
+      this.emit('error', error);
+    };
+    
+    this.ws.onclose = (event) => {
+      console.log('Native WebSocket closed:', event.code, event.reason);
+      this.stopHeartbeat();
+      this.emit('connected', false);
+      
+      if (!this.isIntentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.scheduleReconnect();
+      }
+    };
+  }
+  
+  // Handle native WebSocket messages
+  private handleNativeWebSocketMessage(event: OrderEvent): void {
+    this.emit('order:event', event);
+    
+    // Map to Socket.io-style events for compatibility
+    switch (event.type) {
+      case 'created':
+        this.emit('order:new', event.order);
+        break;
+      case 'updated':
+        this.emit('order:updated', event.order);
+        break;
+      case 'status_changed':
+        this.emit('order:status_changed', {
+          orderId: event.order_id.toString(),
+          status: event.status || '',
+          order: event.order
+        });
+        break;
+      case 'cancelled':
+        this.emit('order:cancelled', event.order);
+        break;
+    }
+  }
+  
+  // Heartbeat for native WebSocket
   private startHeartbeat(): void {
     this.heartbeatInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         this.ws.send(JSON.stringify({ type: 'ping' }));
       }
-    }, 30000); // Send ping every 30 seconds
+    }, 30000);
   }
   
   private stopHeartbeat(): void {
@@ -102,16 +232,24 @@ class WebSocketService {
     console.log(`Scheduling reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
     
     this.reconnectTimeout = setTimeout(() => {
-      this.connect();
+      this.connectNativeWebSocket();
     }, this.reconnectDelay);
     
-    // Exponential backoff with max delay of 30 seconds
+    // Exponential backoff
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, 30000);
   }
   
+  // Disconnect both implementations
   disconnect(): void {
     this.isIntentionallyClosed = true;
     
+    // Disconnect Socket.io
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+    
+    // Disconnect native WebSocket
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -127,58 +265,94 @@ class WebSocketService {
     this.listeners.clear();
   }
   
-  // Subscribe to order events
-  subscribe(orderId: string | 'all', callback: (event: OrderEvent) => void): () => void {
-    const key = orderId.toString();
-    
-    if (!this.listeners.has(key)) {
-      this.listeners.set(key, new Set());
+  // Event listener management
+  on(event: string, callback: Function): void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
     }
-    
-    this.listeners.get(key)!.add(callback);
-    
-    // Return unsubscribe function
-    return () => {
-      const listeners = this.listeners.get(key);
-      if (listeners) {
-        listeners.delete(callback);
-        if (listeners.size === 0) {
-          this.listeners.delete(key);
-        }
+    this.listeners.get(event)?.add(callback);
+  }
+  
+  off(event: string, callback: Function): void {
+    this.listeners.get(event)?.delete(callback);
+  }
+  
+  // Subscribe with unsubscribe function (alternative API)
+  subscribe(event: string, callback: Function): () => void {
+    this.on(event, callback);
+    return () => this.off(event, callback);
+  }
+  
+  private emit(event: string, data: any): void {
+    this.listeners.get(event)?.forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error(`Error in WebSocket listener for event ${event}:`, error);
       }
-    };
+    });
   }
   
-  private notifyListeners(event: OrderEvent): void {
-    // Notify specific order listeners
-    const orderListeners = this.listeners.get(event.order_id.toString());
-    if (orderListeners) {
-      orderListeners.forEach(callback => callback(event));
-    }
-    
-    // Notify 'all' listeners
-    const allListeners = this.listeners.get('all');
-    if (allListeners) {
-      allListeners.forEach(callback => callback(event));
+  // Socket.io room management
+  joinRoom(room: string): void {
+    if (this.socket) {
+      this.socket.emit('join_room', room);
+    } else if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'join_room', room }));
     }
   }
   
-  // Send a message to the server
+  leaveRoom(room: string): void {
+    if (this.socket) {
+      this.socket.emit('leave_room', room);
+    } else if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'leave_room', room }));
+    }
+  }
+  
+  // Order subscriptions
+  subscribeToOrders(restaurantId: string): void {
+    if (this.socket) {
+      this.socket.emit('subscribe:orders', { restaurant_id: restaurantId });
+    } else if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ 
+        type: 'subscribe:orders', 
+        restaurant_id: restaurantId 
+      }));
+    }
+  }
+  
+  unsubscribeFromOrders(restaurantId: string): void {
+    if (this.socket) {
+      this.socket.emit('unsubscribe:orders', { restaurant_id: restaurantId });
+    } else if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ 
+        type: 'unsubscribe:orders', 
+        restaurant_id: restaurantId 
+      }));
+    }
+  }
+  
+  // Send generic message
   send(message: any): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.socket?.connected) {
+      this.socket.emit('message', message);
+    } else if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
       console.error('WebSocket is not connected');
     }
   }
   
-  // Get connection state
+  // Connection state getters
   get isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
+    return this.socket?.connected || this.ws?.readyState === WebSocket.OPEN || false;
   }
   
-  get readyState(): number {
-    return this.ws?.readyState ?? WebSocket.CLOSED;
+  get connectionType(): 'socket.io' | 'native' | 'disconnected' {
+    if (this.socket?.connected) return 'socket.io';
+    if (this.ws?.readyState === WebSocket.OPEN) return 'native';
+    return 'disconnected';
   }
 }
 

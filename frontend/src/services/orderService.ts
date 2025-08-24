@@ -80,6 +80,30 @@ class OrderService {
     }
   }
   
+  // Update order status
+  async updateOrderStatus(orderId: number, status: string): Promise<Order> {
+    try {
+      const response = await api.patch(`${this.baseUrl}/${orderId}/status`, {
+        status
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+  
+  // Cancel order
+  async cancelOrder(orderId: number, reason?: string): Promise<Order> {
+    try {
+      const response = await api.post(`${this.baseUrl}/${orderId}/cancel`, {
+        reason
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+  
   // Get kitchen orders (specific endpoint)
   async getKitchenOrders(): Promise<Order[]> {
     try {
@@ -208,4 +232,10 @@ class OrderService {
   }
 }
 
-export default new OrderService();
+// Export as singleton instance
+export const orderService = new OrderService();
+
+// Also export the class for testing
+export { OrderService };
+
+export default orderService;

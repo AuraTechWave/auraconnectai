@@ -4,10 +4,13 @@ export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   IN_PROGRESS = 'in_progress',
+  PREPARING = 'preparing',
   READY = 'ready',
   COMPLETED = 'completed',
+  DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
-  DELAYED = 'delayed'
+  DELAYED = 'delayed',
+  REFUNDED = 'refunded'
 }
 
 export enum PaymentStatus {
@@ -21,7 +24,11 @@ export enum PaymentStatus {
 export enum PaymentMethod {
   CASH = 'cash',
   CARD = 'card',
+  CREDIT_CARD = 'credit_card',
+  DEBIT_CARD = 'debit_card',
   DIGITAL = 'digital',
+  MOBILE_PAYMENT = 'mobile_payment',
+  GIFT_CARD = 'gift_card',
   SPLIT = 'split'
 }
 
@@ -39,33 +46,33 @@ export enum OrderPriority {
   URGENT = 'urgent'
 }
 
+export interface OrderModifier {
+  id: number | string;
+  name: string;
+  price: number;
+  quantity?: number;
+}
+
 export interface OrderItem {
-  id: number;
-  menu_item_id: number;
+  id: number | string;
+  menu_item_id: number | string;
   menu_item_name: string;
   quantity: number;
   unit_price: number;
   total_price: number;
   modifiers?: OrderModifier[];
   special_instructions?: string;
-  status: string;
+  status?: string;
   kitchen_status?: string;
   station_id?: number;
   started_at?: string;
   completed_at?: string;
 }
 
-export interface OrderModifier {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 export interface Customer {
-  id?: number;
+  id?: number | string;
   name: string;
-  phone: string;
+  phone?: string;
   email?: string;
   address?: string;
 }
@@ -77,19 +84,24 @@ export interface OrderTag {
 }
 
 export interface Order {
-  id: number;
+  id: number | string;
   order_number: string;
   customer?: Customer;
+  customer_name?: string;
+  customer_phone?: string;
+  customer_email?: string;
   table_no?: number;
+  table_number?: string;
   status: OrderStatus;
   payment_status: PaymentStatus;
   payment_method?: PaymentMethod;
-  order_type: OrderType;
-  priority: OrderPriority;
+  order_type: OrderType | string;
+  priority?: OrderPriority;
   items: OrderItem[];
   subtotal: number;
   tax: number;
-  discount: number;
+  tip?: number;
+  discount?: number;
   total: number;
   notes?: string;
   customer_notes?: string;
@@ -98,11 +110,16 @@ export interface Order {
   created_at: string;
   updated_at: string;
   completed_at?: string;
+  confirmed_at?: string;
+  prepared_at?: string;
+  delivered_at?: string;
+  cancelled_at?: string;
   estimated_completion?: string;
   delay_minutes?: number;
-  staff_id?: number;
+  staff_id?: number | string;
   staff_name?: string;
-  restaurant_id: number;
+  restaurant_id: number | string;
+  location_id?: string;
   external_order_id?: string;
   pos_integration_id?: number;
 }
@@ -112,7 +129,7 @@ export interface OrderListParams {
   status?: OrderStatus | OrderStatus[];
   payment_status?: PaymentStatus | PaymentStatus[];
   payment_method?: PaymentMethod | PaymentMethod[];
-  order_type?: OrderType | OrderType[];
+  order_type?: OrderType | OrderType[] | string[];
   staff_id?: number;
   table_no?: number;
   tag_ids?: number[];
@@ -123,7 +140,12 @@ export interface OrderListParams {
   offset?: number;
   include_items?: boolean;
   search?: string; // For free text search
+  restaurant_id?: string;
+  location_id?: string;
 }
+
+// Alias for backward compatibility
+export type OrderFilter = OrderListParams;
 
 export interface OrderCreateRequest {
   customer?: Customer;
@@ -175,30 +197,38 @@ export interface OrderAnalytics {
   total_orders: number;
   total_revenue: number;
   average_order_value: number;
-  orders_by_status: Record<OrderStatus, number>;
-  orders_by_type: Record<OrderType, number>;
-  revenue_by_hour: Array<{
+  orders_by_status: Record<OrderStatus | string, number>;
+  orders_by_type: Record<OrderType | string, number>;
+  revenue_by_hour?: Array<{
     hour: number;
     revenue: number;
     orders: number;
   }>;
+  hourly_orders?: Array<{ 
+    hour: string | number; 
+    count: number; 
+    revenue: number;
+  }>;
   top_items: Array<{
-    item_id: number;
-    item_name: string;
+    item_id?: number;
+    item_name?: string;
+    name?: string;
     quantity: number;
     revenue: number;
   }>;
   payment_methods: Record<PaymentMethod, {
     count: number;
     amount: number;
-  }>;
+  } | number>;
 }
 
 // WebSocket event types
 export interface OrderEvent {
-  type: 'order_created' | 'order_updated' | 'order_status_changed' | 'payment_updated';
+  type: 'created' | 'updated' | 'status_changed' | 'cancelled' | 'order_created' | 'order_updated' | 'order_status_changed' | 'payment_updated';
   order_id: number;
-  data: Partial<Order>;
+  order?: Order;
+  data?: Partial<Order>;
+  status?: string;
   timestamp: string;
 }
 
@@ -218,3 +248,10 @@ export interface ApiError {
   details?: any;
   timestamp: string;
 }
+
+// Re-exports for convenience
+export type OrderList = Order[];
+export type OrderStatusType = OrderStatus;
+export type PaymentStatusType = PaymentStatus;
+export type PaymentMethodType = PaymentMethod;
+export type OrderTypeType = OrderType;
