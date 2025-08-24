@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -26,7 +26,7 @@ interface ButtonProps extends TouchableOpacityProps {
   textStyle?: TextStyle;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = memo(({
   title,
   variant = 'primary',
   size = 'medium',
@@ -43,7 +43,7 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const isDisabled = disabled || loading;
 
-  const getButtonStyle = (): ViewStyle => {
+  const buttonStyle = useMemo((): ViewStyle => {
     const baseStyle: ViewStyle = {
       flexDirection: 'row',
       alignItems: 'center',
@@ -104,9 +104,9 @@ export const Button: React.FC<ButtonProps> = ({
       ...(fullWidth && { width: '100%' }),
       opacity: isDisabled ? 0.6 : 1,
     };
-  };
+  }, [size, variant, fullWidth, isDisabled]);
 
-  const getTextStyle = (): TextStyle => {
+  const textStyleMemo = useMemo((): TextStyle => {
     const sizeStyles: Record<string, TextStyle> = {
       small: {
         fontSize: typography.fontSize.body,
@@ -139,23 +139,23 @@ export const Button: React.FC<ButtonProps> = ({
       color: variantTextColors[variant],
       marginHorizontal: icon ? spacing.xs : 0,
     };
-  };
+  }, [size, variant, isDisabled, icon]);
 
-  const getIconSize = (): number => {
+  const iconSize = useMemo((): number => {
     const sizes: Record<string, number> = {
       small: 16,
       medium: 20,
       large: 24,
     };
     return sizes[size];
-  };
+  }, [size]);
 
-  const getIconColor = (): string => {
+  const iconColor = useMemo((): string => {
     if (variant === 'ghost' || variant === 'outline') {
       return isDisabled ? colors.text.disabled : colors.primary[500];
     }
     return colors.text.inverse;
-  };
+  }, [variant, isDisabled]);
 
   const renderContent = () => {
     if (loading) {
@@ -167,8 +167,8 @@ export const Button: React.FC<ButtonProps> = ({
         {icon && iconPosition === 'left' && (
           <MaterialCommunityIcons
             name={icon}
-            size={getIconSize()}
-            color={getIconColor()}
+            size={iconSize}
+            color={iconColor}
             style={{ marginRight: spacing.xs }}
           />
         )}
@@ -176,8 +176,8 @@ export const Button: React.FC<ButtonProps> = ({
         {icon && iconPosition === 'right' && (
           <MaterialCommunityIcons
             name={icon}
-            size={getIconSize()}
-            color={getIconColor()}
+            size={iconSize}
+            color={iconColor}
             style={{ marginLeft: spacing.xs }}
           />
         )}

@@ -1,8 +1,32 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, ActivityIndicator } from 'react-native';
 import { StaffListScreen } from '@screens/staff/StaffListScreen';
-import { StaffDetailsScreen } from '@screens/staff/StaffDetailsScreen';
-import { ScheduleScreen } from '@screens/staff/ScheduleScreen';
+import { designSystem } from '@constants/designSystem';
+
+// Lazy load heavy screens
+const StaffDetailsScreen = lazy(() => import('@screens/staff/StaffDetailsScreen').then(module => ({ default: module.StaffDetailsScreen })));
+const ScheduleScreen = lazy(() => import('@screens/staff/ScheduleScreen').then(module => ({ default: module.ScheduleScreen })));
+
+// Loading component
+const ScreenLoader = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <ActivityIndicator size="large" color={designSystem.colors.semantic.primary} />
+  </View>
+);
+
+// Wrap lazy components
+const LazyStaffDetails = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <StaffDetailsScreen {...props} />
+  </Suspense>
+);
+
+const LazySchedule = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <ScheduleScreen {...props} />
+  </Suspense>
+);
 
 export type StaffStackParamList = {
   StaffList: undefined;
@@ -22,12 +46,12 @@ export const StaffNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="StaffDetails"
-        component={StaffDetailsScreen}
+        component={LazyStaffDetails}
         options={{ title: 'Staff Details' }}
       />
       <Stack.Screen
         name="Schedule"
-        component={ScheduleScreen}
+        component={LazySchedule}
         options={{ title: 'Schedule' }}
       />
     </Stack.Navigator>

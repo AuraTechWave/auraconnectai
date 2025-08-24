@@ -8,7 +8,8 @@
     "react-app",
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
-    "prettier"
+    "prettier",
+    "plugin:storybook/recommended"
   ],
   "plugins": [
     "react",
@@ -53,7 +54,10 @@
     "no-console": [
       "warn",
       {
-        "allow": ["warn", "error"]
+        "allow": [
+          "warn",
+          "error"
+        ]
       }
     ],
     "no-debugger": "error",
@@ -76,7 +80,12 @@
   },
   "overrides": [
     {
-      "files": ["*.test.js", "*.test.jsx", "*.spec.js", "*.spec.jsx"],
+      "files": [
+        "*.test.js",
+        "*.test.jsx",
+        "*.spec.js",
+        "*.spec.jsx"
+      ],
       "env": {
         "jest": true
       }
