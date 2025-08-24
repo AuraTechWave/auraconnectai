@@ -6,22 +6,46 @@ const path = require('path');
 const colorsPath = path.join(__dirname, '../tokens/colors.json');
 const { colors } = JSON.parse(fs.readFileSync(colorsPath, 'utf8'));
 
+// Function to resolve color references
+function resolveColor(value) {
+  if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+    // Remove braces and split by dots
+    const path = value.slice(1, -1).split('.');
+    let resolved = colors;
+    
+    for (const segment of path) {
+      resolved = resolved[segment];
+      if (!resolved) return value;
+    }
+    
+    // If we found a value property, use it
+    return resolved.value || value;
+  }
+  return value;
+}
+
 // Test configurations
 const tests = [
   // Text on backgrounds - AA (4.5:1)
-  { name: 'Primary text on white', fg: colors.semantic.text.primary, bg: colors.semantic.background.primary, min: 4.5 },
-  { name: 'Secondary text on white', fg: colors.semantic.text.secondary, bg: colors.semantic.background.primary, min: 4.5 },
+  { name: 'Primary text on white', fg: colors.semantic.text.primary.value, bg: colors.semantic.background.primary.value, min: 4.5 },
+  { name: 'Secondary text on white', fg: colors.semantic.text.secondary.value, bg: colors.semantic.background.primary.value, min: 4.5 },
+  { name: 'Primary text on secondary bg', fg: colors.semantic.text.primary.value, bg: colors.semantic.background.secondary.value, min: 4.5 },
   
-  // Button text - AA (4.5:1)
-  { name: 'Primary button', fg: colors.semantic.primary.contrast, bg: colors.semantic.primary.base, min: 4.5 },
-  { name: 'Secondary button', fg: colors.semantic.secondary.contrast, bg: colors.semantic.secondary.base, min: 4.5 },
-  { name: 'Success button', fg: colors.semantic.success.contrast, bg: colors.semantic.success.base, min: 4.5 },
-  { name: 'Warning button', fg: colors.semantic.warning.contrast, bg: colors.semantic.warning.base, min: 4.5 },
-  { name: 'Error button', fg: colors.semantic.error.contrast, bg: colors.semantic.error.base, min: 4.5 },
+  // Button text - AA (4.5:1) - assuming white text on colored backgrounds
+  { name: 'White on primary button', fg: colors.semantic.text.inverse.value, bg: colors.semantic.primary.value, min: 4.5 },
+  { name: 'White on secondary button', fg: colors.semantic.text.inverse.value, bg: colors.semantic.secondary.value, min: 4.5 },
+  { name: 'White on success button', fg: colors.semantic.text.inverse.value, bg: colors.semantic.success.value, min: 4.5 },
+  { name: 'Dark on warning button', fg: colors.semantic.text.primary.value, bg: colors.semantic.warning.value, min: 4.5 },
+  { name: 'White on error button', fg: colors.semantic.text.inverse.value, bg: colors.semantic.error.value, min: 4.5 },
   
   // UI elements - AA (3:1)
-  { name: 'Border on white', fg: colors.semantic.border.default, bg: colors.semantic.background.primary, min: 3 },
-  { name: 'Primary color on light bg', fg: colors.semantic.primary.base, bg: colors.semantic.primary.light, min: 3 },
+  { name: 'Default border on white', fg: colors.semantic.border.default.value, bg: colors.semantic.background.primary.value, min: 3 },
+  { name: 'Focus border on white', fg: colors.semantic.border.focus.value, bg: colors.semantic.background.primary.value, min: 3 },
+  
+  // State colors on white background
+  { name: 'Success color on white', fg: colors.semantic.success.value, bg: colors.semantic.background.primary.value, min: 3 },
+  { name: 'Warning color on white', fg: colors.semantic.warning.value, bg: colors.semantic.background.primary.value, min: 3 },
+  { name: 'Error color on white', fg: colors.semantic.error.value, bg: colors.semantic.background.primary.value, min: 3 },
 ];
 
 // Run tests
@@ -32,16 +56,20 @@ let failed = 0;
 
 tests.forEach(test => {
   try {
-    const ratio = wcagContrast.ratio(test.fg, test.bg);
-    const passes = ratio >= test.min;
+    // Resolve color references
+    const fgColor = resolveColor(test.fg);
+    const bgColor = resolveColor(test.bg);
+    
+    const contrastRatio = wcagContrast.hex(fgColor, bgColor);
+    const passes = contrastRatio >= test.min;
     
     if (passes) {
       console.log(`✅ ${test.name}`);
-      console.log(`   ${test.fg} on ${test.bg} = ${ratio.toFixed(2)}:1 (min: ${test.min}:1)`);
+      console.log(`   ${fgColor} on ${bgColor} = ${contrastRatio.toFixed(2)}:1 (min: ${test.min}:1)`);
       passed++;
     } else {
       console.log(`❌ ${test.name}`);
-      console.log(`   ${test.fg} on ${test.bg} = ${ratio.toFixed(2)}:1 (min: ${test.min}:1)`);
+      console.log(`   ${fgColor} on ${bgColor} = ${contrastRatio.toFixed(2)}:1 (min: ${test.min}:1)`);
       failed++;
     }
   } catch (error) {

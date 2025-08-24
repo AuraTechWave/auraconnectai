@@ -210,7 +210,7 @@ ${generateThemeCSS('dark', tokens)}
       }
       
       const content = fs.readFileSync(filePath, 'utf8');
-      const regex = new RegExp(`export const ${varName} = \\\`([^\\`]+)\\\``, 's');
+      const regex = new RegExp(`export const ${varName} = \\\`([^\\\`]+)\\\``, 's');
       const match = content.match(regex);
       
       if (match && match[1]) {

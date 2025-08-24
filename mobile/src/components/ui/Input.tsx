@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   View,
   TextInput,
@@ -27,7 +27,7 @@ interface InputProps extends TextInputProps {
   disabled?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input: React.FC<InputProps> = memo(({
   label,
   error,
   helper,
@@ -47,7 +47,7 @@ export const Input: React.FC<InputProps> = ({
   const [isFocused, setIsFocused] = useState(false);
   const [animatedValue] = useState(new Animated.Value(value ? 1 : 0));
 
-  const handleFocus = (e: any) => {
+  const handleFocus = useCallback((e: any) => {
     setIsFocused(true);
     Animated.timing(animatedValue, {
       toValue: 1,
@@ -55,9 +55,9 @@ export const Input: React.FC<InputProps> = ({
       useNativeDriver: false,
     }).start();
     onFocus?.(e);
-  };
+  }, [animatedValue, onFocus]);
 
-  const handleBlur = (e: any) => {
+  const handleBlur = useCallback((e: any) => {
     setIsFocused(false);
     if (!value) {
       Animated.timing(animatedValue, {
@@ -67,17 +67,15 @@ export const Input: React.FC<InputProps> = ({
       }).start();
     }
     onBlur?.(e);
-  };
+  }, [animatedValue, value, onBlur]);
 
-  const getContainerStyle = (): ViewStyle => {
-    const baseStyle: ViewStyle = {
+  const containerStyleMemo = useMemo((): ViewStyle => {
+    return {
       marginVertical: spacing.xs,
     };
+  }, []);
 
-    return baseStyle;
-  };
-
-  const getInputContainerStyle = (): ViewStyle => {
+  const inputContainerStyle = useMemo((): ViewStyle => {
     const sizeStyles: Record<string, ViewStyle> = {
       small: {
         minHeight: 40,
@@ -135,9 +133,9 @@ export const Input: React.FC<InputProps> = ({
       ...sizeStyles[size],
       ...variantStyles[variant],
     };
-  };
+  }, [size, variant, error, isFocused, disabled]);
 
-  const getInputStyle = (): TextStyle => {
+  const inputStyleMemo = useMemo((): TextStyle => {
     const sizeStyles: Record<string, TextStyle> = {
       small: {
         fontSize: typography.fontSize.body,
@@ -159,19 +157,21 @@ export const Input: React.FC<InputProps> = ({
       ...sizeStyles[size],
       paddingVertical: spacing.xs,
     };
-  };
+  }, [size, disabled]);
 
-  const getLabelStyle = (): TextStyle => {
-    const labelTranslateY = animatedValue.interpolate({
+  const labelTranslateY = useMemo(() => 
+    animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [18, 0],
-    });
+    }), [animatedValue]);
 
-    const labelScale = animatedValue.interpolate({
+  const labelScale = useMemo(() => 
+    animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [1, 0.85],
-    });
+    }), [animatedValue]);
 
+  const getLabelStyle = useCallback((): any => {
     return {
       position: 'absolute',
       left: variant === 'underlined' ? 0 : spacing.md,
@@ -183,16 +183,16 @@ export const Input: React.FC<InputProps> = ({
         { scale: labelScale },
       ],
     };
-  };
+  }, [variant, labelTranslateY, labelScale]);
 
-  const getIconSize = (): number => {
+  const iconSize = useMemo((): number => {
     const sizes: Record<string, number> = {
       small: 18,
       medium: 20,
       large: 24,
     };
     return sizes[size];
-  };
+  }, [size]);
 
   return (
     <View style={[getContainerStyle(), containerStyle]}>
@@ -232,7 +232,7 @@ export const Input: React.FC<InputProps> = ({
         {leftIcon && (
           <MaterialCommunityIcons
             name={leftIcon}
-            size={getIconSize()}
+            size={iconSize}
             color={disabled ? colors.text.disabled : colors.text.secondary}
             style={{ marginRight: spacing.xs }}
           />
@@ -254,7 +254,7 @@ export const Input: React.FC<InputProps> = ({
           >
             <MaterialCommunityIcons
               name={rightIcon}
-              size={getIconSize()}
+              size={iconSize}
               color={disabled ? colors.text.disabled : colors.text.secondary}
               style={{ marginLeft: spacing.xs }}
             />
@@ -273,7 +273,7 @@ export const Input: React.FC<InputProps> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   errorText: {
@@ -289,3 +289,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
 });
+
+// Display name for debugging
+Input.displayName = 'Input';
