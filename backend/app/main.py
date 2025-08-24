@@ -183,6 +183,7 @@ app = FastAPI(
     * **Reservation System** - Advanced booking system with waitlist management and confirmations
     * **Promotions & Marketing** - Promotional campaigns, coupons, and A/B testing
     * **Payment Processing** - Multiple payment methods, split bills, and refunds
+    * **Email Notifications** - Transactional emails with tracking, templates, and unsubscribe
     
     ## Authentication
     
@@ -383,6 +384,18 @@ app.include_router(sms_router, tags=["SMS Notifications"])
 app.include_router(template_router, tags=["SMS Templates"])
 app.include_router(opt_out_router, tags=["SMS Opt-Out"])
 app.include_router(sms_webhook_router, tags=["SMS Webhooks"])
+
+# Email Notifications
+from modules.email.routes.email_routes import router as email_router
+from modules.email.routes.template_routes import router as email_template_router
+from modules.email.routes.unsubscribe_routes import router as email_unsubscribe_router
+from modules.email.routes.tracking_routes import router as email_tracking_router
+from modules.email.routes.webhook_routes import router as email_webhook_router
+app.include_router(email_router, prefix="/api/v1/email", tags=["Email Notifications"])
+app.include_router(email_template_router, prefix="/api/v1/email", tags=["Email Templates"])
+app.include_router(email_unsubscribe_router, prefix="/api/v1/email", tags=["Email Unsubscribe"])
+app.include_router(email_tracking_router, prefix="/api/v1/email", tags=["Email Tracking"])
+app.include_router(email_webhook_router, prefix="/api/v1/email", tags=["Email Webhooks"])
 
 # Loyalty & Rewards
 app.include_router(rewards_router, prefix="/api/v1", tags=["Loyalty & Rewards"])
