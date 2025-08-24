@@ -1,0 +1,291 @@
+/* Staff Availability Modal Styles */
+.staff-availability {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Availability Header */
+.availability-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.availability-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Availability Controls */
+.availability-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.staff-selector {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.edit-button,
+.save-button,
+.cancel-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.edit-button {
+  background-color: #2196F3;
+  color: white;
+}
+
+.edit-button:hover {
+  background-color: #1976D2;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.save-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.save-button:hover {
+  background-color: #45a049;
+}
+
+.cancel-button {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.cancel-button:hover {
+  background-color: #e0e0e0;
+}
+
+/* Loading State */
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+/* Availability Grid */
+.availability-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background-color: #e0e0e0;
+  padding: 1px;
+  margin: 20px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.day-column {
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.day-header {
+  padding: 12px;
+  text-align: center;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.day-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.day-date {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Day Status */
+.day-status {
+  padding: 16px;
+  text-align: center;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.day-status.editable {
+  cursor: pointer;
+}
+
+.day-status.editable:hover {
+  background-color: #f5f5f5;
+}
+
+.day-status.all-day {
+  background-color: #E8F5E9;
+}
+
+.day-status.partial {
+  background-color: #FFF3E0;
+}
+
+.day-status.unavailable {
+  background-color: #FFEBEE;
+}
+
+.available {
+  color: #2E7D32;
+}
+
+.unavailable {
+  color: #C62828;
+}
+
+/* Time Slots */
+.time-slots {
+  padding: 12px;
+  background-color: #fafafa;
+}
+
+.slot-option {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  margin-bottom: 8px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.slot-option:hover {
+  background-color: #f5f5f5;
+  border-color: #2196F3;
+}
+
+.slot-option input {
+  margin-right: 8px;
+}
+
+.slot-option span {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.slot-option small {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Selected Slots */
+.selected-slots {
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-tag {
+  padding: 4px 12px;
+  background-color: #2196F3;
+  color: white;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Availability Legend */
+.availability-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.legend-color.available {
+  background-color: #E8F5E9;
+}
+
+.legend-color.partial {
+  background-color: #FFF3E0;
+}
+
+.legend-color.unavailable {
+  background-color: #FFEBEE;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .staff-availability {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .availability-grid {
+    grid-template-columns: repeat(4, 1fr);
+    margin: 10px;
+  }
+  
+  .day-column:nth-child(n+5) {
+    display: none;
+  }
+  
+  .availability-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .staff-selector {
+    width: 100%;
+  }
+}

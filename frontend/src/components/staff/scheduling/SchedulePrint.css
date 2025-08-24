@@ -1,0 +1,216 @@
+/* Print Styles for Schedule */
+@media print {
+  /* Hide non-essential elements */
+  .schedule-toolbar,
+  .modal-overlay,
+  .error-alert,
+  .calendar-legend,
+  .staff-filter,
+  .close-button,
+  .edit-button,
+  .toolbar-button,
+  .nav-button {
+    display: none !important;
+  }
+
+  /* Reset page margins */
+  @page {
+    margin: 0.5in;
+    size: landscape;
+  }
+
+  /* Body adjustments */
+  body {
+    margin: 0;
+    padding: 0;
+    font-size: 10pt;
+  }
+
+  /* Schedule container */
+  .staff-scheduling-interface {
+    height: auto;
+    background-color: white;
+  }
+
+  .schedule-content {
+    padding: 0;
+  }
+
+  /* Calendar adjustments */
+  .schedule-calendar {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .calendar-header {
+    position: static;
+    background-color: white;
+    border-bottom: 2px solid #000;
+  }
+
+  .calendar-days-header {
+    background-color: white;
+    font-weight: bold;
+  }
+
+  .day-header {
+    border-right: 1px solid #000;
+    padding: 8px;
+  }
+
+  /* Calendar body */
+  .calendar-body {
+    overflow: visible;
+    height: auto;
+  }
+
+  .time-column {
+    position: static;
+    background-color: white;
+    border-right: 1px solid #000;
+  }
+
+  .time-slot {
+    height: 40px;
+    border-bottom: 1px solid #ccc;
+    padding: 4px;
+  }
+
+  .time-label {
+    font-size: 9pt;
+  }
+
+  /* Staff rows */
+  .staff-row {
+    page-break-inside: avoid;
+    border-bottom: 1px solid #000;
+  }
+
+  .staff-header {
+    position: static;
+    background-color: #f0f0f0;
+    border-right: 1px solid #000;
+    padding: 8px;
+  }
+
+  .staff-name {
+    font-weight: bold;
+    font-size: 11pt;
+  }
+
+  .staff-role {
+    font-size: 9pt;
+  }
+
+  /* Day columns */
+  .day-column {
+    min-height: auto;
+    border-right: 1px solid #ccc;
+    background-image: none;
+  }
+
+  /* Shift cards */
+  .shift-card {
+    position: static !important;
+    margin: 2px;
+    padding: 4px;
+    font-size: 9pt;
+    box-shadow: none;
+    border: 1px solid #000;
+    color: #000 !important;
+    background-color: #f0f0f0 !important;
+    page-break-inside: avoid;
+  }
+
+  .shift-card.REGULAR {
+    background-color: #e8f5e9 !important;
+  }
+
+  .shift-card.OVERTIME {
+    background-color: #fff3e0 !important;
+  }
+
+  .shift-card.HOLIDAY {
+    background-color: #f3e5f5 !important;
+  }
+
+  .shift-card.TRAINING {
+    background-color: #e3f2fd !important;
+  }
+
+  .shift-time {
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+
+  .shift-role {
+    font-size: 8pt;
+  }
+
+  .shift-notes {
+    display: none;
+  }
+
+  /* Print header with schedule info */
+  .print-header {
+    display: block;
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+  }
+
+  .print-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 18pt;
+  }
+
+  .print-header .date-range {
+    font-size: 12pt;
+    color: #333;
+  }
+
+  .print-header .print-date {
+    font-size: 10pt;
+    color: #666;
+    margin-top: 5px;
+  }
+
+  /* Print footer */
+  .print-footer {
+    display: block;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #000;
+    font-size: 9pt;
+    color: #666;
+  }
+
+  /* Simplified layout for better printing */
+  .calendar-grid {
+    display: table;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .staff-row {
+    display: table-row;
+  }
+
+  .staff-header,
+  .day-column {
+    display: table-cell;
+    vertical-align: top;
+  }
+
+  /* Ensure shifts are visible */
+  .shifts-container {
+    position: static;
+    height: auto;
+  }
+
+  .shift-card {
+    display: block;
+    margin-bottom: 4px;
+  }
+}
