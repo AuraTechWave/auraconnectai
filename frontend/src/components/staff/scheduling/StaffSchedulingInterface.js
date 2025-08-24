@@ -143,25 +143,49 @@ const StaffSchedulingInterface = () => {
 
   const handleShiftDrop = async (shift, newStaffId, newDate) => {
     try {
-      // Calculate new times based on drop position
-      const shiftDate = parseISO(shift.date);
+      // Validate newDate parameter
+      let parsedNewDate;
+      if (typeof newDate === 'string') {
+        parsedNewDate = parseISO(newDate);
+        if (!isValid(parsedNewDate)) {
+          throw new Error('Invalid date string provided');
+        }
+      } else if (newDate instanceof Date) {
+        if (!isValid(newDate)) {
+          throw new Error('Invalid date object provided');
+        }
+        parsedNewDate = newDate;
+      } else {
+        throw new Error('Invalid date format provided');
+      }
+
+      // Parse existing shift times
       const startTime = parseISO(shift.start_time);
       const endTime = parseISO(shift.end_time);
       
+      if (!isValid(startTime) || !isValid(endTime)) {
+        throw new Error('Invalid shift times');
+      }
+      
+      // Extract time components from original shift
       const hoursDiff = startTime.getHours();
       const minutesDiff = startTime.getMinutes();
+      const secondsDiff = startTime.getSeconds();
       
-      const newStartTime = new Date(newDate);
-      newStartTime.setHours(hoursDiff, minutesDiff, 0, 0);
+      // Create new start time preserving original time components
+      const newStartTime = new Date(parsedNewDate);
+      newStartTime.setHours(hoursDiff, minutesDiff, secondsDiff, 0);
       
-      const duration = (endTime - startTime) / 1000 / 60 / 60; // in hours
-      const newEndTime = new Date(newStartTime);
-      newEndTime.setHours(newEndTime.getHours() + duration);
+      // Calculate duration in milliseconds to preserve precision
+      const durationMs = endTime.getTime() - startTime.getTime();
+      
+      // Calculate new end time by adding duration to new start time
+      const newEndTime = new Date(newStartTime.getTime() + durationMs);
 
       const updatedShift = {
         ...shift,
         staff_id: newStaffId,
-        date: newDate,
+        date: format(parsedNewDate, 'yyyy-MM-dd'),
         start_time: newStartTime.toISOString(),
         end_time: newEndTime.toISOString()
       };
