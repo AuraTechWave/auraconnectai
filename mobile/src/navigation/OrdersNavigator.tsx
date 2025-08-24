@@ -1,11 +1,46 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, ActivityIndicator } from 'react-native';
 import OrdersScreen from '../screens/orders/OrdersScreen';
-import OrderDetailsScreen from '../screens/orders/OrderDetailsScreen';
-import CreateOrderScreen from '../screens/orders/CreateOrderScreen';
-import OfflineOrdersScreen from '../screens/orders/OfflineOrdersScreen';
-import ProcessPaymentScreen from '../screens/orders/ProcessPaymentScreen';
 import { colors } from '../constants/designSystem';
+
+// Lazy load heavy screens
+const OrderDetailsScreen = lazy(() => import('../screens/orders/OrderDetailsScreen'));
+const CreateOrderScreen = lazy(() => import('../screens/orders/CreateOrderScreen'));
+const OfflineOrdersScreen = lazy(() => import('../screens/orders/OfflineOrdersScreen'));
+const ProcessPaymentScreen = lazy(() => import('../screens/orders/ProcessPaymentScreen'));
+
+// Loading component
+const ScreenLoader = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <ActivityIndicator size="large" color={colors.primary[500]} />
+  </View>
+);
+
+// Wrap lazy components
+const LazyOrderDetails = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <OrderDetailsScreen {...props} />
+  </Suspense>
+);
+
+const LazyCreateOrder = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <CreateOrderScreen {...props} />
+  </Suspense>
+);
+
+const LazyOfflineOrders = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <OfflineOrdersScreen {...props} />
+  </Suspense>
+);
+
+const LazyProcessPayment = (props: any) => (
+  <Suspense fallback={<ScreenLoader />}>
+    <ProcessPaymentScreen {...props} />
+  </Suspense>
+);
 
 export type OrdersStackParamList = {
   OrdersList: undefined;
@@ -40,7 +75,7 @@ export const OrdersNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="OrderDetails"
-        component={OrderDetailsScreen}
+        component={LazyOrderDetails}
         options={{ 
           title: 'Order Details',
           headerBackTitle: 'Orders',
@@ -48,7 +83,7 @@ export const OrdersNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="CreateOrder"
-        component={CreateOrderScreen}
+        component={LazyCreateOrder}
         options={{ 
           title: 'New Order',
           presentation: 'modal',
@@ -56,14 +91,14 @@ export const OrdersNavigator: React.FC = () => {
       />
       <Stack.Screen
         name="OfflineOrders"
-        component={OfflineOrdersScreen}
+        component={LazyOfflineOrders}
         options={{ 
           title: 'Offline Orders',
         }}
       />
       <Stack.Screen
         name="ProcessPayment"
-        component={ProcessPaymentScreen}
+        component={LazyProcessPayment}
         options={{ 
           title: 'Process Payment',
           presentation: 'modal',

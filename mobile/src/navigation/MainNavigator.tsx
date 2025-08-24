@@ -11,6 +11,7 @@ import { MenuNavigator } from './MenuNavigator';
 import { InventoryNavigator } from './InventoryNavigator';
 import { AnalyticsScreen } from '@screens/analytics/AnalyticsScreen';
 import { DrawerContent } from '@components/navigation/DrawerContent';
+import { ComponentShowcase } from '@screens/ComponentShowcase';
 
 export type MainTabParamList = {
   Dashboard: undefined;
@@ -26,6 +27,7 @@ export type DrawerParamList = {
   Settings: undefined;
   Profile: undefined;
   Help: undefined;
+  ComponentShowcase: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -121,6 +123,14 @@ export const MainNavigator: React.FC = () => {
         swipeEnabled: true,
       }}>
       <Drawer.Screen name="Tabs" component={TabNavigator} />
+      <Drawer.Screen 
+        name="ComponentShowcase" 
+        component={ComponentShowcase}
+        options={{
+          title: 'UI Components',
+          headerShown: true,
+        }}
+      />
     </Drawer.Navigator>
   );
 };

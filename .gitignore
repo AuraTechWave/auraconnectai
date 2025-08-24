@@ -40,3 +40,6 @@ auth-tokens/
 tokens/
 *_token
 *_token.*
+
+*storybook.log
+storybook-static
