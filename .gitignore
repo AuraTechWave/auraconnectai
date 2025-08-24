@@ -1,4 +1,3 @@
-
 # Python
 __pycache__/
 *.py[cod]
@@ -40,6 +39,8 @@ auth-tokens/
 tokens/
 *_token
 *_token.*
+auraconnectai-review.zip
 
+# Storybook
 *storybook.log
 storybook-static
