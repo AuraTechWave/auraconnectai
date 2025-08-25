@@ -1,0 +1,415 @@
+{
+  "merchant": {
+    "id": "MERCHANT123456789",
+    "business_name": "The Coffee Corner",
+    "country": "US",
+    "currency": "USD",
+    "timezone": "America/Los_Angeles"
+  },
+  "catalog": {
+    "objects": [
+      {
+        "type": "CATEGORY",
+        "id": "CAT001",
+        "category_data": {
+          "name": "Hot Beverages"
+        }
+      },
+      {
+        "type": "CATEGORY",
+        "id": "CAT002",
+        "category_data": {
+          "name": "Cold Beverages"
+        }
+      },
+      {
+        "type": "CATEGORY",
+        "id": "CAT003",
+        "category_data": {
+          "name": "Pastries"
+        }
+      },
+      {
+        "type": "ITEM",
+        "id": "ITEM001",
+        "item_data": {
+          "name": "Cappuccino",
+          "description": "Espresso with steamed milk and foam",
+          "category_id": "CAT001",
+          "variations": [
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR001",
+              "item_variation_data": {
+                "name": "Small",
+                "sku": "CAP-S",
+                "price_money": {
+                  "amount": 350,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR002",
+              "item_variation_data": {
+                "name": "Medium",
+                "sku": "CAP-M",
+                "price_money": {
+                  "amount": 425,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR003",
+              "item_variation_data": {
+                "name": "Large",
+                "sku": "CAP-L",
+                "price_money": {
+                  "amount": 495,
+                  "currency": "USD"
+                }
+              }
+            }
+          ],
+          "modifier_list_info": [
+            {
+              "modifier_list_id": "MODLIST001",
+              "enabled": true
+            },
+            {
+              "modifier_list_id": "MODLIST002",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      {
+        "type": "ITEM",
+        "id": "ITEM002",
+        "item_data": {
+          "name": "Iced Latte",
+          "description": "Espresso with cold milk over ice",
+          "category_id": "CAT002",
+          "variations": [
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR004",
+              "item_variation_data": {
+                "name": "Regular",
+                "sku": "ICELAT-R",
+                "price_money": {
+                  "amount": 475,
+                  "currency": "USD"
+                }
+              }
+            }
+          ],
+          "modifier_list_info": [
+            {
+              "modifier_list_id": "MODLIST001",
+              "enabled": true
+            },
+            {
+              "modifier_list_id": "MODLIST003",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      {
+        "type": "ITEM",
+        "id": "ITEM003",
+        "item_data": {
+          "name": "Croissant",
+          "description": "Buttery, flaky French pastry",
+          "category_id": "CAT003",
+          "variations": [
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR005",
+              "item_variation_data": {
+                "name": "Plain",
+                "sku": "CROIS-P",
+                "price_money": {
+                  "amount": 325,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "ITEM_VARIATION",
+              "id": "VAR006",
+              "item_variation_data": {
+                "name": "Chocolate",
+                "sku": "CROIS-C",
+                "price_money": {
+                  "amount": 375,
+                  "currency": "USD"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "MODIFIER_LIST",
+        "id": "MODLIST001",
+        "modifier_list_data": {
+          "name": "Milk Options",
+          "selection_type": "SINGLE",
+          "modifiers": [
+            {
+              "type": "MODIFIER",
+              "id": "MOD001",
+              "modifier_data": {
+                "name": "Whole Milk",
+                "price_money": {
+                  "amount": 0,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "MODIFIER",
+              "id": "MOD002",
+              "modifier_data": {
+                "name": "Oat Milk",
+                "price_money": {
+                  "amount": 75,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "MODIFIER",
+              "id": "MOD003",
+              "modifier_data": {
+                "name": "Almond Milk",
+                "price_money": {
+                  "amount": 65,
+                  "currency": "USD"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "MODIFIER_LIST",
+        "id": "MODLIST002",
+        "modifier_list_data": {
+          "name": "Extra Shots",
+          "selection_type": "MULTIPLE",
+          "modifiers": [
+            {
+              "type": "MODIFIER",
+              "id": "MOD004",
+              "modifier_data": {
+                "name": "Extra Shot",
+                "price_money": {
+                  "amount": 75,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "MODIFIER",
+              "id": "MOD005",
+              "modifier_data": {
+                "name": "Decaf",
+                "price_money": {
+                  "amount": 0,
+                  "currency": "USD"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "MODIFIER_LIST",
+        "id": "MODLIST003",
+        "modifier_list_data": {
+          "name": "Sweeteners",
+          "selection_type": "MULTIPLE",
+          "modifiers": [
+            {
+              "type": "MODIFIER",
+              "id": "MOD006",
+              "modifier_data": {
+                "name": "Vanilla Syrup",
+                "price_money": {
+                  "amount": 50,
+                  "currency": "USD"
+                }
+              }
+            },
+            {
+              "type": "MODIFIER",
+              "id": "MOD007",
+              "modifier_data": {
+                "name": "Caramel Syrup",
+                "price_money": {
+                  "amount": 50,
+                  "currency": "USD"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "customers": [
+    {
+      "id": "CUST001",
+      "given_name": "Sarah",
+      "family_name": "Johnson",
+      "email_address": "sarah.j@email.com",
+      "phone_number": "+13105551234",
+      "created_at": "2023-05-10T08:00:00Z",
+      "updated_at": "2025-01-24T10:30:00Z",
+      "preferences": {
+        "email_unsubscribed": false
+      },
+      "groups": [
+        {
+          "id": "GRP001",
+          "name": "Regulars"
+        }
+      ]
+    },
+    {
+      "id": "CUST002",
+      "given_name": "Michael",
+      "family_name": "Chen",
+      "email_address": "m.chen@email.com",
+      "created_at": "2024-01-15T14:20:00Z",
+      "updated_at": "2025-01-23T16:45:00Z",
+      "preferences": {
+        "email_unsubscribed": true
+      }
+    }
+  ],
+  "loyalty": {
+    "program": {
+      "id": "LOYALTY001",
+      "status": "ACTIVE",
+      "reward_tiers": [
+        {
+          "id": "TIER001",
+          "name": "Bronze",
+          "points": 0,
+          "definition": {
+            "percentage_discount": 5
+          }
+        },
+        {
+          "id": "TIER002",
+          "name": "Silver",
+          "points": 500,
+          "definition": {
+            "percentage_discount": 10
+          }
+        }
+      ],
+      "accrual_rules": [
+        {
+          "accrual_type": "SPEND",
+          "points": 1,
+          "spend_amount_money": {
+            "amount": 100,
+            "currency": "USD"
+          }
+        }
+      ]
+    },
+    "accounts": [
+      {
+        "id": "LOYACC001",
+        "program_id": "LOYALTY001",
+        "customer_id": "CUST001",
+        "balance": 750,
+        "lifetime_points": 1200
+      }
+    ]
+  },
+  "orders": [
+    {
+      "id": "ORDER001",
+      "location_id": "LOC001",
+      "created_at": "2025-01-24T08:15:00Z",
+      "state": "COMPLETED",
+      "total_money": {
+        "amount": 925,
+        "currency": "USD"
+      },
+      "line_items": [
+        {
+          "uid": "LINEITEM001",
+          "catalog_object_id": "VAR002",
+          "quantity": "1",
+          "name": "Cappuccino - Medium",
+          "base_price_money": {
+            "amount": 425,
+            "currency": "USD"
+          },
+          "modifiers": [
+            {
+              "uid": "LINEMOD001",
+              "catalog_object_id": "MOD002",
+              "name": "Oat Milk",
+              "base_price_money": {
+                "amount": 75,
+                "currency": "USD"
+              }
+            }
+          ],
+          "gross_sales_money": {
+            "amount": 500,
+            "currency": "USD"
+          }
+        },
+        {
+          "uid": "LINEITEM002",
+          "catalog_object_id": "VAR005",
+          "quantity": "1",
+          "name": "Croissant - Plain",
+          "base_price_money": {
+            "amount": 325,
+            "currency": "USD"
+          },
+          "gross_sales_money": {
+            "amount": 325,
+            "currency": "USD"
+          }
+        }
+      ],
+      "fulfillments": [
+        {
+          "uid": "FULFILL001",
+          "type": "PICKUP",
+          "state": "COMPLETED"
+        }
+      ],
+      "customer_id": "CUST001"
+    }
+  ],
+  "dataQualityNotes": [
+    {
+      "issue": "Prices stored in cents (smallest currency unit)",
+      "recommendation": "Divide by 100 for dollar amounts"
+    },
+    {
+      "issue": "SKU variations represent different sizes",
+      "recommendation": "Map variations to size options in target system"
+    },
+    {
+      "issue": "Some customers opted out of email",
+      "recommendation": "Respect email preferences during migration"
+    }
+  ]
+}

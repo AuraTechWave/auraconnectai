@@ -1,0 +1,247 @@
+{
+  "restaurant": {
+    "guid": "2fca9c3e-5834-4b8d-9b7a-1234567890ab",
+    "name": "Bella's Italian Kitchen",
+    "timezone": "America/New_York"
+  },
+  "menus": [
+    {
+      "guid": "menu-001",
+      "name": "Dinner Menu",
+      "visibility": ["DINE_IN", "TAKEOUT", "DELIVERY"],
+      "groups": [
+        {
+          "guid": "group-001",
+          "name": "Appetizers",
+          "items": [
+            {
+              "guid": "item-001",
+              "name": "Bruschetta",
+              "description": "Toasted bread with fresh tomatoes, garlic, and basil",
+              "price": 895,
+              "pricingStrategy": "FIXED",
+              "visibility": ["DINE_IN", "TAKEOUT", "DELIVERY"],
+              "modifierGroups": [
+                {
+                  "guid": "modgroup-001",
+                  "name": "Add Protein",
+                  "selectionType": "OPTIONAL",
+                  "minSelections": 0,
+                  "maxSelections": 2,
+                  "modifiers": [
+                    {
+                      "guid": "mod-001",
+                      "name": "Add Grilled Chicken",
+                      "price": 400,
+                      "priceType": "FIXED"
+                    },
+                    {
+                      "guid": "mod-002",
+                      "name": "Add Shrimp",
+                      "price": 600,
+                      "priceType": "FIXED"
+                    }
+                  ]
+                }
+              ],
+              "tags": ["vegetarian", "popular"]
+            },
+            {
+              "guid": "item-002",
+              "name": "Caesar Salad",
+              "description": "Crisp romaine lettuce with house-made Caesar dressing",
+              "price": 1095,
+              "pricingStrategy": "FIXED",
+              "visibility": ["DINE_IN", "TAKEOUT", "DELIVERY"],
+              "modifierGroups": [
+                {
+                  "guid": "modgroup-002",
+                  "name": "Salad Size",
+                  "selectionType": "REQUIRED",
+                  "minSelections": 1,
+                  "maxSelections": 1,
+                  "modifiers": [
+                    {
+                      "guid": "mod-003",
+                      "name": "Half Size",
+                      "price": -300,
+                      "priceType": "FIXED"
+                    },
+                    {
+                      "guid": "mod-004",
+                      "name": "Full Size",
+                      "price": 0,
+                      "priceType": "FIXED"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "guid": "group-002",
+          "name": "Entrees",
+          "items": [
+            {
+              "guid": "item-003",
+              "name": "Chicken Parmigiana",
+              "description": "Breaded chicken breast with marinara and mozzarella",
+              "price": 2195,
+              "pricingStrategy": "FIXED",
+              "visibility": ["DINE_IN", "TAKEOUT", "DELIVERY"],
+              "modifierGroups": [
+                {
+                  "guid": "modgroup-003",
+                  "name": "Side Choice",
+                  "selectionType": "REQUIRED",
+                  "minSelections": 1,
+                  "maxSelections": 1,
+                  "modifiers": [
+                    {
+                      "guid": "mod-005",
+                      "name": "Spaghetti",
+                      "price": 0,
+                      "priceType": "FIXED"
+                    },
+                    {
+                      "guid": "mod-006",
+                      "name": "Fettuccine",
+                      "price": 0,
+                      "priceType": "FIXED"
+                    },
+                    {
+                      "guid": "mod-007",
+                      "name": "Caesar Salad",
+                      "price": 200,
+                      "priceType": "FIXED"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "guid": "item-004",
+              "name": "Margherita Pizza",
+              "description": "Fresh mozzarella, tomatoes, and basil",
+              "price": 1695,
+              "pricingStrategy": "SIZE",
+              "sizes": [
+                {
+                  "guid": "size-001",
+                  "name": "Small 10\"",
+                  "price": 1695
+                },
+                {
+                  "guid": "size-002",
+                  "name": "Medium 14\"",
+                  "price": 2195
+                },
+                {
+                  "guid": "size-003",
+                  "name": "Large 18\"",
+                  "price": 2695
+                }
+              ],
+              "visibility": ["DINE_IN", "TAKEOUT", "DELIVERY"],
+              "tags": ["vegetarian", "signature"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "customers": [
+    {
+      "guid": "cust-001",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@email.com",
+      "phone": "+1234567890",
+      "loyaltyPoints": 1250,
+      "createdDate": "2023-01-15T10:30:00Z",
+      "lastVisit": "2025-01-20T19:45:00Z",
+      "marketingOptIn": true
+    },
+    {
+      "guid": "cust-002",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "email": "jane.smith@email.com",
+      "phone": "+1234567891",
+      "loyaltyPoints": 3400,
+      "createdDate": "2022-06-20T14:20:00Z",
+      "lastVisit": "2025-01-22T20:15:00Z",
+      "marketingOptIn": false
+    }
+  ],
+  "orders": [
+    {
+      "guid": "order-001",
+      "businessDate": "2025-01-23",
+      "createdDate": "2025-01-23T18:30:00Z",
+      "orderType": "DINE_IN",
+      "table": "12",
+      "server": {
+        "guid": "staff-001",
+        "firstName": "Mike",
+        "lastName": "Johnson"
+      },
+      "customer": {
+        "guid": "cust-001"
+      },
+      "checks": [
+        {
+          "guid": "check-001",
+          "selections": [
+            {
+              "guid": "selection-001",
+              "itemGuid": "item-001",
+              "quantity": 1,
+              "modifiers": [],
+              "price": 895
+            },
+            {
+              "guid": "selection-002",
+              "itemGuid": "item-003",
+              "quantity": 2,
+              "modifiers": [
+                {
+                  "guid": "mod-005",
+                  "displayName": "Spaghetti"
+                }
+              ],
+              "price": 4390
+            }
+          ],
+          "payments": [
+            {
+              "guid": "payment-001",
+              "type": "CREDIT_CARD",
+              "amount": 5285,
+              "tipAmount": 1057,
+              "last4": "4242"
+            }
+          ],
+          "subtotal": 5285,
+          "tax": 423,
+          "total": 5708
+        }
+      ]
+    }
+  ],
+  "dataQualityIssues": [
+    {
+      "description": "Some items have price 0 (possibly comped items)",
+      "exampleItem": "item-comp-001"
+    },
+    {
+      "description": "Modifier prices stored in cents, need conversion",
+      "affectedModifierGroups": ["modgroup-001", "modgroup-002", "modgroup-003"]
+    },
+    {
+      "description": "Some customers missing email addresses",
+      "count": 47
+    }
+  ]
+}
