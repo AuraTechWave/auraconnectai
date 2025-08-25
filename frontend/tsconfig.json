@@ -13,6 +13,8 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "src",
     "paths": {

@@ -1,0 +1,275 @@
+/* Schedule Calendar Styles */
+.schedule-calendar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Loading State */
+.schedule-calendar.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  font-size: 18px;
+  color: #666;
+}
+
+/* Calendar Header */
+.calendar-header {
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.calendar-controls {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.staff-filter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.calendar-days-header {
+  display: flex;
+  background-color: #fafafa;
+}
+
+.time-column-header {
+  width: 80px;
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  color: #666;
+  border-right: 1px solid #e0e0e0;
+}
+
+.day-header {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  border-right: 1px solid #e0e0e0;
+}
+
+.day-header:last-child {
+  border-right: none;
+}
+
+.day-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.day-date {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Calendar Body */
+.calendar-body {
+  flex: 1;
+  display: flex;
+  overflow: auto;
+  position: relative;
+}
+
+.time-column {
+  width: 80px;
+  background-color: #fafafa;
+  border-right: 1px solid #e0e0e0;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.time-slot {
+  height: 60px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.time-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Calendar Grid */
+.calendar-grid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-row {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.staff-header {
+  width: 150px;
+  padding: 12px;
+  background-color: #f8f8f8;
+  border-right: 1px solid #e0e0e0;
+  position: sticky;
+  left: 80px;
+  z-index: 4;
+}
+
+.staff-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.staff-role {
+  font-size: 12px;
+  color: #666;
+}
+
+.staff-schedule {
+  flex: 1;
+  display: flex;
+}
+
+/* Day Column */
+.day-column {
+  flex: 1;
+  position: relative;
+  min-height: 1080px; /* 18 hours * 60px */
+  border-right: 1px solid #f0f0f0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 59px,
+    #f0f0f0 59px,
+    #f0f0f0 60px
+  );
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+.day-column.hover {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.shifts-container {
+  position: relative;
+  height: 100%;
+}
+
+/* Shift Cards */
+.shift-card {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: move;
+  color: white;
+  font-size: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shift-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+.shift-card.DRAFT {
+  opacity: 0.7;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+}
+
+.shift-card.PUBLISHED {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.shift-card.CANCELLED {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.shift-time {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.shift-role {
+  margin-bottom: 2px;
+}
+
+.shift-notes {
+  font-size: 11px;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Legend */
+.calendar-legend {
+  display: flex;
+  gap: 24px;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calendar-days-header {
+    font-size: 12px;
+  }
+  
+  .staff-header {
+    width: 100px;
+  }
+  
+  .shift-card {
+    font-size: 11px;
+    padding: 6px;
+  }
+  
+  .calendar-legend {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
