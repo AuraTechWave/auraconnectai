@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   Card,
@@ -15,6 +14,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import {
   TrendingUp,
   TrendingDown,
@@ -42,8 +42,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import { OrderAnalytics, OrderStatus } from '@/types/order.types';
-import { orderService } from '@/services/orderService';
+import { OrderAnalytics, OrderStatus } from '../../../types/order.types';
+import { orderService } from '../../../services/orderService';
 
 const COLORS = {
   primary: '#1976d2',
@@ -57,10 +57,13 @@ const COLORS = {
 const STATUS_COLORS: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: COLORS.warning,
   [OrderStatus.CONFIRMED]: COLORS.info,
+  [OrderStatus.IN_PROGRESS]: COLORS.primary,
   [OrderStatus.PREPARING]: COLORS.primary,
   [OrderStatus.READY]: COLORS.success,
+  [OrderStatus.COMPLETED]: COLORS.success,
   [OrderStatus.DELIVERED]: '#9e9e9e',
   [OrderStatus.CANCELLED]: COLORS.error,
+  [OrderStatus.DELAYED]: COLORS.warning,
   [OrderStatus.REFUNDED]: COLORS.secondary
 };
 
@@ -230,16 +233,16 @@ const OrderAnalyticsDashboard: React.FC = () => {
     value: count
   }));
 
-  const hourlyData = analytics.hourly_orders.map(item => ({
+  const hourlyData = (analytics.hourly_orders || []).map(item => ({
     ...item,
-    hour: item.hour.split(':')[0] + ':00'
+    hour: typeof item.hour === 'string' ? item.hour.split(':')[0] + ':00' : `${item.hour}:00`
   }));
 
   const topItemsData = analytics.top_items.slice(0, 5);
 
-  const paymentMethodData = Object.entries(analytics.payment_methods).map(([method, count]) => ({
+  const paymentMethodData = Object.entries(analytics.payment_methods).map(([method, data]) => ({
     name: method.replace('_', ' '),
-    value: count
+    value: typeof data === 'number' ? data : data.count
   }));
 
   return (
@@ -275,7 +278,7 @@ const OrderAnalyticsDashboard: React.FC = () => {
       </Box>
 
       {/* Key Metrics */}
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <MetricCard
             title="Total Orders"

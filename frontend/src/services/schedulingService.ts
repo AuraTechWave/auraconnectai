@@ -205,13 +205,13 @@ class SchedulingService {
     }
   }
 
-  async resolveConflict(conflictId: string, resolution: {
-    action: 'cancel_shift' | 'modify_shift' | 'swap_staff' | 'ignore';
-    shift_changes?: Partial<Shift>;
-    new_staff_id?: number;
+  async resolveConflict(data: {
+    conflict_id: string;
+    resolution_type: string;
+    conflict_type: string;
   }) {
     try {
-      const response = await api.post(`/api/v1/staff/schedule/conflicts/${conflictId}/resolve`, resolution);
+      const response = await api.post('/api/v1/staff/scheduling/conflicts/resolve', data);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -317,19 +317,6 @@ class SchedulingService {
     }
   }
 
-  // Conflict resolution
-  async resolveConflict(data: {
-    conflict_id: string;
-    resolution_type: string;
-    conflict_type: string;
-  }): Promise<void> {
-    try {
-      const response = await api.post('/api/v1/staff/scheduling/conflicts/resolve', data);
-      return response.data;
-    } catch (error) {
-      throw new Error(handleApiError(error));
-    }
-  }
 }
 
 export const schedulingService = new SchedulingService();

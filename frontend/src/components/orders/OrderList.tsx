@@ -49,7 +49,13 @@ const OrderList: React.FC = () => {
   const [endDate, setEndDate] = useState<Date | null>(null);
 
   // Fetch orders with filters
-  const { data, isLoading, error, refetch, newOrdersCount, resetNewOrdersCount } = useOrders(filters);
+  const ordersQuery = useOrders(filters) as any;
+  const data = ordersQuery?.data;
+  const isLoading = ordersQuery?.isLoading || false;
+  const error = ordersQuery?.error;
+  const refetch = ordersQuery?.refetch || (() => {});
+  const newOrdersCount = ordersQuery?.newOrdersCount || 0;
+  const resetNewOrdersCount = ordersQuery?.resetNewOrdersCount || (() => {});
 
   // Debounced search
   const debouncedSearch = useCallback(
@@ -60,7 +66,7 @@ const OrderList: React.FC = () => {
   );
 
   // Handle filter changes
-  const handleStatusChange = (event: SelectChangeEvent<string>) => {
+  const handleStatusChange = (event: any) => {
     const value = event.target.value;
     setFilters(prev => ({
       ...prev,
@@ -69,7 +75,7 @@ const OrderList: React.FC = () => {
     }));
   };
 
-  const handlePaymentStatusChange = (event: SelectChangeEvent<string>) => {
+  const handlePaymentStatusChange = (event: any) => {
     const value = event.target.value;
     setFilters(prev => ({
       ...prev,
@@ -110,7 +116,7 @@ const OrderList: React.FC = () => {
   // Export orders
   const handleExport = async (format: 'csv' | 'excel' | 'pdf') => {
     try {
-      const blob = await orderService.exportOrders(format, filters);
+      const blob = await orderService.exportOrders({ ...filters, format } as any);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -136,10 +142,13 @@ const OrderList: React.FC = () => {
       [OrderStatus.PENDING]: 'warning',
       [OrderStatus.CONFIRMED]: 'info',
       [OrderStatus.IN_PROGRESS]: 'primary',
+      [OrderStatus.PREPARING]: 'primary',
       [OrderStatus.READY]: 'secondary',
       [OrderStatus.COMPLETED]: 'success',
+      [OrderStatus.DELIVERED]: 'success',
       [OrderStatus.CANCELLED]: 'error',
       [OrderStatus.DELAYED]: 'warning',
+      [OrderStatus.REFUNDED]: 'default',
     };
     return colors[status] || 'default';
   };
@@ -293,7 +302,7 @@ const OrderList: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              data?.items.map((order) => (
+              data?.items.map((order: any) => (
                 <TableRow key={order.id} hover>
                   <TableCell>{order.order_number}</TableCell>
                   <TableCell>
