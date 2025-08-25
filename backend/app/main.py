@@ -76,6 +76,7 @@ from modules.settings.routes.settings_ui_routes import router as settings_ui_rou
 
 # ========== POS Integration ==========
 from modules.pos.routes.pos_routes import router as pos_router
+from modules.pos_migration.routers.migration_router import router as pos_migration_router
 
 # ========== Menu Management ==========
 from modules.menu.routes.menu_routes import router as menu_router
@@ -169,6 +170,7 @@ app = FastAPI(
     * **Staff Management** - Employee scheduling, attendance, and role management
     * **Order Management** - Complete order lifecycle management
     * **POS Integration** - Connect with major POS systems (Square, Toast, Clover)
+    * **POS Migration** - AI-powered migration suite for seamless POS transitions
     * **Menu Management** - Complete CRUD for menu items, categories, and modifiers
     * **Menu Versioning** - Complete version control and audit trail for menu changes
     * **Recipe Management** - Bill of Materials (BOM) tracking with cost calculations
@@ -323,6 +325,7 @@ app.include_router(settings_router)
 app.include_router(settings_ui_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
+app.include_router(pos_migration_router, tags=["POS Migration"])
 
 # Menu Management
 app.include_router(menu_router)
