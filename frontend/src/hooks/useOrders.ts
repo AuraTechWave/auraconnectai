@@ -7,7 +7,8 @@ import {
   OrderListParams, 
   OrderCreateRequest, 
   OrderUpdateRequest,
-  OrderEvent 
+  OrderEvent,
+  OrderStatus
 } from '../types/order.types';
 
 // Query keys
@@ -23,7 +24,7 @@ export const useOrders = (params?: OrderListParams) => {
   const query = useQuery({
     queryKey: [ORDERS_KEY, params],
     queryFn: () => orderService.getOrders(params),
-    refetchInterval: params?.status?.includes('pending') ? 30000 : false, // Refetch pending orders every 30s
+    refetchInterval: params?.status?.includes(OrderStatus.PENDING) ? 30000 : false, // Refetch pending orders every 30s
   });
   
   // Subscribe to WebSocket updates
@@ -36,7 +37,7 @@ export const useOrders = (params?: OrderListParams) => {
         case 'order_created':
           setNewOrdersCount(prev => prev + 1);
           // Optionally refetch or update cache
-          queryClient.invalidateQueries([ORDERS_KEY]);
+          queryClient.invalidateQueries({ queryKey: [ORDERS_KEY] });
           break;
           
         case 'order_updated':
@@ -115,7 +116,7 @@ export const useCreateOrder = () => {
   return useMutation({
     mutationFn: (data: OrderCreateRequest) => orderService.createOrder(data),
     onSuccess: () => {
-      queryClient.invalidateQueries([ORDERS_KEY]);
+      queryClient.invalidateQueries({ queryKey: [ORDERS_KEY] });
     },
   });
 };
@@ -131,7 +132,7 @@ export const useUpdateOrder = () => {
       // Update specific order
       queryClient.setQueryData([ORDER_KEY, updatedOrder.id], updatedOrder);
       // Invalidate list
-      queryClient.invalidateQueries([ORDERS_KEY]);
+      queryClient.invalidateQueries({ queryKey: [ORDERS_KEY] });
     },
   });
 };
@@ -147,8 +148,8 @@ export const useDelayOrder = () => {
       reason?: string 
     }) => orderService.delayOrder(orderId, minutes, reason),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries([ORDER_KEY, variables.orderId]);
-      queryClient.invalidateQueries([ORDERS_KEY]);
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEY, variables.orderId] });
+      queryClient.invalidateQueries({ queryKey: [ORDERS_KEY] });
     },
   });
 };
@@ -160,8 +161,8 @@ export const useArchiveOrder = () => {
   return useMutation({
     mutationFn: (orderId: number) => orderService.archiveOrder(orderId),
     onSuccess: (_, orderId) => {
-      queryClient.invalidateQueries([ORDER_KEY, orderId]);
-      queryClient.invalidateQueries([ORDERS_KEY]);
+      queryClient.invalidateQueries({ queryKey: [ORDER_KEY, orderId] });
+      queryClient.invalidateQueries({ queryKey: [ORDERS_KEY] });
     },
   });
 };

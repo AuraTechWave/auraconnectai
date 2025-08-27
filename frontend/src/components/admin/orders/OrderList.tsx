@@ -32,9 +32,9 @@ import {
   Download as DownloadIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { Order, OrderStatus, PaymentStatus } from '@/types/order.types';
-import { orderService } from '@/services/orderService';
-import websocketService from '@/services/websocketService';
+import { Order, OrderStatus, PaymentStatus } from '../../../types/order.types';
+import { orderService } from '../../../services/orderService';
+import websocketService from '../../../services/websocketService';
 import OrderFilters from './OrderFilters';
 import OrderDetails from './OrderDetails';
 import OrderStatusChip from './OrderStatusChip';
@@ -61,12 +61,12 @@ const OrderList: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await orderService.getOrders({
+      const response = await orderService.getOrders({
         ...filters,
         search: searchQuery
       });
-      setOrders(data);
-      setTotalCount(data.length);
+      setOrders(response.items);
+      setTotalCount(response.total);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch orders');
     } finally {
@@ -133,9 +133,9 @@ const OrderList: React.FC = () => {
     setSearchQuery(event.target.value);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, orderId: string) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, orderId: string | number) => {
     setAnchorEl(event.currentTarget);
-    setSelectedOrderId(orderId);
+    setSelectedOrderId(String(orderId));
   };
 
   const handleMenuClose = () => {
@@ -149,7 +149,7 @@ const OrderList: React.FC = () => {
     handleMenuClose();
   };
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+  const handleStatusChange = async (orderId: string | number, newStatus: OrderStatus) => {
     try {
       await orderService.updateOrderStatus(orderId, newStatus);
       // WebSocket will handle the update

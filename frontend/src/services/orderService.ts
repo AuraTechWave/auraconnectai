@@ -9,11 +9,12 @@ import {
   RefundRequest,
   RefundResponse,
   OrderAnalytics,
-  PaginatedResponse 
+  PaginatedResponse,
+  OrderFilter
 } from '../types/order.types';
 
 class OrderService {
-  private baseUrl = '/orders';
+  private baseUrl = '/api/orders';
   
   // Get list of orders with filters
   async getOrders(params?: OrderListParams): Promise<PaginatedResponse<Order>> {
@@ -23,6 +24,14 @@ class OrderService {
       
       if (params?.status && Array.isArray(params.status)) {
         queryParams.status = params.status.join(',');
+      }
+      
+      if (params?.payment_status && Array.isArray(params.payment_status)) {
+        queryParams.payment_status = params.payment_status.join(',');
+      }
+      
+      if (params?.order_type && Array.isArray(params.order_type)) {
+        queryParams.order_type = params.order_type.join(',');
       }
       
       // Convert date objects to ISO strings
@@ -51,7 +60,7 @@ class OrderService {
   }
   
   // Get single order by ID
-  async getOrder(id: number): Promise<Order> {
+  async getOrder(id: string | number): Promise<Order> {
     try {
       const response = await api.get(`${this.baseUrl}/${id}`);
       return response.data;
@@ -71,7 +80,7 @@ class OrderService {
   }
   
   // Update order
-  async updateOrder(id: number, data: OrderUpdateRequest): Promise<Order> {
+  async updateOrder(id: string | number, data: OrderUpdateRequest | Partial<Order>): Promise<Order> {
     try {
       const response = await api.put(`${this.baseUrl}/${id}`, data);
       return response.data;
@@ -81,7 +90,7 @@ class OrderService {
   }
   
   // Update order status
-  async updateOrderStatus(orderId: number, status: string): Promise<Order> {
+  async updateOrderStatus(orderId: string | number, status: string): Promise<Order> {
     try {
       const response = await api.patch(`${this.baseUrl}/${orderId}/status`, {
         status
@@ -93,7 +102,7 @@ class OrderService {
   }
   
   // Cancel order
-  async cancelOrder(orderId: number, reason?: string): Promise<Order> {
+  async cancelOrder(orderId: string | number, reason?: string): Promise<Order> {
     try {
       const response = await api.post(`${this.baseUrl}/${orderId}/cancel`, {
         reason
@@ -115,10 +124,13 @@ class OrderService {
   }
   
   // Refund order (payment reconciliation endpoint)
-  async refundOrder(orderId: number, data: RefundRequest): Promise<RefundResponse> {
+  async refundOrder(orderId: string | number, amount: number, reason?: string): Promise<Order | RefundResponse> {
     try {
-      // Based on backend structure, refunds might be under payment reconciliation
-      const response = await api.post(`/api/v1/orders/payment-reconciliation/${orderId}/refund`, data);
+      // Check for refund endpoint or payment reconciliation
+      const response = await api.post(`${this.baseUrl}/${orderId}/refund`, {
+        amount,
+        reason
+      });
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
@@ -126,40 +138,61 @@ class OrderService {
   }
   
   // Get order analytics
-  async getAnalytics(params?: {
-    start_date?: string;
-    end_date?: string;
-    restaurant_id?: number;
-  }): Promise<OrderAnalytics> {
+  async getAnalytics(filters?: OrderFilter): Promise<OrderAnalytics> {
     try {
-      const queryString = buildQueryString(params || {});
-      // Check if there's a specific analytics endpoint
-      const response = await api.get(`${this.baseUrl}/analytics/summary${queryString ? `?${queryString}` : ''}`);
+      const params = new URLSearchParams();
+      
+      if (filters) {
+        if (filters.date_from) {
+          params.append('date_from', filters.date_from);
+        }
+        if (filters.date_to) {
+          params.append('date_to', filters.date_to);
+        }
+        if (filters.restaurant_id) {
+          params.append('restaurant_id', filters.restaurant_id);
+        }
+        if (filters.location_id) {
+          params.append('location_id', filters.location_id);
+        }
+      }
+      
+      const response = await api.get<OrderAnalytics>(`${this.baseUrl}/analytics?${params.toString()}`);
       return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   }
   
-  // Search orders (might use main endpoint with search param)
+  // Search orders
   async searchOrders(query: string): Promise<Order[]> {
     try {
-      const params: OrderListParams = { search: query };
-      const response = await this.getOrders(params);
-      return response.items;
+      const response = await api.get<Order[]>(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`);
+      return response.data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
   }
   
   // Export orders
-  async exportOrders(format: 'csv' | 'excel' | 'pdf', params?: OrderListParams): Promise<Blob> {
+  async exportOrders(filters?: OrderFilter): Promise<Blob> {
     try {
-      const queryParams = { ...params, format };
-      const queryString = buildQueryString(queryParams);
+      const params = new URLSearchParams();
+      
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value) {
+            if (Array.isArray(value)) {
+              params.append(key, value.join(','));
+            } else {
+              params.append(key, value.toString());
+            }
+          }
+        });
+      }
       
       const response = await api.get(
-        `${this.baseUrl}/export${queryString ? `?${queryString}` : ''}`,
+        `${this.baseUrl}/export?${params.toString()}`,
         {
           responseType: 'blob',
         }
@@ -174,7 +207,7 @@ class OrderService {
   // Additional endpoints from backend
   
   // Delay order
-  async delayOrder(orderId: number, delayMinutes: number, reason?: string): Promise<void> {
+  async delayOrder(orderId: string | number, delayMinutes: number, reason?: string): Promise<void> {
     try {
       await api.post(`${this.baseUrl}/${orderId}/delay`, {
         delay_minutes: delayMinutes,
@@ -186,7 +219,7 @@ class OrderService {
   }
   
   // Update order priority
-  async updatePriority(orderId: number, priority: string): Promise<void> {
+  async updatePriority(orderId: string | number, priority: string): Promise<void> {
     try {
       await api.put(`${this.baseUrl}/${orderId}/priority`, { priority });
     } catch (error) {
@@ -195,7 +228,7 @@ class OrderService {
   }
   
   // Add order tag
-  async addTag(orderId: number, tagId: number): Promise<void> {
+  async addTag(orderId: string | number, tagId: number): Promise<void> {
     try {
       await api.post(`${this.baseUrl}/${orderId}/tags`, { tag_id: tagId });
     } catch (error) {
@@ -204,7 +237,7 @@ class OrderService {
   }
   
   // Remove order tag
-  async removeTag(orderId: number, tagId: number): Promise<void> {
+  async removeTag(orderId: string | number, tagId: number): Promise<void> {
     try {
       await api.delete(`${this.baseUrl}/${orderId}/tags/${tagId}`);
     } catch (error) {
@@ -213,7 +246,7 @@ class OrderService {
   }
   
   // Archive order
-  async archiveOrder(orderId: number): Promise<void> {
+  async archiveOrder(orderId: string | number): Promise<void> {
     try {
       await api.post(`${this.baseUrl}/${orderId}/archive`);
     } catch (error) {

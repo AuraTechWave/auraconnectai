@@ -108,6 +108,7 @@ export const KEYS = {
   PAGE_UP: 'PageUp',
   PAGE_DOWN: 'PageDown',
   TAB: 'Tab',
+  DELETE: 'Delete',
 };
 
 // Get appropriate ARIA label for shift

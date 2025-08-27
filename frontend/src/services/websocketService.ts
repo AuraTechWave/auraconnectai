@@ -2,7 +2,6 @@
 // Supports both native WebSocket and Socket.io
 
 import { io, Socket } from 'socket.io-client';
-import { authManager } from '../utils/auth';
 import { OrderEvent, Order } from '../types/order.types';
 
 class WebSocketService {
@@ -51,7 +50,7 @@ class WebSocketService {
     }
     
     const wsUrl = this.getWebSocketUrl();
-    const token = authManager.getAccessToken();
+    const token = localStorage.getItem('authToken');
     
     if (!token) {
       console.error('No auth token available for WebSocket connection');
@@ -80,7 +79,7 @@ class WebSocketService {
     }
     
     this.isIntentionallyClosed = false;
-    const token = authManager.getAccessToken();
+    const token = localStorage.getItem('authToken');
     
     if (!token) {
       console.error('No auth token available for WebSocket connection');
@@ -120,12 +119,12 @@ class WebSocketService {
     
     this.socket.on('order:new', (order: Order) => {
       this.emit('order:new', order);
-      this.emit('order:event', { type: 'created', order_id: order.id, order });
+      this.emit('order:event', { type: 'created', order_id: order.id as number, order, timestamp: new Date().toISOString() });
     });
     
     this.socket.on('order:updated', (order: Order) => {
       this.emit('order:updated', order);
-      this.emit('order:event', { type: 'updated', order_id: order.id, order });
+      this.emit('order:event', { type: 'updated', order_id: order.id as number, order, timestamp: new Date().toISOString() });
     });
     
     this.socket.on('order:status_changed', (data: { orderId: string; status: string; order: Order }) => {
@@ -134,13 +133,14 @@ class WebSocketService {
         type: 'status_changed', 
         order_id: parseInt(data.orderId), 
         status: data.status,
-        order: data.order 
+        order: data.order,
+        timestamp: new Date().toISOString()
       });
     });
     
     this.socket.on('order:cancelled', (order: Order) => {
       this.emit('order:cancelled', order);
-      this.emit('order:event', { type: 'cancelled', order_id: order.id, order });
+      this.emit('order:event', { type: 'cancelled', order_id: order.id as number, order, timestamp: new Date().toISOString() });
     });
     
     this.socket.on('error', (error: any) => {

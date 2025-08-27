@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogActions,
   Box,
-  Grid,
   Typography,
   Divider,
   Button,
@@ -27,6 +26,7 @@ import {
   ListItemText,
   ListItemSecondaryAction
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import {
   Close as CloseIcon,
   Edit as EditIcon,
@@ -38,8 +38,8 @@ import {
   AttachMoney as MoneyIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
-import { Order, OrderStatus } from '@/types/order.types';
-import { orderService } from '@/services/orderService';
+import { Order, OrderStatus } from '../../../types/order.types';
+import { orderService } from '../../../services/orderService';
 import OrderStatusChip from './OrderStatusChip';
 import PaymentStatusChip from './PaymentStatusChip';
 
@@ -128,12 +128,15 @@ const OrderDetails: React.FC<OrderDetailsProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const updatedOrder = await orderService.refundOrder(
+      const result = await orderService.refundOrder(
         order.id,
         parseFloat(refundAmount),
         refundReason
       );
-      setOrder(updatedOrder);
+      // Check if result is an Order or RefundResponse
+      if ('order_number' in result) {
+        setOrder(result as Order);
+      }
       setRefundAmount('');
       setRefundReason('');
       onUpdate();

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Grid,
   FormControl,
   InputLabel,
   Select,
@@ -13,10 +12,11 @@ import {
   Collapse,
   Paper
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { OrderStatus, PaymentStatus, OrderFilter } from '@/types/order.types';
+import { OrderStatus, PaymentStatus, OrderFilter } from '../../../types/order.types';
 
 interface OrderFiltersProps {
   filters: OrderFilter;
@@ -31,7 +31,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<OrderFilter>(filters);
 
-  const handleStatusChange = (event: SelectChangeEvent<string[]>) => {
+  const handleStatusChange = (event: any) => {
     const value = event.target.value as string[];
     setLocalFilters({
       ...localFilters,
@@ -39,7 +39,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
     });
   };
 
-  const handlePaymentStatusChange = (event: SelectChangeEvent<string[]>) => {
+  const handlePaymentStatusChange = (event: any) => {
     const value = event.target.value as string[];
     setLocalFilters({
       ...localFilters,
@@ -47,7 +47,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
     });
   };
 
-  const handleOrderTypeChange = (event: SelectChangeEvent<string[]>) => {
+  const handleOrderTypeChange = (event: any) => {
     const value = event.target.value as string[];
     setLocalFilters({
       ...localFilters,

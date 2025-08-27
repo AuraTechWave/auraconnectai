@@ -1,7 +1,6 @@
 // API client with proper error handling and auth interceptors
 
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { authManager } from '../utils/auth';
 
 // Use environment variable with fallback
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -19,7 +18,7 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = authManager.getAccessToken();
+    const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -47,7 +46,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
-      const refreshToken = authManager.getRefreshToken();
+      const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
         try {
           // Attempt to refresh the token
@@ -55,10 +54,13 @@ api.interceptors.response.use(
             refresh_token: refreshToken,
           });
           
-          authManager.setTokens(response.data);
+          localStorage.setItem('authToken', response.data.access_token);
+          if (response.data.refresh_token) {
+            localStorage.setItem('refreshToken', response.data.refresh_token);
+          }
           
           // Retry the original request with new token
-          const newToken = authManager.getAccessToken();
+          const newToken = response.data.access_token;
           if (newToken && originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
           }
@@ -66,13 +68,14 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed, clear tokens and redirect to login
-          authManager.clearTokens();
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('refreshToken');
           window.location.href = '/login';
           return Promise.reject(refreshError);
         }
       } else {
         // No refresh token, redirect to login
-        authManager.clearTokens();
+        localStorage.removeItem('authToken');
         window.location.href = '/login';
       }
     }

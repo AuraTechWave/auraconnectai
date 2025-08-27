@@ -6,7 +6,7 @@ import {
   Error,
   Undo
 } from '@mui/icons-material';
-import { PaymentStatus } from '@/types/order.types';
+import { PaymentStatus } from '../../../types/order.types';
 
 interface PaymentStatusChipProps {
   status: PaymentStatus;
@@ -22,6 +22,11 @@ const statusConfig = {
     label: 'Paid',
     color: 'success' as const,
     icon: <CheckCircle fontSize="small" />
+  },
+  [PaymentStatus.PARTIAL]: {
+    label: 'Partial',
+    color: 'info' as const,
+    icon: <HourglassEmpty fontSize="small" />
   },
   [PaymentStatus.FAILED]: {
     label: 'Failed',
