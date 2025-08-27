@@ -17,6 +17,12 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.auth import get_current_user, User
+from core.websocket_auth import (
+    authenticate_websocket,
+    get_websocket_user,
+    AuthenticatedWebSocket,
+    WebSocketAuthError,
+)
 from ..services.websocket_manager import websocket_manager, WebSocketManager
 from ..services.realtime_metrics_service import (
     realtime_metrics_service,
@@ -51,26 +57,78 @@ async def dashboard_websocket_endpoint(
     client_id = None
 
     try:
-        # TODO: Implement proper WebSocket authentication using token
-        # For now, using basic authentication
-        user_permissions = [
-            AnalyticsPermission.VIEW_DASHBOARD.value,
-            AnalyticsPermission.VIEW_SALES_REPORTS.value,
-        ]
+        # Authenticate WebSocket connection
+        user = await get_websocket_user(websocket, token)
+        
+        # Map user roles to analytics permissions
+        user_permissions = []
+        permission_service = PermissionsService()
+        
+        for role in user.roles:
+            if role == "admin":
+                # Admin gets all analytics permissions
+                user_permissions.extend([
+                    AnalyticsPermission.VIEW_DASHBOARD.value,
+                    AnalyticsPermission.VIEW_SALES_REPORTS.value,
+                    AnalyticsPermission.VIEW_INVENTORY_REPORTS.value,
+                    AnalyticsPermission.VIEW_STAFF_REPORTS.value,
+                    AnalyticsPermission.ACCESS_REALTIME.value,
+                    AnalyticsPermission.ADMIN_ANALYTICS.value,
+                ])
+            elif role == "manager":
+                user_permissions.extend([
+                    AnalyticsPermission.VIEW_DASHBOARD.value,
+                    AnalyticsPermission.VIEW_SALES_REPORTS.value,
+                    AnalyticsPermission.VIEW_STAFF_REPORTS.value,
+                    AnalyticsPermission.ACCESS_REALTIME.value,
+                ])
+            elif role == "analytics_viewer":
+                user_permissions.extend([
+                    AnalyticsPermission.VIEW_DASHBOARD.value,
+                    AnalyticsPermission.VIEW_SALES_REPORTS.value,
+                ])
+            # Add more role mappings as needed
+        
+        # Remove duplicates
+        user_permissions = list(set(user_permissions))
+        
+        # Check if user has dashboard access
+        if AnalyticsPermission.VIEW_DASHBOARD.value not in user_permissions:
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Insufficient permissions for dashboard access"
+            )
+            return
 
-        # Connect client
+        # Create authenticated WebSocket wrapper
+        auth_ws = AuthenticatedWebSocket(websocket, user, user_permissions)
+        await auth_ws.accept()
+
+        # Connect client with actual user ID
         client_id = await websocket_manager.connect_client(
             websocket=websocket,
-            user_id=1,  # TODO: Extract from token
+            user_id=user.id,
             user_permissions=user_permissions,
         )
 
-        logger.info(f"Dashboard WebSocket client connected: {client_id}")
+        logger.info(f"Dashboard WebSocket client connected: {client_id} (user: {user.username})")
+        
+        # Send welcome message
+        await auth_ws.send_json({
+            "type": "connection_established",
+            "client_id": client_id,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "permissions": user_permissions,
+            },
+            "timestamp": datetime.now().isoformat(),
+        })
 
         # Handle incoming messages
         while True:
             try:
-                message = await websocket.receive_text()
+                message = await auth_ws.receive_text()
                 await websocket_manager.handle_client_message(client_id, message)
             except WebSocketDisconnect:
                 logger.info(f"Dashboard WebSocket client disconnected: {client_id}")
@@ -79,8 +137,18 @@ async def dashboard_websocket_endpoint(
                 logger.error(f"Error handling WebSocket message: {e}")
                 break
 
+    except WebSocketAuthError as e:
+        logger.warning(f"WebSocket authentication failed: {e}")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason=str(e)
+        )
     except Exception as e:
         logger.error(f"Error in dashboard WebSocket endpoint: {e}")
+        await websocket.close(
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="Internal server error"
+        )
 
     finally:
         if client_id:
@@ -106,16 +174,45 @@ async def metric_websocket_endpoint(
     client_id = None
 
     try:
-        # TODO: Implement proper WebSocket authentication
-        user_permissions = [
-            AnalyticsPermission.VIEW_SALES_REPORTS.value,
-            AnalyticsPermission.ACCESS_REALTIME.value,
-        ]
+        # Authenticate WebSocket connection
+        user = await get_websocket_user(websocket, token)
+        
+        # Map user roles to analytics permissions
+        user_permissions = []
+        
+        for role in user.roles:
+            if role == "admin":
+                user_permissions.extend([
+                    AnalyticsPermission.VIEW_SALES_REPORTS.value,
+                    AnalyticsPermission.ACCESS_REALTIME.value,
+                    AnalyticsPermission.VIEW_INVENTORY_REPORTS.value,
+                    AnalyticsPermission.VIEW_STAFF_REPORTS.value,
+                ])
+            elif role in ["manager", "analytics_viewer"]:
+                user_permissions.extend([
+                    AnalyticsPermission.VIEW_SALES_REPORTS.value,
+                    AnalyticsPermission.ACCESS_REALTIME.value,
+                ])
+        
+        # Remove duplicates
+        user_permissions = list(set(user_permissions))
+        
+        # Check if user has metric access
+        if AnalyticsPermission.VIEW_SALES_REPORTS.value not in user_permissions:
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Insufficient permissions for metrics access"
+            )
+            return
 
-        # Connect client
+        # Create authenticated WebSocket wrapper
+        auth_ws = AuthenticatedWebSocket(websocket, user, user_permissions)
+        await auth_ws.accept()
+
+        # Connect client with actual user ID
         client_id = await websocket_manager.connect_client(
             websocket=websocket,
-            user_id=1,  # TODO: Extract from token
+            user_id=user.id,
             user_permissions=user_permissions,
         )
 
@@ -132,13 +229,25 @@ async def metric_websocket_endpoint(
         )
 
         logger.info(
-            f"Metric WebSocket client connected for '{metric_name}': {client_id}"
+            f"Metric WebSocket client connected for '{metric_name}': {client_id} (user: {user.username})"
         )
+        
+        # Send connection confirmation
+        await auth_ws.send_json({
+            "type": "connection_established",
+            "client_id": client_id,
+            "metric": metric_name,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+            },
+            "timestamp": datetime.now().isoformat(),
+        })
 
         # Handle incoming messages
         while True:
             try:
-                message = await websocket.receive_text()
+                message = await auth_ws.receive_text()
                 await websocket_manager.handle_client_message(client_id, message)
             except WebSocketDisconnect:
                 logger.info(f"Metric WebSocket client disconnected: {client_id}")
@@ -147,8 +256,18 @@ async def metric_websocket_endpoint(
                 logger.error(f"Error handling WebSocket message: {e}")
                 break
 
+    except WebSocketAuthError as e:
+        logger.warning(f"WebSocket authentication failed: {e}")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason=str(e)
+        )
     except Exception as e:
         logger.error(f"Error in metric WebSocket endpoint: {e}")
+        await websocket.close(
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="Internal server error"
+        )
 
     finally:
         if client_id:
