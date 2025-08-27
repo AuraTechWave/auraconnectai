@@ -22,6 +22,7 @@ from core.websocket_auth import (
     get_websocket_user,
     AuthenticatedWebSocket,
     WebSocketAuthError,
+    IS_PRODUCTION,
 )
 from ..services.websocket_manager import websocket_manager, WebSocketManager
 from ..services.realtime_metrics_service import (
@@ -57,8 +58,8 @@ async def dashboard_websocket_endpoint(
     client_id = None
 
     try:
-        # Authenticate WebSocket connection
-        user = await get_websocket_user(websocket, token)
+        # Authenticate WebSocket connection (query params disabled in production)
+        user = await get_websocket_user(websocket, token, use_query_param=not IS_PRODUCTION)
         
         # Map user roles to analytics permissions
         user_permissions = []
@@ -138,10 +139,10 @@ async def dashboard_websocket_endpoint(
                 break
 
     except WebSocketAuthError as e:
-        logger.warning(f"WebSocket authentication failed: {e}")
+        logger.warning(f"WebSocket authentication failed for dashboard: {e}")
         await websocket.close(
             code=status.WS_1008_POLICY_VIOLATION,
-            reason=str(e)
+            reason="Policy violation"
         )
     except Exception as e:
         logger.error(f"Error in dashboard WebSocket endpoint: {e}")
@@ -174,8 +175,8 @@ async def metric_websocket_endpoint(
     client_id = None
 
     try:
-        # Authenticate WebSocket connection
-        user = await get_websocket_user(websocket, token)
+        # Authenticate WebSocket connection (query params disabled in production)
+        user = await get_websocket_user(websocket, token, use_query_param=not IS_PRODUCTION)
         
         # Map user roles to analytics permissions
         user_permissions = []
@@ -257,10 +258,10 @@ async def metric_websocket_endpoint(
                 break
 
     except WebSocketAuthError as e:
-        logger.warning(f"WebSocket authentication failed: {e}")
+        logger.warning(f"WebSocket authentication failed for metric {metric_name}: {e}")
         await websocket.close(
             code=status.WS_1008_POLICY_VIOLATION,
-            reason=str(e)
+            reason="Policy violation"
         )
     except Exception as e:
         logger.error(f"Error in metric WebSocket endpoint: {e}")

@@ -2,11 +2,20 @@
 
 ## Overview
 
-All WebSocket endpoints in the AuraConnect system now require JWT-based authentication. This ensures that real-time connections are secure and properly authorized.
+All WebSocket endpoints in the AuraConnect system require JWT-based authentication with enhanced security measures. This ensures that real-time connections are secure, properly authorized, and protected against common vulnerabilities.
+
+## Security Features
+
+1. **Production Security Mode**: In production environments, query parameter authentication is disabled to prevent token exposure in logs
+2. **Rate Limiting**: Authentication attempts are rate-limited to prevent brute force attacks
+3. **Token Expiration Checking**: Active connections are terminated when tokens expire
+4. **Enhanced JWT Validation**: Includes issuer and audience verification
+5. **Generic Error Messages**: Production environments use generic error messages to prevent information leakage
+6. **Tenant Validation**: Multi-tenant access control ensures users can only access authorized resources
 
 ## Authentication Methods
 
-### 1. Query Parameter (Recommended)
+### 1. Query Parameter (Development Only)
 
 Pass the JWT token as a query parameter when establishing the WebSocket connection:
 
@@ -14,15 +23,17 @@ Pass the JWT token as a query parameter when establishing the WebSocket connecti
 ws://localhost:8000/analytics/realtime/dashboard?token=<JWT_TOKEN>
 ```
 
-**Example (JavaScript):**
+⚠️ **Important**: Query parameter authentication is **disabled in production** to prevent token exposure in server logs. Use the first message authentication method in production environments.
+
+**Example (JavaScript - Development):**
 ```javascript
 const token = localStorage.getItem('jwt_token');
 const ws = new WebSocket(`ws://localhost:8000/analytics/realtime/dashboard?token=${token}`);
 ```
 
-### 2. First Message Authentication
+### 2. First Message Authentication (Recommended for Production)
 
-If you cannot send query parameters, you can authenticate by sending an authentication message as the first message after connection:
+In production environments or when you cannot use query parameters, authenticate by sending an authentication message as the first message after connection:
 
 ```json
 {
@@ -31,14 +42,32 @@ If you cannot send query parameters, you can authenticate by sending an authenti
 }
 ```
 
-**Example (JavaScript):**
+**Important Security Requirements:**
+- Authentication message must be sent within 5 seconds of connection
+- Message size must not exceed 4KB
+- Only the first message can be an authentication message
+- Invalid auth messages result in immediate connection termination
+
+**Example (JavaScript - Production):**
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/analytics/realtime/dashboard');
+const ws = new WebSocket('wss://api.auraconnect.ai/analytics/realtime/dashboard');
 ws.onopen = () => {
+  // Send auth message immediately
   ws.send(JSON.stringify({
     type: "auth",
     token: localStorage.getItem('jwt_token')
   }));
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose = (event) => {
+  if (event.code === 1008) {
+    console.error('Authentication failed - policy violation');
+    // Handle re-authentication
+  }
 };
 ```
 
@@ -175,13 +204,37 @@ async def connect_with_auth(endpoint: str, token: str):
                 print(f"Update: {message}")
 ```
 
-## Security Considerations
+## Security Configuration
 
-1. **Token Expiration**: WebSocket connections will be terminated when the JWT token expires
-2. **Token Refresh**: Clients should handle token refresh before expiration
-3. **Secure Transport**: Use WSS (WebSocket Secure) in production
-4. **Rate Limiting**: Consider implementing rate limiting for WebSocket connections
-5. **Connection Limits**: Limit concurrent connections per user
+### Environment Variables
+
+Configure these environment variables for enhanced security:
+
+```bash
+# Production Environment
+ENVIRONMENT=production  # Enables production security features
+
+# JWT Configuration
+JWT_SECRET_KEY=your-secret-key  # Strong secret for JWT signing
+JWT_ISSUER=auraconnect-api     # Expected JWT issuer
+JWT_AUDIENCE=auraconnect-ws    # Expected JWT audience
+JWT_LEEWAY_SECONDS=120          # Clock skew tolerance (default: 2 minutes)
+
+# WebSocket Security
+WS_AUTH_MESSAGE_TIMEOUT=5       # Timeout for auth message (seconds)
+WS_MAX_AUTH_MESSAGE_SIZE=4096   # Max auth message size (bytes)
+WS_MAX_AUTH_ATTEMPTS=3          # Max auth attempts per IP
+```
+
+### Security Considerations
+
+1. **Token Expiration**: WebSocket connections are automatically terminated when JWT tokens expire
+2. **Token Refresh**: Implement token refresh logic before establishing long-lived connections
+3. **Secure Transport**: Always use WSS (WebSocket Secure) in production
+4. **Rate Limiting**: Authentication attempts are rate-limited per IP address
+5. **Connection Limits**: Consider implementing per-user connection limits
+6. **Origin Validation**: Implement origin checks for browser-facing endpoints
+7. **Message Validation**: All incoming messages are validated and sanitized
 
 ## Migration Guide
 
