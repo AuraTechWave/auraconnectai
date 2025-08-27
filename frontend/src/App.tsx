@@ -7,6 +7,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import OrderManagementPage from './pages/admin/OrderManagementPage';
 import AdminSettings from './components/AdminSettings';
+import { StaffSchedulingInterface } from './components/staff/scheduling';
+import { AuthWrapper } from './components/auth/AuthWrapper';
 import './App.css';
 
 // Create a theme instance
@@ -56,6 +58,14 @@ function App() {
                 {/* Admin Routes */}
                 <Route path="/admin/orders" element={<OrderManagementPage />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
+                <Route 
+                  path="/staff/scheduling" 
+                  element={
+                    <AuthWrapper requiredRoles={['owner', 'manager']}>
+                      <StaffSchedulingInterface />
+                    </AuthWrapper>
+                  } 
+                />
                 
                 {/* Default redirect */}
                 <Route path="/" element={<Navigate to="/admin/orders" replace />} />
