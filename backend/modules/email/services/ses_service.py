@@ -332,6 +332,26 @@ class SESService:
             logger.error(f"Error verifying webhook: {str(e)}")
             return False
     
+    def _parse_timestamp(self, timestamp_str: str) -> Optional[datetime]:
+        """
+        Safely parse timestamp string to datetime
+        
+        Args:
+            timestamp_str: Timestamp string from webhook
+        
+        Returns:
+            datetime object or None if parsing fails
+        """
+        if not timestamp_str:
+            return None
+        
+        try:
+            # Handle ISO format with Z suffix
+            return datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            logger.warning(f"Failed to parse timestamp: {timestamp_str}")
+            return None
+    
     def parse_webhook_event(self, sns_message: Dict[str, Any]) -> Dict[str, Any]:
         """
         Parse SES webhook event from SNS
@@ -368,11 +388,12 @@ class SESService:
             parsed_event = {
                 'provider_message_id': mail.get('messageId'),
                 'status': status,
-                'event_type': event_type,
-                'timestamp': datetime.fromisoformat(
-                    mail.get('timestamp', '').replace('Z', '+00:00')
-                )
+                'event_type': event_type
             }
+            
+            # Parse timestamp safely - use current time as fallback
+            timestamp = self._parse_timestamp(mail.get('timestamp', ''))
+            parsed_event['timestamp'] = timestamp if timestamp else datetime.utcnow()
             
             # Add event-specific data
             if event_type == 'bounce':
@@ -390,18 +411,27 @@ class SESService:
                 })
             elif event_type == 'delivery':
                 delivery = message.get('delivery', {})
-                parsed_event.update({
-                    'delivered_at': datetime.fromisoformat(
-                        delivery.get('timestamp', '').replace('Z', '+00:00')
-                    ),
-                    'processing_time_ms': delivery.get('processingTimeMillis')
-                })
+                
+                # Parse delivery timestamp safely
+                delivered_at = self._parse_timestamp(delivery.get('timestamp', ''))
+                if delivered_at:
+                    parsed_event['delivered_at'] = delivered_at
+                    
+                processing_time = delivery.get('processingTimeMillis')
+                if processing_time is not None:
+                    parsed_event['processing_time_ms'] = processing_time
             elif event_type in ['open', 'click']:
                 event_data = message.get(event_type, {})
                 parsed_event.update({
                     'user_agent': event_data.get('userAgent'),
                     'ip_address': event_data.get('ipAddress')
                 })
+                
+                # Parse event-specific timestamp if available
+                event_timestamp = self._parse_timestamp(event_data.get('timestamp', ''))
+                if event_timestamp:
+                    parsed_event['timestamp'] = event_timestamp
+                    
                 if event_type == 'click':
                     parsed_event['url'] = event_data.get('link')
             
