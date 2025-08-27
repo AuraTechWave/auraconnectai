@@ -29,3 +29,11 @@ yarn-error.log*
 # service worker
 /build/service-worker.js
 /build/static/js/*.map
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/auth-states/
+/screenshots/
+test-results.json
