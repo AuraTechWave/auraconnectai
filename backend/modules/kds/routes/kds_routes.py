@@ -11,6 +11,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
     Query,
+    status,
 )
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -21,6 +22,11 @@ import logging
 
 from core.database import get_db
 from core.auth import get_current_user
+from core.websocket_auth import (
+    get_websocket_user,
+    AuthenticatedWebSocket,
+    WebSocketAuthError,
+)
 from ..services.kds_service import KDSService
 from ..services.kds_order_routing_service import KDSOrderRoutingService
 from ..services.kds_websocket_manager import KDSWebSocketManager
@@ -466,45 +472,105 @@ async def get_all_station_summaries(
 
 @router.websocket("/ws/{station_id}")
 async def websocket_endpoint(
-    websocket: WebSocket, station_id: int, db: Session = Depends(get_db)
+    websocket: WebSocket,
+    station_id: int,
+    token: Optional[str] = Query(None, description="Authentication token"),
+    db: Session = Depends(get_db),
 ):
-    """WebSocket connection for real-time KDS updates"""
-    await ws_manager.connect(websocket, station_id)
-
+    """WebSocket connection for real-time KDS updates with authentication"""
+    
     try:
-        # Send initial data
+        # Authenticate WebSocket connection
+        user = await get_websocket_user(websocket, token)
+        
+        # Check if user has kitchen/KDS access permissions
+        allowed_roles = ["admin", "manager", "kitchen_staff", "chef", "cook"]
+        if not any(role in allowed_roles for role in user.roles):
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Insufficient permissions for KDS access"
+            )
+            return
+        
+        # Create authenticated WebSocket wrapper
+        auth_ws = AuthenticatedWebSocket(websocket, user, user.roles)
+        await auth_ws.accept()
+        
+        # Connect to KDS manager with user context
+        await ws_manager.connect(websocket, station_id)
+        
+        logger.info(
+            f"KDS WebSocket connected for station {station_id} by user {user.username}"
+        )
+        
+        # Send initial data with user context
         service = KDSService(db)
         items = service.get_station_items(station_id)
 
-        await websocket.send_json(
+        await auth_ws.send_json(
             {
                 "type": "initial_data",
                 "data": {
+                    "station_id": station_id,
                     "items": [
                         KDSOrderItemResponse.from_orm(item).dict() for item in items
-                    ]
+                    ],
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                    },
                 },
+                "timestamp": datetime.utcnow().isoformat(),
             }
         )
 
         # Keep connection alive
         while True:
             # Wait for messages from client
-            data = await websocket.receive_text()
+            data = await auth_ws.receive_text()
 
             # Handle heartbeat
             if data == "ping":
-                await websocket.send_text("pong")
+                await auth_ws.send_text("pong")
             else:
-                # Process other messages if needed
-                pass
+                try:
+                    # Parse and validate message
+                    message = json.loads(data)
+                    message_type = message.get("type")
+                    
+                    # Add user context to actions
+                    if message_type in ["acknowledge", "start", "complete", "recall"]:
+                        # These actions require user tracking
+                        message["user_id"] = user.id
+                        message["username"] = user.username
+                        
+                    # Process the message
+                    # TODO: Add message processing logic here
+                    logger.info(f"KDS WebSocket message from {user.username}: {message_type}")
+                    
+                except json.JSONDecodeError:
+                    logger.warning(f"Invalid JSON from KDS WebSocket: {data}")
+                    await auth_ws.send_json({
+                        "type": "error",
+                        "message": "Invalid message format",
+                    })
 
+    except WebSocketAuthError as e:
+        logger.warning(f"KDS WebSocket authentication failed: {e}")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason=str(e)
+        )
     except WebSocketDisconnect:
         ws_manager.disconnect(websocket, station_id)
-        logger.info(f"WebSocket disconnected for station {station_id}")
+        logger.info(f"KDS WebSocket disconnected for station {station_id}")
     except Exception as e:
-        logger.error(f"WebSocket error for station {station_id}: {str(e)}")
+        logger.error(f"KDS WebSocket error for station {station_id}: {str(e)}")
         ws_manager.disconnect(websocket, station_id)
+        await websocket.close(
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="Internal server error"
+        )
 
 
 # ========== Order Integration ==========

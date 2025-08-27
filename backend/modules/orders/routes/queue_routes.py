@@ -15,10 +15,18 @@ from fastapi import (
 from sqlalchemy.orm import Session
 import json
 import asyncio
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from core.database import get_db
 from core.decorators import handle_api_errors
+from core.websocket_auth import (
+    get_websocket_user,
+    AuthenticatedWebSocket,
+    WebSocketAuthError,
+)
 from ...auth.services.auth_service import get_current_user
 from ...auth.models import User
 from ..models.queue_models import QueueType, QueueStatus, QueueItemStatus
@@ -539,37 +547,136 @@ async def update_sequence_rule(
 # WebSocket endpoint for real-time updates
 @router.websocket("/ws/{queue_id}")
 async def websocket_endpoint(
-    websocket: WebSocket, queue_id: str, db: Session = Depends(get_db)
+    websocket: WebSocket,
+    queue_id: str,
+    token: Optional[str] = Query(None, description="Authentication token"),
+    db: Session = Depends(get_db),
 ):
     """
     WebSocket endpoint for real-time queue updates.
 
     Connect to receive live updates for a specific queue.
     """
-    await manager.connect(websocket, queue_id)
     try:
+        # Authenticate WebSocket connection
+        user = await get_websocket_user(websocket, token)
+        
+        # Check if user has order management permissions
+        allowed_roles = ["admin", "manager", "staff", "server", "kitchen_staff", "cashier"]
+        if not any(role in allowed_roles for role in user.roles):
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Insufficient permissions for queue access"
+            )
+            return
+        
+        # Create authenticated WebSocket wrapper
+        auth_ws = AuthenticatedWebSocket(websocket, user, user.roles)
+        await auth_ws.accept()
+        
+        # Connect to manager with user context
+        await manager.connect(websocket, queue_id)
+        
+        logger.info(
+            f"Queue WebSocket connected for queue {queue_id} by user {user.username}"
+        )
+        
+        # Send welcome message
+        await auth_ws.send_json({
+            "type": "connection_established",
+            "queue_id": queue_id,
+            "user": {
+                "id": user.id,
+                "username": user.username,
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+        
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            # Keep connection alive and handle messages
+            try:
+                data = await auth_ws.receive_text()
+                # Handle ping/pong for keepalive
+                if data == "ping":
+                    await auth_ws.send_text("pong")
+                else:
+                    # Process other messages if needed
+                    message = json.loads(data)
+                    message["user_id"] = user.id
+                    logger.debug(f"Queue WebSocket message from {user.username}: {message.get('type')}")
+            except json.JSONDecodeError:
+                await auth_ws.send_json({
+                    "type": "error",
+                    "message": "Invalid JSON format"
+                })
+                
+    except WebSocketAuthError as e:
+        logger.warning(f"Queue WebSocket authentication failed: {e}")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason=str(e)
+        )
     except WebSocketDisconnect:
         manager.disconnect(websocket, queue_id)
+        logger.info(f"Queue WebSocket disconnected for queue {queue_id}")
+    except Exception as e:
+        logger.error(f"Queue WebSocket error: {e}")
+        manager.disconnect(websocket, queue_id)
+        await websocket.close(
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="Internal server error"
+        )
 
 
 # Bulk WebSocket subscription
 @router.websocket("/ws/subscribe")
-async def websocket_subscribe(websocket: WebSocket, db: Session = Depends(get_db)):
+async def websocket_subscribe(
+    websocket: WebSocket,
+    token: Optional[str] = Query(None, description="Authentication token"),
+    db: Session = Depends(get_db),
+):
     """
     WebSocket endpoint for subscribing to multiple queues.
 
     Send a subscription request to receive updates for specific queues.
     """
-    await websocket.accept()
     subscribed_queues = []
-
+    
     try:
+        # Authenticate WebSocket connection
+        user = await get_websocket_user(websocket, token)
+        
+        # Check permissions
+        allowed_roles = ["admin", "manager", "staff", "server", "kitchen_staff", "cashier"]
+        if not any(role in allowed_roles for role in user.roles):
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Insufficient permissions for queue access"
+            )
+            return
+        
+        # Create authenticated WebSocket wrapper
+        auth_ws = AuthenticatedWebSocket(websocket, user, user.roles)
+        await auth_ws.accept()
+        
+        logger.info(
+            f"Bulk queue WebSocket connected by user {user.username}"
+        )
+        
+        # Send welcome message
+        await auth_ws.send_json({
+            "type": "connection_established",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
         while True:
-            data = await websocket.receive_text()
+            data = await auth_ws.receive_text()
             message = json.loads(data)
+            message["user_id"] = user.id  # Add user context
 
             if message.get("action") == "subscribe":
                 # Subscribe to requested queues
@@ -577,8 +684,9 @@ async def websocket_subscribe(websocket: WebSocket, db: Session = Depends(get_db
                 for queue_id in request.queue_ids:
                     await manager.connect(websocket, str(queue_id))
                     subscribed_queues.append(str(queue_id))
+                    logger.info(f"User {user.username} subscribed to queue {queue_id}")
 
-                await websocket.send_json(
+                await auth_ws.send_json(
                     {"status": "subscribed", "queues": subscribed_queues}
                 )
 
@@ -588,9 +696,26 @@ async def websocket_subscribe(websocket: WebSocket, db: Session = Depends(get_db
                     manager.disconnect(websocket, queue_id)
                 subscribed_queues.clear()
 
-                await websocket.send_json({"status": "unsubscribed"})
+                await auth_ws.send_json({"status": "unsubscribed"})
+                logger.info(f"User {user.username} unsubscribed from all queues")
 
+    except WebSocketAuthError as e:
+        logger.warning(f"Bulk queue WebSocket authentication failed: {e}")
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION,
+            reason=str(e)
+        )
     except WebSocketDisconnect:
         # Clean up all subscriptions
         for queue_id in subscribed_queues:
             manager.disconnect(websocket, queue_id)
+        logger.info(f"Bulk queue WebSocket disconnected for user {user.username if 'user' in locals() else 'unknown'}")
+    except Exception as e:
+        logger.error(f"Bulk queue WebSocket error: {e}")
+        # Clean up all subscriptions
+        for queue_id in subscribed_queues:
+            manager.disconnect(websocket, queue_id)
+        await websocket.close(
+            code=status.WS_1011_INTERNAL_ERROR,
+            reason="Internal server error"
+        )

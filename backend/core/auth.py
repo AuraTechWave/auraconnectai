@@ -173,14 +173,19 @@ def create_access_token(
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    # Add token tracking information
+    # Add token tracking information and security claims
     token_id = generate_token_id()
+    issuer = os.getenv("JWT_ISSUER", "auraconnect-api")
+    audience = os.getenv("JWT_AUDIENCE", "auraconnect-ws")
+    
     to_encode.update(
         {
             "exp": expire,
             "type": "access",
             "jti": token_id,  # JWT ID for token tracking
             "iat": datetime.utcnow().timestamp(),  # Issued at
+            "iss": issuer,  # Issuer
+            "aud": audience,  # Audience
         }
     )
 
@@ -196,14 +201,19 @@ def create_refresh_token(data: dict, session_id: Optional[str] = None) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
-    # Add token tracking information
+    # Add token tracking information and security claims
     token_id = generate_token_id()
+    issuer = os.getenv("JWT_ISSUER", "auraconnect-api")
+    audience = os.getenv("JWT_AUDIENCE", "auraconnect-ws")
+    
     to_encode.update(
         {
             "exp": expire,
             "type": "refresh",
             "jti": token_id,  # JWT ID for token tracking
             "iat": datetime.utcnow().timestamp(),  # Issued at
+            "iss": issuer,  # Issuer
+            "aud": audience,  # Audience
         }
     )
 
@@ -237,10 +247,39 @@ def verify_token(
             logger.warning("Attempted use of blacklisted token")
             return None
 
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Enhanced JWT options with issuer/audience validation
+        jwt_options = {
+            "verify_signature": True,
+            "verify_exp": True,
+            "verify_iat": True,
+            "verify_iss": True,
+            "verify_aud": True,
+            "require": ["exp", "iat", "type"],
+        }
+        
+        # Expected issuer and audience
+        expected_issuer = os.getenv("JWT_ISSUER", "auraconnect-api")
+        expected_audience = os.getenv("JWT_AUDIENCE", "auraconnect-ws")
+        leeway_seconds = int(os.getenv("JWT_LEEWAY_SECONDS", "120"))
+
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options=jwt_options,
+            issuer=expected_issuer,
+            audience=expected_audience,
+            leeway=leeway_seconds  # Allow 2 minutes clock skew
+        )
 
         # Check token type
         if payload.get("type") != token_type:
+            logger.warning(f"Token type mismatch: expected {token_type}, got {payload.get('type')}")
+            return None
+
+        # Prevent algorithm confusion attacks
+        if payload.get("alg") == "none":
+            logger.warning("Attempted use of 'none' algorithm")
             return None
 
         # Handle sub as string (JWT standard) but convert to int for internal use
@@ -279,6 +318,15 @@ def verify_token(
             session_id=session_id,
             token_id=token_id,
         )
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token has expired")
+        return None
+    except jwt.InvalidIssuerError:
+        logger.warning("Invalid token issuer")
+        return None
+    except jwt.InvalidAudienceError:
+        logger.warning("Invalid token audience")
+        return None
     except JWTError as e:
         logger.warning(f"JWT verification failed: {e}")
         return None
