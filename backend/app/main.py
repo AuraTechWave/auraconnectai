@@ -325,7 +325,7 @@ app.include_router(settings_router)
 app.include_router(settings_ui_router)
 app.include_router(pos_sync_router)
 app.include_router(pos_router)
-app.include_router(pos_migration_router, tags=["POS Migration"])
+app.include_router(pos_migration_router, tags=["POS Migration"])  # AI-powered POS migration suite
 
 # Menu Management
 app.include_router(menu_router)
