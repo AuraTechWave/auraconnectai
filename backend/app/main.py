@@ -157,6 +157,9 @@ from modules.gdpr.routes.gdpr_routes import router as gdpr_router
 from modules.health.routes.health_routes import router as health_router
 from modules.health.metrics.performance_middleware import PerformanceMiddleware
 
+# ========== Cache Monitoring ==========
+from modules.monitoring.routes.cache_routes import router as cache_monitoring_router
+
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
     title="AuraConnect AI - Restaurant Management API",
@@ -372,6 +375,9 @@ app.include_router(gdpr_router)
 # Health Monitoring
 app.include_router(health_router)
 
+# Cache Monitoring  
+app.include_router(cache_monitoring_router, prefix="/api/v1/monitoring", tags=["Cache Monitoring"])
+
 # Reservations & Waitlist (Enhanced System)
 app.include_router(enhanced_reservation_router, prefix="/api/v1", tags=["Reservations"])
 
@@ -450,6 +456,19 @@ async def startup_event():
     # Initialize webhook validator
     app.state.webhook_validator = webhook_validator
     
+    # Initialize cache system
+    from core.cache_config import initialize_cache_system, warm_caches
+    from core.cache_monitoring import cache_monitor
+    
+    cache_initialized = await initialize_cache_system()
+    if cache_initialized:
+        # Start cache monitoring
+        import asyncio
+        asyncio.create_task(cache_monitor.start_background_collection())
+        
+        # Warm critical caches
+        asyncio.create_task(warm_caches())
+    
     # Start order sync scheduler
     await start_sync_scheduler()
     # Start webhook retry scheduler
@@ -468,6 +487,10 @@ async def shutdown_event():
     # Close audit logger
     from core.audit_logger import audit_logger
     await audit_logger.close()
+    
+    # Shutdown cache system
+    from core.cache_config import shutdown_cache_system
+    await shutdown_cache_system()
     
     # Stop order sync scheduler
     await stop_sync_scheduler()
