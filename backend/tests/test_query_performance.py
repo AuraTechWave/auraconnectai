@@ -11,7 +11,7 @@ from core.database import Base, get_db
 from core.query_logger import log_query_performance, analyze_n_plus_one
 from modules.orders.models.order_models import Order, OrderItem
 from modules.customers.models.customer_models import Customer
-from modules.menu.models import MenuItem, MenuCategory
+from core.menu_models import MenuItem, MenuCategory
 from modules.staff.models.staff_models import Staff, Schedule
 
 

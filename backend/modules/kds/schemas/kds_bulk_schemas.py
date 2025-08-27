@@ -20,7 +20,7 @@ class BulkStationStatusUpdateRequest(BaseModel):
     status: StationStatus = Field(..., description="New status to apply")
 
     class Config:
-        schema_extra = {"example": {"station_ids": [1, 2, 3], "status": "ACTIVE"}}
+        json_schema_extra = {"example": {"station_ids": [1, 2, 3], "status": "ACTIVE"}}
 
 
 class BulkStationStatusUpdateResponse(BaseModel):
@@ -32,7 +32,7 @@ class BulkStationStatusUpdateResponse(BaseModel):
     updated_stations: List[int] = Field(..., description="IDs of updated stations")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "message": "Updated 3 stations",
                 "updated_count": 3,
@@ -53,7 +53,7 @@ class OrderRoutingResponse(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "message": "Order routed successfully",
                 "items_routed": 5,

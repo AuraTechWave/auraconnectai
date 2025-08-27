@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, date
 from unittest.mock import Mock, patch, MagicMock
 
 from main import app
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from modules.loyalty.models.rewards_models import (
     RewardTemplate, CustomerReward, LoyaltyPointsTransaction,
     RewardType, RewardStatus

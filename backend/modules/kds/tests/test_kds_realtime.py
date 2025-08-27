@@ -20,7 +20,7 @@ from ..models.kds_models import (
     MenuItemStation,
 )
 from modules.orders.models.order_models import Order, OrderItem
-from modules.menu.models import MenuItem
+from core.menu_models import MenuItem
 
 
 @pytest.fixture

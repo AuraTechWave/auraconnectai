@@ -255,7 +255,7 @@ class SettingHistoryEntry(BaseModel):
     change_reason: Optional[str]
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PendingChange(BaseModel):

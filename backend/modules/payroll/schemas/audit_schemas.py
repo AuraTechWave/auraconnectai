@@ -7,7 +7,7 @@ Defines request/response models for audit logging and
 compliance reporting functionality.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from enum import Enum
@@ -114,7 +114,8 @@ class AuditLogFilter(BaseModel):
         None, description="Search in action descriptions", max_length=100
     )
 
-    @validator("end_date")
+    @field_validator("end_date")
+    @classmethod
     def validate_end_date(cls, v, values):
         if v and "start_date" in values and v < values["start_date"]:
             raise ValueError("end_date must be after start_date")

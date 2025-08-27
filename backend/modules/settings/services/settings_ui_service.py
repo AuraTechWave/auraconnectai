@@ -38,7 +38,7 @@ from ..schemas.settings_ui_schemas import (
     UIMetadataResponse,
     PendingChange,
 )
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from core.exceptions import NotFoundError, ValidationError as CoreValidationError
 
 logger = logging.getLogger(__name__)

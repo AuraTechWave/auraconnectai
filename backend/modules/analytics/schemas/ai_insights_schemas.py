@@ -58,7 +58,7 @@ class PeakTimeInsight(BaseModel):
     recommendations: List[str] = Field(..., description="Actionable recommendations")
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "insight_type": "peak_time",
                 "primary_peak": {
@@ -117,7 +117,7 @@ class ProductInsight(BaseModel):
     recommendations: List[str]
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "insight_type": "product_trend",
                 "top_rising": [
@@ -211,7 +211,7 @@ class AIInsightSummary(BaseModel):
     next_update: datetime
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "generated_at": "2025-01-29T12:00:00",
                 "analysis_period": {"start": "2025-01-01", "end": "2025-01-29"},

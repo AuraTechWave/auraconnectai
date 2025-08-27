@@ -4,7 +4,7 @@ from enum import Enum
 from typing import List, Optional
 from fastapi import HTTPException, status
 
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 
 
 class Permission(str, Enum):

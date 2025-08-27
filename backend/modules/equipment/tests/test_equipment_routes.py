@@ -13,7 +13,7 @@ from decimal import Decimal
 
 from main import app
 from core.database import get_db
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from modules.auth.permissions import Permission
 from modules.equipment.models import (
     Equipment as EquipmentModel,

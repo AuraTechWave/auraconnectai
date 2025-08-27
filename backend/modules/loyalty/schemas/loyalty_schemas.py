@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, root_validator, field_validator, model_validator
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -62,7 +62,7 @@ class LoyaltyProgramResponse(LoyaltyProgramBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ========== Customer Loyalty Schemas ==========
@@ -110,7 +110,7 @@ class CustomerLoyaltyResponse(CustomerLoyaltyBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CustomerLoyaltyStats(BaseModel):
@@ -140,7 +140,7 @@ class PointsTransactionBase(BaseModel):
 
     customer_id: int
     transaction_type: str = Field(
-        ..., regex="^(earned|redeemed|expired|adjusted|transferred)$"
+        ..., pattern="^(earned|redeemed|expired|adjusted|transferred)$"
     )
     points_change: int
     reason: str = Field(..., max_length=200)
@@ -172,7 +172,7 @@ class PointsTransactionResponse(PointsTransactionBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PointsAdjustment(BaseModel):
@@ -193,11 +193,11 @@ class PointsTransfer(BaseModel):
     points: int = Field(..., gt=0)
     reason: Optional[str] = Field("Points transfer", max_length=200)
 
-    @root_validator
-    def validate_transfer(cls, values):
-        if values.get("from_customer_id") == values.get("to_customer_id"):
+    @model_validator(mode='after')
+    def validate_transfer(self):
+        if self.from_customer_id == self.to_customer_id:
             raise ValueError("Cannot transfer points to the same customer")
-        return values
+        return self
 
 
 # ========== Reward Template Schemas ==========
@@ -290,7 +290,7 @@ class RewardTemplateResponse(RewardTemplateBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ========== Customer Reward Schemas ==========
@@ -335,10 +335,10 @@ class BulkRewardIssuance(BaseModel):
     reason: str = Field(..., min_length=5, max_length=200)
     notify_customers: bool = True
 
-    @root_validator
-    def validate_targeting(cls, values):
-        customer_ids = values.get("customer_ids")
-        customer_criteria = values.get("customer_criteria")
+    @model_validator(mode='after')
+    def validate_targeting(self):
+        customer_ids = self.customer_ids
+        customer_criteria = self.customer_criteria
 
         if not customer_ids and not customer_criteria:
             raise ValueError(
@@ -349,7 +349,7 @@ class BulkRewardIssuance(BaseModel):
                 "Provide either customer_ids or customer_criteria, not both"
             )
 
-        return values
+        return self
 
 
 class CustomerRewardResponse(CustomerRewardBase):
@@ -371,7 +371,7 @@ class CustomerRewardResponse(CustomerRewardBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CustomerRewardSummary(BaseModel):
@@ -397,7 +397,8 @@ class RewardRedemptionRequest(BaseModel):
     order_id: int
     order_amount: float = Field(..., gt=0)
 
-    @validator("reward_code")
+    @field_validator("reward_code")
+    @classmethod
     def validate_code(cls, v):
         if not v or len(v) < 5:
             raise ValueError("Invalid reward code")
@@ -486,7 +487,7 @@ class RewardCampaignResponse(RewardCampaignBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # ========== Analytics Schemas ==========
@@ -499,7 +500,7 @@ class RewardAnalyticsRequest(BaseModel):
     campaign_id: Optional[int] = None
     start_date: date
     end_date: date
-    group_by: str = Field("day", regex="^(day|week|month)$")
+    group_by: str = Field("day", pattern="^(day|week|month)$")
 
 
 class RewardAnalyticsResponse(BaseModel):
@@ -563,8 +564,8 @@ class RewardSearchParams(BaseModel):
     max_value: Optional[float] = Field(None, ge=0)
     valid_on_date: Optional[date] = None
     search_text: Optional[str] = Field(None, max_length=100)
-    sort_by: str = Field("created_at", regex="^(created_at|valid_until|value|status)$")
-    sort_order: str = Field("desc", regex="^(asc|desc)$")
+    sort_by: str = Field("created_at", pattern="^(created_at|valid_until|value|status)$")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$")
     page: int = Field(1, ge=1)
     limit: int = Field(50, ge=1, le=200)
 

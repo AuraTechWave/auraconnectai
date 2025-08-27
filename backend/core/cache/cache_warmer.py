@@ -55,7 +55,7 @@ class CacheWarmer:
         stats = {"items_cached": 0, "categories_cached": 0, "errors": 0}
 
         try:
-            from modules.menu.models import MenuItem, MenuCategory
+            from core.menu_models import MenuItem, MenuCategory
 
             # Query scope
             if tenant_id:
@@ -148,7 +148,7 @@ class CacheWarmer:
         stats = {"users_cached": 0, "permissions_cached": 0, "errors": 0}
 
         try:
-            from modules.auth.models import User, Permission, Role
+            from core.rbac_models import RBACUser as User, Permission, Role
 
             # Query scope
             if user_ids:

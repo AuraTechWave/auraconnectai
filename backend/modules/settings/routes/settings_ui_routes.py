@@ -13,7 +13,7 @@ from datetime import datetime
 from core.database import get_db
 from core.auth import get_current_user
 from core.exceptions import NotFoundError, ValidationError, UnauthorizedException
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from modules.auth.permissions import Permission, check_permission
 
 from ..services.settings_ui_service import SettingsUIService

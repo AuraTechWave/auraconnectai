@@ -16,7 +16,7 @@ from modules.insights.models.insight_models import (
 from modules.insights.schemas.insights_schemas import (
     InsightCreate, InsightUpdate, InsightBatchUpdate, RatingCreate
 )
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from core.error_handling import NotFoundError, APIValidationError
 
 

@@ -23,7 +23,7 @@ from ..models.kds_models import (
 )
 from ..services.kds_websocket_manager import kds_websocket_manager
 from modules.orders.models.order_models import Order, OrderItem
-from modules.menu.models import MenuItem
+from core.menu_models import MenuItem
 from modules.staff.models.staff_models import StaffMember
 
 logger = logging.getLogger(__name__)

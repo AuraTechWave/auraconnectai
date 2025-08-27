@@ -9,7 +9,7 @@ import math
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, desc
 
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from modules.analytics.utils.performance_monitor import PerformanceMonitor
 from modules.analytics.services.ai_insights_service import AIInsightsService
 from modules.orders.models.order_models import Order, OrderItem

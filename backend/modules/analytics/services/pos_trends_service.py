@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 import logging
 
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from modules.analytics.models.pos_analytics_models import POSAnalyticsSnapshot
 from .pos.base_service import POSAnalyticsBaseService
 

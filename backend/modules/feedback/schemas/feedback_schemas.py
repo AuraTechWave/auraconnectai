@@ -1,6 +1,6 @@
 # backend/modules/feedback/schemas/feedback_schemas.py
 
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, validator, EmailStr, field_validator
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -39,12 +39,14 @@ class ReviewCreate(ReviewBase):
     order_id: Optional[int] = None
     source: ReviewSource = ReviewSource.WEBSITE
 
-    @validator("rating")
+    @field_validator("rating")
+    @classmethod
     def validate_rating(cls, v):
         # Round to nearest 0.5
         return round(v * 2) / 2
 
-    @validator("content")
+    @field_validator("content")
+    @classmethod
     def validate_content(cls, v):
         if len(v.strip()) < 10:
             raise ValueError("Review content must be at least 10 characters")
@@ -237,7 +239,8 @@ class FeedbackCreate(FeedbackBase):
     order_id: Optional[int] = None
     product_id: Optional[int] = None
 
-    @validator("customer_email")
+    @field_validator("customer_email")
+    @classmethod
     def validate_customer_info(cls, v, values):
         # Either customer_id or customer_email must be provided
         if not v and not values.get("customer_id"):

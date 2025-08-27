@@ -34,15 +34,40 @@ fi
 # Check if .env file exists
 if [ ! -f "backend/.env" ]; then
     echo -e "${YELLOW}Creating .env file from example...${NC}"
-    cp backend/.env.example backend/.env
+    if [ -f "backend/.env.example" ]; then
+        cp backend/.env.example backend/.env
+    else
+        echo -e "${YELLOW}Creating default .env file...${NC}"
+        cat > backend/.env << 'EOF'
+DATABASE_URL=postgresql://auraconnect:auraconnect123@localhost:5432/auraconnect_dev
+REDIS_URL=redis://localhost:6379/0
+JWT_SECRET_KEY=your-super-secret-key-change-this-in-production
+ENVIRONMENT=development
+DEBUG=True
+LOG_LEVEL=INFO
+EOF
+    fi
 fi
 
-# Set PYTHONPATH
-export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+# Set PYTHONPATH to include backend directory
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/backend"
+
+# Export environment variables
+export DATABASE_URL="postgresql://auraconnect:auraconnect123@localhost:5432/auraconnect_dev"
+export JWT_SECRET_KEY="your-super-secret-key-change-this-in-production"
+export REDIS_URL="redis://localhost:6379/0"
+export ENVIRONMENT="development"
+export DEBUG="True"
+export LOG_LEVEL="INFO"
+export SESSION_SECRET="development-session-secret-change-in-production"
+export SECRET_KEY="development-secret-key-change-in-production"
+
+# Change to backend directory
+cd backend
 
 # Run the backend
 echo -e "${GREEN}Starting server on http://localhost:8000${NC}"
 echo -e "${GREEN}API Documentation: http://localhost:8000/docs${NC}"
 echo -e "${YELLOW}Press Ctrl+C to stop${NC}"
 
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

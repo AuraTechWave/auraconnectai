@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from decimal import Decimal
 
 from ..models.table_models import (
@@ -64,7 +64,7 @@ class FloorResponse(FloorBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Table Schemas
@@ -77,7 +77,8 @@ class TableBase(BaseModel):
     max_capacity: int = Field(..., ge=1)
     preferred_capacity: Optional[int] = None
 
-    @validator("preferred_capacity")
+    @field_validator("preferred_capacity")
+    @classmethod
     def validate_preferred_capacity(cls, v, values):
         if v is not None:
             min_cap = values.get("min_capacity", 1)
@@ -169,7 +170,7 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Table Session Schemas
@@ -212,7 +213,7 @@ class TableSessionResponse(BaseModel):
     combined_tables: Optional[List[Dict[str, Any]]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Reservation Schemas
@@ -282,7 +283,7 @@ class TableReservationResponse(TableReservationBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Layout Schemas
@@ -343,7 +344,7 @@ class TableLayoutResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Bulk Operations

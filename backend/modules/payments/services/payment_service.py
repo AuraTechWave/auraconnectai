@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from core.database import get_db
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from ..models.payment_models import (
     Payment,
     Refund,

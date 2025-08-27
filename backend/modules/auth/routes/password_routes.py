@@ -45,6 +45,7 @@ class PasswordResetRequestModel(BaseModel):
     email: str = Field(..., description="User's email address")
 
     @field_validator("email")
+    @classmethod
     def validate_email(cls, v):
         if not validate_email_address(v):
             raise ValueError("Invalid email address format")

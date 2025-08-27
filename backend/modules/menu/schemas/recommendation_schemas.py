@@ -11,7 +11,7 @@ class MenuItemRecommendation(BaseModel):
     score: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class RecommendationResponse(BaseModel):

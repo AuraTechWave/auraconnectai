@@ -65,6 +65,10 @@ class AuthenticationError(APIError):
         )
 
 
+# Alias for compatibility
+UnauthorizedException = AuthenticationError
+
+
 class PermissionError(APIError):
     """Permission denied error"""
 

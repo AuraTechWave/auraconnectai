@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, MagicMock
 
 from main import app
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from modules.settings.models.settings_models import Setting, FeatureFlag, APIKey, Webhook
 from core.database import get_db
 

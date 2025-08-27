@@ -42,7 +42,8 @@ from modules.orders.routes.pricing_routes import router as pricing_router
 from modules.orders.routes.pricing_rule_routes import router as pricing_rule_router
 from modules.orders.routes.payment_reconciliation_routes import router as payment_reconciliation_router
 from modules.orders.routes.order_promotion_routes import router as order_promotion_router
-from modules.orders.routes.order_inventory_routes import router as order_inventory_router
+# TODO: Fix missing schemas
+# from modules.orders.routes.order_inventory_routes import router as order_inventory_router
 from modules.orders.api.customer_tracking_endpoints import router as customer_tracking_router
 from modules.orders.api.manual_review_endpoints import router as manual_review_router
 from modules.orders.routers.sync import sync_router as order_sync_router
@@ -146,7 +147,7 @@ from modules.orders.tasks.sync_tasks import start_sync_scheduler, stop_sync_sche
 from modules.orders.tasks.webhook_retry_task import start_webhook_retry_scheduler, stop_webhook_retry_scheduler
 from modules.orders.tasks.pricing_rule_tasks import start_pricing_rule_worker, stop_pricing_rule_worker
 from modules.orders.tasks.queue_tasks import start_queue_monitor, stop_queue_monitor
-from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor
+# from modules.orders.tasks.priority_tasks import start_priority_monitor, stop_priority_monitor  # TODO: Implement
 
 # ========== GDPR Compliance ==========
 from modules.gdpr.routes.gdpr_routes import router as gdpr_router
@@ -292,7 +293,7 @@ app.include_router(pricing_router)
 app.include_router(pricing_rule_router, prefix="/api/v1/orders", tags=["Pricing Rules"])
 app.include_router(payment_reconciliation_router, prefix="/api/v1/orders", tags=["Payment Reconciliation"])
 app.include_router(order_promotion_router, prefix="/api/v1/orders", tags=["Order Promotions"])
-app.include_router(order_inventory_router, prefix="/api/v1", tags=["Order Inventory Integration"])
+# app.include_router(order_inventory_router, prefix="/api/v1", tags=["Order Inventory Integration"])
 app.include_router(customer_tracking_router, prefix="/api/v1/orders", tags=["Customer Order Tracking"])
 app.include_router(manual_review_router, prefix="/api/v1/orders", tags=["Manual Order Review"])
 app.include_router(order_sync_router)
@@ -455,7 +456,7 @@ async def startup_event():
     # Start queue monitor
     await start_queue_monitor()
     # Start priority monitor
-    await start_priority_monitor()
+    # await start_priority_monitor()  # TODO: Implement
 
 
 @app.on_event("shutdown")
@@ -474,7 +475,7 @@ async def shutdown_event():
     # Stop queue monitor
     await stop_queue_monitor()
     # Stop priority monitor
-    await stop_priority_monitor()
+    # await stop_priority_monitor()  # TODO: Implement
 
 
 @app.get("/")

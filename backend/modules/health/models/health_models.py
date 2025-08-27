@@ -121,7 +121,7 @@ class Alert(Base):
     acknowledged_by = Column(Integer)
     resolved = Column(Boolean, default=False)
     resolved_at = Column(DateTime)
-    metadata = Column(JSON, default={})
+    additional_metadata = Column("metadata", JSON, default={})
     
     __table_args__ = (
         Index('idx_alerts_type_triggered', 'alert_type', 'triggered_at'),

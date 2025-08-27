@@ -1,6 +1,6 @@
 # backend/modules/ai_recommendations/schemas/staffing_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
@@ -79,7 +79,7 @@ class DemandForecast(BaseModel):
     weather_impact: float = Field(default=1.0, description="Weather impact multiplier")
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "date": "2025-02-01",
                 "hour": 12,
@@ -105,13 +105,15 @@ class StaffRequirement(BaseModel):
     required_skills: List[str] = Field(default_factory=list)
     preferred_skills: List[str] = Field(default_factory=list)
 
-    @validator("optimal")
+    @field_validator("optimal")
+    @classmethod
     def validate_optimal(cls, v, values):
         if "min_required" in values and v < values["min_required"]:
             raise ValueError("optimal must be >= min_required")
         return v
 
-    @validator("max_useful")
+    @field_validator("max_useful")
+    @classmethod
     def validate_max_useful(cls, v, values):
         if "optimal" in values and v < values["optimal"]:
             raise ValueError("max_useful must be >= optimal")
@@ -148,7 +150,7 @@ class ShiftRecommendation(BaseModel):
     flexibility_notes: List[str]
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "date": "2025-02-01",
                 "start_time": "10:00:00",
@@ -186,7 +188,7 @@ class StaffingPattern(BaseModel):
     surge_capacity: Dict[StaffRole, int]
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "pattern_name": "Weekday Standard",
                 "applicable_days": [
@@ -233,7 +235,8 @@ class StaffingOptimizationRequest(BaseModel):
     account_for_training: bool = Field(default=True)
     buffer_percentage: float = Field(default=10.0, ge=0, le=30)
 
-    @validator("end_date")
+    @field_validator("end_date")
+    @classmethod
     def validate_date_range(cls, v, values):
         if "start_date" in values and v < values["start_date"]:
             raise ValueError("end_date must be after start_date")
@@ -283,7 +286,7 @@ class StaffingRecommendationSet(BaseModel):
     warnings: List[str] = Field(default_factory=list)
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "request_id": "staff-opt-2025-01-29-001",
                 "generated_at": "2025-01-29T10:00:00Z",

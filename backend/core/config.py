@@ -8,10 +8,8 @@ and providing proper configuration validation.
 import os
 from typing import List, Optional
 
-try:
-    from pydantic.v1 import BaseSettings, validator, Field
-except ImportError:
-    from pydantic import BaseSettings, validator, Field
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings
 from functools import lru_cache
 from .secrets import get_required_secret, get_optional_secret
 
@@ -47,7 +45,8 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
     
-    @validator("jwt_secret_key", pre=True, always=True)
+    @field_validator("jwt_secret_key", mode='before')
+    @classmethod
     def set_jwt_secret(cls, v):
         if v is None:
             return get_required_secret("JWT secret key", "JWT_SECRET_KEY")
@@ -169,20 +168,24 @@ class Settings(BaseSettings):
     POS_SYNC_DATE_FORMAT: str = "%Y%m%d_%H%M%S"  # Date format for batch IDs
     POS_SYNC_RATE_LIMIT_PER_MINUTE: int = 1  # Max sync requests per minute
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+        "extra": "allow"
+    }
 
 
-    @validator("cors_origins", pre=True)
+    @field_validator("cors_origins", mode='before')
+    @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS origins from string or list."""
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
 
-    @validator("allowed_file_types", pre=True)
+    @field_validator("allowed_file_types", mode='before')
+    @classmethod
     def parse_allowed_file_types(cls, v):
         """Parse allowed file types from string or list."""
         if isinstance(v, str):

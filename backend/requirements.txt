@@ -4,7 +4,9 @@ sqlalchemy
 psycopg2-binary
 alembic
 pydantic
+pydantic-settings
 python-multipart
+python-dotenv
 boto3
 mkdocs
 mkdocs-material

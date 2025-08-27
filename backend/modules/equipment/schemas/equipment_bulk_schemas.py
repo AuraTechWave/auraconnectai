@@ -22,7 +22,7 @@ class BulkScheduleMaintenanceRequest(BaseModel):
     )
 
     class Config:
-        schema_extra = {"example": {"equipment_ids": [1, 2, 3, 4, 5]}}
+        json_schema_extra = {"example": {"equipment_ids": [1, 2, 3, 4, 5]}}
 
 
 class BulkScheduleMaintenanceResponse(BaseModel):
@@ -37,7 +37,7 @@ class BulkScheduleMaintenanceResponse(BaseModel):
     errors: Optional[List[Dict[str, Any]]] = Field(None, description="Errors if any")
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "message": "Successfully scheduled maintenance for 5 equipment items",
                 "scheduled_count": 5,
@@ -71,7 +71,7 @@ class BulkOperationResponse(BaseModel):
     )
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "message": "Bulk operation completed",
                 "success_count": 8,

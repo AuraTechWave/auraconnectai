@@ -40,7 +40,7 @@ from ..schemas.routing_schemas import (
     TeamMemberCreate,
 )
 from ...staff.models import StaffMember
-from ...menu.models import MenuItem
+from core.menu_models import MenuItem
 from ...customers.models import Customer
 from modules.kds.services.kds_order_routing_service import KDSOrderRoutingService
 

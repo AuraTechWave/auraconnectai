@@ -93,7 +93,7 @@ class SMSMessage(Base):
     staff_id = Column(Integer, ForeignKey("staff.id"), nullable=True)
     
     # Metadata
-    metadata = Column(JSON, nullable=True)
+    additional_metadata = Column("metadata", JSON, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)

@@ -354,7 +354,7 @@ async def get_table_utilization(
 @router.get("/analytics/heatmap", response_model=List[FloorHeatmapData])
 @require_permission("tables.view_analytics")
 async def get_floor_heatmap(
-    period: str = Query("today", regex="^(today|week|month)$"),
+    period: str = Query("today", pattern="^(today|week|month)$"),
     floor_id: Optional[int] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

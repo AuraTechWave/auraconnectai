@@ -136,17 +136,18 @@ class RBACUser(Base):
         return False
 
     # Password security relationships
-    password_reset_tokens = relationship(
-        "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
-    )
+    # TODO: Uncomment these when password models are properly imported
+    # password_reset_tokens = relationship(
+    #     "PasswordResetToken", back_populates="user", cascade="all, delete-orphan"
+    # )
 
-    password_history = relationship(
-        "PasswordHistory", back_populates="user", cascade="all, delete-orphan"
-    )
+    # password_history = relationship(
+    #     "PasswordHistory", back_populates="user", cascade="all, delete-orphan"
+    # )
 
-    security_audit_logs = relationship(
-        "SecurityAuditLog", back_populates="user", cascade="all, delete-orphan"
-    )
+    # security_audit_logs = relationship(
+    #     "SecurityAuditLog", back_populates="user", cascade="all, delete-orphan"
+    # )
 
 
 class RBACRole(Base):

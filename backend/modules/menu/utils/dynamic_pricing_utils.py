@@ -16,10 +16,10 @@ from decimal import Decimal
 from typing import Iterable, Dict, Any
 
 # The recommendation & pricing primitives already exist in the orders module
-from backend.modules.orders.services.ai_recommendation_service import (
+from modules.orders.services.ai_recommendation_service import (
     recommendation_service,
 )
-from backend.modules.orders.schemas.dynamic_pricing_schemas import (
+from modules.orders.schemas.dynamic_pricing_schemas import (
     DynamicPricingRequest,
     PricingContext,
 )

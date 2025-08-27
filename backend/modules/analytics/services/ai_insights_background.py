@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import asyncio
 
 from core.database_utils import get_db_context
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from ..schemas.ai_insights_schemas import InsightRequest, InsightType, ConfidenceLevel
 from .ai_insights_service import create_ai_insights_service
 

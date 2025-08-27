@@ -1,6 +1,6 @@
 # backend/core/menu_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -135,7 +135,8 @@ class ModifierGroupBase(BaseModel):
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
 
-    @validator("max_selections")
+    @field_validator("max_selections")
+    @classmethod
     def validate_max_selections(cls, v, values):
         if v is not None and "min_selections" in values:
             if v < values["min_selections"]:

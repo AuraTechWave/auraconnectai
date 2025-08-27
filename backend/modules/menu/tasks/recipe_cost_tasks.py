@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 # Initialize Celery
 celery_app = Celery(
     "recipe_tasks",
-    broker=settings.REDIS_URL or "redis://localhost:6379/0",
-    backend=settings.REDIS_URL or "redis://localhost:6379/0",
+    broker=settings.redis_url or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
+    backend=settings.redis_url or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}",
 )
 
 # Configure Celery

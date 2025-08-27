@@ -1,6 +1,6 @@
 # backend/modules/ai_recommendations/schemas/pricing_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date, time
 from decimal import Decimal
@@ -89,7 +89,7 @@ class MenuItemPricingContext(BaseModel):
     customer_rating: Optional[float] = Field(None, ge=1, le=5)
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "menu_item_id": 101,
                 "current_price": "12.99",
@@ -134,7 +134,7 @@ class PricingRecommendation(BaseModel):
     recommended_duration_days: Optional[int] = None
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "menu_item_id": 101,
                 "item_name": "Grilled Salmon",
@@ -181,7 +181,8 @@ class BulkPricingRequest(BaseModel):
     time_horizon_days: int = Field(default=7, ge=1, le=90)
     include_competitors: bool = Field(default=True)
 
-    @validator("round_to_nearest")
+    @field_validator("round_to_nearest")
+    @classmethod
     def validate_rounding(cls, v):
         valid_values = [
             Decimal("0.01"),
@@ -227,7 +228,7 @@ class PricingRecommendationSet(BaseModel):
     notes: List[str] = Field(default_factory=list)
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "request_id": "price-rec-2025-01-29-001",
                 "generated_at": "2025-01-29T10:00:00Z",
@@ -265,7 +266,8 @@ class PriceTestingConfig(BaseModel):
     primary_metric: str = Field(default="revenue_per_customer")
     secondary_metrics: List[str] = Field(default_factory=list)
 
-    @validator("traffic_allocation")
+    @field_validator("traffic_allocation")
+    @classmethod
     def validate_allocation(cls, v):
         total = sum(v.values())
         if abs(total - 1.0) > 0.001:
@@ -294,7 +296,7 @@ class PriceTestingResult(BaseModel):
     implementation_confidence: float
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "test_name": "Salmon Pricing Test",
                 "menu_item_id": 101,

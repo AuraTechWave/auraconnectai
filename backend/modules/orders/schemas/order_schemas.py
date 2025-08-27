@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -265,7 +265,8 @@ class OrderPriorityUpdate(BaseModel):
         None, max_length=500, description="Reason for priority change"
     )
 
-    @validator("reason")
+    @field_validator("reason")
+    @classmethod
     def validate_reason(cls, v):
         if v and len(v.strip()) == 0:
             return None
@@ -302,7 +303,8 @@ class OrderAuditResponse(BaseModel):
     total_count: int
     has_more: bool = Field(..., description="Whether there are more records")
 
-    @validator("has_more", always=True)
+    @field_validator("has_more")
+    @classmethod
     def calculate_has_more(cls, v, values):
         events = values.get("events", [])
         total_count = values.get("total_count", 0)
@@ -320,7 +322,8 @@ class KitchenPrintRequest(BaseModel):
     )
     format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
-    @validator("printer_options", "format_options")
+    @field_validator("printer_options", "format_options")
+    @classmethod
     def validate_options(cls, v):
         if v is None:
             return {}
@@ -358,7 +361,8 @@ class AutoCancellationConfigBase(BaseModel):
     enabled: bool = True
     updated_by: int
 
-    @validator("status")
+    @field_validator("status")
+    @classmethod
     def validate_cancellable_status(cls, v):
         cancellable_statuses = [
             OrderStatus.PENDING,

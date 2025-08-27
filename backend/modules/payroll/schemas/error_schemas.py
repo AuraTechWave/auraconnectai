@@ -30,7 +30,7 @@ class ErrorResponse(BaseModel):
     request_id: Optional[str] = None
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "error": "ValidationError",
                 "message": "Invalid request parameters",

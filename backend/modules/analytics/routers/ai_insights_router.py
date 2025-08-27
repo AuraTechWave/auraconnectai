@@ -400,7 +400,7 @@ async def get_task_status(
     ),
 ):
     """Check the status of an async insights generation task."""
-    from core.cache import cache_service
+    from core.cache import cache_manager as cache_service
 
     status_key = f"task:status:{task_id}"
     status_data = await cache_service.get(status_key)
@@ -421,7 +421,7 @@ async def get_task_result(
     ),
 ):
     """Retrieve the results of a completed async insights generation task."""
-    from core.cache import cache_service
+    from core.cache import cache_manager as cache_service
 
     # Check task status first
     status_data = await cache_service.get(f"task:status:{task_id}")

@@ -1,6 +1,6 @@
 # backend/modules/customers/schemas/customer_schemas.py
 
-from pydantic import BaseModel, EmailStr, Field, validator, constr
+from pydantic import BaseModel, EmailStr, Field, validator, constr, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -116,7 +116,8 @@ class CustomerCreate(CustomerBase):
     referral_code: Optional[str] = None
     acquisition_source: Optional[str] = Field(None, max_length=100)
 
-    @validator("password")
+    @field_validator("password")
+    @classmethod
     def validate_password(cls, v):
         if v and len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")

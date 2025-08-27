@@ -15,7 +15,7 @@ import logging
 import json
 from collections import defaultdict
 
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from modules.orders.models.external_pos_models import ExternalPOSProvider
 from modules.analytics.models.pos_analytics_models import (
     POSAnalyticsSnapshot,

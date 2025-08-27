@@ -4,7 +4,7 @@
 Pydantic schemas for external POS webhook management.
 """
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, validator, field_validator
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -35,7 +35,8 @@ class ExternalPOSProviderCreate(BaseModel):
     supported_events: List[str] = Field(default_factory=list)
     rate_limit_per_minute: int = Field(default=60, ge=1, le=1000)
 
-    @validator("auth_config")
+    @field_validator("auth_config")
+    @classmethod
     def validate_auth_config(cls, v, values):
         auth_type = values.get("auth_type")
         if auth_type == AuthenticationType.HMAC_SHA256:

@@ -87,6 +87,7 @@ class TaxFilingBase(BaseModel):
     notes: Optional[str] = None
 
     @field_validator("period_end")
+    @classmethod
     def validate_period_end(cls, v, values):
         if "period_start" in values.data and v < values.data["period_start"]:
             raise ValueError("period_end must be after period_start")

@@ -6,7 +6,7 @@ Pydantic schemas for order synchronization.
 Defines request/response models for sync-related API endpoints.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -59,7 +59,7 @@ class SyncBatchResponse(BaseModel):
     error_summary: Optional[Dict[str, Any]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -80,7 +80,7 @@ class SyncConflictResponse(BaseModel):
     resolution_notes: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -108,7 +108,8 @@ class SyncConfigurationUpdate(BaseModel):
         None, description="Conflict resolution mode (auto/manual)"
     )
 
-    @validator("conflict_resolution_mode")
+    @field_validator("conflict_resolution_mode")
+    @classmethod
     def validate_conflict_mode(cls, v):
         if v and v not in ["auto", "manual"]:
             raise ValueError("Invalid conflict resolution mode")
@@ -151,7 +152,7 @@ class OrderSyncStatusResponse(BaseModel):
     remote_checksum: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 
@@ -171,7 +172,7 @@ class SyncLogResponse(BaseModel):
     error_code: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         from_attributes = True
 
 

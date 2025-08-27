@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from decimal import Decimal
 
 from ..models.insight_models import (
@@ -78,14 +78,14 @@ class InsightResponse(InsightBase):
     rating_summary: Optional[Dict[str, int]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Rating Schemas
 class InsightRatingCreate(BaseModel):
     """Create rating schema"""
 
-    rating: str = Field(..., regex="^(useful|irrelevant|needs_followup)$")
+    rating: str = Field(..., pattern="^(useful|irrelevant|needs_followup)$")
     comment: Optional[str] = Field(None, max_length=500)
 
 
@@ -101,7 +101,7 @@ class InsightRatingResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Action Schemas
@@ -124,7 +124,7 @@ class InsightActionResponse(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Notification Rule Schemas
@@ -147,7 +147,8 @@ class NotificationRuleCreate(BaseModel):
     max_per_hour: Optional[int] = Field(None, gt=0)
     max_per_day: Optional[int] = Field(None, gt=0)
 
-    @validator("batch_hours")
+    @field_validator("batch_hours")
+    @classmethod
     def validate_batch_hours(cls, v):
         if v:
             for hour in v:
@@ -198,7 +199,7 @@ class NotificationRuleResponse(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Thread Schemas
@@ -264,7 +265,7 @@ class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
 
     insight_ids: List[int]
-    action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
+    action: str = Field(..., pattern="^(acknowledge|dismiss|export)$")
 
 
 # Batch Operations
@@ -342,4 +343,4 @@ class InsightThreadResponse(BaseModel):
     insights: Optional[List[InsightResponse]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

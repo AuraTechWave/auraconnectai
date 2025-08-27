@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Any
 from datetime import datetime
 import logging
 
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from modules.analytics.schemas.pos_analytics_schemas import (
     POSProviderDetailsResponse,
     POSTerminalDetailsResponse,

@@ -4,7 +4,7 @@
 Improved Pydantic schemas with comprehensive validation for Equipment module.
 """
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, validator, root_validator, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime, date
 from decimal import Decimal
@@ -45,13 +45,15 @@ class EquipmentBase(BaseModel):
         None, max_length=200, description="Physical location of equipment"
     )
 
-    @validator("equipment_name", "equipment_type")
+    @field_validator("equipment_name", "equipment_type")
+    @classmethod
     def validate_not_empty(cls, v):
         if v and not v.strip():
             raise ValueError("Cannot be empty or whitespace only")
         return v.strip() if v else v
 
-    @validator("serial_number")
+    @field_validator("serial_number")
+    @classmethod
     def validate_serial_number(cls, v):
         if v:
             # Remove spaces and convert to uppercase
@@ -82,10 +84,10 @@ class EquipmentCreate(EquipmentBase):
         None, max_length=1000, description="General maintenance notes"
     )
 
-    @root_validator
-    def validate_dates(cls, values):
-        purchase_date = values.get("purchase_date")
-        warranty_expiry = values.get("warranty_expiry")
+    @model_validator(mode='after')
+    def validate_dates(self):
+        purchase_date = self.purchase_date
+        warranty_expiry = self.warranty_expiry
 
         if purchase_date and warranty_expiry:
             if purchase_date > warranty_expiry:
@@ -94,9 +96,10 @@ class EquipmentCreate(EquipmentBase):
         if purchase_date and purchase_date > date.today():
             raise ValueError("Purchase date cannot be in the future")
 
-        return values
+        return self
 
-    @validator("purchase_cost")
+    @field_validator("purchase_cost")
+    @classmethod
     def validate_cost(cls, v):
         if v is not None and v > Decimal("1000000"):
             raise ValueError("Purchase cost seems unusually high. Please verify.")
@@ -118,7 +121,8 @@ class EquipmentUpdate(BaseModel):
     maintenance_interval_days: Optional[int] = Field(None, gt=0, le=3650)
     maintenance_notes: Optional[str] = Field(None, max_length=1000)
 
-    @validator("warranty_expiry")
+    @field_validator("warranty_expiry")
+    @classmethod
     def validate_warranty_expiry(cls, v):
         if v and v < date.today():
             # Warning, but allow updating to past date
@@ -148,7 +152,7 @@ class Equipment(EquipmentBase):
     updated_by: Optional[int]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
             date: lambda v: v.isoformat(),
@@ -170,13 +174,15 @@ class MaintenanceRecordBase(BaseModel):
         None, ge=0, decimal_places=2, description="Estimated cost"
     )
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date")
+    @classmethod
     def validate_scheduled_date(cls, v):
         if v < date.today():
             raise ValueError("Scheduled date cannot be in the past")
         return v
 
-    @validator("estimated_cost")
+    @field_validator("estimated_cost")
+    @classmethod
     def validate_estimated_cost(cls, v):
         if v is not None and v > Decimal("100000"):
             raise ValueError("Estimated cost seems unusually high. Please verify.")
@@ -205,7 +211,8 @@ class MaintenanceRecordUpdate(BaseModel):
     status: Optional[MaintenanceStatus] = None
     notes: Optional[str] = Field(None, max_length=2000)
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date")
+    @classmethod
     def validate_scheduled_date(cls, v):
         # Allow past dates for updates (rescheduling)
         return v
@@ -233,27 +240,29 @@ class MaintenanceRecordComplete(BaseModel):
     )
     notes: Optional[str] = Field(None, max_length=2000, description="Completion notes")
 
-    @validator("date_performed")
+    @field_validator("date_performed")
+    @classmethod
     def validate_date_performed(cls, v):
         if v > date.today():
             raise ValueError("Performance date cannot be in the future")
         return v
 
-    @validator("cost")
+    @field_validator("cost")
+    @classmethod
     def validate_cost(cls, v):
         if v > Decimal("100000"):
             raise ValueError("Cost seems unusually high. Please verify.")
         return v
 
-    @root_validator
-    def validate_durations(cls, values):
-        actual = values.get("actual_duration_hours")
-        downtime = values.get("downtime_hours")
+    @model_validator(mode='after')
+    def validate_durations(self):
+        actual = self.actual_duration_hours
+        downtime = self.downtime_hours
 
         if actual and downtime and downtime > actual:
             raise ValueError("Downtime cannot exceed actual duration")
 
-        return values
+        return self
 
 
 class MaintenanceRecord(MaintenanceRecordBase):
@@ -276,7 +285,7 @@ class MaintenanceRecord(MaintenanceRecordBase):
     updated_by: Optional[int]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_encoders = {
             datetime: lambda v: v.isoformat(),
             date: lambda v: v.isoformat(),
@@ -322,15 +331,15 @@ class MaintenanceSearchParams(BaseModel):
     limit: int = Field(50, ge=1, le=500)
     offset: int = Field(0, ge=0)
 
-    @root_validator
-    def validate_date_range(cls, values):
-        date_from = values.get("date_from")
-        date_to = values.get("date_to")
+    @model_validator(mode='after')
+    def validate_date_range(self):
+        date_from = self.date_from
+        date_to = self.date_to
 
         if date_from and date_to and date_from > date_to:
             raise ValueError("date_from must be before date_to")
 
-        return values
+        return self
 
 
 class EquipmentListResponse(BaseModel):
@@ -368,6 +377,7 @@ class MaintenanceSummary(BaseModel):
     average_downtime_hours: float = Field(..., ge=0)
     critical_equipment_down: int = Field(..., ge=0)
 
-    @validator("average_downtime_hours")
+    @field_validator("average_downtime_hours")
+    @classmethod
     def round_average(cls, v):
         return round(v, 2)

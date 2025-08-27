@@ -45,6 +45,7 @@ class EnvironmentConfig(BaseSettings):
         extra = "allow"  # Allow extra fields from .env
 
     @field_validator("ENVIRONMENT")
+    @classmethod
     def validate_environment(cls, v):
         """Validate environment setting"""
         valid_environments = ["development", "staging", "production"]
@@ -53,6 +54,7 @@ class EnvironmentConfig(BaseSettings):
         return v
 
     @field_validator("REDIS_URL")
+    @classmethod
     def validate_redis_url(cls, v, info):
         """Validate Redis configuration"""
         env = info.data.get("ENVIRONMENT", "development")
@@ -69,6 +71,7 @@ class EnvironmentConfig(BaseSettings):
         return v
 
     @field_validator("SESSION_SECRET", "SECRET_KEY")
+    @classmethod
     def validate_secrets(cls, v, info):
         """Validate secret keys"""
         field_name = info.field_name
@@ -83,6 +86,7 @@ class EnvironmentConfig(BaseSettings):
         return v
 
     @field_validator("ALLOW_INSECURE_HTTP")
+    @classmethod
     def validate_https_requirement(cls, v, info):
         """Validate HTTPS requirement"""
         env = info.data.get("ENVIRONMENT", "development")

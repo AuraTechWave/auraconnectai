@@ -10,8 +10,8 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 
-from ....core.database import get_db
-from ....core.auth import get_current_user
+from core.database import get_db
+from core.auth import get_current_user
 from ..services.recipe_export_service import RecipeExportService
 from ..exceptions.recipe_exceptions import RecipeExportError
 from ..utils.performance_utils import timing_logger
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/menu/recipes/export", tags=["recipe-export"])
 @router.get("/compliance")
 @timing_logger("export_compliance_endpoint", warning_threshold_ms=3000)
 async def export_compliance_report(
-    format: str = Query("json", regex="^(json|csv)$", description="Export format"),
+    format: str = Query("json", pattern="^(json|csv)$", description="Export format"),
     include_costs: bool = Query(True, description="Include cost analysis"),
     include_nutritional: bool = Query(False, description="Include nutritional data"),
     category: Optional[str] = Query(None, description="Filter by menu category"),
@@ -93,7 +93,7 @@ async def export_compliance_report(
 @timing_logger("export_recipes_endpoint")
 async def export_recipe_details(
     recipe_ids: List[int] = Query(..., description="List of recipe IDs to export"),
-    format: str = Query("json", regex="^(json|csv)$", description="Export format"),
+    format: str = Query("json", pattern="^(json|csv)$", description="Export format"),
     include_history: bool = Query(False, description="Include version history"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),

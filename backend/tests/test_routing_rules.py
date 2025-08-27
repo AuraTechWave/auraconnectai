@@ -22,7 +22,7 @@ from modules.orders.schemas.routing_schemas import (
 )
 from modules.orders.services.routing_rule_service import RoutingRuleService
 from modules.staff.models import StaffMember
-from modules.menu.models import MenuItem, MenuCategory
+from core.menu_models import MenuItem, MenuCategory
 from modules.customers.models import Customer
 
 

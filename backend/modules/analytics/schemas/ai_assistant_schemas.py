@@ -7,7 +7,7 @@ These schemas define the structure for chat messages, queries, and responses
 between the user and the AI assistant for analytics queries.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 from enum import Enum
@@ -87,7 +87,8 @@ class QueryContext(BaseModel):
     time_zone: Optional[str] = "UTC"
     language: str = "en"
 
-    @validator("conversation_history")
+    @field_validator("conversation_history")
+    @classmethod
     def limit_history_size(cls, v):
         """Keep only last 20 messages to prevent context overflow"""
         return v[-20:] if len(v) > 20 else v
@@ -159,7 +160,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
 
-    @validator("message")
+    @field_validator("message")
+    @classmethod
     def clean_message(cls, v):
         """Clean and validate user message"""
         return v.strip()

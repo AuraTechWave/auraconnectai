@@ -11,7 +11,7 @@ from datetime import date
 
 from core.database import get_db
 from core.auth import get_current_user
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 from modules.auth.permissions import Permission, check_permission
 from ..services import ReservationService, WaitlistService
 from ..schemas import (
@@ -291,7 +291,7 @@ async def get_daily_waitlist(
 @router.post("/waitlist/{waitlist_id}/notify")
 async def notify_waitlist_customer(
     waitlist_id: int,
-    available_time: str = Query(..., regex="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"),
+    available_time: str = Query(..., pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

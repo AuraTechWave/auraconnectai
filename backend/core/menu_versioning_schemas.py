@@ -1,6 +1,6 @@
 # backend/core/menu_versioning_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -156,7 +156,8 @@ class ModifierGroupVersionBase(BaseModel):
     display_order: int = 0
     is_active: bool = True
 
-    @validator("max_selections")
+    @field_validator("max_selections")
+    @classmethod
     def validate_max_selections(cls, v, values):
         if v is not None and "min_selections" in values:
             if v < values["min_selections"]:

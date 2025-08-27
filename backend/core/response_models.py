@@ -23,7 +23,7 @@ class PaginationMeta(BaseModel):
     has_prev: bool = Field(description="Whether there is a previous page")
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "current_page": 1,
                 "per_page": 20,
@@ -51,7 +51,7 @@ class ResponseMeta(BaseModel):
     version: str = Field(default="1.0", description="API version")
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "timestamp": "2025-08-14T12:00:00Z",
                 "request_id": "req_123456",
@@ -73,7 +73,7 @@ class ErrorDetail(BaseModel):
     )
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "code": "VALIDATION_ERROR",
                 "message": "Email format is invalid",
@@ -174,7 +174,7 @@ class StandardResponse(BaseModel, Generic[T]):
         return cls.success(data=data, message=message, meta=meta, pagination=pagination)
 
     class Config:
-        json_schema_extra = {
+        json_json_schema_extra = {
             "example": {
                 "success": True,
                 "data": {"id": 1, "name": "Example"},

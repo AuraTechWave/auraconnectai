@@ -14,8 +14,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from core.auth import get_current_active_user
-from core.models import User
+from core.auth import get_current_user, User
 from ..services.table_analytics_service import TableAnalyticsService
 from ..schemas.table_schemas import (
     CurrentAnalytics,
@@ -31,7 +30,7 @@ analytics_service = TableAnalyticsService()
 @router.get("/current", response_model=CurrentAnalytics)
 async def get_current_analytics(
     floor_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get current real-time analytics for tables."""
@@ -54,7 +53,7 @@ async def get_turn_time_analytics(
     end_date: date,
     floor_id: Optional[int] = Query(None),
     group_by: str = Query("day", enum=["day", "hour", "day_of_week"]),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -93,7 +92,7 @@ async def get_table_performance_metrics(
     start_date: date,
     end_date: date,
     table_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -125,7 +124,7 @@ async def get_table_performance_metrics(
 @router.get("/peak-hours", response_model=PeakHoursAnalysis)
 async def get_peak_hours_analysis(
     lookback_days: int = Query(30, ge=7, le=90),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -150,7 +149,7 @@ async def get_peak_hours_analysis(
 @router.get("/average-turn-time")
 async def get_average_turn_time(
     lookback_days: int = Query(7, ge=1, le=30),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -180,7 +179,7 @@ async def get_average_turn_time(
 async def get_reservation_analytics(
     start_date: date,
     end_date: date,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -211,7 +210,7 @@ async def get_reservation_analytics(
 async def get_heat_map_data(
     floor_id: Optional[int] = Query(None),
     period_days: int = Query(7, ge=1, le=30),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """

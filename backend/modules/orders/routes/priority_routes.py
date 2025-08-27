@@ -11,7 +11,7 @@ from sqlalchemy import func, and_
 from core.database import get_db
 from core.deps import get_current_user
 from core.permissions import check_permission
-from modules.auth.models import User
+from core.rbac_models import RBACUser as User
 
 from ..models.priority_models import (
     PriorityRule,

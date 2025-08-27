@@ -27,7 +27,7 @@ from ..schemas.ai_insights_schemas import (
 from ..models.analytics_models import SalesAnalyticsSnapshot
 from modules.orders.models.order_models import Order, OrderItem
 from modules.staff.models.staff_models import StaffMember
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from modules.analytics.utils.performance_monitor import (
     PerformanceMonitor,
     check_performance_threshold,

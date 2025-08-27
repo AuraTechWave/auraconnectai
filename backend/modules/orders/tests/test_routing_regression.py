@@ -12,7 +12,7 @@ from modules.orders.models.order_models import Order, OrderItem, OrderStatus
 from modules.orders.services.order_service import create_order_with_fraud_check
 from modules.orders.models.routing_models import OrderRoutingRule, RuleStatus
 from modules.kds.models import KDSStation, KDSOrderItem
-from modules.menu.models import MenuItem, MenuCategory
+from core.menu_models import MenuItem, MenuCategory
 
 
 @pytest.fixture

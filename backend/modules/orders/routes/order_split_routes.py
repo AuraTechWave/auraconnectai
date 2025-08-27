@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from core.database import get_db
 from core.decorators import handle_api_errors
-from ...auth.services.auth_service import get_current_user
-from ...auth.models import User
+from core.auth import get_current_user
+from core.rbac_models import RBACUser as User
 from ..schemas.order_split_schemas import (
     OrderSplitRequest,
     OrderSplitResponse,

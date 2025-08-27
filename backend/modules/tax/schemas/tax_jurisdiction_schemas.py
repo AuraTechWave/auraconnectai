@@ -96,6 +96,7 @@ class TaxRateBase(BaseModel):
     )
 
     @field_validator("max_amount")
+    @classmethod
     def validate_max_amount(cls, v, values):
         if (
             v is not None
@@ -219,6 +220,7 @@ class TaxRuleCondition(BaseModel):
     value: Any
 
     @field_validator("operator")
+    @classmethod
     def validate_operator(cls, v):
         valid_operators = [
             "eq",

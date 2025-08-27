@@ -1,0 +1,225 @@
+/* Shift Editor Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.shift-editor {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Editor Header */
+.editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.editor-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* Form Styles */
+form {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #2196F3;
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: #f44336;
+}
+
+.error-message {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #f44336;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.calculated-value {
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Editor Actions */
+.editor-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button.primary {
+  background-color: #2196F3;
+  color: white;
+  margin-left: auto;
+}
+
+.button.primary:hover:not(:disabled) {
+  background-color: #1976D2;
+}
+
+.button.secondary {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.button.secondary:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.button.danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.button.danger:hover:not(:disabled) {
+  background-color: #d32f2f;
+}
+
+/* Form help text */
+.form-help {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+/* Required field indicator */
+abbr[title="required"] {
+  color: #f44336;
+  text-decoration: none;
+  font-weight: normal;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .shift-editor {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .editor-actions {
+    flex-wrap: wrap;
+  }
+  
+  .button {
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  .button.primary {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

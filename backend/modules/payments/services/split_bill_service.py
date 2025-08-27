@@ -10,7 +10,7 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 
 from core.database import get_db
-from core.cache import cache_service
+from core.cache import cache_manager as cache_service
 from ..models.split_bill_models import (
     BillSplit,
     SplitParticipant,

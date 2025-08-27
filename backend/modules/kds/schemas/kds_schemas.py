@@ -4,7 +4,7 @@
 Pydantic schemas for Kitchen Display System.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -26,7 +26,7 @@ class StationCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     station_type: StationType
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: int = Field(0, ge=0, le=100)
     max_active_items: int = Field(10, ge=1, le=50)
     prep_time_multiplier: float = Field(1.0, ge=0.1, le=5.0)
@@ -35,7 +35,8 @@ class StationCreate(BaseModel):
     features: List[str] = Field(default_factory=list)
     printer_id: Optional[str] = None
 
-    @validator("display_name", always=True)
+    @field_validator("display_name")
+    @classmethod
     def set_display_name(cls, v, values):
         return v or values.get("name")
 
@@ -47,7 +48,7 @@ class StationUpdate(BaseModel):
     station_type: Optional[StationType] = None
     status: Optional[StationStatus] = None
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: Optional[int] = Field(None, ge=0, le=100)
     max_active_items: Optional[int] = Field(None, ge=1, le=50)
     prep_time_multiplier: Optional[float] = Field(None, ge=0.1, le=5.0)
@@ -85,7 +86,7 @@ class StationResponse(BaseModel):
     average_wait_time: Optional[float] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # NOTE: KDSOrderItemResponse and KDSWebSocketMessage are defined later in this file
@@ -99,7 +100,7 @@ class KitchenDisplayCreate(BaseModel):
     display_number: int = Field(1, ge=1, le=10)
     name: Optional[str] = None
     ip_address: Optional[str] = None
-    layout_mode: str = Field("grid", regex="^(grid|list|single)$")
+    layout_mode: str = Field("grid", pattern="^(grid|list|single)$")
     items_per_page: int = Field(6, ge=1, le=20)
     auto_clear_completed: bool = True
     auto_clear_delay_seconds: int = Field(30, ge=10, le=300)
@@ -111,7 +112,7 @@ class KitchenDisplayUpdate(BaseModel):
     name: Optional[str] = None
     ip_address: Optional[str] = None
     is_active: Optional[bool] = None
-    layout_mode: Optional[str] = Field(None, regex="^(grid|list|single)$")
+    layout_mode: Optional[str] = Field(None, pattern="^(grid|list|single)$")
     items_per_page: Optional[int] = Field(None, ge=1, le=20)
     auto_clear_completed: Optional[bool] = None
     auto_clear_delay_seconds: Optional[int] = Field(None, ge=10, le=300)
@@ -135,7 +136,7 @@ class KitchenDisplayResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StationAssignmentCreate(BaseModel):
@@ -149,7 +150,8 @@ class StationAssignmentCreate(BaseModel):
     prep_time_override: Optional[int] = Field(None, ge=1, le=120)
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
-    @validator("category_name")
+    @field_validator("category_name")
+    @classmethod
     def validate_assignment(cls, v, values):
         if not v and not values.get("tag_name"):
             raise ValueError("Either category_name or tag_name must be provided")
@@ -171,7 +173,7 @@ class StationAssignmentResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class MenuItemStationCreate(BaseModel):
@@ -199,7 +201,7 @@ class MenuItemStationResponse(BaseModel):
     updated_at: Optional[datetime]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OrderItemDisplay(BaseModel):
@@ -253,7 +255,7 @@ class KDSOrderItemResponse(BaseModel):
     server_name: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StationSummary(BaseModel):
@@ -276,7 +278,7 @@ class KDSWebSocketMessage(BaseModel):
     """WebSocket message format for KDS updates"""
 
     type: str = Field(
-        ..., regex="^(new_item|update_item|remove_item|station_update|heartbeat)$"
+        ..., pattern="^(new_item|update_item|remove_item|station_update|heartbeat)$"
     )
     station_id: Optional[int] = None
     data: Dict[str, Any]

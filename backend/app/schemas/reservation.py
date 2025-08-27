@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, field_validator
 from datetime import date, time, datetime
 from typing import Optional
 from enum import Enum
@@ -23,7 +23,8 @@ class ReservationBase(BaseModel):
 class ReservationCreate(ReservationBase):
     """Schema for creating a new reservation"""
     
-    @validator('reservation_date')
+    @field_validator('reservation_date')
+    @classmethod
     def validate_date(cls, v):
         if v < date.today():
             raise ValueError('Reservation date cannot be in the past')
@@ -32,7 +33,8 @@ class ReservationCreate(ReservationBase):
             raise ValueError('Reservations can only be made up to 90 days in advance')
         return v
     
-    @validator('reservation_time')
+    @field_validator('reservation_time')
+    @classmethod
     def validate_time(cls, v, values):
         # Restaurant hours: 11 AM to 10 PM
         if v < time(11, 0) or v > time(21, 30):
