@@ -4,17 +4,23 @@ import { TEST_CONFIG } from '../config/test-config';
 export abstract class BasePage {
   protected page: Page;
   protected baseURL: string;
+  protected tenantHeaders: Record<string, string>;
 
   constructor(page: Page) {
     this.page = page;
-    this.baseURL = page.context().browser()?.options?.baseURL || TEST_CONFIG.API_BASE_URL;
+    this.baseURL = TEST_CONFIG.getTenantBaseUrl();
+    this.tenantHeaders = TEST_CONFIG.TEST_TENANT.headers;
   }
 
   /**
-   * Navigate to a specific path
+   * Navigate to a specific path with tenant context
    */
   async goto(path: string = '') {
-    await this.page.goto(`${this.baseURL}${path}`, {
+    // Set tenant headers before navigation
+    await this.page.setExtraHTTPHeaders(this.tenantHeaders);
+    
+    const url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
+    await this.page.goto(url, {
       waitUntil: 'networkidle',
       timeout: TEST_CONFIG.TIMEOUTS.NAVIGATION
     });
@@ -148,5 +154,55 @@ export abstract class BasePage {
         await dialog.dismiss();
       }
     });
+  }
+  
+  /**
+   * Get session storage item
+   */
+  async getSessionStorageItem(key: string): Promise<string | null> {
+    return await this.page.evaluate((key) => sessionStorage.getItem(key), key);
+  }
+  
+  /**
+   * Set session storage item
+   */
+  async setSessionStorageItem(key: string, value: string) {
+    await this.page.evaluate(([key, value]) => {
+      sessionStorage.setItem(key, value);
+    }, [key, value]);
+  }
+  
+  /**
+   * Clear session storage
+   */
+  async clearSessionStorage() {
+    await this.page.evaluate(() => sessionStorage.clear());
+  }
+  
+  /**
+   * Wait for WebSocket connection
+   */
+  async waitForWebSocketConnection(urlPattern?: string | RegExp) {
+    return await this.page.waitForEvent('websocket', {
+      predicate: ws => {
+        if (!urlPattern) return true;
+        const url = ws.url();
+        if (urlPattern instanceof RegExp) {
+          return urlPattern.test(url);
+        }
+        return url.includes(urlPattern);
+      },
+      timeout: TEST_CONFIG.TIMEOUTS.API
+    });
+  }
+  
+  /**
+   * Check for cross-tenant isolation
+   */
+  async verifyTenantIsolation(): Promise<boolean> {
+    // Check that tenant ID is present in headers or local storage
+    const tenantId = await this.getLocalStorageItem('tenantId');
+    const expectedTenantId = TEST_CONFIG.TEST_TENANT.id;
+    return tenantId === expectedTenantId;
   }
 }

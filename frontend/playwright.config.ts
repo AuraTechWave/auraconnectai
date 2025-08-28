@@ -1,16 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 /**
- * Read environment variables from file.
+ * Load environment variables from .env.e2e file
  * https://github.com/motdotla/dotenv
  */
-// require('dotenv').config();
+const envPath = process.env.DOTENV_PATH || '.env.e2e';
+dotenv.config({ path: path.resolve(__dirname, envPath) });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: './e2e',
+  /* Global setup and teardown */
+  globalSetup: path.resolve(__dirname, './e2e/global-setup.ts'),
+  globalTeardown: path.resolve(__dirname, './e2e/global-teardown.ts'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -18,7 +24,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never', outputFolder: 'playwright-report' }],
@@ -47,8 +53,45 @@ export default defineConfig({
     actionTimeout: 15000,
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for major browsers with storage states */
   projects: [
+    // Setup project to create storage states
+    {
+      name: 'setup',
+      testMatch: /global-setup\.ts/,
+    },
+    
+    // Customer role tests
+    {
+      name: 'chromium-customer',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './e2e/auth-states/customer.json',
+      },
+      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
+    },
+    
+    // Staff role tests
+    {
+      name: 'chromium-staff',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './e2e/auth-states/staff.json',
+      },
+      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
+    },
+    
+    // Admin role tests
+    {
+      name: 'chromium-admin',
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: './e2e/auth-states/admin.json',
+      },
+      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
+    },
+    
+    // Default chromium without auth
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -66,11 +109,11 @@ export default defineConfig({
 
     /* Test against mobile viewports. */
     {
-      name: 'Mobile Chrome',
+      name: 'mobile-chrome',
       use: { ...devices['Pixel 5'] },
     },
     {
-      name: 'Mobile Safari',
+      name: 'mobile-safari',
       use: { ...devices['iPhone 12'] },
     },
 
@@ -86,10 +129,12 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
+  webServer: process.env.CI ? undefined : {
     command: 'npm start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    url: process.env.E2E_BASE_URL || 'http://localhost:3000',
+    reuseExistingServer: true,
     timeout: 120 * 1000,
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

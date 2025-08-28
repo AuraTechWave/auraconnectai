@@ -34,6 +34,8 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /playwright/.cache/
+/e2e/auth-states/*.json
 /auth-states/
 /screenshots/
 test-results.json
+.env.e2e

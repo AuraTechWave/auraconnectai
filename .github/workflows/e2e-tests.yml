@@ -1,0 +1,228 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to test'
+        required: false
+        default: 'chromium'
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - all
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: auraconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      # Backend setup
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/auraconnect_test
+          REDIS_URL: redis://localhost:6379
+        run: |
+          alembic upgrade head
+      
+      - name: Start backend server
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://testuser:testpass@localhost:5432/auraconnect_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET_KEY: ${{ secrets.TEST_JWT_SECRET || 'test-jwt-secret-key-for-ci' }}
+          ENVIRONMENT: test
+          CORS_ORIGINS: "http://localhost:3000,http://test.localhost:3000"
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+          # Wait for backend to be ready
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+      
+      # Frontend setup
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          REACT_APP_API_URL: http://localhost:8000
+          REACT_APP_ENVIRONMENT: test
+        run: npm run build
+      
+      - name: Start frontend server
+        working-directory: frontend
+        run: |
+          npm start &
+          # Wait for frontend to be ready
+          npx wait-on http://localhost:3000 -t 60000
+      
+      # Playwright setup
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: |
+          npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Run E2E tests
+        working-directory: frontend
+        env:
+          # E2E Test Configuration
+          E2E_BASE_URL: http://localhost:3000
+          E2E_API_BASE_URL: http://localhost:8000
+          E2E_TENANT_ID: test-tenant-001
+          E2E_TENANT_SUBDOMAIN: test
+          E2E_TENANT_DOMAIN: localhost
+          
+          # Test User Credentials (should be secrets in production)
+          E2E_CUSTOMER_EMAIL: ${{ secrets.E2E_CUSTOMER_EMAIL || 'test.customer@example.com' }}
+          E2E_CUSTOMER_PASSWORD: ${{ secrets.E2E_CUSTOMER_PASSWORD || 'TestPass123!' }}
+          E2E_STAFF_EMAIL: ${{ secrets.E2E_STAFF_EMAIL || 'test.staff@example.com' }}
+          E2E_STAFF_PASSWORD: ${{ secrets.E2E_STAFF_PASSWORD || 'TestPass123!' }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL || 'test.admin@example.com' }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD || 'TestPass123!' }}
+          E2E_MANAGER_EMAIL: ${{ secrets.E2E_MANAGER_EMAIL || 'test.manager@example.com' }}
+          E2E_MANAGER_PASSWORD: ${{ secrets.E2E_MANAGER_PASSWORD || 'TestPass123!' }}
+          
+          # Test Options
+          E2E_SKIP_CLEANUP: false
+          E2E_VERBOSE: true
+          CI: true
+        run: |
+          npm run test:e2e:${{ matrix.browser }} || npm run test:e2e:${{ matrix.browser }} --retries=2
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results.json
+          retention-days: 30
+      
+      - name: Upload test videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-videos-${{ matrix.browser }}
+          path: frontend/test-results/**/*.webm
+          retention-days: 7
+      
+      - name: Upload test traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-traces-${{ matrix.browser }}
+          path: frontend/test-results/**/*.zip
+          retention-days: 7
+  
+  # Aggregate test results
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: e2e-tests
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          merge-multiple: true
+      
+      - name: Merge test results
+        run: |
+          echo "## E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Parse test results from JSON files
+          for file in test-results*.json; do
+            if [ -f "$file" ]; then
+              browser=$(echo $file | sed 's/test-results-//' | sed 's/.json//')
+              echo "### Browser: $browser" >> $GITHUB_STEP_SUMMARY
+              # Add test counts if jq is available
+              if command -v jq &> /dev/null; then
+                passed=$(jq '.stats.expected' $file 2>/dev/null || echo "0")
+                failed=$(jq '.stats.unexpected' $file 2>/dev/null || echo "0")
+                flaky=$(jq '.stats.flaky' $file 2>/dev/null || echo "0")
+                echo "✅ Passed: $passed | ❌ Failed: $failed | ⚠️ Flaky: $flaky" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
