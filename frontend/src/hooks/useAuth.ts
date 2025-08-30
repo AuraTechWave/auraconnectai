@@ -14,18 +14,23 @@ interface UseAuthReturn {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  validateSession: () => Promise<void>;
+  currentTenant?: any;
+  setCurrentTenant: (tenantId: string) => Promise<void>;
+  validateTenantAccess: (tenantId: string) => Promise<boolean>;
 }
 
 // This is a basic implementation - replace with your actual auth logic
 export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTenant, setCurrentTenantState] = useState<any>(null);
 
   useEffect(() => {
     // Check for stored auth token and validate
     const checkAuth = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         if (token) {
           // In a real app, validate token with backend
           // For now, mock a user
@@ -58,7 +63,7 @@ export const useAuth = (): UseAuthReturn => {
         role: 'manager'
       };
       setUser(mockUser);
-      localStorage.setItem('token', 'mock-jwt-token');
+      localStorage.setItem('authToken', 'mock-jwt-token');
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +71,38 @@ export const useAuth = (): UseAuthReturn => {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+  };
+
+  const validateSession = async () => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      // In a real app, validate token with backend
+      // For now, just check if token exists
+      try {
+        // Mock validation - replace with actual API call
+        setUser({
+          id: 1,
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'manager'
+        });
+      } catch (error) {
+        console.error('Session validation failed:', error);
+        logout();
+      }
+    }
+  };
+
+  const setCurrentTenant = async (tenantId: string) => {
+    // Mock implementation - replace with actual API call
+    setCurrentTenantState({ id: tenantId, name: 'Test Restaurant' });
+  };
+
+  const validateTenantAccess = async (tenantId: string): Promise<boolean> => {
+    // Mock implementation - replace with actual API call
+    // In real app, check if user has access to this tenant
+    return true;
   };
 
   return {
@@ -74,6 +110,10 @@ export const useAuth = (): UseAuthReturn => {
     isLoading,
     isAuthenticated: !!user,
     login,
-    logout
+    logout,
+    validateSession,
+    currentTenant,
+    setCurrentTenant,
+    validateTenantAccess
   };
 };

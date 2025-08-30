@@ -1,76 +1,15 @@
-import { useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 
-// Permission types
-export type SchedulingPermission = 
-  | 'scheduling.view'
-  | 'scheduling.create'
-  | 'scheduling.edit'
-  | 'scheduling.delete'
-  | 'scheduling.publish'
-  | 'scheduling.generate'
-  | 'payroll.view'
-  | 'payroll.export'
-  | 'payroll.process'
-  | 'availability.view'
-  | 'availability.edit'
-  | 'conflicts.view'
-  | 'conflicts.resolve';
-
-export type Role = 'admin' | 'manager' | 'supervisor' | 'staff';
-
-// Role-permission mapping
-const rolePermissions: Record<Role, SchedulingPermission[]> = {
-  admin: [
-    'scheduling.view',
-    'scheduling.create',
-    'scheduling.edit',
-    'scheduling.delete',
-    'scheduling.publish',
-    'scheduling.generate',
-    'payroll.view',
-    'payroll.export',
-    'payroll.process',
-    'availability.view',
-    'availability.edit',
-    'conflicts.view',
-    'conflicts.resolve',
-  ],
-  manager: [
-    'scheduling.view',
-    'scheduling.create',
-    'scheduling.edit',
-    'scheduling.delete',
-    'scheduling.publish',
-    'scheduling.generate',
-    'payroll.view',
-    'payroll.export',
-    'availability.view',
-    'availability.edit',
-    'conflicts.view',
-    'conflicts.resolve',
-  ],
-  supervisor: [
-    'scheduling.view',
-    'scheduling.create',
-    'scheduling.edit',
-    'scheduling.publish',
-    'availability.view',
-    'availability.edit',
-    'conflicts.view',
-    'conflicts.resolve',
-  ],
-  staff: [
-    'scheduling.view',
-    'availability.view',
-    'availability.edit', // Can edit own availability
-  ],
-};
-
 interface UsePermissionsReturn {
-  hasPermission: (permission: SchedulingPermission) => boolean;
-  hasAnyPermission: (permissions: SchedulingPermission[]) => boolean;
-  hasAllPermissions: (permissions: SchedulingPermission[]) => boolean;
+  roles: string[];
+  permissions: string[];
+  isLoading: boolean;
+  hasRole: (role: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  // Convenience properties for common permissions
   canViewSchedule: boolean;
   canEditSchedule: boolean;
   canPublishSchedule: boolean;
@@ -78,68 +17,94 @@ interface UsePermissionsReturn {
   canExportPayroll: boolean;
   canGenerateSchedule: boolean;
   canResolveConflicts: boolean;
-  userRole: Role | null;
-  isLoading: boolean;
+  userRole: string | null;
 }
 
+// Role-based permissions mapping
+const ROLE_PERMISSIONS: Record<string, string[]> = {
+  admin: ['*'], // Admin has all permissions
+  manager: [
+    'view_dashboard',
+    'manage_staff',
+    'view_reports',
+    'manage_menu',
+    'manage_orders',
+    'view_analytics',
+    'manage_inventory'
+  ],
+  staff: [
+    'view_orders',
+    'update_orders',
+    'view_menu',
+    'manage_tables'
+  ],
+  customer: [
+    'view_menu',
+    'place_order',
+    'view_own_orders'
+  ]
+};
+
 export const usePermissions = (): UsePermissionsReturn => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [roles, setRoles] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const userRole = useMemo(() => {
-    if (!user) return null;
-    // Map user.role or user.roles to our Role type
-    // This depends on your auth implementation
-    if (user.role) {
-      return user.role.toLowerCase() as Role;
-    }
-    if (user.roles && user.roles.length > 0) {
-      // If multiple roles, pick the highest privilege
-      const roleHierarchy: Role[] = ['admin', 'manager', 'supervisor', 'staff'];
-      for (const role of roleHierarchy) {
-        if (user.roles.includes(role)) {
-          return role;
-        }
+  useEffect(() => {
+    if (!authLoading) {
+      if (user) {
+        // Set roles
+        const userRoles = user.roles || (user.role ? [user.role] : []);
+        setRoles(userRoles);
+
+        // Set permissions based on roles
+        const allPermissions = new Set<string>();
+        userRoles.forEach(role => {
+          const rolePerms = ROLE_PERMISSIONS[role] || [];
+          rolePerms.forEach(perm => allPermissions.add(perm));
+        });
+        setPermissions(Array.from(allPermissions));
+      } else {
+        setRoles([]);
+        setPermissions([]);
       }
+      setIsLoading(false);
     }
-    return 'staff' as Role; // Default to staff
-  }, [user]);
+  }, [user, authLoading]);
 
-  const userPermissions = useMemo(() => {
-    if (!userRole) return [];
-    return rolePermissions[userRole] || [];
-  }, [userRole]);
+  const hasRole = (role: string): boolean => {
+    return roles.includes(role);
+  };
 
-  const hasPermission = useCallback(
-    (permission: SchedulingPermission): boolean => {
-      return userPermissions.includes(permission);
-    },
-    [userPermissions]
-  );
+  const hasPermission = (permission: string): boolean => {
+    // Admin has all permissions
+    if (permissions.includes('*')) return true;
+    return permissions.includes(permission);
+  };
 
-  const hasAnyPermission = useCallback(
-    (permissions: SchedulingPermission[]): boolean => {
-      return permissions.some(permission => hasPermission(permission));
-    },
-    [hasPermission]
-  );
+  const hasAnyPermission = (perms: string[]): boolean => {
+    return perms.some(p => hasPermission(p));
+  };
 
-  const hasAllPermissions = useCallback(
-    (permissions: SchedulingPermission[]): boolean => {
-      return permissions.every(permission => hasPermission(permission));
-    },
-    [hasPermission]
-  );
+  const hasAllPermissions = (perms: string[]): boolean => {
+    return perms.every(p => hasPermission(p));
+  };
 
   // Convenience checks
-  const canViewSchedule = hasPermission('scheduling.view');
-  const canEditSchedule = hasPermission('scheduling.edit');
-  const canPublishSchedule = hasPermission('scheduling.publish');
-  const canViewPayroll = hasPermission('payroll.view');
-  const canExportPayroll = hasPermission('payroll.export');
-  const canGenerateSchedule = hasPermission('scheduling.generate');
-  const canResolveConflicts = hasPermission('conflicts.resolve');
+  const canViewSchedule = hasPermission('view_dashboard') || hasPermission('*');
+  const canEditSchedule = hasPermission('manage_staff') || hasPermission('*');
+  const canPublishSchedule = hasPermission('manage_staff') || hasPermission('*');
+  const canViewPayroll = hasPermission('view_reports') || hasPermission('*');
+  const canExportPayroll = hasPermission('view_reports') || hasPermission('*');
+  const canGenerateSchedule = hasPermission('manage_staff') || hasPermission('*');
+  const canResolveConflicts = hasPermission('manage_staff') || hasPermission('*');
 
   return {
+    roles,
+    permissions,
+    isLoading,
+    hasRole,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -150,15 +115,14 @@ export const usePermissions = (): UsePermissionsReturn => {
     canExportPayroll,
     canGenerateSchedule,
     canResolveConflicts,
-    userRole,
-    isLoading,
+    userRole: user?.role || null
   };
 };
 
-// HOC for permission-based rendering
+// Permission Gate component for permission-based rendering
 interface PermissionGateProps {
-  permission?: SchedulingPermission;
-  permissions?: SchedulingPermission[];
+  permission?: string;
+  permissions?: string[];
   requireAll?: boolean;
   fallback?: React.ReactNode;
   children: React.ReactNode;
@@ -171,7 +135,7 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   fallback = null,
   children,
 }) => {
-  const { hasPermission, hasAnyPermission, hasAllPermissions, isLoading } = usePermissions();
+  const { hasPermission, isLoading } = usePermissions();
 
   if (isLoading) {
     return <>{fallback}</>;
@@ -182,7 +146,11 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   if (permission) {
     hasAccess = hasPermission(permission);
   } else if (permissions) {
-    hasAccess = requireAll ? hasAllPermissions(permissions) : hasAnyPermission(permissions);
+    if (requireAll) {
+      hasAccess = permissions.every(p => hasPermission(p));
+    } else {
+      hasAccess = permissions.some(p => hasPermission(p));
+    }
   }
 
   return <>{hasAccess ? children : fallback}</>;

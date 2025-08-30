@@ -129,7 +129,7 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: process.env.CI ? undefined : {
+  webServer: process.env.CI || process.env.SKIP_WEBSERVER ? undefined : {
     command: 'npm start',
     url: process.env.E2E_BASE_URL || 'http://localhost:3000',
     reuseExistingServer: true,
