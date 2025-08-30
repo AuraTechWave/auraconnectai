@@ -1,5 +1,5 @@
 import { Page, Locator, expect } from '@playwright/test';
-import { TEST_CONFIG } from '../config/test-config';
+import { TEST_CONFIG, getTenantBaseUrl } from '../config/test-config';
 
 export abstract class BasePage {
   protected page: Page;
@@ -8,7 +8,7 @@ export abstract class BasePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.baseURL = TEST_CONFIG.getTenantBaseUrl();
+    this.baseURL = getTenantBaseUrl();
     this.tenantHeaders = TEST_CONFIG.TEST_TENANT.headers;
   }
 

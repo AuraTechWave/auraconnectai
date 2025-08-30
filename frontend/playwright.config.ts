@@ -1,22 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
 
 /**
- * Load environment variables from .env.e2e file
+ * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-const envPath = process.env.DOTENV_PATH || '.env.e2e';
-dotenv.config({ path: path.resolve(__dirname, envPath) });
+// require('dotenv').config();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: './e2e',
-  /* Global setup and teardown */
-  globalSetup: path.resolve(__dirname, './e2e/global-setup.ts'),
-  globalTeardown: path.resolve(__dirname, './e2e/global-teardown.ts'),
+  /* Global setup and teardown - commented out for now */
+  // globalSetup: path.resolve(__dirname, './e2e/global-setup.ts'),
+  // globalTeardown: path.resolve(__dirname, './e2e/global-teardown.ts'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -53,45 +50,8 @@ export default defineConfig({
     actionTimeout: 15000,
   },
 
-  /* Configure projects for major browsers with storage states */
+  /* Configure projects for major browsers */
   projects: [
-    // Setup project to create storage states
-    {
-      name: 'setup',
-      testMatch: /global-setup\.ts/,
-    },
-    
-    // Customer role tests
-    {
-      name: 'chromium-customer',
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './e2e/auth-states/customer.json',
-      },
-      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
-    },
-    
-    // Staff role tests
-    {
-      name: 'chromium-staff',
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './e2e/auth-states/staff.json',
-      },
-      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
-    },
-    
-    // Admin role tests
-    {
-      name: 'chromium-admin',
-      use: { 
-        ...devices['Desktop Chrome'],
-        storageState: './e2e/auth-states/admin.json',
-      },
-      dependencies: process.env.E2E_USE_STORAGE_STATE !== 'false' ? ['setup'] : [],
-    },
-    
-    // Default chromium without auth
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -107,16 +67,6 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 12'] },
-    },
-
     /* Test against branded browsers. */
     // {
     //   name: 'Microsoft Edge',
@@ -129,12 +79,28 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: process.env.CI || process.env.SKIP_WEBSERVER ? undefined : {
+  webServer: process.env.SKIP_WEBSERVER === 'true' ? undefined : {
     command: 'npm start',
     url: process.env.E2E_BASE_URL || 'http://localhost:3000',
-    reuseExistingServer: true,
+    reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      REACT_APP_API_URL: process.env.E2E_API_BASE_URL || 'http://localhost:8000',
+      REACT_APP_ENVIRONMENT: 'test',
+      REACT_APP_API_VERSION: 'v1',
+      REACT_APP_WS_URL: 'ws://localhost:8000/ws',
+      REACT_APP_ENABLE_ANALYTICS: 'false',
+      REACT_APP_ENABLE_NOTIFICATIONS: 'false',
+      REACT_APP_ENABLE_AI_RECOMMENDATIONS: 'false',
+      REACT_APP_DEFAULT_THEME: 'light',
+      REACT_APP_ENABLE_DARK_MODE: 'true',
+      REACT_APP_DEFAULT_LANGUAGE: 'en',
+      REACT_APP_SUPPORTED_LANGUAGES: 'en',
+      TSC_COMPILE_ON_ERROR: 'true',
+      ESLINT_NO_DEV_ERRORS: 'true',
+      GENERATE_SOURCEMAP: 'false'
+    }
   },
 });

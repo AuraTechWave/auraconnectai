@@ -103,15 +103,16 @@ export const TEST_CONFIG = {
     }
   },
   
-  // Helper method to get tenant-aware base URL
-  getTenantBaseUrl(): string {
-    const protocol = process.env.E2E_USE_HTTPS === 'true' ? 'https' : 'http';
-    const port = process.env.E2E_PORT || '3000';
-    const { subdomain, domain } = this.TEST_TENANT;
-    
-    if (subdomain && subdomain !== 'localhost') {
-      return `${protocol}://${subdomain}.${domain}:${port}`;
-    }
-    return `${protocol}://${domain}:${port}`;
+}
+
+// Helper method to get tenant-aware base URL
+export function getTenantBaseUrl(): string {
+  const protocol = process.env.E2E_USE_HTTPS === 'true' ? 'https' : 'http';
+  const port = process.env.E2E_PORT || '3000';
+  const { subdomain, domain } = TEST_CONFIG.TEST_TENANT;
+  
+  if (subdomain && subdomain !== 'localhost') {
+    return `${protocol}://${subdomain}.${domain}:${port}`;
   }
-};
+  return `${protocol}://${domain}:${port}`;
+}

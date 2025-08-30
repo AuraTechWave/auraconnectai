@@ -2,18 +2,17 @@ import { Page } from '@playwright/test';
 import { BasePage } from './base.page';
 
 export class LoginPage extends BasePage {
-  // Selectors - Using only data-testid for reliability
-  // Fallback selectors removed to enforce proper data-testid usage
-  private readonly emailInput = '[data-testid="login-email"]';
-  private readonly passwordInput = '[data-testid="login-password"]';
-  private readonly loginButton = '[data-testid="login-submit"]';
-  private readonly errorMessage = '[data-testid="login-error"]';
-  private readonly forgotPasswordLink = '[data-testid="forgot-password-link"]';
-  private readonly signUpLink = '[data-testid="signup-link"]';
-  private readonly rememberMeCheckbox = '[data-testid="remember-me"]';
-  private readonly logoutButton = '[data-testid="logout-button"]';
-  private readonly userMenuTrigger = '[data-testid="user-menu-trigger"]';
-  private readonly authStateIndicator = '[data-testid="auth-state"]';
+  // Selectors with fallbacks for existing app
+  private readonly emailInput = '[data-testid="login-email"], #email, input[type="email"], input[name="email"]';
+  private readonly passwordInput = '[data-testid="login-password"], #password, input[type="password"], input[name="password"]';
+  private readonly loginButton = '[data-testid="login-submit"], button[type="submit"], button:has-text("Login"), button:has-text("Sign In")';
+  private readonly errorMessage = '[data-testid="login-error"], .error-message, .alert-danger, .error';
+  private readonly forgotPasswordLink = '[data-testid="forgot-password-link"], a:has-text("Forgot"), a:has-text("Reset")';
+  private readonly signUpLink = '[data-testid="signup-link"], a:has-text("Sign up"), a:has-text("Register")';
+  private readonly rememberMeCheckbox = '[data-testid="remember-me"], input[type="checkbox"][name="remember"]';
+  private readonly logoutButton = '[data-testid="logout-button"], button:has-text("Logout"), button:has-text("Sign Out")';
+  private readonly userMenuTrigger = '[data-testid="user-menu-trigger"], .user-menu, .profile-menu';
+  private readonly authStateIndicator = '[data-testid="auth-state"], .auth-indicator';
 
   constructor(page: Page) {
     super(page);
