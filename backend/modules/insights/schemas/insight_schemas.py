@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 from ..models.insight_models import (
@@ -147,7 +147,8 @@ class NotificationRuleCreate(BaseModel):
     max_per_hour: Optional[int] = Field(None, gt=0)
     max_per_day: Optional[int] = Field(None, gt=0)
 
-    @validator("batch_hours")
+    @field_validator("batch_hours")
+    @classmethod
     def validate_batch_hours(cls, v):
         if v:
             for hour in v:

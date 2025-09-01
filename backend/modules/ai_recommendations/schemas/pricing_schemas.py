@@ -1,6 +1,6 @@
 # backend/modules/ai_recommendations/schemas/pricing_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date, time
 from decimal import Decimal
@@ -181,7 +181,8 @@ class BulkPricingRequest(BaseModel):
     time_horizon_days: int = Field(default=7, ge=1, le=90)
     include_competitors: bool = Field(default=True)
 
-    @validator("round_to_nearest")
+    @field_validator("round_to_nearest")
+    @classmethod
     def validate_rounding(cls, v):
         valid_values = [
             Decimal("0.01"),
@@ -265,7 +266,8 @@ class PriceTestingConfig(BaseModel):
     primary_metric: str = Field(default="revenue_per_customer")
     secondary_metrics: List[str] = Field(default_factory=list)
 
-    @validator("traffic_allocation")
+    @field_validator("traffic_allocation")
+    @classmethod
     def validate_allocation(cls, v):
         total = sum(v.values())
         if abs(total - 1.0) > 0.001:

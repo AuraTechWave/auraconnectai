@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict
 from datetime import date, datetime, time, timezone
 from enum import Enum
@@ -27,15 +27,17 @@ class ShiftTemplateCreate(BaseModel):
     hourly_rate: Optional[float] = None
     description: Optional[str] = None
 
-    @validator("end_time")
-    def validate_end_time(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v, info):
+        if "start_time" in info.data and v <= info.data["start_time"]:
             raise ValueError("End time must be after start time")
         return v
 
-    @validator("max_staff")
-    def validate_max_staff(cls, v, values):
-        if "min_staff" in values and v < values["min_staff"]:
+    @field_validator("max_staff")
+    @classmethod
+    def validate_max_staff(cls, v, info):
+        if "min_staff" in values and v < info.data["min_staff"]:
             raise ValueError("Max staff cannot be less than min staff")
         return v
 
@@ -86,9 +88,10 @@ class ShiftCreate(BaseModel):
     notes: Optional[str] = None
     template_id: Optional[int] = None
 
-    @validator("end_time")
-    def validate_end_time(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v, info):
+        if "start_time" in values and v <= info.data["start_time"]:
             raise ValueError("End time must be after start time")
         return v
 
@@ -134,9 +137,10 @@ class ShiftBreakCreate(BaseModel):
     is_paid: bool = False
     notes: Optional[str] = None
 
-    @validator("end_time")
-    def validate_end_time(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v, info):
+        if "start_time" in values and v <= info.data["start_time"]:
             raise ValueError("Break end time must be after start time")
         return v
 
@@ -164,9 +168,10 @@ class AvailabilityCreate(BaseModel):
     priority: int = Field(1, ge=1, le=5)  # 1=lowest, 5=highest
     notes: Optional[str] = None
 
-    @validator("end_time")
-    def validate_end_time(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @field_validator("end_time")
+    @classmethod
+    def validate_end_time(cls, v, info):
+        if "start_time" in values and v <= info.data["start_time"]:
             raise ValueError("End time must be after start time")
         return v
 
@@ -213,35 +218,40 @@ class ShiftSwapRequest(BaseModel):
     preferred_dates: Optional[List[date]] = None
     preferred_response_by: Optional[datetime] = None
 
-    @validator("from_shift_id")
+    @field_validator("from_shift_id")
+    @classmethod
     def validate_from_shift_id(cls, v):
         if v <= 0:
             raise ValueError("from_shift_id must be a positive integer")
         return v
 
-    @validator("to_shift_id")
+    @field_validator("to_shift_id")
+    @classmethod
     def validate_to_shift_id(cls, v):
         if v is not None and v <= 0:
             raise ValueError("to_shift_id must be a positive integer")
         return v
 
-    @validator("to_staff_id")
+    @field_validator("to_staff_id")
+    @classmethod
     def validate_to_staff_id(cls, v):
         if v is not None and v <= 0:
             raise ValueError("to_staff_id must be a positive integer")
         return v
 
-    @validator("to_staff_id")
-    def validate_swap_target(cls, v, values):
+    @field_validator("to_staff_id")
+    @classmethod
+    def validate_swap_target(cls, v, info):
         # Check if both are None or both are set
-        to_shift_id = values.get("to_shift_id")
+        to_shift_id = info.data.get("to_shift_id")
         if v is None and to_shift_id is None:
             raise ValueError("Must specify either to_shift_id or to_staff_id")
         if v is not None and to_shift_id is not None:
             raise ValueError("Cannot specify both to_shift_id and to_staff_id")
         return v
 
-    @validator("preferred_response_by")
+    @field_validator("preferred_response_by")
+    @classmethod
     def validate_response_deadline(cls, v):
         if v is not None and v <= datetime.now(timezone.utc):
             raise ValueError("preferred_response_by must be in the future")

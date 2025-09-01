@@ -6,7 +6,7 @@ Schemas for settings and configuration management.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, root_field_validator
 import json
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
@@ -41,10 +41,10 @@ class SettingCreate(BaseModel):
 
     @root_validator
     def validate_scope_ids(cls, values):
-        scope = values.get("scope")
-        restaurant_id = values.get("restaurant_id")
-        location_id = values.get("location_id")
-        user_id = values.get("user_id")
+        scope = info.data.get("scope")
+        restaurant_id = info.data.get("restaurant_id")
+        location_id = info.data.get("location_id")
+        user_id = info.data.get("user_id")
 
         if scope == SettingScope.RESTAURANT and not restaurant_id:
             raise ValueError("restaurant_id required for restaurant scope")
@@ -94,8 +94,9 @@ class SettingResponse(BaseModel):
     class Config:
         orm_mode = True
 
-    @validator("value", pre=True)
-    def parse_value(cls, v, values):
+    @field_validator("value", mode="before")
+    @classmethod
+    def parse_value(cls, v, info):
         if isinstance(v, str):
             try:
                 return json.loads(v)

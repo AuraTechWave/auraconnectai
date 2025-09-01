@@ -1,6 +1,6 @@
 # backend/modules/loyalty/schemas/rewards_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -94,7 +94,8 @@ class RewardTemplateBase(BaseModel):
 class RewardTemplateCreate(RewardTemplateBase):
     """Schema for creating reward templates"""
 
-    @validator("eligible_tiers")
+    @field_validator("eligible_tiers")
+    @classmethod
     def validate_tiers(cls, v):
         if v:
             valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]
@@ -103,10 +104,11 @@ class RewardTemplateCreate(RewardTemplateBase):
                     raise ValueError(f"Invalid tier: {tier}")
         return v
 
-    @validator("trigger_conditions")
-    def validate_trigger_conditions(cls, v, values):
+    @field_validator("trigger_conditions")
+    @classmethod
+    def validate_trigger_conditions(cls, v, info):
         if v and "trigger_type" in values:
-            trigger_type = values["trigger_type"]
+            trigger_type = info.data["trigger_type"]
 
             # Validate conditions based on trigger type
             if trigger_type == TriggerTypeEnum.ORDER_COMPLETE:
@@ -235,13 +237,15 @@ class RewardCampaignBase(BaseModel):
 class RewardCampaignCreate(RewardCampaignBase):
     """Schema for creating reward campaigns"""
 
-    @validator("end_date")
-    def validate_end_date(cls, v, values):
-        if "start_date" in values and v <= values["start_date"]:
+    @field_validator("end_date")
+    @classmethod
+    def validate_end_date(cls, v, info):
+        if "start_date" in values and v <= info.data["start_date"]:
             raise ValueError("End date must be after start date")
         return v
 
-    @validator("target_tiers")
+    @field_validator("target_tiers")
+    @classmethod
     def validate_target_tiers(cls, v):
         if v:
             valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]

@@ -3,7 +3,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
 from ..models.pricing_rule_models import (
@@ -60,15 +60,17 @@ class CreatePricingRuleRequest(BaseModel):
     promo_code: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
 
-    @validator("valid_until")
-    def validate_dates(cls, v, values):
-        if v and "valid_from" in values and v <= values["valid_from"]:
+    @field_validator("valid_until")
+    @classmethod
+    def validate_dates(cls, v, info):
+        if v and "valid_from" in info.data and v <= info.data["valid_from"]:
             raise ValueError("valid_until must be after valid_from")
         return v
 
-    @validator("promo_code")
-    def validate_promo_code(cls, v, values):
-        if values.get("requires_code") and not v:
+    @field_validator("promo_code")
+    @classmethod
+    def validate_promo_code(cls, v, info):
+        if info.data.get("requires_code") and not v:
             raise ValueError("promo_code is required when requires_code is True")
         return v
 

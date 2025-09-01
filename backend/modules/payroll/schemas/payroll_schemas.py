@@ -10,7 +10,7 @@ Provides request/response models for:
 - Tax rules
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 from decimal import Decimal
@@ -177,7 +177,8 @@ class RoleBasedPayRateCreate(BaseModel):
     effective_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
 
-    @validator("effective_date", pre=True, always=True)
+    @field_validator("effective_date", mode="before")
+    @classmethod
     def set_effective_date(cls, v):
         return v or datetime.utcnow()
 

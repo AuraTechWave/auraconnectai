@@ -6,7 +6,7 @@ Schemas for order inventory integration endpoints.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # Request schemas
@@ -44,7 +44,8 @@ class FulfilledItem(BaseModel):
     menu_item_id: int = Field(..., gt=0)
     fulfilled_quantity: int = Field(..., gt=0)
 
-    @validator("fulfilled_quantity")
+    @field_validator("fulfilled_quantity")
+    @classmethod
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError("Fulfilled quantity must be positive")

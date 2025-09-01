@@ -42,8 +42,7 @@ from modules.orders.routes.pricing_routes import router as pricing_router
 from modules.orders.routes.pricing_rule_routes import router as pricing_rule_router
 from modules.orders.routes.payment_reconciliation_routes import router as payment_reconciliation_router
 from modules.orders.routes.order_promotion_routes import router as order_promotion_router
-# TODO: Fix missing schemas
-# from modules.orders.routes.order_inventory_routes import router as order_inventory_router
+from modules.orders.routes.order_inventory_routes import router as order_inventory_router
 from modules.orders.api.customer_tracking_endpoints import router as customer_tracking_router
 from modules.orders.api.manual_review_endpoints import router as manual_review_router
 from modules.orders.routers.sync import sync_router as order_sync_router

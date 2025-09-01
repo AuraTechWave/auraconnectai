@@ -2,7 +2,7 @@
 
 import os
 from typing import Optional, Dict, Any
-from pydantic import BaseSettings, Field, validator, root_validator
+from pydantic import BaseSettings, Field, field_validator, root_field_validator
 from enum import Enum
 
 
@@ -110,38 +110,41 @@ class PaymentConfig(BaseSettings):
         env_prefix = "PAYMENT_"
         case_sensitive = False
 
-    @validator("REDIS_URL")
-    def validate_redis_url(cls, v: str, values: dict) -> str:
+    @field_validator("REDIS_URL")
+    @classmethod
+    def validate_redis_url(cls, v: str, info: dict) -> str:
         """Validate Redis URL format"""
         if not v.startswith(("redis://", "rediss://", "unix://")):
             raise ValueError("Invalid Redis URL format")
 
         # Ensure production uses secure Redis
-        env = values.get("PAYMENT_ENVIRONMENT")
+        env = info.data.get("PAYMENT_ENVIRONMENT")
         if env == PaymentEnvironment.PRODUCTION and not v.startswith("rediss://"):
             raise ValueError("Production must use secure Redis (rediss://)")
 
         return v
 
-    @validator("PROMETHEUS_PORT")
+    @field_validator("PROMETHEUS_PORT")
+    @classmethod
     def validate_prometheus_port(cls, v: int) -> int:
         """Validate Prometheus port"""
         if not 1024 <= v <= 65535:
             raise ValueError("Prometheus port must be between 1024 and 65535")
         return v
 
-    @validator("MAX_PAYMENT_AMOUNT")
-    def validate_max_amount(cls, v: float, values: dict) -> float:
+    @field_validator("MAX_PAYMENT_AMOUNT")
+    @classmethod
+    def validate_max_amount(cls, v: float, info: dict) -> float:
         """Validate maximum payment amount"""
-        min_amount = values.get("MIN_PAYMENT_AMOUNT", 0.50)
+        min_amount = info.get("MIN_PAYMENT_AMOUNT", 0.50)
         if v <= min_amount:
             raise ValueError("Maximum payment amount must be greater than minimum")
         return v
 
     @root_validator
-    def validate_production_settings(cls, values: dict) -> dict:
+    def validate_production_settings(cls, info: dict) -> dict:
         """Validate production-specific settings"""
-        if values.get("PAYMENT_ENVIRONMENT") == PaymentEnvironment.PRODUCTION:
+        if info.get("PAYMENT_ENVIRONMENT") == PaymentEnvironment.PRODUCTION:
             # Ensure critical features are enabled in production
             required_features = [
                 "ENABLE_WEBHOOK_QUEUE",
@@ -151,15 +154,15 @@ class PaymentConfig(BaseSettings):
             ]
 
             for feature in required_features:
-                if not values.get(feature, False):
+                if not info.get(feature, False):
                     raise ValueError(f"{feature} must be enabled in production")
 
             # Ensure reasonable timeout values
-            if values.get("GATEWAY_TIMEOUT_SECONDS", 0) < 10:
+            if info.data.get("GATEWAY_TIMEOUT_SECONDS", 0) < 10:
                 raise ValueError("Gateway timeout too low for production")
 
             # Ensure webhook security
-            if values.get("WEBHOOK_SIGNATURE_TOLERANCE_SECONDS", 0) > 600:
+            if info.data.get("WEBHOOK_SIGNATURE_TOLERANCE_SECONDS", 0) > 600:
                 raise ValueError("Webhook signature tolerance too high for production")
 
         return values

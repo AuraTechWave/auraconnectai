@@ -4,7 +4,7 @@
 Pydantic schemas for Kitchen Display System.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -35,9 +35,10 @@ class StationCreate(BaseModel):
     features: List[str] = Field(default_factory=list)
     printer_id: Optional[str] = None
 
-    @validator("display_name", always=True)
-    def set_display_name(cls, v, values):
-        return v or values.get("name")
+    @field_validator("display_name")
+    @classmethod
+    def set_display_name(cls, v, info):
+        return v or info.data.get("name")
 
 
 class StationUpdate(BaseModel):
@@ -149,9 +150,10 @@ class StationAssignmentCreate(BaseModel):
     prep_time_override: Optional[int] = Field(None, ge=1, le=120)
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
-    @validator("category_name")
-    def validate_assignment(cls, v, values):
-        if not v and not values.get("tag_name"):
+    @field_validator("category_name")
+    @classmethod
+    def validate_assignment(cls, v, info):
+        if not v and not info.data.get("tag_name"):
             raise ValueError("Either category_name or tag_name must be provided")
         return v
 

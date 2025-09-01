@@ -1,6 +1,6 @@
 # backend/modules/staff/schemas/schedule_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date, time
 
@@ -43,7 +43,8 @@ class SchedulePublishRequest(BaseSchedulePublishRequest):
 
     notification_channels: Optional[List[str]] = ["email", "in_app"]
 
-    @validator("notification_channels")
+    @field_validator("notification_channels")
+    @classmethod
     def validate_channels(cls, v):
         if v:
             valid_channels = ["email", "sms", "push", "in_app"]
@@ -64,14 +65,16 @@ class ScheduleCreateRequest(BaseModel):
     break_duration: Optional[int] = Field(0, description="Break duration in minutes")
     notes: Optional[str] = None
 
-    @validator("end_time")
-    def validate_times(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @field_validator("end_time")
+    @classmethod
+    def validate_times(cls, v, info):
+        if "start_time" in values and v <= info.data["start_time"]:
             # Allow overnight shifts
             pass
         return v
 
-    @validator("break_duration")
+    @field_validator("break_duration")
+    @classmethod
     def validate_break_duration(cls, v):
         if v and v < 0:
             raise ValueError("Break duration cannot be negative")
@@ -86,7 +89,8 @@ class ScheduleUpdateRequest(BaseModel):
     break_duration: Optional[int] = None
     notes: Optional[str] = None
 
-    @validator("break_duration")
+    @field_validator("break_duration")
+    @classmethod
     def validate_break_duration(cls, v):
         if v is not None and v < 0:
             raise ValueError("Break duration cannot be negative")

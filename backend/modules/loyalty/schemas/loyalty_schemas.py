@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, root_field_validator
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -195,7 +195,7 @@ class PointsTransfer(BaseModel):
 
     @root_validator
     def validate_transfer(cls, values):
-        if values.get("from_customer_id") == values.get("to_customer_id"):
+        if info.data.get("from_customer_id") == info.data.get("to_customer_id"):
             raise ValueError("Cannot transfer points to the same customer")
         return values
 
@@ -337,8 +337,8 @@ class BulkRewardIssuance(BaseModel):
 
     @root_validator
     def validate_targeting(cls, values):
-        customer_ids = values.get("customer_ids")
-        customer_criteria = values.get("customer_criteria")
+        customer_ids = info.data.get("customer_ids")
+        customer_criteria = info.data.get("customer_criteria")
 
         if not customer_ids and not customer_criteria:
             raise ValueError(
@@ -397,7 +397,8 @@ class RewardRedemptionRequest(BaseModel):
     order_id: int
     order_amount: float = Field(..., gt=0)
 
-    @validator("reward_code")
+    @field_validator("reward_code")
+    @classmethod
     def validate_code(cls, v):
         if not v or len(v) < 5:
             raise ValueError("Invalid reward code")

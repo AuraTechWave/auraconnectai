@@ -6,7 +6,7 @@ Pydantic schemas for order synchronization.
 Defines request/response models for sync-related API endpoints.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -108,7 +108,8 @@ class SyncConfigurationUpdate(BaseModel):
         None, description="Conflict resolution mode (auto/manual)"
     )
 
-    @validator("conflict_resolution_mode")
+    @field_validator("conflict_resolution_mode")
+    @classmethod
     def validate_conflict_mode(cls, v):
         if v and v not in ["auto", "manual"]:
             raise ValueError("Invalid conflict resolution mode")

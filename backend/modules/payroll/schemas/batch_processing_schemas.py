@@ -7,7 +7,7 @@ Provides request/response models for batch payroll operations
 with job tracking and status monitoring.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 from decimal import Decimal
@@ -54,13 +54,15 @@ class BatchPayrollRequest(BaseModel):
         description="Processing priority",
     )
 
-    @validator("pay_period_end")
-    def validate_period_end(cls, v, values):
-        if "pay_period_start" in values and v <= values["pay_period_start"]:
+    @field_validator("pay_period_end")
+    @classmethod
+    def validate_period_end(cls, v, info):
+        if "pay_period_start" in info.data and v <= info.data["pay_period_start"]:
             raise ValueError("pay_period_end must be after pay_period_start")
         return v
 
-    @validator("employee_ids")
+    @field_validator("employee_ids")
+    @classmethod
     def validate_employee_ids(cls, v):
         if v is not None and len(v) == 0:
             raise ValueError("employee_ids cannot be an empty list")

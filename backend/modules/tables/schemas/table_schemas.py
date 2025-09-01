@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 from ..models.table_models import (
@@ -77,11 +77,12 @@ class TableBase(BaseModel):
     max_capacity: int = Field(..., ge=1)
     preferred_capacity: Optional[int] = None
 
-    @validator("preferred_capacity")
-    def validate_preferred_capacity(cls, v, values):
+    @field_validator("preferred_capacity")
+    @classmethod
+    def validate_preferred_capacity(cls, v, info):
         if v is not None:
-            min_cap = values.get("min_capacity", 1)
-            max_cap = values.get("max_capacity")
+            min_cap = info.data.get("min_capacity", 1)
+            max_cap = info.data.get("max_capacity")
             if max_cap and (v < min_cap or v > max_cap):
                 raise ValueError(
                     "Preferred capacity must be between min and max capacity"

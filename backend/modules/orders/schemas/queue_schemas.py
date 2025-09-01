@@ -2,7 +2,7 @@
 Schemas for order queue management.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -211,9 +211,10 @@ class HoldItemRequest(BaseModel):
     hold_minutes: Optional[int] = Field(None, ge=1, le=1440)  # Max 24 hours
     reason: str
 
-    @validator("hold_until", always=True)
-    def validate_hold(cls, v, values):
-        if v is None and values.get("hold_minutes") is None:
+    @field_validator("hold_until")
+    @classmethod
+    def validate_hold(cls, v, info):
+        if v is None and info.data.get("hold_minutes") is None:
             raise ValueError("Either hold_until or hold_minutes must be provided")
         return v
 
