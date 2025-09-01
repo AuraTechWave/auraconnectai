@@ -9,6 +9,7 @@ import OrderManagementPage from './pages/admin/OrderManagementPage';
 import AdminSettings from './components/AdminSettings';
 import { StaffSchedulingInterface } from './components/staff/scheduling';
 import { AuthWrapper } from './components/auth/AuthWrapper';
+import LoginPage from './pages/customer/LoginPage';
 import './App.css';
 
 // Create a theme instance
@@ -55,6 +56,9 @@ function App() {
           <Router>
             <div className="App">
               <Routes>
+                {/* Auth Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                
                 {/* Admin Routes */}
                 <Route path="/admin/orders" element={<OrderManagementPage />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />

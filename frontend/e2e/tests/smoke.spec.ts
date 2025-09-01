@@ -18,8 +18,9 @@ test.describe('Smoke Tests', () => {
   });
 
   test('API health check', async ({ request }) => {
+    const apiUrl = process.env.E2E_API_BASE_URL || 'http://localhost:8000';
     try {
-      const response = await request.get('http://localhost:8000/health', {
+      const response = await request.get(`${apiUrl}/health`, {
         failOnStatusCode: false
       });
       
@@ -29,5 +30,22 @@ test.describe('Smoke Tests', () => {
       // Skip if API is not available
       console.log('API not available for health check');
     }
+  });
+  
+  test('login page loads', async ({ page }) => {
+    // Navigate to the login page
+    await page.goto('/login');
+    
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
+    
+    // Check for login form elements
+    const emailInput = page.locator('input[type="email"], input#email');
+    const passwordInput = page.locator('input[type="password"], input#password');
+    const loginButton = page.locator('button[type="submit"], button:has-text("Sign In")');
+    
+    await expect(emailInput).toBeVisible();
+    await expect(passwordInput).toBeVisible();
+    await expect(loginButton).toBeVisible();
   });
 });

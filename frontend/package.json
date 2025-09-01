@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",
+    "start:ci": "BROWSER=none CI=true react-scripts start",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx",
     "build": "react-scripts build",
     "test": "react-scripts test",
