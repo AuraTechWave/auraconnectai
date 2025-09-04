@@ -182,7 +182,6 @@ class BulkPricingRequest(BaseModel):
     include_competitors: bool = Field(default=True)
 
     @field_validator("round_to_nearest")
-    @classmethod
     def validate_rounding(cls, v):
         valid_values = [
             Decimal("0.01"),
@@ -267,7 +266,6 @@ class PriceTestingConfig(BaseModel):
     secondary_metrics: List[str] = Field(default_factory=list)
 
     @field_validator("traffic_allocation")
-    @classmethod
     def validate_allocation(cls, v):
         total = sum(v.values())
         if abs(total - 1.0) > 0.001:

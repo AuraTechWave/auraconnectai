@@ -12,7 +12,7 @@ from enum import Enum
 from ..models.kds_models import StationType, StationStatus, DisplayStatus
 
 
-class ItemStatusUpdate(BaseModel):
+class ItemStatusUpdate(BaseModel, ConfigDict):
     """Schema for updating item status"""
     
     status: DisplayStatus
@@ -26,7 +26,7 @@ class StationCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     station_type: StationType
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: int = Field(0, ge=0, le=100)
     max_active_items: int = Field(10, ge=1, le=50)
     prep_time_multiplier: float = Field(1.0, ge=0.1, le=5.0)
@@ -36,7 +36,6 @@ class StationCreate(BaseModel):
     printer_id: Optional[str] = None
 
     @field_validator("display_name")
-    @classmethod
     def set_display_name(cls, v, info):
         return v or info.data.get("name")
 
@@ -48,7 +47,7 @@ class StationUpdate(BaseModel):
     station_type: Optional[StationType] = None
     status: Optional[StationStatus] = None
     display_name: Optional[str] = None
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     priority: Optional[int] = Field(None, ge=0, le=100)
     max_active_items: Optional[int] = Field(None, ge=1, le=50)
     prep_time_multiplier: Optional[float] = Field(None, ge=0.1, le=5.0)
@@ -84,9 +83,10 @@ class StationResponse(BaseModel):
     active_items_count: int = 0
     pending_items_count: int = 0
     average_wait_time: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # NOTE: KDSOrderItemResponse and KDSWebSocketMessage are defined later in this file
@@ -100,7 +100,7 @@ class KitchenDisplayCreate(BaseModel):
     display_number: int = Field(1, ge=1, le=10)
     name: Optional[str] = None
     ip_address: Optional[str] = None
-    layout_mode: str = Field("grid", regex="^(grid|list|single)$")
+    layout_mode: str = Field("grid", pattern="^(grid|list|single)$")
     items_per_page: int = Field(6, ge=1, le=20)
     auto_clear_completed: bool = True
     auto_clear_delay_seconds: int = Field(30, ge=10, le=300)
@@ -112,7 +112,7 @@ class KitchenDisplayUpdate(BaseModel):
     name: Optional[str] = None
     ip_address: Optional[str] = None
     is_active: Optional[bool] = None
-    layout_mode: Optional[str] = Field(None, regex="^(grid|list|single)$")
+    layout_mode: Optional[str] = Field(None, pattern="^(grid|list|single)$")
     items_per_page: Optional[int] = Field(None, ge=1, le=20)
     auto_clear_completed: Optional[bool] = None
     auto_clear_delay_seconds: Optional[int] = Field(None, ge=10, le=300)
@@ -134,9 +134,10 @@ class KitchenDisplayResponse(BaseModel):
     auto_clear_delay_seconds: int
     created_at: datetime
     updated_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class StationAssignmentCreate(BaseModel):
@@ -151,7 +152,6 @@ class StationAssignmentCreate(BaseModel):
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("category_name")
-    @classmethod
     def validate_assignment(cls, v, info):
         if not v and not info.data.get("tag_name"):
             raise ValueError("Either category_name or tag_name must be provided")
@@ -171,9 +171,10 @@ class StationAssignmentResponse(BaseModel):
     conditions: Dict[str, Any]
     created_at: datetime
     updated_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class MenuItemStationCreate(BaseModel):
@@ -199,9 +200,10 @@ class MenuItemStationResponse(BaseModel):
     station_notes: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class OrderItemDisplay(BaseModel):
@@ -253,9 +255,10 @@ class KDSOrderItemResponse(BaseModel):
     order_id: Optional[int] = None
     table_number: Optional[int] = None
     server_name: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class StationSummary(BaseModel):
@@ -278,7 +281,7 @@ class KDSWebSocketMessage(BaseModel):
     """WebSocket message format for KDS updates"""
 
     type: str = Field(
-        ..., regex="^(new_item|update_item|remove_item|station_update|heartbeat)$"
+        ..., pattern="^(new_item|update_item|remove_item|station_update|heartbeat)$"
     )
     station_id: Optional[int] = None
     data: Dict[str, Any]

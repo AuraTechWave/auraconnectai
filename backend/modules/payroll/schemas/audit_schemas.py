@@ -115,7 +115,6 @@ class AuditLogFilter(BaseModel):
     )
 
     @field_validator("end_date")
-    @classmethod
     def validate_end_date(cls, v, info):
         if v and "start_date" in info.data and v < info.data["start_date"]:
             raise ValueError("end_date must be after start_date")

@@ -66,14 +66,12 @@ class WebhookSubscriptionRequest(BaseModel):
     )
 
     @field_validator("event_types")
-    @classmethod
     def validate_event_types(cls, v):
         if len(set(v)) != len(v):
             raise ValueError("event_types cannot contain duplicates")
         return v
 
     @field_validator("headers")
-    @classmethod
     def validate_headers(cls, v):
         if v:
             # Prevent overriding critical headers

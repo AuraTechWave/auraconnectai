@@ -1,7 +1,7 @@
 # backend/modules/tax/schemas/tax_compliance_schemas.py
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Annotated
 from datetime import date, datetime
 from decimal import Decimal
 import uuid
@@ -40,12 +40,12 @@ class TaxFilingLineItemBase(BaseModel):
     description: str = Field(..., min_length=1, max_length=500)
     tax_category: Optional[str] = None
 
-    gross_amount: Decimal = Field(..., ge=0, decimal_places=2)
-    deductions: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
-    exemptions: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
-    taxable_amount: Decimal = Field(..., ge=0, decimal_places=2)
-    tax_rate: Decimal = Field(..., ge=0, le=100, decimal_places=5)
-    tax_amount: Decimal = Field(..., ge=0, decimal_places=2)
+    gross_amount: Annotated[Decimal, Field(..., ge=0, max_digits=15, decimal_places=2)]
+    deductions: Annotated[Decimal, Field(default=Decimal("0"), ge=0, max_digits=15, decimal_places=2)]
+    exemptions: Annotated[Decimal, Field(default=Decimal("0"), ge=0, max_digits=15, decimal_places=2)]
+    taxable_amount: Annotated[Decimal, Field(..., ge=0, max_digits=15, decimal_places=2)]
+    tax_rate: Annotated[Decimal, Field(..., ge=0, le=100, max_digits=8, decimal_places=5)]
+    tax_amount: Annotated[Decimal, Field(..., ge=0, max_digits=15, decimal_places=2)]
 
     location_code: Optional[str] = None
     product_category: Optional[str] = None
@@ -78,10 +78,10 @@ class TaxFilingBase(BaseModel):
     period_end: date
     due_date: date
 
-    gross_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    taxable_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    exempt_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    tax_collected: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    gross_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    taxable_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    exempt_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    tax_collected: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
 
     form_type: Optional[str] = None
     notes: Optional[str] = None
@@ -108,14 +108,14 @@ class TaxFilingUpdate(BaseModel):
     filing_number: Optional[str] = None
     filed_date: Optional[datetime] = None
 
-    gross_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    taxable_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    exempt_sales: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    tax_collected: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    tax_due: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    gross_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    taxable_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    exempt_sales: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    tax_collected: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    tax_due: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
 
-    penalties: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    interest: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    penalties: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
+    interest: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
 
     confirmation_number: Optional[str] = None
     notes: Optional[str] = None
@@ -183,7 +183,7 @@ class TaxRemittanceBase(BaseModel):
     payment_date: date
     payment_method: str = Field(..., pattern="^(ach|wire|check|credit_card)$")
     payment_reference: str = Field(..., min_length=1, max_length=100)
-    payment_amount: Decimal = Field(..., gt=0, decimal_places=2)
+    payment_amount: Annotated[Decimal, Field(..., gt=0, max_digits=15, decimal_places=2)]
     currency: str = Field(default="USD", min_length=3, max_length=3)
 
     filing_references: List[int]  # List of filing IDs
@@ -238,9 +238,9 @@ class TaxAuditLogCreate(TaxAuditLogBase):
 
     filing_id: Optional[int] = None
     changes: Optional[Dict[str, Any]] = None
-    amount_before: Optional[Decimal] = Field(None, decimal_places=2)
-    amount_after: Optional[Decimal] = Field(None, decimal_places=2)
-    tax_impact: Optional[Decimal] = Field(None, decimal_places=2)
+    amount_before: Optional[Annotated[Decimal, Field(None, max_digits=15, decimal_places=2)]] = None
+    amount_after: Optional[Annotated[Decimal, Field(None, max_digits=15, decimal_places=2)]] = None
+    tax_impact: Optional[Annotated[Decimal, Field(None, max_digits=15, decimal_places=2)]] = None
     metadata: Optional[Dict[str, Any]] = None
 
 

@@ -16,7 +16,7 @@ from ..models.refund_models import (
     RefundApprovalStatus,
     RefundRequest,
     RefundPolicy,
-)
+, ConfigDict)
 from ..models.payment_models import Refund, RefundStatus
 
 router = APIRouter(prefix="/refunds", tags=["Refunds"])
@@ -43,7 +43,6 @@ class CreateRefundRequest(BaseModel):
     priority: str = Field("normal", pattern="^(urgent|high|normal|low)$")
 
     @field_validator("requested_amount")
-    @classmethod
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Requested amount must be positive")
@@ -87,9 +86,10 @@ class RefundRequestResponse(BaseModel):
     approved_at: Optional[datetime]
     processed_at: Optional[datetime]
     refund_id: Optional[int]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundResponse(BaseModel):
@@ -102,9 +102,10 @@ class RefundResponse(BaseModel):
     reason: Optional[str]
     processed_at: Optional[datetime]
     gateway_refund_id: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundStatisticsResponse(BaseModel):
@@ -122,7 +123,6 @@ class BulkRefundRequest(BaseModel):
     auto_approve: bool = False
 
     @field_validator("refund_requests")
-    @classmethod
     def validate_batch_size(cls, v):
         if len(v) == 0:
             raise ValueError("At least one refund request is required")
@@ -146,7 +146,6 @@ class BulkApprovalRequest(BaseModel):
     process_immediately: bool = False
 
     @field_validator("request_ids")
-    @classmethod
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")
@@ -159,7 +158,6 @@ class BulkProcessingRequest(BaseModel):
     request_ids: List[int]
 
     @field_validator("request_ids")
-    @classmethod
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")

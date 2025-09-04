@@ -106,14 +106,12 @@ class StaffRequirement(BaseModel):
     preferred_skills: List[str] = Field(default_factory=list)
 
     @field_validator("optimal")
-    @classmethod
     def validate_optimal(cls, v, info):
         if "min_required" in info.data and v < info.data["min_required"]:
             raise ValueError("optimal must be >= min_required")
         return v
 
     @field_validator("max_useful")
-    @classmethod
     def validate_max_useful(cls, v, info):
         if "optimal" in values and v < info.data["optimal"]:
             raise ValueError("max_useful must be >= optimal")
@@ -236,7 +234,6 @@ class StaffingOptimizationRequest(BaseModel):
     buffer_percentage: float = Field(default=10.0, ge=0, le=30)
 
     @field_validator("end_date")
-    @classmethod
     def validate_date_range(cls, v, info):
         if "start_date" in values and v < info.data["start_date"]:
             raise ValueError("end_date must be after start_date")

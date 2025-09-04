@@ -37,14 +37,12 @@ class PayrollRunRequest(BaseModel):
     )
 
     @field_validator("pay_period_end")
-    @classmethod
     def validate_period_end(cls, v, info):
         if "pay_period_start" in info.data and v <= info.data["pay_period_start"]:
             raise ValueError("pay_period_end must be after pay_period_start")
         return v
 
     @field_validator("staff_ids")
-    @classmethod
     def validate_staff_ids(cls, v):
         if v is not None and len(v) == 0:
             raise ValueError("staff_ids cannot be an empty list")

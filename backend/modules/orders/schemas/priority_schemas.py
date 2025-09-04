@@ -38,7 +38,6 @@ class PriorityRuleBase(BaseModel):
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("score_config")
-    @classmethod
     def validate_score_config(cls, v):
         """Validate score configuration structure"""
         required_fields = ["type"]
@@ -53,7 +52,6 @@ class PriorityRuleBase(BaseModel):
         return v
 
     @field_validator("max_score")
-    @classmethod
     def validate_score_range(cls, v, info):
         """Ensure max_score > min_score"""
         if "min_score" in values and v <= info.data["min_score"]:

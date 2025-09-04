@@ -16,7 +16,7 @@ from ..models.split_bill_models import (
     SplitStatus,
     ParticipantStatus,
     TipMethod,
-)
+, ConfigDict)
 from ..models.payment_models import PaymentGateway
 
 router = APIRouter(prefix="/splits", tags=["Split Bills"])
@@ -64,14 +64,12 @@ class CreateSplitRequest(BaseModel):
     expires_in_hours: Optional[int] = 48
 
     @field_validator("participants")
-    @classmethod
     def validate_participants(cls, v):
         if len(v) < 2:
             raise ValueError("At least 2 participants required for split")
         return v
 
     @field_validator("split_config")
-    @classmethod
     def validate_split_config(cls, v, info):
         if "split_method" in values:
             method = info.data["split_method"]
@@ -105,7 +103,6 @@ class ParticipantPaymentRequest(BaseModel):
     save_payment_method: bool = False
 
     @field_validator("amount")
-    @classmethod
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Amount must be positive")
@@ -138,9 +135,10 @@ class SplitResponse(BaseModel):
     paid_count: int
     expires_at: Optional[str]
     created_at: str
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ParticipantResponse(BaseModel):
@@ -154,17 +152,19 @@ class ParticipantResponse(BaseModel):
     remaining_amount: float
     status: ParticipantStatus
     access_token: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SplitDetailResponse(SplitResponse):
     participants: List[ParticipantResponse]
     split_config: Optional[Dict[str, Any]]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class PaginatedSplitsResponse(BaseModel):

@@ -40,13 +40,11 @@ class ReviewCreate(ReviewBase):
     source: ReviewSource = ReviewSource.WEBSITE
 
     @field_validator("rating")
-    @classmethod
     def validate_rating(cls, v):
         # Round to nearest 0.5
         return round(v * 2) / 2
 
     @field_validator("content")
-    @classmethod
     def validate_content(cls, v):
         if len(v.strip()) < 10:
             raise ValueError("Review content must be at least 10 characters")
@@ -240,7 +238,6 @@ class FeedbackCreate(FeedbackBase):
     product_id: Optional[int] = None
 
     @field_validator("customer_email")
-    @classmethod
     def validate_customer_info(cls, v, info):
         # Either customer_id or customer_email must be provided
         if not v and not info.data.get("customer_id"):

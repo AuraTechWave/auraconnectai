@@ -100,9 +100,9 @@ async def list_insights(
     size: int = Query(50, ge=1, le=200),
     # Sorting
     sort_by: str = Query(
-        "created_at", regex="^(created_at|severity|impact_score|estimated_value)$"
+        "created_at", pattern="^(created_at|severity|impact_score|estimated_value)$"
     ),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -694,7 +694,7 @@ async def get_impact_analysis(
 @handle_api_errors
 async def export_insights(
     filters: InsightFilters = Body(...),
-    format: str = Query("csv", regex="^(csv|excel|json)$"),
+    format: str = Query("csv", pattern="^(csv|excel|json)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

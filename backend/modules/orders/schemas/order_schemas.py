@@ -266,7 +266,6 @@ class OrderPriorityUpdate(BaseModel):
     )
 
     @field_validator("reason")
-    @classmethod
     def validate_reason(cls, v):
         if v and len(v.strip()) == 0:
             return None
@@ -304,7 +303,6 @@ class OrderAuditResponse(BaseModel):
     has_more: bool = Field(..., description="Whether there are more records")
 
     @field_validator("has_more")
-    @classmethod
     def calculate_has_more(cls, v, info):
         events = info.data.get("events", [])
         total_count = info.data.get("total_count", 0)
@@ -323,7 +321,6 @@ class KitchenPrintRequest(BaseModel):
     format_options: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
     @field_validator("printer_options", "format_options")
-    @classmethod
     def validate_options(cls, v):
         if v is None:
             return {}
@@ -362,7 +359,6 @@ class AutoCancellationConfigBase(BaseModel):
     updated_by: int
 
     @field_validator("status")
-    @classmethod
     def validate_cancellable_status(cls, v):
         cancellable_statuses = [
             OrderStatus.PENDING,

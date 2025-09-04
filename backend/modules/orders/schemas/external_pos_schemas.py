@@ -36,7 +36,6 @@ class ExternalPOSProviderCreate(BaseModel):
     rate_limit_per_minute: int = Field(default=60, ge=1, le=1000)
 
     @field_validator("auth_config")
-    @classmethod
     def validate_auth_config(cls, v, info):
         auth_type = info.data.get("auth_type")
         if auth_type == AuthenticationType.HMAC_SHA256:

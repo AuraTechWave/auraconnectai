@@ -72,7 +72,6 @@ class MigrationJobCreate(MigrationJobBase):
     rollback_enabled: bool = True
     
     @field_validator("source_credentials")
-    @classmethod
     def validate_credentials(cls, v, info):
         """Validate required credentials based on provider"""
         provider = info.data.get("source_provider")
@@ -256,7 +255,6 @@ class BulkMigrationRequest(BaseModel):
     action: str  # "start", "pause", "cancel", "retry"
     
     @field_validator("action")
-    @classmethod
     def validate_action(cls, v):
         allowed = ["start", "pause", "cancel", "retry"]
         if v not in allowed:

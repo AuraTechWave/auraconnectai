@@ -102,7 +102,6 @@ class InventoryBase(BaseModel):
     is_active: bool = True
 
     @field_validator("max_quantity")
-    @classmethod
     def validate_max_quantity(cls, v, info):
         if v is not None and "threshold" in info.data and v < info.data["threshold"]:
             raise ValueError("max_quantity must be >= threshold")
@@ -215,7 +214,6 @@ class InventoryAdjustmentBase(BaseModel):
     location: Optional[str] = Field(None, max_length=100)
 
     @field_validator("quantity_adjusted")
-    @classmethod
     def validate_quantity_adjusted(cls, v, info):
         if "adjustment_type" in values:
             adj_type = info.data["adjustment_type"]
@@ -283,7 +281,6 @@ class WasteEventCreate(BaseModel):
     )
 
     @field_validator("custom_reason")
-    @classmethod
     def validate_custom_reason(cls, v, info):
         if "waste_reason" in values and info.data["waste_reason"] == WasteReason.OTHER:
             if not v or len(v.strip()) < 10:
@@ -293,7 +290,6 @@ class WasteEventCreate(BaseModel):
         return v
 
     @field_validator("quantity")
-    @classmethod
     def validate_positive_quantity(cls, v):
         if v <= 0:
             raise ValueError("Waste quantity must be greater than zero")

@@ -66,7 +66,6 @@ class RuleConditionBase(BaseModel):
     is_negated: bool = Field(False, description="Negate the condition")
 
     @field_validator("field_path")
-    @classmethod
     def validate_field_path(cls, v):
         """Validate field path format"""
         if not v or not all(part.strip() for part in v.split(".")):
@@ -108,7 +107,6 @@ class RuleActionBase(BaseModel):
     )
 
     @field_validator("action_type")
-    @classmethod
     def validate_action_type(cls, v):
         """Validate action type"""
         valid_types = ["route", "notify", "tag", "priority", "split", "log", "webhook"]
@@ -151,7 +149,6 @@ class RoutingRuleBase(BaseModel):
     schedule_config: Optional[Dict[str, Any]] = None
 
     @field_validator("schedule_config")
-    @classmethod
     def validate_schedule_config(cls, v):
         """Validate schedule configuration"""
         if v:

@@ -10,7 +10,7 @@ from ..models.table_models import (
     TableShape,
     FloorStatus,
     ReservationStatus,
-)
+, ConfigDict)
 
 
 # Floor Schemas
@@ -62,9 +62,10 @@ class FloorResponse(FloorBase):
     occupied_tables: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Table Schemas
@@ -78,7 +79,6 @@ class TableBase(BaseModel):
     preferred_capacity: Optional[int] = None
 
     @field_validator("preferred_capacity")
-    @classmethod
     def validate_preferred_capacity(cls, v, info):
         if v is not None:
             min_cap = info.data.get("min_capacity", 1)
@@ -168,9 +168,10 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
     floor_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Table Session Schemas
@@ -211,9 +212,10 @@ class TableSessionResponse(BaseModel):
     server_name: Optional[str] = None
     duration_minutes: Optional[int] = None
     combined_tables: Optional[List[Dict[str, Any]]] = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Reservation Schemas
@@ -281,9 +283,10 @@ class TableReservationResponse(TableReservationBase):
     table_number: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Layout Schemas
@@ -342,9 +345,10 @@ class TableLayoutResponse(BaseModel):
     event_name: Optional[str]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Bulk Operations

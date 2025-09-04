@@ -22,7 +22,6 @@ class SMSMessageBase(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
 
     @field_validator('to_number')
-    @classmethod
     def validate_phone_number(cls, v):
         # Basic E.164 format validation
         if not v.startswith('+'):
@@ -84,7 +83,6 @@ class SMSTemplateBase(BaseModel):
     max_length: int = Field(default=160, gt=0)
 
     @field_validator('template_body')
-    @classmethod
     def validate_template_variables(cls, v, info):
         # Check for variable placeholders in template
         import re
@@ -218,7 +216,6 @@ class SMSSendRequest(BaseModel):
     schedule_at: Optional[datetime] = Field(None, description="Schedule message for future")
 
     @field_validator('message')
-    @classmethod
     def validate_message_or_template(cls, v, info):
         if not v and not info.data.get('template_id'):
             raise ValueError('Either message or template_id must be provided')

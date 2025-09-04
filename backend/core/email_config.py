@@ -5,7 +5,8 @@ Email configuration settings
 """
 
 from typing import Optional
-from pydantic import BaseSettings, field_validator, Field
+from pydantic_settings import BaseSettings
+from pydantic import field_validator, Field
 
 
 class EmailSettings(BaseSettings):
@@ -79,7 +80,6 @@ class EmailSettings(BaseSettings):
         case_sensitive = False
     
     @field_validator("EMAIL_DEFAULT_PROVIDER")
-    @classmethod
     def validate_provider(cls, v):
         """Validate email provider selection"""
         valid_providers = ["sendgrid", "aws_ses", "mailgun", "smtp"]
@@ -88,7 +88,6 @@ class EmailSettings(BaseSettings):
         return v
     
     @field_validator("SENDGRID_API_KEY")
-    @classmethod
     def validate_sendgrid_config(cls, v, info):
         """Validate SendGrid configuration if selected"""
         if info.data.get("EMAIL_DEFAULT_PROVIDER") == "sendgrid" and not v:
@@ -96,7 +95,6 @@ class EmailSettings(BaseSettings):
         return v
     
     @field_validator("AWS_SECRET_ACCESS_KEY")
-    @classmethod
     def validate_ses_config(cls, v, info):
         """Validate AWS SES configuration if selected"""
         if info.data.get("EMAIL_DEFAULT_PROVIDER") == "aws_ses":

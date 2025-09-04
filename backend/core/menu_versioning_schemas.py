@@ -157,7 +157,6 @@ class ModifierGroupVersionBase(BaseModel):
     is_active: bool = True
 
     @field_validator("max_selections")
-    @classmethod
     def validate_max_selections(cls, v, info):
         if v is not None and "min_selections" in values:
             if v < info.data["min_selections"]:

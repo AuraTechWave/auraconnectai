@@ -45,7 +45,6 @@ class FulfilledItem(BaseModel):
     fulfilled_quantity: int = Field(..., gt=0)
 
     @field_validator("fulfilled_quantity")
-    @classmethod
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError("Fulfilled quantity must be positive")

@@ -1,7 +1,7 @@
 # backend/modules/tax/schemas/tax_jurisdiction_schemas.py
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Annotated
 from datetime import date, datetime
 from decimal import Decimal
 import uuid
@@ -79,11 +79,11 @@ class TaxRateBase(BaseModel):
     tax_subtype: Optional[str] = Field(None, max_length=50)
     tax_category: Optional[str] = Field(None, max_length=100)
 
-    rate_percent: Decimal = Field(..., ge=0, le=100, decimal_places=5)
-    flat_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    rate_percent: Annotated[Decimal, Field(..., ge=0, le=100, max_digits=8, decimal_places=5)]
+    flat_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
 
-    min_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    max_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    min_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
+    max_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
     bracket_name: Optional[str] = None
 
     applies_to: Optional[str] = Field(None, max_length=100)
@@ -119,8 +119,8 @@ class TaxRateCreate(TaxRateBase):
 class TaxRateUpdate(BaseModel):
     """Schema for updating tax rate"""
 
-    rate_percent: Optional[Decimal] = Field(None, ge=0, le=100, decimal_places=5)
-    flat_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    rate_percent: Optional[Annotated[Decimal, Field(None, ge=0, le=100, max_digits=8, decimal_places=5)]] = None
+    flat_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
     is_active: Optional[bool] = None
     expiry_date: Optional[date] = None
 
@@ -158,7 +158,7 @@ class TaxCalculationLineItem(BaseModel):
     """Line item for tax calculation"""
 
     line_id: str
-    amount: Decimal = Field(..., ge=0, decimal_places=2)
+    amount: Annotated[Decimal, Field(..., ge=0, max_digits=15, decimal_places=2)]
     quantity: int = Field(default=1, ge=1)
     category: Optional[str] = None
     tax_code: Optional[str] = None
@@ -175,8 +175,8 @@ class EnhancedTaxCalculationRequest(BaseModel):
     line_items: List[TaxCalculationLineItem]
     customer_id: Optional[int] = None
     exemption_certificate_id: Optional[uuid.UUID] = None
-    shipping_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    discount_amount: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    shipping_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
+    discount_amount: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -347,7 +347,7 @@ class TaxNexusBase(BaseModel):
     registration_date: Optional[date] = None
     registration_number: Optional[str] = None
 
-    sales_threshold: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    sales_threshold: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=15, decimal_places=2)]] = None
     transaction_threshold: Optional[int] = Field(None, ge=0)
     threshold_period: Optional[str] = Field(
         None, pattern="^(annual|quarterly|monthly)$"

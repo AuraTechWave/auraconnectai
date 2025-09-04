@@ -224,7 +224,6 @@ class POSDashboardRequest(BaseModel):
     include_offline: bool = Field(True)
 
     @field_validator("start_date", "end_date")
-    @classmethod
     def validate_dates(cls, v, info):
         if info.data.get("time_range") == TimeRange.CUSTOM and not v:
             raise ValueError("start_date and end_date required for custom time range")

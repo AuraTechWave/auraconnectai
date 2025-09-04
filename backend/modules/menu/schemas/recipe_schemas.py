@@ -1,6 +1,6 @@
 # backend/modules/menu/schemas/recipe_schemas.py
 
-from pydantic import BaseModel, Field, field_validator, root_field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -58,7 +58,6 @@ class RecipeIngredientBase(BaseModel):
     display_order: int = 0
 
     @field_validator("custom_unit")
-    @classmethod
     def validate_custom_unit(cls, v, info):
         if info.data.get("unit") == UnitType.CUSTOM and not v:
             raise ValueError("custom_unit is required when unit is CUSTOM")
@@ -106,7 +105,6 @@ class RecipeSubRecipeBase(BaseModel):
     )
 
     @field_validator("sub_recipe_id")
-    @classmethod
     def validate_sub_recipe_id(cls, v):
         """Ensure sub_recipe_id is a valid positive integer"""
         if v <= 0:
@@ -114,7 +112,6 @@ class RecipeSubRecipeBase(BaseModel):
         return v
 
     @field_validator("unit")
-    @classmethod
     def validate_unit(cls, v):
         """Validate unit if provided"""
         if v and len(v.strip()) == 0:

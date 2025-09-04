@@ -117,7 +117,6 @@ class CustomerCreate(CustomerBase):
     acquisition_source: Optional[str] = Field(None, max_length=100)
 
     @field_validator("password")
-    @classmethod
     def validate_password(cls, v):
         if v and len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")

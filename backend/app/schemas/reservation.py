@@ -24,7 +24,6 @@ class ReservationCreate(ReservationBase):
     """Schema for creating a new reservation"""
     
     @field_validator('reservation_date')
-    @classmethod
     def validate_date(cls, v):
         if v < date.today():
             raise ValueError('Reservation date cannot be in the past')
@@ -34,7 +33,6 @@ class ReservationCreate(ReservationBase):
         return v
     
     @field_validator('reservation_time')
-    @classmethod
     def validate_time(cls, v, info):
         # Restaurant hours: 11 AM to 10 PM
         if v < time(11, 0) or v > time(21, 30):
