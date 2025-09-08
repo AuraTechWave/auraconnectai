@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 from ..models.insight_models import (
@@ -11,7 +11,7 @@ from ..models.insight_models import (
     InsightStatus,
     InsightDomain,
     NotificationChannel,
-)
+, ConfigDict)
 
 
 # Base Schemas
@@ -76,16 +76,17 @@ class InsightResponse(InsightBase):
     age_hours: Optional[float] = None
     time_to_acknowledge: Optional[float] = None
     rating_summary: Optional[Dict[str, int]] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Rating Schemas
 class InsightRatingCreate(BaseModel):
     """Create rating schema"""
 
-    rating: str = Field(..., regex="^(useful|irrelevant|needs_followup)$")
+    rating: str = Field(..., pattern="^(useful|irrelevant|needs_followup)$")
     comment: Optional[str] = Field(None, max_length=500)
 
 
@@ -99,9 +100,10 @@ class InsightRatingResponse(BaseModel):
     rating: str
     comment: Optional[str]
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Action Schemas
@@ -122,9 +124,10 @@ class InsightActionResponse(BaseModel):
     action_type: str
     action_details: Dict[str, Any]
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Notification Rule Schemas
@@ -147,7 +150,7 @@ class NotificationRuleCreate(BaseModel):
     max_per_hour: Optional[int] = Field(None, gt=0)
     max_per_day: Optional[int] = Field(None, gt=0)
 
-    @validator("batch_hours")
+    @field_validator("batch_hours")
     def validate_batch_hours(cls, v):
         if v:
             for hour in v:
@@ -196,9 +199,10 @@ class NotificationRuleResponse(BaseModel):
     max_per_day: Optional[int]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Thread Schemas
@@ -264,7 +268,7 @@ class BulkInsightAction(BaseModel):
     """Bulk action on insights"""
 
     insight_ids: List[int]
-    action: str = Field(..., regex="^(acknowledge|dismiss|export)$")
+    action: str = Field(..., pattern="^(acknowledge|dismiss|export)$")
 
 
 # Batch Operations
@@ -340,6 +344,7 @@ class InsightThreadResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     insights: Optional[List[InsightResponse]] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed

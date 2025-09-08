@@ -2,7 +2,7 @@
 Schemas for order queue management.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -57,7 +57,7 @@ class QueueBase(BaseModel):
     default_prep_time: int = Field(15, ge=1)
     warning_threshold: int = Field(5, ge=1)
     critical_threshold: int = Field(10, ge=1)
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     icon: Optional[str] = None
     display_columns: List[str] = []
     operating_hours: Optional[Dict[str, Any]] = None
@@ -84,7 +84,7 @@ class QueueUpdate(BaseModel):
     default_prep_time: Optional[int] = Field(None, ge=1)
     warning_threshold: Optional[int] = Field(None, ge=1)
     critical_threshold: Optional[int] = Field(None, ge=1)
-    color_code: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color_code: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     operating_hours: Optional[Dict[str, Any]] = None
     station_assignments: Optional[List[int]] = None
     routing_rules: Optional[Dict[str, Any]] = None
@@ -211,9 +211,9 @@ class HoldItemRequest(BaseModel):
     hold_minutes: Optional[int] = Field(None, ge=1, le=1440)  # Max 24 hours
     reason: str
 
-    @validator("hold_until", always=True)
-    def validate_hold(cls, v, values):
-        if v is None and values.get("hold_minutes") is None:
+    @field_validator("hold_until")
+    def validate_hold(cls, v, info):
+        if v is None and info.data.get("hold_minutes") is None:
             raise ValueError("Either hold_until or hold_minutes must be provided")
         return v
 
@@ -233,7 +233,7 @@ class QueueMetricsRequest(BaseModel):
     queue_id: Optional[int] = None
     start_date: datetime
     end_date: datetime
-    granularity: str = Field("hour", regex="^(hour|day|week|month)$")
+    granularity: str = Field("hour", pattern="^(hour|day|week|month)$")
 
 
 class QueueMetricsResponse(BaseModel):
@@ -317,15 +317,15 @@ class DisplayConfigBase(BaseModel):
     """Base schema for display configuration"""
 
     name: str = Field(..., min_length=1, max_length=100)
-    display_type: str = Field(..., regex="^(customer|kitchen|pickup)$")
+    display_type: str = Field(..., pattern="^(customer|kitchen|pickup)$")
     queues_shown: List[int]
-    layout: str = Field("grid", regex="^(grid|list|board)$")
+    layout: str = Field("grid", pattern="^(grid|list|board)$")
     items_per_page: int = Field(20, ge=5, le=100)
     refresh_interval: int = Field(30, ge=5, le=300)
     status_filter: List[QueueItemStatus] = []
     hide_completed_after: int = Field(300, ge=0)
-    theme: str = Field("light", regex="^(light|dark|auto)$")
-    font_size: str = Field("medium", regex="^(small|medium|large|xl)$")
+    theme: str = Field("light", pattern="^(light|dark|auto)$")
+    font_size: str = Field("medium", pattern="^(small|medium|large|xl)$")
     show_images: bool = True
     show_prep_time: bool = True
     show_customer_info: bool = False

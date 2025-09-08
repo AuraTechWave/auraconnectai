@@ -6,7 +6,7 @@ Pydantic schemas for API validation and serialization.
 
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from uuid import UUID
 
 from ..models.migration_models import MigrationStatus, POSProvider, DataEntityType
@@ -71,10 +71,10 @@ class MigrationJobCreate(MigrationJobBase):
     scheduled_at: Optional[datetime] = None
     rollback_enabled: bool = True
     
-    @validator("source_credentials")
-    def validate_credentials(cls, v, values):
+    @field_validator("source_credentials")
+    def validate_credentials(cls, v, info):
         """Validate required credentials based on provider"""
-        provider = values.get("source_provider")
+        provider = info.data.get("source_provider")
         if provider == POSProvider.SQUARE:
             required = ["access_token", "location_id"]
         elif provider == POSProvider.CLOVER:
@@ -254,7 +254,7 @@ class BulkMigrationRequest(BaseModel):
     job_ids: List[UUID]
     action: str  # "start", "pause", "cancel", "retry"
     
-    @validator("action")
+    @field_validator("action")
     def validate_action(cls, v):
         allowed = ["start", "pause", "cancel", "retry"]
         if v not in allowed:

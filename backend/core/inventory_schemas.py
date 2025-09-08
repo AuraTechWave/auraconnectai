@@ -1,6 +1,6 @@
 # backend/core/inventory_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from enum import Enum
@@ -101,9 +101,9 @@ class InventoryBase(BaseModel):
     alert_threshold_percentage: Optional[float] = Field(None, ge=0, le=100)
     is_active: bool = True
 
-    @validator("max_quantity")
-    def validate_max_quantity(cls, v, values):
-        if v is not None and "threshold" in values and v < values["threshold"]:
+    @field_validator("max_quantity")
+    def validate_max_quantity(cls, v, info):
+        if v is not None and "threshold" in info.data and v < info.data["threshold"]:
             raise ValueError("max_quantity must be >= threshold")
         return v
 
@@ -213,10 +213,10 @@ class InventoryAdjustmentBase(BaseModel):
     notes: Optional[str] = None
     location: Optional[str] = Field(None, max_length=100)
 
-    @validator("quantity_adjusted")
-    def validate_quantity_adjusted(cls, v, values):
+    @field_validator("quantity_adjusted")
+    def validate_quantity_adjusted(cls, v, info):
         if "adjustment_type" in values:
-            adj_type = values["adjustment_type"]
+            adj_type = info.data["adjustment_type"]
             # For waste, expired, damaged - quantity must be positive (we're removing from inventory)
             if adj_type in [
                 AdjustmentType.WASTE,
@@ -280,16 +280,16 @@ class WasteEventCreate(BaseModel):
         None, max_length=100, description="Staff member who witnessed the waste"
     )
 
-    @validator("custom_reason")
-    def validate_custom_reason(cls, v, values):
-        if "waste_reason" in values and values["waste_reason"] == WasteReason.OTHER:
+    @field_validator("custom_reason")
+    def validate_custom_reason(cls, v, info):
+        if "waste_reason" in values and info.data["waste_reason"] == WasteReason.OTHER:
             if not v or len(v.strip()) < 10:
                 raise ValueError(
                     "Custom reason is required when waste_reason is OTHER (min 10 characters)"
                 )
         return v
 
-    @validator("quantity")
+    @field_validator("quantity")
     def validate_positive_quantity(cls, v):
         if v <= 0:
             raise ValueError("Waste quantity must be greater than zero")

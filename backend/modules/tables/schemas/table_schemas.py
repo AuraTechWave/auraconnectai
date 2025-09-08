@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from decimal import Decimal
 
 from ..models.table_models import (
@@ -10,7 +10,7 @@ from ..models.table_models import (
     TableShape,
     FloorStatus,
     ReservationStatus,
-)
+, ConfigDict)
 
 
 # Floor Schemas
@@ -62,9 +62,10 @@ class FloorResponse(FloorBase):
     occupied_tables: Optional[int] = 0
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Table Schemas
@@ -77,11 +78,11 @@ class TableBase(BaseModel):
     max_capacity: int = Field(..., ge=1)
     preferred_capacity: Optional[int] = None
 
-    @validator("preferred_capacity")
-    def validate_preferred_capacity(cls, v, values):
+    @field_validator("preferred_capacity")
+    def validate_preferred_capacity(cls, v, info):
         if v is not None:
-            min_cap = values.get("min_capacity", 1)
-            max_cap = values.get("max_capacity")
+            min_cap = info.data.get("min_capacity", 1)
+            max_cap = info.data.get("max_capacity")
             if max_cap and (v < min_cap or v > max_cap):
                 raise ValueError(
                     "Preferred capacity must be between min and max capacity"
@@ -167,9 +168,10 @@ class TableResponse(TableBase, TableLayoutData, TableFeatures):
     floor_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Table Session Schemas
@@ -210,9 +212,10 @@ class TableSessionResponse(BaseModel):
     server_name: Optional[str] = None
     duration_minutes: Optional[int] = None
     combined_tables: Optional[List[Dict[str, Any]]] = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Reservation Schemas
@@ -280,9 +283,10 @@ class TableReservationResponse(TableReservationBase):
     table_number: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Layout Schemas
@@ -341,9 +345,10 @@ class TableLayoutResponse(BaseModel):
     event_name: Optional[str]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Bulk Operations

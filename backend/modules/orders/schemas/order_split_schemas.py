@@ -2,7 +2,7 @@
 Order splitting schemas for handling split orders and payments.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -54,7 +54,7 @@ class OrderSplitRequest(BaseModel):
         None, description="Scheduled time for split order"
     )
 
-    @validator("items")
+    @field_validator("items")
     def validate_unique_items(cls, v):
         """Ensure no duplicate item IDs in split request"""
         item_ids = [item.item_id for item in v]
@@ -70,7 +70,7 @@ class PaymentSplitRequest(BaseModel):
         ..., min_items=2, description="Payment split details"
     )
 
-    @validator("splits")
+    @field_validator("splits")
     def validate_splits(cls, v):
         """Validate payment splits"""
         for split in v:
@@ -166,8 +166,8 @@ class BulkSplitRequest(BaseModel):
         ..., description="Configuration for each split"
     )
 
-    @validator("split_strategy")
-    def validate_strategy(cls, v, values):
+    @field_validator("split_strategy")
+    def validate_strategy(cls, v, info):
         """Validate split strategy based on split type"""
         valid_strategies = {
             SplitType.TICKET: ["by_station", "by_course", "by_preparation_time"],
@@ -175,7 +175,7 @@ class BulkSplitRequest(BaseModel):
             SplitType.PAYMENT: ["by_customer", "equal_split", "by_items"],
         }
 
-        split_type = values.get("split_type")
+        split_type = info.data.get("split_type")
         if split_type and v not in valid_strategies.get(split_type, []):
             raise ValueError(f"Invalid strategy '{v}' for split type '{split_type}'")
         return v

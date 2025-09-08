@@ -46,7 +46,6 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = 7
     
     @field_validator("jwt_secret_key", mode='before')
-    @classmethod
     def set_jwt_secret(cls, v):
         if v is None:
             return get_required_secret("JWT secret key", "JWT_SECRET_KEY")
@@ -84,10 +83,10 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)  # Default to False for safety
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     
-    @validator("debug", pre=True, always=True)
-    def set_debug_based_on_environment(cls, v, values):
+    @field_validator("debug", mode="before")
+    def set_debug_based_on_environment(cls, v, info):
         """Set debug based on environment if not explicitly set."""
-        env = values.get("environment", "development").lower()
+        env = info.data.get("environment", "development").lower()
         if env == "production":
             return False  # Never allow debug in production
         elif env == "development" and v is None:
@@ -177,7 +176,6 @@ class Settings(BaseSettings):
 
 
     @field_validator("cors_origins", mode='before')
-    @classmethod
     def parse_cors_origins(cls, v):
         """Parse CORS origins from string or list."""
         if isinstance(v, str):
@@ -185,7 +183,6 @@ class Settings(BaseSettings):
         return v
 
     @field_validator("allowed_file_types", mode='before')
-    @classmethod
     def parse_allowed_file_types(cls, v):
         """Parse allowed file types from string or list."""
         if isinstance(v, str):

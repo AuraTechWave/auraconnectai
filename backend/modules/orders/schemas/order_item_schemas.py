@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import datetime
 
 
-class OrderItemBase(BaseModel):
+class OrderItemBase(BaseModel, ConfigDict):
     order_id: int
     menu_item_id: int
     quantity: int
@@ -19,6 +19,7 @@ class OrderItemOut(OrderItemBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed

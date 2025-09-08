@@ -43,7 +43,7 @@ class AuditLog(Base):
     request_data = Column(JSON, nullable=True)
     response_data = Column(JSON, nullable=True)
     error_message = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    audit_metadata = Column(JSON, nullable=True)
     
     __table_args__ = (
         Index("idx_audit_user_operation", "user_id", "operation_type"),
@@ -138,7 +138,7 @@ class AuditLogger:
             "request_id": request_id,
             "status": "started",
             "request_data": request_data,
-            "metadata": metadata
+            "audit_metadata": metadata
         }
         
         # Log to file immediately
@@ -221,7 +221,7 @@ class AuditLogger:
             "description": description,
             "user_id": user_id,
             "client_ip": client_ip,
-            "metadata": metadata
+            "audit_metadata": metadata
         }
         
         # Log to file immediately

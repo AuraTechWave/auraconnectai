@@ -336,7 +336,7 @@ async def delete_layout(
 @router.get("/export")
 @require_permission("tables.manage_layout")
 async def export_layout(
-    format: str = Query("json", regex="^(json|csv)$"),
+    format: str = Query("json", pattern="^(json|csv)$"),
     floor_id: Optional[int] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
