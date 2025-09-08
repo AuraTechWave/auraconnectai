@@ -93,7 +93,7 @@ class MaintenanceRecordBase(BaseModel):
     cost: float = Field(default=0.0, ge=0)
     parts_replaced: Optional[str] = None
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         """Ensure scheduled date is reasonable"""
         if v < datetime(2000, 1, 1):
@@ -122,14 +122,14 @@ class MaintenanceRecordUpdate(BaseModel):
     resolution: Optional[str] = None
     downtime_hours: Optional[float] = Field(None, ge=0)
 
-    @validator("date_performed")
+    @field_validator("date_performed", mode="after")
     def validate_date_performed(cls, v):
         """Ensure date_performed is not in the future"""
         if v and v > datetime.now():
             raise ValueError("Date performed cannot be in the future")
         return v
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         """Ensure scheduled date is reasonable"""
         if v and v < datetime(2000, 1, 1):
@@ -169,7 +169,7 @@ class MaintenanceRecordComplete(BaseModel):
     downtime_hours: float = Field(default=0.0, ge=0)
     next_due_date: Optional[datetime] = None
 
-    @validator("date_performed")
+    @field_validator("date_performed", mode="after")
     def validate_date_performed(cls, v):
         """Ensure date_performed is not in the future"""
         if v > datetime.now():

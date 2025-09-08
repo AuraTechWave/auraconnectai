@@ -77,7 +77,7 @@ class TableBase(BaseModel):
     max_capacity: int = Field(..., ge=1)
     preferred_capacity: Optional[int] = None
 
-    @validator("preferred_capacity")
+    @field_validator("preferred_capacity", mode="after")
     def validate_preferred_capacity(cls, v, values):
         if v is not None:
             min_cap = values.get("min_capacity", 1)

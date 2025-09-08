@@ -50,7 +50,7 @@ class RestaurantBase(BaseModel):
         "USD", min_length=3, max_length=3, description="ISO currency code"
     )
 
-    @validator("name", "legal_name", "brand_name")
+    @field_validator("name", "legal_name", "brand_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()
@@ -58,7 +58,7 @@ class RestaurantBase(BaseModel):
                 raise ValueError("Name cannot be empty or whitespace only")
         return v
 
-    @validator("phone")
+    @field_validator("phone", mode="after")
     def validate_phone(cls, v):
         # Remove common formatting characters
         cleaned = re.sub(r"[\s\-\(\)\.]", "", v)
@@ -66,7 +66,7 @@ class RestaurantBase(BaseModel):
             raise ValueError("Invalid phone number format")
         return v
 
-    @validator("website")
+    @field_validator("website", mode="after")
     def validate_website(cls, v):
         if v:
             if not v.startswith(("http://", "https://")):
@@ -75,7 +75,7 @@ class RestaurantBase(BaseModel):
                 raise ValueError("Invalid website URL")
         return v
 
-    @validator("country")
+    @field_validator("country", mode="after")
     def validate_country(cls, v):
         return v.upper()
 
@@ -92,7 +92,7 @@ class RestaurantCreate(RestaurantBase):
         None, description="Operating hours by day"
     )
 
-    @validator("operating_hours")
+    @field_validator("operating_hours", mode="after")
     def validate_operating_hours(cls, v):
         if v:
             days = [
@@ -204,7 +204,7 @@ class LocationBase(BaseModel):
     seating_capacity: Optional[int] = Field(None, ge=0, le=10000)
     parking_spaces: Optional[int] = Field(None, ge=0, le=10000)
 
-    @validator("name", "manager_name")
+    @field_validator("name", "manager_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()
@@ -320,7 +320,7 @@ class FloorBase(BaseModel):
         description="Floor-specific service charge",
     )
 
-    @validator("name", "display_name")
+    @field_validator("name", "display_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()

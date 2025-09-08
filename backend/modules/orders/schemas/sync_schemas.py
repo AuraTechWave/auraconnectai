@@ -108,7 +108,7 @@ class SyncConfigurationUpdate(BaseModel):
         None, description="Conflict resolution mode (auto/manual)"
     )
 
-    @validator("conflict_resolution_mode")
+    @field_validator("conflict_resolution_mode", mode="after")
     def validate_conflict_mode(cls, v):
         if v and v not in ["auto", "manual"]:
             raise ValueError("Invalid conflict resolution mode")

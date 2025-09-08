@@ -71,7 +71,7 @@ class MigrationJobCreate(MigrationJobBase):
     scheduled_at: Optional[datetime] = None
     rollback_enabled: bool = True
     
-    @validator("source_credentials")
+    @field_validator("source_credentials", mode="after")
     def validate_credentials(cls, v, values):
         """Validate required credentials based on provider"""
         provider = values.get("source_provider")
@@ -254,7 +254,7 @@ class BulkMigrationRequest(BaseModel):
     job_ids: List[UUID]
     action: str  # "start", "pause", "cancel", "retry"
     
-    @validator("action")
+    @field_validator("action", mode="after")
     def validate_action(cls, v):
         allowed = ["start", "pause", "cancel", "retry"]
         if v not in allowed:

@@ -116,7 +116,7 @@ class CustomerCreate(CustomerBase):
     referral_code: Optional[str] = None
     acquisition_source: Optional[str] = Field(None, max_length=100)
 
-    @validator("password")
+    @field_validator("password", mode="after")
     def validate_password(cls, v):
         if v and len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")

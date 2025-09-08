@@ -110,7 +110,7 @@ class PaymentConfig(BaseSettings):
         env_prefix = "PAYMENT_"
         case_sensitive = False
 
-    @validator("REDIS_URL")
+    @field_validator("REDIS_URL", mode="after")
     def validate_redis_url(cls, v: str, values: dict) -> str:
         """Validate Redis URL format"""
         if not v.startswith(("redis://", "rediss://", "unix://")):
@@ -123,14 +123,14 @@ class PaymentConfig(BaseSettings):
 
         return v
 
-    @validator("PROMETHEUS_PORT")
+    @field_validator("PROMETHEUS_PORT", mode="after")
     def validate_prometheus_port(cls, v: int) -> int:
         """Validate Prometheus port"""
         if not 1024 <= v <= 65535:
             raise ValueError("Prometheus port must be between 1024 and 65535")
         return v
 
-    @validator("MAX_PAYMENT_AMOUNT")
+    @field_validator("MAX_PAYMENT_AMOUNT", mode="after")
     def validate_max_amount(cls, v: float, values: dict) -> float:
         """Validate maximum payment amount"""
         min_amount = values.get("MIN_PAYMENT_AMOUNT", 0.50)

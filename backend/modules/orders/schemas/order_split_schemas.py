@@ -54,7 +54,7 @@ class OrderSplitRequest(BaseModel):
         None, description="Scheduled time for split order"
     )
 
-    @validator("items")
+    @field_validator("items", mode="after")
     def validate_unique_items(cls, v):
         """Ensure no duplicate item IDs in split request"""
         item_ids = [item.item_id for item in v]
@@ -70,7 +70,7 @@ class PaymentSplitRequest(BaseModel):
         ..., min_items=2, description="Payment split details"
     )
 
-    @validator("splits")
+    @field_validator("splits", mode="after")
     def validate_splits(cls, v):
         """Validate payment splits"""
         for split in v:
@@ -166,7 +166,7 @@ class BulkSplitRequest(BaseModel):
         ..., description="Configuration for each split"
     )
 
-    @validator("split_strategy")
+    @field_validator("split_strategy", mode="after")
     def validate_strategy(cls, v, values):
         """Validate split strategy based on split type"""
         valid_strategies = {

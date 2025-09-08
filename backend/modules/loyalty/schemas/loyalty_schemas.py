@@ -397,7 +397,7 @@ class RewardRedemptionRequest(BaseModel):
     order_id: int
     order_amount: float = Field(..., gt=0)
 
-    @validator("reward_code")
+    @field_validator("reward_code", mode="after")
     def validate_code(cls, v):
         if not v or len(v) < 5:
             raise ValueError("Invalid reward code")

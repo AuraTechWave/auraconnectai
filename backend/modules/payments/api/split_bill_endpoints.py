@@ -63,13 +63,13 @@ class CreateSplitRequest(BaseModel):
     send_reminders: bool = True
     expires_in_hours: Optional[int] = 48
 
-    @validator("participants")
+    @field_validator("participants", mode="after")
     def validate_participants(cls, v):
         if len(v) < 2:
             raise ValueError("At least 2 participants required for split")
         return v
 
-    @validator("split_config")
+    @field_validator("split_config", mode="after")
     def validate_split_config(cls, v, values):
         if "split_method" in values:
             method = values["split_method"]
@@ -102,7 +102,7 @@ class ParticipantPaymentRequest(BaseModel):
     payment_method_id: Optional[str] = None
     save_payment_method: bool = False
 
-    @validator("amount")
+    @field_validator("amount", mode="after")
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Amount must be positive")

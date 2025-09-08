@@ -177,7 +177,7 @@ class RoleBasedPayRateCreate(BaseModel):
     effective_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
 
-    @validator("effective_date", pre=True, always=True)
+    @field_validator("effective_date", mode="before")
     def set_effective_date(cls, v):
         return v or datetime.utcnow()
 

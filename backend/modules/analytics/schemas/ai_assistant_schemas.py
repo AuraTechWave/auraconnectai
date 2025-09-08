@@ -87,7 +87,7 @@ class QueryContext(BaseModel):
     time_zone: Optional[str] = "UTC"
     language: str = "en"
 
-    @validator("conversation_history")
+    @field_validator("conversation_history", mode="after")
     def limit_history_size(cls, v):
         """Keep only last 20 messages to prevent context overflow"""
         return v[-20:] if len(v) > 20 else v
@@ -159,7 +159,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
 
-    @validator("message")
+    @field_validator("message", mode="after")
     def clean_message(cls, v):
         """Clean and validate user message"""
         return v.strip()

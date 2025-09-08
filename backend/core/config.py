@@ -84,10 +84,11 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)  # Default to False for safety
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     
-    @validator("debug", pre=True, always=True)
-    def set_debug_based_on_environment(cls, v, values):
+    @field_validator("debug", mode='before')
+    @classmethod
+    def set_debug_based_on_environment(cls, v, info):
         """Set debug based on environment if not explicitly set."""
-        env = values.get("environment", "development").lower()
+        env = info.data.get("environment", "development").lower()
         if env == "production":
             return False  # Never allow debug in production
         elif env == "development" and v is None:

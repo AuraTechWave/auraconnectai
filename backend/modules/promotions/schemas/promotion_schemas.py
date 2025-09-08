@@ -53,14 +53,14 @@ class PromotionBase(BaseModel):
 class PromotionCreate(PromotionBase):
     """Schema for creating a promotion"""
 
-    @validator("end_date")
+    @field_validator("end_date", mode="after")
     def end_date_after_start_date(cls, v, values):
         start_date = values.get("start_date")
         if start_date and v <= start_date:
             raise ValueError("End date must be after start date")
         return v
 
-    @validator("discount_value")
+    @field_validator("discount_value", mode="after")
     def validate_discount_value(cls, v, values):
         discount_type = values.get("discount_type")
         if discount_type == "percentage" and v > 100:
@@ -232,7 +232,7 @@ class ReferralProgramBase(BaseModel):
 class ReferralProgramCreate(ReferralProgramBase):
     """Schema for creating a referral program"""
 
-    @validator("end_date")
+    @field_validator("end_date", mode="after")
     def end_date_after_start_date(cls, v, values):
         if v and values.get("start_date") and v <= values["start_date"]:
             raise ValueError("End date must be after start date")
@@ -418,7 +418,7 @@ class ABTestConfig(BaseModel):
     end_date: datetime
     success_metric: str
 
-    @validator("variants")
+    @field_validator("variants", mode="after")
     def validate_traffic_split(cls, v):
         total_split = sum(variant.traffic_split for variant in v)
         if abs(total_split - 100.0) > 0.01:  # Allow for floating point precision

@@ -35,7 +35,7 @@ class StationCreate(BaseModel):
     features: List[str] = Field(default_factory=list)
     printer_id: Optional[str] = None
 
-    @validator("display_name", always=True)
+    @field_validator("display_name", mode="after")
     def set_display_name(cls, v, values):
         return v or values.get("name")
 
@@ -149,7 +149,7 @@ class StationAssignmentCreate(BaseModel):
     prep_time_override: Optional[int] = Field(None, ge=1, le=120)
     conditions: Dict[str, Any] = Field(default_factory=dict)
 
-    @validator("category_name")
+    @field_validator("category_name", mode="after")
     def validate_assignment(cls, v, values):
         if not v and not values.get("tag_name"):
             raise ValueError("Either category_name or tag_name must be provided")

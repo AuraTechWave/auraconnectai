@@ -45,13 +45,13 @@ class EquipmentBase(BaseModel):
         None, max_length=200, description="Physical location of equipment"
     )
 
-    @validator("equipment_name", "equipment_type")
+    @field_validator("equipment_name", "equipment_type", mode="after")
     def validate_not_empty(cls, v):
         if v and not v.strip():
             raise ValueError("Cannot be empty or whitespace only")
         return v.strip() if v else v
 
-    @validator("serial_number")
+    @field_validator("serial_number", mode="after")
     def validate_serial_number(cls, v):
         if v:
             # Remove spaces and convert to uppercase
@@ -96,7 +96,7 @@ class EquipmentCreate(EquipmentBase):
 
         return values
 
-    @validator("purchase_cost")
+    @field_validator("purchase_cost", mode="after")
     def validate_cost(cls, v):
         if v is not None and v > Decimal("1000000"):
             raise ValueError("Purchase cost seems unusually high. Please verify.")
@@ -118,7 +118,7 @@ class EquipmentUpdate(BaseModel):
     maintenance_interval_days: Optional[int] = Field(None, gt=0, le=3650)
     maintenance_notes: Optional[str] = Field(None, max_length=1000)
 
-    @validator("warranty_expiry")
+    @field_validator("warranty_expiry", mode="after")
     def validate_warranty_expiry(cls, v):
         if v and v < date.today():
             # Warning, but allow updating to past date
@@ -170,13 +170,13 @@ class MaintenanceRecordBase(BaseModel):
         None, ge=0, decimal_places=2, description="Estimated cost"
     )
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         if v < date.today():
             raise ValueError("Scheduled date cannot be in the past")
         return v
 
-    @validator("estimated_cost")
+    @field_validator("estimated_cost", mode="after")
     def validate_estimated_cost(cls, v):
         if v is not None and v > Decimal("100000"):
             raise ValueError("Estimated cost seems unusually high. Please verify.")
@@ -205,7 +205,7 @@ class MaintenanceRecordUpdate(BaseModel):
     status: Optional[MaintenanceStatus] = None
     notes: Optional[str] = Field(None, max_length=2000)
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         # Allow past dates for updates (rescheduling)
         return v
@@ -233,13 +233,13 @@ class MaintenanceRecordComplete(BaseModel):
     )
     notes: Optional[str] = Field(None, max_length=2000, description="Completion notes")
 
-    @validator("date_performed")
+    @field_validator("date_performed", mode="after")
     def validate_date_performed(cls, v):
         if v > date.today():
             raise ValueError("Performance date cannot be in the future")
         return v
 
-    @validator("cost")
+    @field_validator("cost", mode="after")
     def validate_cost(cls, v):
         if v > Decimal("100000"):
             raise ValueError("Cost seems unusually high. Please verify.")
@@ -368,6 +368,6 @@ class MaintenanceSummary(BaseModel):
     average_downtime_hours: float = Field(..., ge=0)
     critical_equipment_down: int = Field(..., ge=0)
 
-    @validator("average_downtime_hours")
+    @field_validator("average_downtime_hours", mode="after")
     def round_average(cls, v):
         return round(v, 2)

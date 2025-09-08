@@ -94,7 +94,7 @@ class SettingResponse(BaseModel):
     class Config:
         orm_mode = True
 
-    @validator("value", pre=True)
+    @field_validator("value", mode="before")
     def parse_value(cls, v, values):
         if isinstance(v, str):
             try:
