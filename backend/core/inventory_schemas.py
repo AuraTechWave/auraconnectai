@@ -1,6 +1,6 @@
 # backend/core/inventory_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from enum import Enum
@@ -216,7 +216,7 @@ class InventoryAdjustmentBase(BaseModel):
     @field_validator("quantity_adjusted", mode="after")
     def validate_quantity_adjusted(cls, v, values):
         if "adjustment_type" in values:
-            adj_type = values["adjustment_type"]
+            adj_type = info.data["adjustment_type"]
             # For waste, expired, damaged - quantity must be positive (we're removing from inventory)
             if adj_type in [
                 AdjustmentType.WASTE,

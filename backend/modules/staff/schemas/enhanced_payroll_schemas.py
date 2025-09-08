@@ -5,7 +5,7 @@ Comprehensive request/response models for payroll and tax API endpoints
 that integrate with the Enhanced Payroll Engine (Phase 3) and Tax Services (AUR-276).
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from decimal import Decimal

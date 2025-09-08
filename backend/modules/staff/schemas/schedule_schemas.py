@@ -1,6 +1,6 @@
 # backend/modules/staff/schemas/schedule_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date, time
 
@@ -17,9 +17,10 @@ class SchedulePreviewResponse(BaseModel):
     by_date: Dict[str, List[Dict[str, Any]]]  # Date -> list of shifts
     by_staff: List[Dict[str, Any]]  # List of staff with their shifts
     summary: Dict[str, Any]  # Summary statistics
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class PaginatedPreviewResponse(BaseModel):
@@ -32,9 +33,10 @@ class PaginatedPreviewResponse(BaseModel):
     total_pages: int
     has_next: bool
     has_previous: bool
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Enhanced Schedule Publish Request
@@ -65,8 +67,9 @@ class ScheduleCreateRequest(BaseModel):
     notes: Optional[str] = None
 
     @field_validator("end_time", mode="after")
-    def validate_times(cls, v, values):
-        if "start_time" in values and v <= values["start_time"]:
+    @classmethod
+    def validate_times(cls, v, info):
+        if "start_time" in info.data and v <= info.data["start_time"]:
             # Allow overnight shifts
             pass
         return v
@@ -110,9 +113,10 @@ class ScheduleResponse(BaseModel):
     published_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Notification Schemas
@@ -151,9 +155,10 @@ class CacheStatsResponse(BaseModel):
     newest_cache: Optional[str]
     total_size_bytes: int
     hit_rate: Optional[float] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Analytics and Reporting Schemas
@@ -167,9 +172,10 @@ class ScheduleAnalytics(BaseModel):
     staff_utilization: Dict[str, float]  # staff_id -> utilization %
     coverage_gaps: List[Dict[str, Any]]
     labor_cost_estimate: Optional[float]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class StaffScheduleMetrics(BaseModel):
@@ -186,9 +192,10 @@ class StaffScheduleMetrics(BaseModel):
     days_worked: int
     overtime_hours: float
     utilization_percentage: float
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Batch Operations

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 
 
-class FeedbackSummaryResponse(BaseModel):
+class FeedbackSummaryResponse(BaseModel, ConfigDict):
     """Summary of feedback across models and domains"""
 
     time_period: Dict[str, datetime]
@@ -141,9 +141,10 @@ class FeedbackDetailEntry(BaseModel):
     value_impact: Optional[float]
 
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ModelComparisonResponse(BaseModel):

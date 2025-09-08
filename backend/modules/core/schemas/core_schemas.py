@@ -3,8 +3,8 @@
 Pydantic schemas for core models.
 """
 
-from pydantic import BaseModel, Field, EmailStr, validator, root_validator
-from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator, ConfigDict
+from typing import Optional, Dict, Any, List, Annotated
 from datetime import datetime, time
 from decimal import Decimal
 import re
@@ -170,9 +170,10 @@ class RestaurantResponse(RestaurantBase):
     location_count: int = 0
     floor_count: int = 0
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RestaurantListResponse(BaseModel):
@@ -277,9 +278,10 @@ class LocationResponse(LocationBase):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class LocationListResponse(BaseModel):
@@ -312,11 +314,8 @@ class FloorBase(BaseModel):
     allows_reservations: bool = Field(
         True, description="Allow reservations on this floor"
     )
-    service_charge_percent: Optional[Decimal] = Field(
+    service_charge_percent: Optional[Annotated[Decimal, Field(None, ge=0, le=100, max_digits=5, decimal_places=2)]] = Field(
         None,
-        ge=0,
-        le=100,
-        decimal_places=2,
         description="Floor-specific service charge",
     )
 
@@ -359,9 +358,7 @@ class FloorUpdate(BaseModel):
     max_capacity: Optional[int] = Field(None, ge=0, le=10000)
 
     allows_reservations: Optional[bool] = None
-    service_charge_percent: Optional[Decimal] = Field(
-        None, ge=0, le=100, decimal_places=2
-    )
+    service_charge_percent: Optional[Annotated[Decimal, Field(None, ge=0, le=100, max_digits=5, decimal_places=2)]] = None
 
     layout_config: Optional[Dict[str, Any]] = None
     features: Optional[Dict[str, Any]] = None
@@ -386,9 +383,10 @@ class FloorResponse(FloorBase):
     table_count: int = 0
     active_table_count: int = 0
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat(), Decimal: lambda v: float(v)}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class FloorListResponse(BaseModel):

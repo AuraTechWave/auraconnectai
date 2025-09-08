@@ -2,7 +2,7 @@
 Schemas for order routing rules and configurations.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 from decimal import Decimal

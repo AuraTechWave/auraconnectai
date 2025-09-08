@@ -1,6 +1,6 @@
 # backend/modules/loyalty/schemas/rewards_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -106,7 +106,7 @@ class RewardTemplateCreate(RewardTemplateBase):
     @field_validator("trigger_conditions", mode="after")
     def validate_trigger_conditions(cls, v, values):
         if v and "trigger_type" in values:
-            trigger_type = values["trigger_type"]
+            trigger_type = info.data["trigger_type"]
 
             # Validate conditions based on trigger type
             if trigger_type == TriggerTypeEnum.ORDER_COMPLETE:

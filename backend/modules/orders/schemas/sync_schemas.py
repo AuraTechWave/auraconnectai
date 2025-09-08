@@ -6,7 +6,7 @@ Pydantic schemas for order synchronization.
 Defines request/response models for sync-related API endpoints.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -57,10 +57,10 @@ class SyncBatchResponse(BaseModel):
     conflict_count: int = 0
     avg_sync_time_ms: Optional[float] = None
     error_summary: Optional[Dict[str, Any]] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SyncConflictResponse(BaseModel):
@@ -78,10 +78,10 @@ class SyncConflictResponse(BaseModel):
     resolved_at: Optional[datetime] = None
     resolved_by: Optional[int] = None
     resolution_notes: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SyncStatusResponse(BaseModel):
@@ -149,10 +149,10 @@ class OrderSyncStatusResponse(BaseModel):
     remote_id: Optional[str] = None
     local_checksum: Optional[str] = None
     remote_checksum: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SyncLogResponse(BaseModel):
@@ -169,10 +169,10 @@ class SyncLogResponse(BaseModel):
     duration_ms: Optional[int] = None
     error_message: Optional[str] = None
     error_code: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SyncMetricsResponse(BaseModel):

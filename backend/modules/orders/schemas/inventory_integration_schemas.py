@@ -6,7 +6,7 @@ Schemas for order inventory integration endpoints.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # Request schemas

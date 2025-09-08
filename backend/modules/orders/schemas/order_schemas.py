@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -395,4 +395,55 @@ class AutoCancellationConfigOut(AutoCancellationConfigBase):
 class StaleCancellationResponse(BaseModel):
     cancelled_count: int
     cancelled_orders: List[int]
+    message: str
+
+
+# Order Inventory Integration Schemas
+class OrderCompleteRequest(BaseModel):
+    order_id: int
+    payment_status: str = "paid"
+    notes: Optional[str] = None
+
+
+class OrderCompleteResponse(BaseModel):
+    order_id: int
+    status: str
+    inventory_updated: bool
+    deducted_items: List[Dict[str, Any]]
+    message: str
+
+
+class OrderCancelRequest(BaseModel):
+    order_id: int
+    reason: str
+    refund_amount: Optional[float] = None
+
+
+class OrderCancelResponse(BaseModel):
+    order_id: int
+    status: str
+    inventory_restored: bool
+    restored_items: List[Dict[str, Any]]
+    message: str
+
+
+class PartialFulfillmentRequest(BaseModel):
+    order_id: int
+    fulfilled_items: List[Dict[str, int]]  # [{"item_id": 1, "quantity": 2}]
+    reason: Optional[str] = None
+
+
+class PartialFulfillmentResponse(BaseModel):
+    order_id: int
+    status: str
+    fulfilled_items: List[Dict[str, Any]]
+    remaining_items: List[Dict[str, Any]]
+    inventory_updated: bool
+    message: str
+
+
+class InventoryAvailabilityResponse(BaseModel):
+    available: bool
+    unavailable_items: List[Dict[str, Any]]
+    warnings: List[str]
     message: str

@@ -1,6 +1,6 @@
 # backend/modules/customers/schemas/customer_schemas.py
 
-from pydantic import BaseModel, EmailStr, Field, validator, constr
+from pydantic import BaseModel, EmailStr, Field, field_validator, constr
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum

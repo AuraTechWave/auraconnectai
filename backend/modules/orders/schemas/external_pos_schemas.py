@@ -4,7 +4,7 @@
 Pydantic schemas for external POS webhook management.
 """
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from decimal import Decimal

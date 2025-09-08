@@ -42,8 +42,7 @@ from modules.orders.routes.pricing_routes import router as pricing_router
 from modules.orders.routes.pricing_rule_routes import router as pricing_rule_router
 from modules.orders.routes.payment_reconciliation_routes import router as payment_reconciliation_router
 from modules.orders.routes.order_promotion_routes import router as order_promotion_router
-# TODO: Fix missing schemas
-# from modules.orders.routes.order_inventory_routes import router as order_inventory_router
+from modules.orders.routes.order_inventory_routes import router as order_inventory_router
 from modules.orders.api.customer_tracking_endpoints import router as customer_tracking_router
 from modules.orders.api.manual_review_endpoints import router as manual_review_router
 from modules.orders.routers.sync import sync_router as order_sync_router
@@ -156,6 +155,9 @@ from modules.gdpr.routes.gdpr_routes import router as gdpr_router
 # ========== Health Monitoring ==========
 from modules.health.routes.health_routes import router as health_router
 from modules.health.metrics.performance_middleware import PerformanceMiddleware
+
+# ========== Cache Monitoring ==========
+from modules.monitoring.routes.cache_routes import router as cache_monitoring_router
 
 # FastAPI app with enhanced OpenAPI documentation
 app = FastAPI(
@@ -372,6 +374,9 @@ app.include_router(gdpr_router)
 # Health Monitoring
 app.include_router(health_router)
 
+# Cache Monitoring  
+app.include_router(cache_monitoring_router, prefix="/api/v1/monitoring", tags=["Cache Monitoring"])
+
 # Reservations & Waitlist (Enhanced System)
 app.include_router(enhanced_reservation_router, prefix="/api/v1", tags=["Reservations"])
 
@@ -450,6 +455,19 @@ async def startup_event():
     # Initialize webhook validator
     app.state.webhook_validator = webhook_validator
     
+    # Initialize cache system
+    from core.cache_config import initialize_cache_system, warm_caches
+    from core.cache_monitoring import cache_monitor
+    
+    cache_initialized = await initialize_cache_system()
+    if cache_initialized:
+        # Start cache monitoring
+        import asyncio
+        asyncio.create_task(cache_monitor.start_background_collection())
+        
+        # Warm critical caches
+        asyncio.create_task(warm_caches())
+    
     # Start order sync scheduler
     await start_sync_scheduler()
     # Start webhook retry scheduler
@@ -468,6 +486,10 @@ async def shutdown_event():
     # Close audit logger
     from core.audit_logger import audit_logger
     await audit_logger.close()
+    
+    # Shutdown cache system
+    from core.cache_config import shutdown_cache_system
+    await shutdown_cache_system()
     
     # Stop order sync scheduler
     await stop_sync_scheduler()

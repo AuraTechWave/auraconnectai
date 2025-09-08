@@ -1,6 +1,6 @@
 # backend/modules/ai_recommendations/schemas/staffing_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
@@ -239,7 +239,7 @@ class StaffingOptimizationRequest(BaseModel):
             raise ValueError("end_date must be after start_date")
 
         # Limit to 3 months
-        if "start_date" in values and (v - values["start_date"]).days > 90:
+        if "start_date" in values and (v - info.data["start_date"]).days > 90:
             raise ValueError("Date range cannot exceed 90 days")
 
         return v

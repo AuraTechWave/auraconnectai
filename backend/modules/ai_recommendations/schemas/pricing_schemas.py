@@ -1,6 +1,6 @@
 # backend/modules/ai_recommendations/schemas/pricing_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date, time
 from decimal import Decimal

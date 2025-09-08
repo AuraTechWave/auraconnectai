@@ -2,7 +2,7 @@
 Pydantic schemas for priority management system.
 """
 
-from pydantic import BaseModel, Field, validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -54,7 +54,7 @@ class PriorityRuleBase(BaseModel):
     @field_validator("max_score", mode="after")
     def validate_score_range(cls, v, values):
         """Ensure max_score > min_score"""
-        if "min_score" in values and v <= values["min_score"]:
+        if "min_score" in values and v <= info.data["min_score"]:
             raise ValueError("max_score must be greater than min_score")
         return v
 

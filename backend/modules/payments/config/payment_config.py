@@ -2,7 +2,8 @@
 
 import os
 from typing import Optional, Dict, Any
-from pydantic import BaseSettings, Field, validator, root_validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, field_validator, model_validator
 from enum import Enum
 
 
@@ -117,7 +118,7 @@ class PaymentConfig(BaseSettings):
             raise ValueError("Invalid Redis URL format")
 
         # Ensure production uses secure Redis
-        env = values.get("PAYMENT_ENVIRONMENT")
+        env = info.data.get("PAYMENT_ENVIRONMENT")
         if env == PaymentEnvironment.PRODUCTION and not v.startswith("rediss://"):
             raise ValueError("Production must use secure Redis (rediss://)")
 
@@ -133,15 +134,15 @@ class PaymentConfig(BaseSettings):
     @field_validator("MAX_PAYMENT_AMOUNT", mode="after")
     def validate_max_amount(cls, v: float, values: dict) -> float:
         """Validate maximum payment amount"""
-        min_amount = values.get("MIN_PAYMENT_AMOUNT", 0.50)
+        min_amount = info.data.get("MIN_PAYMENT_AMOUNT", 0.50)
         if v <= min_amount:
             raise ValueError("Maximum payment amount must be greater than minimum")
         return v
 
-    @root_validator
-    def validate_production_settings(cls, values: dict) -> dict:
+    @model_validator(mode="after")
+    def validate_production_settings(self):
         """Validate production-specific settings"""
-        if values.get("PAYMENT_ENVIRONMENT") == PaymentEnvironment.PRODUCTION:
+        if self.PAYMENT_ENVIRONMENT == PaymentEnvironment.PRODUCTION:
             # Ensure critical features are enabled in production
             required_features = [
                 "ENABLE_WEBHOOK_QUEUE",
@@ -151,18 +152,18 @@ class PaymentConfig(BaseSettings):
             ]
 
             for feature in required_features:
-                if not values.get(feature, False):
+                if not getattr(self, feature, False):
                     raise ValueError(f"{feature} must be enabled in production")
 
             # Ensure reasonable timeout values
-            if values.get("GATEWAY_TIMEOUT_SECONDS", 0) < 10:
+            if self.GATEWAY_TIMEOUT_SECONDS < 10:
                 raise ValueError("Gateway timeout too low for production")
 
             # Ensure webhook security
-            if values.get("WEBHOOK_SIGNATURE_TOLERANCE_SECONDS", 0) > 600:
+            if self.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS > 600:
                 raise ValueError("Webhook signature tolerance too high for production")
 
-        return values
+        return self
 
     def get_redis_settings(self) -> Dict[str, Any]:
         """Get Redis connection settings"""

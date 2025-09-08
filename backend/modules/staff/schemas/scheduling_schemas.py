@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional, Dict
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional, Dict, Any
 from datetime import date, datetime, time, timezone
 from enum import Enum
 
@@ -12,6 +12,7 @@ from ..enums.scheduling_enums import (
     AvailabilityStatus,
     BreakType,
 )
+from pydantic import ConfigDict
 
 
 class ShiftTemplateCreate(BaseModel):
@@ -69,9 +70,10 @@ class ShiftTemplateResponse(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ShiftCreate(BaseModel):
@@ -121,9 +123,10 @@ class ShiftResponse(BaseModel):
     updated_at: Optional[datetime]
     published_at: Optional[datetime]
     estimated_cost: Optional[float]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ShiftBreakCreate(BaseModel):
@@ -150,9 +153,10 @@ class ShiftBreakResponse(BaseModel):
     is_paid: bool
     notes: Optional[str]
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class AvailabilityCreate(BaseModel):
@@ -191,9 +195,10 @@ class AvailabilityResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ShiftSwapRequest(BaseModel):
@@ -207,7 +212,7 @@ class ShiftSwapRequest(BaseModel):
     reason: str = Field(..., min_length=1, max_length=500)
     urgency: Optional[str] = Field(
         "normal",
-        regex="^(urgent|normal|flexible)$",
+        pattern="^(urgent|normal|flexible)$",
         description="Urgency level of swap request",
     )
     preferred_dates: Optional[List[date]] = None
@@ -234,7 +239,7 @@ class ShiftSwapRequest(BaseModel):
     @field_validator("to_staff_id", mode="after")
     def validate_swap_target(cls, v, values):
         # Check if both are None or both are set
-        to_shift_id = values.get("to_shift_id")
+        to_shift_id = info.data.get("to_shift_id")
         if v is None and to_shift_id is None:
             raise ValueError("Must specify either to_shift_id or to_staff_id")
         if v is not None and to_shift_id is not None:
@@ -282,9 +287,10 @@ class ShiftSwapResponse(BaseModel):
     manager_notified: bool
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ShiftSwapListFilter(BaseModel):
@@ -361,9 +367,10 @@ class SwapApprovalRuleResponse(BaseModel):
     approval_timeout_hours: int
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ShiftSwapHistory(BaseModel):
@@ -414,9 +421,10 @@ class SchedulePublishResponse(BaseModel):
     total_hours: float
     estimated_labor_cost: float
     notes: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Dashboard Analytics Schemas

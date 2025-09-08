@@ -7,7 +7,7 @@ These schemas define the structure for chat messages, queries, and responses
 between the user and the AI assistant for analytics queries.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
 from enum import Enum

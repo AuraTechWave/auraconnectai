@@ -1,6 +1,6 @@
 # backend/modules/sms/schemas/sms_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -88,9 +88,9 @@ class SMSTemplateBase(BaseModel):
         import re
         placeholders = re.findall(r'\{\{(\w+)\}\}', v)
         if placeholders and 'variables' in values:
-            if not values['variables']:
+            if not info.data['variables']:
                 raise ValueError(f'Template contains variables {placeholders} but no variables list provided')
-            missing = set(placeholders) - set(values['variables'] or [])
+            missing = set(placeholders) - set(info.data['variables'] or [])
             if missing:
                 raise ValueError(f'Template contains undefined variables: {missing}')
         return v

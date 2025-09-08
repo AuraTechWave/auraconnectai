@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -15,7 +15,7 @@ from ..models.rewards_models import RewardType, RewardStatus, TriggerType
 # ========== Loyalty Program Schemas ==========
 
 
-class LoyaltyProgramBase(BaseModel):
+class LoyaltyProgramBase(BaseModel, ConfigDict):
     """Base loyalty program schema"""
 
     name: str = Field(..., max_length=100)
@@ -60,9 +60,10 @@ class LoyaltyProgramResponse(LoyaltyProgramBase):
     active_members: int
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Customer Loyalty Schemas ==========
@@ -108,9 +109,10 @@ class CustomerLoyaltyResponse(CustomerLoyaltyBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class CustomerLoyaltyStats(BaseModel):
@@ -140,7 +142,7 @@ class PointsTransactionBase(BaseModel):
 
     customer_id: int
     transaction_type: str = Field(
-        ..., regex="^(earned|redeemed|expired|adjusted|transferred)$"
+        ..., pattern="^(earned|redeemed|expired|adjusted|transferred)$"
     )
     points_change: int
     reason: str = Field(..., max_length=200)
@@ -170,9 +172,10 @@ class PointsTransactionResponse(PointsTransactionBase):
     staff_member_id: Optional[int]
     staff_member_name: Optional[str]
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class PointsAdjustment(BaseModel):
@@ -195,7 +198,7 @@ class PointsTransfer(BaseModel):
 
     @root_validator
     def validate_transfer(cls, values):
-        if values.get("from_customer_id") == values.get("to_customer_id"):
+        if info.data.get("from_customer_id") == info.data.get("to_customer_id"):
             raise ValueError("Cannot transfer points to the same customer")
         return values
 
@@ -288,9 +291,10 @@ class RewardTemplateResponse(RewardTemplateBase):
     redemption_rate: float
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Customer Reward Schemas ==========
@@ -337,8 +341,8 @@ class BulkRewardIssuance(BaseModel):
 
     @root_validator
     def validate_targeting(cls, values):
-        customer_ids = values.get("customer_ids")
-        customer_criteria = values.get("customer_criteria")
+        customer_ids = info.data.get("customer_ids")
+        customer_criteria = info.data.get("customer_criteria")
 
         if not customer_ids and not customer_criteria:
             raise ValueError(
@@ -369,9 +373,10 @@ class CustomerRewardResponse(CustomerRewardBase):
     redeemed_amount: Optional[float]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class CustomerRewardSummary(BaseModel):
@@ -484,9 +489,10 @@ class RewardCampaignResponse(RewardCampaignBase):
     distribution_rate: float
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Analytics Schemas ==========
@@ -499,7 +505,7 @@ class RewardAnalyticsRequest(BaseModel):
     campaign_id: Optional[int] = None
     start_date: date
     end_date: date
-    group_by: str = Field("day", regex="^(day|week|month)$")
+    group_by: str = Field("day", pattern="^(day|week|month)$")
 
 
 class RewardAnalyticsResponse(BaseModel):
@@ -563,8 +569,8 @@ class RewardSearchParams(BaseModel):
     max_value: Optional[float] = Field(None, ge=0)
     valid_on_date: Optional[date] = None
     search_text: Optional[str] = Field(None, max_length=100)
-    sort_by: str = Field("created_at", regex="^(created_at|valid_until|value|status)$")
-    sort_order: str = Field("desc", regex="^(asc|desc)$")
+    sort_by: str = Field("created_at", pattern="^(created_at|valid_until|value|status)$")
+    sort_order: str = Field("desc", pattern="^(asc|desc)$")
     page: int = Field(1, ge=1)
     limit: int = Field(50, ge=1, le=200)
 

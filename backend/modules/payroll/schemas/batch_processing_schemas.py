@@ -7,7 +7,7 @@ Provides request/response models for batch payroll operations
 with job tracking and status monitoring.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 from decimal import Decimal

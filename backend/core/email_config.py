@@ -5,7 +5,8 @@ Email configuration settings
 """
 
 from typing import Optional
-from pydantic import BaseSettings, validator, Field
+from pydantic_settings import BaseSettings
+from pydantic import field_validator, Field
 
 
 class EmailSettings(BaseSettings):
@@ -89,15 +90,15 @@ class EmailSettings(BaseSettings):
     @field_validator("SENDGRID_API_KEY", mode="after")
     def validate_sendgrid_config(cls, v, values):
         """Validate SendGrid configuration if selected"""
-        if values.get("EMAIL_DEFAULT_PROVIDER") == "sendgrid" and not v:
+        if info.data.get("EMAIL_DEFAULT_PROVIDER") == "sendgrid" and not v:
             raise ValueError("SENDGRID_API_KEY is required when using SendGrid provider")
         return v
     
     @field_validator("AWS_SECRET_ACCESS_KEY", mode="after")
     def validate_ses_config(cls, v, values):
         """Validate AWS SES configuration if selected"""
-        if values.get("EMAIL_DEFAULT_PROVIDER") == "aws_ses":
-            if not v or not values.get("AWS_ACCESS_KEY_ID"):
+        if info.data.get("EMAIL_DEFAULT_PROVIDER") == "aws_ses":
+            if not v or not info.data.get("AWS_ACCESS_KEY_ID"):
                 raise ValueError("AWS credentials are required when using AWS SES provider")
         return v
 

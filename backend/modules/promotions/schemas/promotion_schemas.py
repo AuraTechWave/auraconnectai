@@ -1,6 +1,6 @@
 # backend/modules/promotions/schemas/promotion_schemas.py
 
-from pydantic import BaseModel, Field, validator, UUID4
+from pydantic import BaseModel, Field, field_validator, UUID4
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum

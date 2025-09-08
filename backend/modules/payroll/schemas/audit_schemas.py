@@ -7,7 +7,7 @@ Defines request/response models for audit logging and
 compliance reporting functionality.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from enum import Enum

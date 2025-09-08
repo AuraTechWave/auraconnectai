@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.refund_models import (
     RefundApprovalStatus,
     RefundRequest,
     RefundPolicy,
-)
+, ConfigDict)
 from ..models.payment_models import Refund, RefundStatus
 
 router = APIRouter(prefix="/refunds", tags=["Refunds"])
@@ -86,9 +86,10 @@ class RefundRequestResponse(BaseModel):
     approved_at: Optional[datetime]
     processed_at: Optional[datetime]
     refund_id: Optional[int]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundResponse(BaseModel):
@@ -101,9 +102,10 @@ class RefundResponse(BaseModel):
     reason: Optional[str]
     processed_at: Optional[datetime]
     gateway_refund_id: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundStatisticsResponse(BaseModel):

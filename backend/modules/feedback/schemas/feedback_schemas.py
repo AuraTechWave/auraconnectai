@@ -1,6 +1,6 @@
 # backend/modules/feedback/schemas/feedback_schemas.py
 
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from enum import Enum
@@ -240,7 +240,7 @@ class FeedbackCreate(FeedbackBase):
     @field_validator("customer_email", mode="after")
     def validate_customer_info(cls, v, values):
         # Either customer_id or customer_email must be provided
-        if not v and not values.get("customer_id"):
+        if not v and not info.data.get("customer_id"):
             raise ValueError("Either customer_id or customer_email must be provided")
         return v
 

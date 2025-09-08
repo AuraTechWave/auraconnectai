@@ -3,7 +3,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
 
 from ..models.pricing_rule_models import (
@@ -148,8 +148,7 @@ class PricingRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Debug Models
@@ -242,8 +241,7 @@ class PricingRuleApplicationResponse(BaseModel):
     applied_at: datetime
     conditions_met: Dict[str, bool]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PricingRuleMetricsResponse(BaseModel):
@@ -268,8 +266,7 @@ class PricingRuleMetricsResponse(BaseModel):
     # Trends
     daily_applications: List[Dict[str, Any]]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Validation schemas

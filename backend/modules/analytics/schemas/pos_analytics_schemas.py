@@ -4,7 +4,7 @@
 Pydantic schemas for POS analytics endpoints.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Any, Union
 from datetime import datetime, date
 from decimal import Decimal

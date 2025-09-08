@@ -70,14 +70,12 @@ class ReservationCreate(ReservationBase):
     source: Optional[str] = "website"
 
     @field_validator("reservation_date")
-    @classmethod
     def validate_date(cls, v):
         if v < date.today():
             raise ValueError("Reservation date cannot be in the past")
         return v
 
     @field_validator("reservation_time")
-    @classmethod
     def validate_time(cls, v):
         # Basic validation - actual hours checked against settings
         if v < time(0, 0) or v > time(23, 59):
@@ -209,14 +207,12 @@ class WaitlistCreate(WaitlistBase):
     """Schema for creating waitlist entry"""
 
     @field_validator("requested_date")
-    @classmethod
     def validate_date(cls, v):
         if v < date.today():
             raise ValueError("Requested date cannot be in the past")
         return v
 
     @field_validator("alternative_dates")
-    @classmethod
     def validate_alternative_dates(cls, v):
         if v:
             for alt_date in v:

@@ -2,7 +2,7 @@
 Order splitting schemas for handling split orders and payments.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from decimal import Decimal
@@ -175,7 +175,7 @@ class BulkSplitRequest(BaseModel):
             SplitType.PAYMENT: ["by_customer", "equal_split", "by_items"],
         }
 
-        split_type = values.get("split_type")
+        split_type = info.data.get("split_type")
         if split_type and v not in valid_strategies.get(split_type, []):
             raise ValueError(f"Invalid strategy '{v}' for split type '{split_type}'")
         return v

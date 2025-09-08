@@ -1,6 +1,6 @@
 # backend/modules/menu/schemas/recipe_schemas.py
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum

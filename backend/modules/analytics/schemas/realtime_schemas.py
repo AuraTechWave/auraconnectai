@@ -1,6 +1,6 @@
 # backend/modules/analytics/schemas/realtime_schemas.py
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any, Union, Literal
 from datetime import datetime, date
 from decimal import Decimal
