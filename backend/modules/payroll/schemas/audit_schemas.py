@@ -114,9 +114,9 @@ class AuditLogFilter(BaseModel):
         None, description="Search in action descriptions", max_length=100
     )
 
-    @field_validator("end_date")
-    def validate_end_date(cls, v, info):
-        if v and "start_date" in info.data and v < info.data["start_date"]:
+    @field_validator("end_date", mode="after")
+    def validate_end_date(cls, v, values):
+        if v and "start_date" in values and v < values["start_date"]:
             raise ValueError("end_date must be after start_date")
         return v
 

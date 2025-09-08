@@ -21,7 +21,7 @@ class SMSMessageBase(BaseModel):
     reservation_id: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
 
-    @field_validator('to_number')
+    @field_validator('to_number', mode="after")
     def validate_phone_number(cls, v):
         # Basic E.164 format validation
         if not v.startswith('+'):
@@ -82,8 +82,8 @@ class SMSTemplateBase(BaseModel):
     variables: Optional[List[str]] = None
     max_length: int = Field(default=160, gt=0)
 
-    @field_validator('template_body')
-    def validate_template_variables(cls, v, info):
+    @field_validator('template_body', mode="after")
+    def validate_template_variables(cls, v, values):
         # Check for variable placeholders in template
         import re
         placeholders = re.findall(r'\{\{(\w+)\}\}', v)
@@ -215,9 +215,9 @@ class SMSSendRequest(BaseModel):
     reservation_id: Optional[int] = None
     schedule_at: Optional[datetime] = Field(None, description="Schedule message for future")
 
-    @field_validator('message')
-    def validate_message_or_template(cls, v, info):
-        if not v and not info.data.get('template_id'):
+    @field_validator('message', mode="after")
+    def validate_message_or_template(cls, v, values):
+        if not v and not values.get('template_id'):
             raise ValueError('Either message or template_id must be provided')
         return v
 

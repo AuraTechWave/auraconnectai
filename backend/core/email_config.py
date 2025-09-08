@@ -79,7 +79,7 @@ class EmailSettings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = False
     
-    @field_validator("EMAIL_DEFAULT_PROVIDER")
+    @field_validator("EMAIL_DEFAULT_PROVIDER", mode="after")
     def validate_provider(cls, v):
         """Validate email provider selection"""
         valid_providers = ["sendgrid", "aws_ses", "mailgun", "smtp"]
@@ -87,15 +87,15 @@ class EmailSettings(BaseSettings):
             raise ValueError(f"Email provider must be one of: {', '.join(valid_providers)}")
         return v
     
-    @field_validator("SENDGRID_API_KEY")
-    def validate_sendgrid_config(cls, v, info):
+    @field_validator("SENDGRID_API_KEY", mode="after")
+    def validate_sendgrid_config(cls, v, values):
         """Validate SendGrid configuration if selected"""
         if info.data.get("EMAIL_DEFAULT_PROVIDER") == "sendgrid" and not v:
             raise ValueError("SENDGRID_API_KEY is required when using SendGrid provider")
         return v
     
-    @field_validator("AWS_SECRET_ACCESS_KEY")
-    def validate_ses_config(cls, v, info):
+    @field_validator("AWS_SECRET_ACCESS_KEY", mode="after")
+    def validate_ses_config(cls, v, values):
         """Validate AWS SES configuration if selected"""
         if info.data.get("EMAIL_DEFAULT_PROVIDER") == "aws_ses":
             if not v or not info.data.get("AWS_ACCESS_KEY_ID"):

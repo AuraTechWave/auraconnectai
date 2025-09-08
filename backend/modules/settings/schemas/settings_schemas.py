@@ -96,7 +96,7 @@ class SettingResponse(BaseModel):
     # Consider using model_serializer if needed
 
     @field_validator("value", mode="before")
-    def parse_value(cls, v, info):
+    def parse_value(cls, v, values):
         if isinstance(v, str):
             try:
                 return json.loads(v)

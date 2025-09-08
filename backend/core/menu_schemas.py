@@ -135,10 +135,10 @@ class ModifierGroupBase(BaseModel):
     display_order: int = Field(default=0, ge=0)
     is_active: bool = True
 
-    @field_validator("max_selections")
-    def validate_max_selections(cls, v, info):
-        if v is not None and "min_selections" in info.data:
-            if v < info.data["min_selections"]:
+    @field_validator("max_selections", mode="after")
+    def validate_max_selections(cls, v, values):
+        if v is not None and "min_selections" in values:
+            if v < values["min_selections"]:
                 raise ValueError("max_selections must be >= min_selections")
         return v
 

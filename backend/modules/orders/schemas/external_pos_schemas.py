@@ -35,9 +35,9 @@ class ExternalPOSProviderCreate(BaseModel):
     supported_events: List[str] = Field(default_factory=list)
     rate_limit_per_minute: int = Field(default=60, ge=1, le=1000)
 
-    @field_validator("auth_config")
-    def validate_auth_config(cls, v, info):
-        auth_type = info.data.get("auth_type")
+    @field_validator("auth_config", mode="after")
+    def validate_auth_config(cls, v, values):
+        auth_type = values.get("auth_type")
         if auth_type == AuthenticationType.HMAC_SHA256:
             if "webhook_secret" not in v:
                 raise ValueError("webhook_secret required for HMAC authentication")

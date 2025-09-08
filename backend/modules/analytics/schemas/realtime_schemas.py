@@ -51,7 +51,7 @@ class MetricSubscriptionRequest(BaseModel):
         30, ge=1, le=300, description="Update interval in seconds"
     )
 
-    @field_validator("metrics")
+    @field_validator("metrics", mode="after")
     def validate_metrics(cls, v):
         if not v:
             raise ValueError("At least one metric must be specified")
@@ -240,7 +240,7 @@ class SubscriptionMessage(BaseModel):
         ..., description="Subscription data including subscription_type and parameters"
     )
 
-    @field_validator("data")
+    @field_validator("data", mode="after")
     def validate_subscription_data(cls, v):
         subscription_type = v.get("subscription_type")
         if not subscription_type:
@@ -274,7 +274,7 @@ class ErrorMessage(BaseModel):
     type: Literal["error"] = "error"
     data: Dict[str, str] = Field(..., description="Error information")
 
-    @field_validator("data")
+    @field_validator("data", mode="after")
     def validate_error_data(cls, v):
         if "error" not in v:
             raise ValueError("error field is required in error messages")

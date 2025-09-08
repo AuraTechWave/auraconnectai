@@ -1,9 +1,9 @@
-# backend/migrations/20250728_0130_0016_create_menu_versioning_tables.py
+# backend/migrations/20250728_0130_0017_create_menu_versioning_tables.py
 
 """Create menu versioning tables
 
-Revision ID: 0016
-Revises: 0015
+Revision ID: 0017
+Revises: 0016
 Create Date: 2025-07-28 01:30:00.000000
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0016'
-down_revision = '20250727_2200_0015'
+revision = '0017'
+down_revision = '0016'
 branch_labels = None
 depends_on = None
 

@@ -57,9 +57,9 @@ class RecipeIngredientBase(BaseModel):
     notes: Optional[str] = None
     display_order: int = 0
 
-    @field_validator("custom_unit")
-    def validate_custom_unit(cls, v, info):
-        if info.data.get("unit") == UnitType.CUSTOM and not v:
+    @field_validator("custom_unit", mode="after")
+    def validate_custom_unit(cls, v, values):
+        if values.get("unit") == UnitType.CUSTOM and not v:
             raise ValueError("custom_unit is required when unit is CUSTOM")
         return v
 
@@ -104,14 +104,14 @@ class RecipeSubRecipeBase(BaseModel):
         None, max_length=500, description="Notes about this sub-recipe usage"
     )
 
-    @field_validator("sub_recipe_id")
+    @field_validator("sub_recipe_id", mode="after")
     def validate_sub_recipe_id(cls, v):
         """Ensure sub_recipe_id is a valid positive integer"""
         if v <= 0:
             raise ValueError("sub_recipe_id must be a positive integer")
         return v
 
-    @field_validator("unit")
+    @field_validator("unit", mode="after")
     def validate_unit(cls, v):
         """Validate unit if provided"""
         if v and len(v.strip()) == 0:

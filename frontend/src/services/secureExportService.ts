@@ -282,19 +282,19 @@ class SecureExportService {
           if (typeof redacted[field] === 'string') {
             if (field.toLowerCase().includes('email')) {
               // Partial email redaction
-              redacted[field] = this.redactEmail(redacted[field]);
+              (redacted as any)[field] = this.redactEmail((redacted as any)[field]);
             } else if (field.toLowerCase().includes('phone')) {
               // Partial phone redaction
-              redacted[field] = this.redactPhone(redacted[field]);
+              (redacted as any)[field] = this.redactPhone((redacted as any)[field]);
             } else if (field.toLowerCase().includes('ssn') || field.toLowerCase().includes('social')) {
               // Full SSN redaction
-              redacted[field] = '***-**-****';
+              (redacted as any)[field] = '***-**-****';
             } else {
               // Generic redaction
-              redacted[field] = '***';
+              (redacted as any)[field] = '***';
             }
           } else if (typeof redacted[field] === 'number') {
-            redacted[field] = 0;
+            (redacted as any)[field] = 0;
           }
         }
       });

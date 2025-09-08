@@ -94,7 +94,7 @@ class RewardTemplateBase(BaseModel):
 class RewardTemplateCreate(RewardTemplateBase):
     """Schema for creating reward templates"""
 
-    @field_validator("eligible_tiers")
+    @field_validator("eligible_tiers", mode="after")
     def validate_tiers(cls, v):
         if v:
             valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]
@@ -103,8 +103,8 @@ class RewardTemplateCreate(RewardTemplateBase):
                     raise ValueError(f"Invalid tier: {tier}")
         return v
 
-    @field_validator("trigger_conditions")
-    def validate_trigger_conditions(cls, v, info):
+    @field_validator("trigger_conditions", mode="after")
+    def validate_trigger_conditions(cls, v, values):
         if v and "trigger_type" in values:
             trigger_type = info.data["trigger_type"]
 
@@ -235,13 +235,13 @@ class RewardCampaignBase(BaseModel):
 class RewardCampaignCreate(RewardCampaignBase):
     """Schema for creating reward campaigns"""
 
-    @field_validator("end_date")
-    def validate_end_date(cls, v, info):
-        if "start_date" in values and v <= info.data["start_date"]:
+    @field_validator("end_date", mode="after")
+    def validate_end_date(cls, v, values):
+        if "start_date" in values and v <= values["start_date"]:
             raise ValueError("End date must be after start date")
         return v
 
-    @field_validator("target_tiers")
+    @field_validator("target_tiers", mode="after")
     def validate_target_tiers(cls, v):
         if v:
             valid_tiers = ["bronze", "silver", "gold", "platinum", "vip"]

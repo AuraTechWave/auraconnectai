@@ -211,9 +211,9 @@ class HoldItemRequest(BaseModel):
     hold_minutes: Optional[int] = Field(None, ge=1, le=1440)  # Max 24 hours
     reason: str
 
-    @field_validator("hold_until")
-    def validate_hold(cls, v, info):
-        if v is None and info.data.get("hold_minutes") is None:
+    @field_validator("hold_until", mode="after")
+    def validate_hold(cls, v, values):
+        if v is None and values.get("hold_minutes") is None:
             raise ValueError("Either hold_until or hold_minutes must be provided")
         return v
 

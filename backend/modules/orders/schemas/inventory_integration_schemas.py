@@ -44,7 +44,7 @@ class FulfilledItem(BaseModel):
     menu_item_id: int = Field(..., gt=0)
     fulfilled_quantity: int = Field(..., gt=0)
 
-    @field_validator("fulfilled_quantity")
+    @field_validator("fulfilled_quantity", mode="after")
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError("Fulfilled quantity must be positive")

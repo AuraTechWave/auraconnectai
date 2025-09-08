@@ -60,15 +60,15 @@ class CreatePricingRuleRequest(BaseModel):
     promo_code: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
 
-    @field_validator("valid_until")
-    def validate_dates(cls, v, info):
-        if v and "valid_from" in info.data and v <= info.data["valid_from"]:
+    @field_validator("valid_until", mode="after")
+    def validate_dates(cls, v, values):
+        if v and "valid_from" in values and v <= values["valid_from"]:
             raise ValueError("valid_until must be after valid_from")
         return v
 
-    @field_validator("promo_code")
-    def validate_promo_code(cls, v, info):
-        if info.data.get("requires_code") and not v:
+    @field_validator("promo_code", mode="after")
+    def validate_promo_code(cls, v, values):
+        if values.get("requires_code") and not v:
             raise ValueError("promo_code is required when requires_code is True")
         return v
 

@@ -44,14 +44,14 @@ class SalesFilterRequest(BaseModel):
     min_order_value: Optional[Decimal] = Field(None, description="Minimum order value")
     max_order_value: Optional[Decimal] = Field(None, description="Maximum order value")
 
-    @field_validator("date_to")
-    def validate_date_range(cls, v, info):
-        if v and "date_from" in info.data and info.data["date_from"]:
-            if v < info.data["date_from"]:
+    @field_validator("date_to", mode="after")
+    def validate_date_range(cls, v, values):
+        if v and "date_from" in values and values["date_from"]:
+            if v < values["date_from"]:
                 raise ValueError("date_to must be after date_from")
         return v
 
-    @field_validator("staff_ids", "product_ids", "category_ids", "customer_ids")
+    @field_validator("staff_ids", "product_ids", "category_ids", "customer_ids", mode="after")
     def validate_id_lists(cls, v):
         if v is not None:
             if not isinstance(v, list) or not all(
@@ -233,13 +233,13 @@ class SalesReportRequest(BaseModel):
     page: int = Field(1, ge=1, description="Page number for pagination")
     per_page: int = Field(50, ge=1, le=1000, description="Items per page")
 
-    @field_validator("export_format")
+    @field_validator("export_format", mode="after")
     def validate_export_format(cls, v):
         if v and v not in ["pdf", "csv", "xlsx", "json"]:
             raise ValueError("export_format must be one of: pdf, csv, xlsx, json")
         return v
 
-    @field_validator("sort_order")
+    @field_validator("sort_order", mode="after")
     def validate_sort_order(cls, v):
         if v and v not in ["asc", "desc"]:
             raise ValueError("sort_order must be either asc or desc")
@@ -408,7 +408,7 @@ class SalesComparisonRequest(BaseModel):
         default=["revenue", "orders", "customers"], description="Metrics to compare"
     )
 
-    @field_validator("compare_by")
+    @field_validator("compare_by", mode="after")
     def validate_compare_by(cls, v):
         if v not in ["period", "staff", "product", "category"]:
             raise ValueError(

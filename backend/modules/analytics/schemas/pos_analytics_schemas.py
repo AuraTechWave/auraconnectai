@@ -223,9 +223,9 @@ class POSDashboardRequest(BaseModel):
     terminal_ids: Optional[List[str]] = None
     include_offline: bool = Field(True)
 
-    @field_validator("start_date", "end_date")
-    def validate_dates(cls, v, info):
-        if info.data.get("time_range") == TimeRange.CUSTOM and not v:
+    @field_validator("start_date", "end_date", mode="after")
+    def validate_dates(cls, v, values):
+        if values.get("time_range") == TimeRange.CUSTOM and not v:
             raise ValueError("start_date and end_date required for custom time range")
         return v
 

@@ -45,7 +45,7 @@ class SchedulePublishRequest(BaseSchedulePublishRequest):
 
     notification_channels: Optional[List[str]] = ["email", "in_app"]
 
-    @field_validator("notification_channels")
+    @field_validator("notification_channels", mode="after")
     def validate_channels(cls, v):
         if v:
             valid_channels = ["email", "sms", "push", "in_app"]
@@ -66,14 +66,15 @@ class ScheduleCreateRequest(BaseModel):
     break_duration: Optional[int] = Field(0, description="Break duration in minutes")
     notes: Optional[str] = None
 
-    @field_validator("end_time")
+    @field_validator("end_time", mode="after")
+    @classmethod
     def validate_times(cls, v, info):
-        if "start_time" in values and v <= info.data["start_time"]:
+        if "start_time" in info.data and v <= info.data["start_time"]:
             # Allow overnight shifts
             pass
         return v
 
-    @field_validator("break_duration")
+    @field_validator("break_duration", mode="after")
     def validate_break_duration(cls, v):
         if v and v < 0:
             raise ValueError("Break duration cannot be negative")
@@ -88,7 +89,7 @@ class ScheduleUpdateRequest(BaseModel):
     break_duration: Optional[int] = None
     notes: Optional[str] = None
 
-    @field_validator("break_duration")
+    @field_validator("break_duration", mode="after")
     def validate_break_duration(cls, v):
         if v is not None and v < 0:
             raise ValueError("Break duration cannot be negative")

@@ -150,7 +150,7 @@ class NotificationRuleCreate(BaseModel):
     max_per_hour: Optional[int] = Field(None, gt=0)
     max_per_day: Optional[int] = Field(None, gt=0)
 
-    @field_validator("batch_hours")
+    @field_validator("batch_hours", mode="after")
     def validate_batch_hours(cls, v):
         if v:
             for hour in v:

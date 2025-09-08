@@ -42,7 +42,7 @@ class CreateRefundRequest(BaseModel):
     evidence_urls: Optional[List[str]] = None
     priority: str = Field("normal", pattern="^(urgent|high|normal|low)$")
 
-    @field_validator("requested_amount")
+    @field_validator("requested_amount", mode="after")
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Requested amount must be positive")
@@ -122,7 +122,7 @@ class BulkRefundRequest(BaseModel):
     batch_notes: Optional[str] = None
     auto_approve: bool = False
 
-    @field_validator("refund_requests")
+    @field_validator("refund_requests", mode="after")
     def validate_batch_size(cls, v):
         if len(v) == 0:
             raise ValueError("At least one refund request is required")
@@ -145,7 +145,7 @@ class BulkApprovalRequest(BaseModel):
     notes: Optional[str] = None
     process_immediately: bool = False
 
-    @field_validator("request_ids")
+    @field_validator("request_ids", mode="after")
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")
@@ -157,7 +157,7 @@ class BulkApprovalRequest(BaseModel):
 class BulkProcessingRequest(BaseModel):
     request_ids: List[int]
 
-    @field_validator("request_ids")
+    @field_validator("request_ids", mode="after")
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")
