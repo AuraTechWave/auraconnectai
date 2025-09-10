@@ -96,6 +96,22 @@ class OrderSplitResponse(BaseModel):
         from_attributes = True
 
 
+# Backward-compatibility request models referenced by services
+class TicketSplitRequest(BaseModel):
+    """Ticket-based split request (compat)"""
+
+    items: List[OrderItemSplitRequest]
+    split_reason: Optional[str] = None
+
+
+class DeliverySplitRequest(BaseModel):
+    """Delivery-based split request (compat)"""
+
+    items: List[OrderItemSplitRequest]
+    delivery_address: Dict[str, Any] = Field(default_factory=dict)
+    scheduled_time: Optional[datetime] = None
+
+
 class OrderSplitDetail(BaseModel):
     """Detailed information about an order split"""
 
@@ -129,6 +145,9 @@ class SplitPaymentDetail(BaseModel):
     class Config:
         from_attributes = True
 
+# Backward-compatibility alias expected by some services
+PaymentSplitDetail = SplitPaymentDetail
+
 
 class SplitOrderSummary(BaseModel):
     """Summary of all splits for an order"""
@@ -153,6 +172,9 @@ class MergeSplitRequest(BaseModel):
     )
     merge_reason: Optional[str] = Field(None, description="Reason for merging")
     keep_original: bool = Field(True, description="Keep original parent order")
+
+# Alias for backward compatibility
+MergeSplitsRequest = MergeSplitRequest
 
 
 class BulkSplitRequest(BaseModel):

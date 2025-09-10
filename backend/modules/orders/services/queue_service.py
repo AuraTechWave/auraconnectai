@@ -22,7 +22,8 @@ from ..models.queue_models import (
     QueueStatus,
     QueueItemStatus,
 )
-from ..models.order_models import Order, OrderItem, OrderStatus
+from ..models.order_models import Order, OrderItem
+from ..enums.order_enums import OrderStatus
 from ..models.priority_models import OrderPriorityScore, QueuePriorityConfig
 from ..schemas.queue_schemas import (
     QueueCreate,
