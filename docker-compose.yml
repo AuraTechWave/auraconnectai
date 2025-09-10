@@ -3,10 +3,24 @@ version: '3.8'
 services:
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile.backend
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./test.db}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-dev}
+      - SECRET_KEY=${SECRET_KEY:-change-me-dev}
+      - SESSION_SECRET=${SESSION_SECRET:-change-me-dev}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
     ports:
       - "8000:8000"
+    depends_on:
+      - redis
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
   frontend:
     build:
       context: .

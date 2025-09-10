@@ -1,7 +1,9 @@
 # backend/core/database.py
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy import Column, DateTime
+from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 import os
 from .query_logger import setup_query_logging
@@ -33,3 +35,19 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+class TimestampMixin:
+    """Reusable timestamp mixin for SQLAlchemy models.
+
+    Provides created_at and updated_at columns with sensible defaults.
+    Some models in the codebase expect this mixin to exist in core.database.
+    """
+
+    @declared_attr
+    def created_at(cls):  # type: ignore[no-redef]
+        return Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    @declared_attr
+    def updated_at(cls):  # type: ignore[no-redef]
+        return Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

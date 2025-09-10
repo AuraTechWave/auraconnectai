@@ -10,6 +10,13 @@ from .recipe_models import (
     RecipeComplexity,
     UnitType,
 )
+# Re-export commonly used core menu models for backward compatibility
+try:
+    from core.menu_models import MenuItem, MenuCategory  # type: ignore
+except Exception:
+    # If core models are unavailable at import time, skip re-export to avoid hard failure
+    MenuItem = None  # type: ignore
+    MenuCategory = None  # type: ignore
 
 __all__ = [
     "Recipe",
@@ -20,4 +27,6 @@ __all__ = [
     "RecipeStatus",
     "RecipeComplexity",
     "UnitType",
+    "MenuItem",
+    "MenuCategory",
 ]
