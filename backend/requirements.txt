@@ -29,3 +29,4 @@ paypalrestsdk>=1.13.1
 arq>=0.25.0  # Redis queue for webhook processing
 prometheus-client>=0.16.0  # Metrics collection
 croniter
+apscheduler
