@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -15,7 +15,7 @@ from ..models.rewards_models import RewardType, RewardStatus, TriggerType
 # ========== Loyalty Program Schemas ==========
 
 
-class LoyaltyProgramBase(BaseModel, ConfigDict):
+class LoyaltyProgramBase(BaseModel):
     """Base loyalty program schema"""
 
     name: str = Field(..., max_length=100)

@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
 
-class OrderItemBase(BaseModel, ConfigDict):
+class OrderItemBase(BaseModel):
     order_id: int
     menu_item_id: int
     quantity: int

@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
 
-class StaffBase(BaseModel, ConfigDict):
+class StaffBase(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None

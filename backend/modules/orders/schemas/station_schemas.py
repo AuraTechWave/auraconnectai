@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 
 
-class StationBase(BaseModel, ConfigDict):
+class StationBase(BaseModel):
     name: str
     staff_id: Optional[int] = None
 

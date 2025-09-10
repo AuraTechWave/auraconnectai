@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 
-class AttendanceLogBase(BaseModel, ConfigDict):
+class AttendanceLogBase(BaseModel):
     staff_id: int
     check_in: datetime
     check_out: datetime
