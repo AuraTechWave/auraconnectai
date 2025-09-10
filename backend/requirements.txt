@@ -18,6 +18,7 @@ argon2-cffi
 email-validator
 jinja2
 aiofiles
+jsonschema
 
 # Payment Gateway SDKs
 stripe>=5.0.0
