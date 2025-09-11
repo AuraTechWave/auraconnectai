@@ -6,13 +6,13 @@ These schemas are optimized for frontend consumption and UI rendering.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from enum import Enum
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
 
 
-class UIFieldType(str, Enum, ConfigDict):
+class UIFieldType(str, Enum):
     """UI field types for rendering"""
     TEXT = "text"
     NUMBER = "number"
