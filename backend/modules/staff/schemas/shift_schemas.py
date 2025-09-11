@@ -1,8 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 
-class ShiftBase(BaseModel, ConfigDict):
+class ShiftBase(BaseModel):
     staff_id: int
     start_time: datetime
     end_time: datetime

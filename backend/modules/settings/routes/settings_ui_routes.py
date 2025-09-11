@@ -12,7 +12,7 @@ from datetime import datetime
 
 from core.database import get_db
 from core.auth import get_current_user
-from core.exceptions import NotFoundError, ValidationError, UnauthorizedException
+from core.exceptions import NotFoundError, ValidationError
 from modules.auth.models import User
 from modules.auth.permissions import Permission, check_permission
 

@@ -32,7 +32,6 @@ from ..schemas.order_split_schemas import (
 from ..enums.order_enums import OrderStatus
 from ...customers.models import Customer
 from ...staff.models import StaffMember
-from .order_service import create_order_with_items
 from .webhook_service import WebhookService
 from ..enums.webhook_enums import WebhookEventType
 

@@ -17,6 +17,8 @@ python-jose[cryptography]
 argon2-cffi
 email-validator
 jinja2
+aiofiles
+jsonschema
 
 # Payment Gateway SDKs
 stripe>=5.0.0
@@ -26,3 +28,5 @@ paypalrestsdk>=1.13.1
 # Payment Support Libraries
 arq>=0.25.0  # Redis queue for webhook processing
 prometheus-client>=0.16.0  # Metrics collection
+croniter
+apscheduler
