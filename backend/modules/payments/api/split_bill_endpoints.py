@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.split_bill_models import (
     SplitStatus,
     ParticipantStatus,
     TipMethod,
-, ConfigDict)
+)
 from ..models.payment_models import PaymentGateway
 
 router = APIRouter(prefix="/splits", tags=["Split Bills"])

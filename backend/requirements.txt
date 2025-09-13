@@ -20,13 +20,15 @@ jinja2
 aiofiles
 jsonschema
 
-# Payment Gateway SDKs
+# Payment Gateway SDKs (only stripe is used directly in code)
 stripe>=5.0.0
-squareup>=30.0.0
-paypalrestsdk>=1.13.1
 
 # Payment Support Libraries
 arq>=0.25.0  # Redis queue for webhook processing
 prometheus-client>=0.16.0  # Metrics collection
 croniter
 apscheduler
+
+# Note:
+# - Removed unused/unresolved SDKs (squareup, paypalrestsdk) to prevent CI pip failures.
+#   If needed later, add them to a separate optional requirements file and gate imports.

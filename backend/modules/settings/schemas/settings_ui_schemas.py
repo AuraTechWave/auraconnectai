@@ -6,7 +6,7 @@ These schemas are optimized for frontend consumption and UI rendering.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope

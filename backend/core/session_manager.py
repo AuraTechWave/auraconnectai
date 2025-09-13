@@ -73,8 +73,16 @@ class SessionManager:
     blacklisting, and session cleanup.
     """
 
-    def __init__(self, redis_url: str = REDIS_URL):
+    def __init__(self, redis_url: Optional[str] = REDIS_URL):
         """Initialize session manager with Redis connection."""
+        # If no Redis URL is configured (dev/CI), use in-memory without erroring
+        if not redis_url:
+            logger.info("Redis URL not set; using in-memory session storage for dev/CI")
+            self.redis = None
+            self._memory_sessions: Dict[str, Session] = {}
+            self._blacklisted_tokens: Set[str] = set()
+            return
+
         try:
             self.redis = Redis.from_url(redis_url, decode_responses=True)
             # Test connection
