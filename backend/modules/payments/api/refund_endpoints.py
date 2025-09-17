@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.refund_models import (
     RefundApprovalStatus,
     RefundRequest,
     RefundPolicy,
-, ConfigDict)
+)
 from ..models.payment_models import Refund, RefundStatus
 
 router = APIRouter(prefix="/refunds", tags=["Refunds"])

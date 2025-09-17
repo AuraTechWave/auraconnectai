@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from decimal import Decimal
 
 from ..models.table_models import (
@@ -10,7 +10,7 @@ from ..models.table_models import (
     TableShape,
     FloorStatus,
     ReservationStatus,
-, ConfigDict)
+)
 
 
 # Floor Schemas

@@ -15,7 +15,7 @@ from modules.auth.routes.password_routes import router as password_router
 
 # ========== Staff Management ==========
 from modules.staff.routes.staff_routes import router as staff_router
-from modules.staff.routes.payroll_routes import router as payroll_router
+from modules.staff.routes.payroll_routes import router as staff_payroll_router
 from modules.staff.routes.enhanced_payroll_routes import router as enhanced_payroll_router
 from modules.staff.routes.attendance_routes import router as attendance_router
 from modules.staff.routes.shift_routes import router as shift_router
@@ -58,7 +58,7 @@ from modules.tax.routes.tax_compliance_routes import router as tax_compliance_ro
 from modules.tax.routes.tax_jurisdiction_routes import router as tax_jurisdiction_router
 
 # ========== Payroll Management ==========
-from modules.payroll import payroll_router
+from modules.payroll import payroll_router as payroll_module_router
 from modules.payroll.routes.configuration_routes import router as payroll_config_router
 from modules.payroll.routes.overtime_rules_routes import router as overtime_rules_router
 from modules.payroll.routes.pay_policy_routes import router as pay_policy_router
@@ -271,7 +271,8 @@ app.include_router(password_router)
 # Staff Management
 app.include_router(enhanced_payroll_router)  # Phase 4 enhanced payroll API
 app.include_router(staff_router)
-app.include_router(payroll_router)  # Legacy payroll routes
+# Mount legacy staff payroll routes separately to avoid name collision
+app.include_router(staff_payroll_router)
 app.include_router(attendance_router, prefix="/api/v1/staff", tags=["Staff Attendance"])
 app.include_router(shift_router, prefix="/api/v1/staff", tags=["Staff Shifts"])
 app.include_router(biometric_router, prefix="/api/v1/staff", tags=["Staff Biometrics"])
@@ -313,7 +314,7 @@ app.include_router(tax_compliance_router, prefix="/api/v1/tax", tags=["Tax Compl
 app.include_router(tax_jurisdiction_router, prefix="/api/v1/tax", tags=["Tax Jurisdictions"])
 
 # Payroll Management (Phase 3)
-app.include_router(payroll_router)  # Phase 3 payroll module routes
+app.include_router(payroll_module_router)  # Phase 3 payroll module routes
 app.include_router(payroll_config_router, prefix="/api/v1/payroll", tags=["Payroll Configuration"])
 app.include_router(overtime_rules_router, prefix="/api/v1/payroll", tags=["Overtime Rules"])
 app.include_router(pay_policy_router, prefix="/api/v1/payroll", tags=["Pay Policies"])

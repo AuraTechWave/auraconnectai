@@ -7,6 +7,34 @@ on:
     branches: [ main ]
 
 jobs:
+  backend_import_check:
+    name: Backend Import Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Import app.main (triage)
+        env:
+          ENVIRONMENT: development
+          JWT_SECRET_KEY: ci-test-secret
+          SECRET_KEY: ci-test-secret
+          SESSION_SECRET: ci-test-session
+          DATABASE_URL: sqlite:///./ci-import.db
+        run: |
+          python backend/scripts/check_app_import.py
+
   backend:
     name: Backend Tests
     runs-on: ubuntu-latest

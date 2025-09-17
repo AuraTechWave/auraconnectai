@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -15,7 +15,7 @@ from ..models.rewards_models import RewardType, RewardStatus, TriggerType
 # ========== Loyalty Program Schemas ==========
 
 
-class LoyaltyProgramBase(BaseModel, ConfigDict):
+class LoyaltyProgramBase(BaseModel):
     """Base loyalty program schema"""
 
     name: str = Field(..., max_length=100)
@@ -196,9 +196,9 @@ class PointsTransfer(BaseModel):
     points: int = Field(..., gt=0)
     reason: Optional[str] = Field("Points transfer", max_length=200)
 
-    @root_validator
+    @model_validator(mode="before")
     def validate_transfer(cls, values):
-        if info.data.get("from_customer_id") == info.data.get("to_customer_id"):
+        if values.get("from_customer_id") == values.get("to_customer_id"):
             raise ValueError("Cannot transfer points to the same customer")
         return values
 
@@ -339,10 +339,10 @@ class BulkRewardIssuance(BaseModel):
     reason: str = Field(..., min_length=5, max_length=200)
     notify_customers: bool = True
 
-    @root_validator
+    @model_validator(mode="before")
     def validate_targeting(cls, values):
-        customer_ids = info.data.get("customer_ids")
-        customer_criteria = info.data.get("customer_criteria")
+        customer_ids = values.get("customer_ids")
+        customer_criteria = values.get("customer_criteria")
 
         if not customer_ids and not customer_criteria:
             raise ValueError(

@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from decimal import Decimal
 
 from ..models.insight_models import (
@@ -11,7 +11,7 @@ from ..models.insight_models import (
     InsightStatus,
     InsightDomain,
     NotificationChannel,
-, ConfigDict)
+)
 
 
 # Base Schemas

@@ -14,8 +14,8 @@ import asyncio
 import json
 
 from core.database import get_db
-from core.auth import get_current_user, require_role
-from core.rate_limit import rate_limit
+from core.auth import get_current_user, require_roles
+from core.rate_limiter import rate_limit
 from ..schemas.migration_schemas import (
     MigrationJobCreate,
     MigrationJobUpdate,
@@ -130,8 +130,11 @@ async def update_migration_job(
     return job
 
 
-@router.post("/jobs/{job_id}/start", response_model=MigrationJobResponse)
-@require_role(["admin", "manager"])
+@router.post(
+    "/jobs/{job_id}/start",
+    response_model=MigrationJobResponse,
+    dependencies=[Depends(require_roles(["admin", "manager"]))],
+)
 async def start_migration(
     job_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -163,8 +166,11 @@ async def pause_migration(
     return job
 
 
-@router.post("/jobs/{job_id}/cancel", response_model=MigrationJobResponse)
-@require_role(["admin"])
+@router.post(
+    "/jobs/{job_id}/cancel",
+    response_model=MigrationJobResponse,
+    dependencies=[Depends(require_roles(["admin"]))],
+)
 async def cancel_migration(
     job_id: UUID,
     rollback: bool = Query(True),
@@ -252,8 +258,11 @@ async def get_validation_results(
     return results
 
 
-@router.post("/bulk", response_model=dict)
-@require_role(["admin"])
+@router.post(
+    "/bulk",
+    response_model=dict,
+    dependencies=[Depends(require_roles(["admin"]))],
+)
 async def bulk_migration_operation(
     request: BulkMigrationRequest,
     db: AsyncSession = Depends(get_db),
@@ -285,8 +294,11 @@ async def list_migration_templates(
     return templates
 
 
-@router.post("/templates", response_model=MigrationTemplateResponse)
-@require_role(["admin"])
+@router.post(
+    "/templates",
+    response_model=MigrationTemplateResponse,
+    dependencies=[Depends(require_roles(["admin"]))],
+)
 async def create_migration_template(
     template_data: MigrationTemplateCreate,
     db: AsyncSession = Depends(get_db),
@@ -443,8 +455,10 @@ async def retry_failed_records(
     return result
 
 
-@router.delete("/jobs/{job_id}")
-@require_role(["admin"])
+@router.delete(
+    "/jobs/{job_id}",
+    dependencies=[Depends(require_roles(["admin"]))],
+)
 async def delete_migration_job(
     job_id: UUID,
     db: AsyncSession = Depends(get_db),
