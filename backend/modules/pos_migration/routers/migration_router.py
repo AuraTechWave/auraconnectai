@@ -337,7 +337,7 @@ async def get_migration_statistics(
 @router.get("/jobs/{job_id}/export")
 async def export_migration_report(
     job_id: UUID,
-    format: str = Query("pdf", regex="^(pdf|csv|json)$"),
+    format: str = Query("pdf", pattern="^(pdf|csv|json)$"),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):

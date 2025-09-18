@@ -1,7 +1,7 @@
 """Add recipe performance indexes
 
 Revision ID: recipe_performance_indexes
-Revises: 20250807_1000_add_kds_tables
+Revises: 20250807_1000
 Create Date: 2025-01-08 10:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'recipe_performance_indexes'
-down_revision = '20250807_1000_add_kds_tables'
+down_revision = '20250807_1000'
 branch_labels = None
 depends_on = None
 

@@ -12,7 +12,7 @@ from enum import Enum
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
 
 
-class UIFieldType(str, Enum):
+class UIFieldType(str, Enum, ConfigDict):
     """UI field types for rendering"""
     TEXT = "text"
     NUMBER = "number"
@@ -253,9 +253,10 @@ class SettingHistoryEntry(BaseModel):
     changed_by: str
     changed_at: datetime
     change_reason: Optional[str]
-    
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class PendingChange(BaseModel):

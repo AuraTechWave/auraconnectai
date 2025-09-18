@@ -3,7 +3,7 @@ from typing import List, Optional
 from datetime import datetime
 
 
-class StaffBase(BaseModel):
+class StaffBase(BaseModel, ConfigDict):
     name: str
     email: str
     phone: Optional[str] = None
@@ -18,9 +18,10 @@ class StaffOut(StaffBase):
     id: int
     status: str
     photo_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RoleBase(BaseModel):
@@ -30,6 +31,7 @@ class RoleBase(BaseModel):
 
 class RoleOut(RoleBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed

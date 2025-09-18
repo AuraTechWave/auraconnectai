@@ -158,13 +158,7 @@ class StaffAvailability(Base):
     staff_id = Column(Integer, ForeignKey("staff_members.id"), nullable=False)
 
     # Day of week or specific date
-    day_of_week = Column(
-        Enum(
-            DayOfWeek,
-            values_callable=lambda obj: [e.value for e in obj],
-            create_type=False,
-        )
-    )  # For recurring availability
+    day_of_week = Column(Integer)  # For recurring availability (0=Monday, 6=Sunday)
     specific_date = Column(DateTime)  # For specific date availability
 
     # Time slots

@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/v1/orders/queues/analytics", tags=["queue-analyt
 @router.get("/dashboard")
 @handle_api_errors
 async def get_queue_dashboard(
-    time_range: str = Query("today", regex="^(today|week|month|custom)$"),
+    time_range: str = Query("today", pattern="^(today|week|month|custom)$"),
     start_date: Optional[datetime] = Query(None),
     end_date: Optional[datetime] = Query(None),
     queue_ids: Optional[List[int]] = Query(None),

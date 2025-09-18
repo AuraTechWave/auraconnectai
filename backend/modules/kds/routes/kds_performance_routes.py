@@ -131,7 +131,7 @@ async def get_staff_performance(
 async def generate_performance_report(
     restaurant_id: int = Query(..., description="Restaurant ID"),
     time_range: TimeRange = Query(TimeRange.TODAY),
-    format: str = Query("json", regex="^(json|pdf|csv)$"),
+    format: str = Query("json", pattern="^(json|pdf|csv)$"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -217,8 +217,8 @@ async def compare_stations(
 @router.get("/trends")
 async def get_performance_trends(
     restaurant_id: int = Query(..., description="Restaurant ID"),
-    metric: str = Query(..., regex="^(completion_rate|prep_time|throughput|accuracy)$"),
-    period: str = Query("week", regex="^(day|week|month)$"),
+    metric: str = Query(..., pattern="^(completion_rate|prep_time|throughput|accuracy)$"),
+    period: str = Query("week", pattern="^(day|week|month)$"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:

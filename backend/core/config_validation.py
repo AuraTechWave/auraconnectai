@@ -10,7 +10,7 @@ import warnings
 import logging
 from typing import Optional
 from pydantic_settings import BaseSettings
-from pydantic import Field, field_validator, ValidationInfo
+from pydantic import Field, field_validator, ValidationInfo, ConfigDict
 from .secrets import get_required_secret, get_optional_secret
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class EnvironmentConfig(BaseSettings):
     USE_IN_MEMORY_CACHE: bool = Field(default=False, env="USE_IN_MEMORY_CACHE")
 
     # Session configuration
-    SESSION_SECRET: str = Field(default=None, env="SESSION_SECRET")
+    SESSION_SECRET: Optional[str] = Field(default=None, env="SESSION_SECRET")
     SESSION_EXPIRE_MINUTES: int = Field(default=30, env="SESSION_EXPIRE_MINUTES")
 
     # Data-retention settings (security / compliance)
@@ -36,13 +36,14 @@ class EnvironmentConfig(BaseSettings):
     ANALYTICS_RETENTION_DAYS: int = Field(default=365, env="ANALYTICS_RETENTION_DAYS")
 
     # Security settings  
-    SECRET_KEY: str = Field(default=None, env="SECRET_KEY")
+    SECRET_KEY: Optional[str] = Field(default=None, env="SECRET_KEY")
     ALLOW_INSECURE_HTTP: bool = Field(default=True, env="ALLOW_INSECURE_HTTP")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "allow"  # Allow extra fields from .env
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="allow"  # Allow extra fields from .env
+    )
 
     @field_validator("ENVIRONMENT")
     def validate_environment(cls, v):

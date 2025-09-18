@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { customerApi } from '../services/api';
+import { customerApi } from '../services/customerApi';
 
 const useCustomerStore = create(
   persist(
@@ -17,7 +17,8 @@ const useCustomerStore = create(
       setCustomer: (customer) => set({ customer, isAuthenticated: !!customer }),
       
       setToken: (token) => {
-        localStorage.setItem('customerToken', token);
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('customerToken', token); // Keep for backward compatibility
         set({ token });
       },
 
@@ -25,14 +26,18 @@ const useCustomerStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await customerApi.login(credentials);
-          const { customer, token } = response.data;
+          const { customer, token, refreshToken } = response.data;
           set({ 
             customer, 
             token, 
             isAuthenticated: true, 
             isLoading: false 
           });
-          localStorage.setItem('customerToken', token);
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('customerToken', token); // Keep for backward compatibility
+          if (refreshToken) {
+            localStorage.setItem('refreshToken', refreshToken);
+          }
           return { success: true };
         } catch (error) {
           set({ 
