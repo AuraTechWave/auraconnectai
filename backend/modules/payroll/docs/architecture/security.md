@@ -313,7 +313,7 @@ class PaymentCreate(BaseModel):
         return v
 
 class SSNUpdate(BaseModel):
-    ssn: constr(regex=r'^\d{3}-\d{2}-\d{4}$')
+    ssn: constr(pattern=r'^\d{3}-\d{2}-\d{4}$')
     
     @validator('ssn')
     def validate_ssn(cls, v):

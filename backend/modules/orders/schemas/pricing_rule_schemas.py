@@ -3,7 +3,7 @@
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
 
 from ..models.pricing_rule_models import (
@@ -60,13 +60,13 @@ class CreatePricingRuleRequest(BaseModel):
     promo_code: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
 
-    @validator("valid_until")
+    @field_validator("valid_until", mode="after")
     def validate_dates(cls, v, values):
         if v and "valid_from" in values and v <= values["valid_from"]:
             raise ValueError("valid_until must be after valid_from")
         return v
 
-    @validator("promo_code")
+    @field_validator("promo_code", mode="after")
     def validate_promo_code(cls, v, values):
         if values.get("requires_code") and not v:
             raise ValueError("promo_code is required when requires_code is True")
@@ -148,8 +148,7 @@ class PricingRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Debug Models
@@ -242,8 +241,7 @@ class PricingRuleApplicationResponse(BaseModel):
     applied_at: datetime
     conditions_met: Dict[str, bool]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PricingRuleMetricsResponse(BaseModel):
@@ -268,8 +266,7 @@ class PricingRuleMetricsResponse(BaseModel):
     # Trends
     daily_applications: List[Dict[str, Any]]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Validation schemas

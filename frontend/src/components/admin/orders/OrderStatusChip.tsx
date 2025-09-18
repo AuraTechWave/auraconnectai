@@ -160,4 +160,5 @@ const OrderStatusChip: React.FC<OrderStatusChipProps> = ({
   );
 };
 
+export { OrderStatusChip };
 export default OrderStatusChip;

@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.refund_models import (
     RefundApprovalStatus,
     RefundRequest,
     RefundPolicy,
-)
+, ConfigDict)
 from ..models.payment_models import Refund, RefundStatus
 
 router = APIRouter(prefix="/refunds", tags=["Refunds"])
@@ -42,7 +42,7 @@ class CreateRefundRequest(BaseModel):
     evidence_urls: Optional[List[str]] = None
     priority: str = Field("normal", pattern="^(urgent|high|normal|low)$")
 
-    @validator("requested_amount")
+    @field_validator("requested_amount", mode="after")
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Requested amount must be positive")
@@ -86,9 +86,10 @@ class RefundRequestResponse(BaseModel):
     approved_at: Optional[datetime]
     processed_at: Optional[datetime]
     refund_id: Optional[int]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundResponse(BaseModel):
@@ -101,9 +102,10 @@ class RefundResponse(BaseModel):
     reason: Optional[str]
     processed_at: Optional[datetime]
     gateway_refund_id: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RefundStatisticsResponse(BaseModel):
@@ -120,7 +122,7 @@ class BulkRefundRequest(BaseModel):
     batch_notes: Optional[str] = None
     auto_approve: bool = False
 
-    @validator("refund_requests")
+    @field_validator("refund_requests", mode="after")
     def validate_batch_size(cls, v):
         if len(v) == 0:
             raise ValueError("At least one refund request is required")
@@ -143,7 +145,7 @@ class BulkApprovalRequest(BaseModel):
     notes: Optional[str] = None
     process_immediately: bool = False
 
-    @validator("request_ids")
+    @field_validator("request_ids", mode="after")
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")
@@ -155,7 +157,7 @@ class BulkApprovalRequest(BaseModel):
 class BulkProcessingRequest(BaseModel):
     request_ids: List[int]
 
-    @validator("request_ids")
+    @field_validator("request_ids", mode="after")
     def validate_request_ids(cls, v):
         if len(v) == 0:
             raise ValueError("At least one request ID is required")

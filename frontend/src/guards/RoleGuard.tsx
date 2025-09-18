@@ -45,6 +45,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
       <ErrorMessage 
         type="error"
         message="You don't have permission to access this resource. Please contact your administrator."
+        onRetry={() => window.location.reload()}
       />
     );
   }

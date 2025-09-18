@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.split_bill_models import (
     SplitStatus,
     ParticipantStatus,
     TipMethod,
-)
+, ConfigDict)
 from ..models.payment_models import PaymentGateway
 
 router = APIRouter(prefix="/splits", tags=["Split Bills"])
@@ -63,16 +63,16 @@ class CreateSplitRequest(BaseModel):
     send_reminders: bool = True
     expires_in_hours: Optional[int] = 48
 
-    @validator("participants")
+    @field_validator("participants", mode="after")
     def validate_participants(cls, v):
         if len(v) < 2:
             raise ValueError("At least 2 participants required for split")
         return v
 
-    @validator("split_config")
+    @field_validator("split_config", mode="after")
     def validate_split_config(cls, v, values):
         if "split_method" in values:
-            method = values["split_method"]
+            method = info.data["split_method"]
 
             if method == SplitMethod.PERCENTAGE:
                 if not v or "percentages" not in v:
@@ -102,7 +102,7 @@ class ParticipantPaymentRequest(BaseModel):
     payment_method_id: Optional[str] = None
     save_payment_method: bool = False
 
-    @validator("amount")
+    @field_validator("amount", mode="after")
     def validate_amount(cls, v):
         if v <= 0:
             raise ValueError("Amount must be positive")
@@ -135,9 +135,10 @@ class SplitResponse(BaseModel):
     paid_count: int
     expires_at: Optional[str]
     created_at: str
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ParticipantResponse(BaseModel):
@@ -151,17 +152,19 @@ class ParticipantResponse(BaseModel):
     remaining_amount: float
     status: ParticipantStatus
     access_token: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class SplitDetailResponse(SplitResponse):
     participants: List[ParticipantResponse]
     split_config: Optional[Dict[str, Any]]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class PaginatedSplitsResponse(BaseModel):

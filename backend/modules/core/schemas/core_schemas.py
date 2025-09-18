@@ -3,8 +3,8 @@
 Pydantic schemas for core models.
 """
 
-from pydantic import BaseModel, Field, EmailStr, validator, root_validator
-from typing import Optional, Dict, Any, List
+from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator, ConfigDict
+from typing import Optional, Dict, Any, List, Annotated
 from datetime import datetime, time
 from decimal import Decimal
 import re
@@ -50,7 +50,7 @@ class RestaurantBase(BaseModel):
         "USD", min_length=3, max_length=3, description="ISO currency code"
     )
 
-    @validator("name", "legal_name", "brand_name")
+    @field_validator("name", "legal_name", "brand_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()
@@ -58,7 +58,7 @@ class RestaurantBase(BaseModel):
                 raise ValueError("Name cannot be empty or whitespace only")
         return v
 
-    @validator("phone")
+    @field_validator("phone", mode="after")
     def validate_phone(cls, v):
         # Remove common formatting characters
         cleaned = re.sub(r"[\s\-\(\)\.]", "", v)
@@ -66,7 +66,7 @@ class RestaurantBase(BaseModel):
             raise ValueError("Invalid phone number format")
         return v
 
-    @validator("website")
+    @field_validator("website", mode="after")
     def validate_website(cls, v):
         if v:
             if not v.startswith(("http://", "https://")):
@@ -75,7 +75,7 @@ class RestaurantBase(BaseModel):
                 raise ValueError("Invalid website URL")
         return v
 
-    @validator("country")
+    @field_validator("country", mode="after")
     def validate_country(cls, v):
         return v.upper()
 
@@ -92,7 +92,7 @@ class RestaurantCreate(RestaurantBase):
         None, description="Operating hours by day"
     )
 
-    @validator("operating_hours")
+    @field_validator("operating_hours", mode="after")
     def validate_operating_hours(cls, v):
         if v:
             days = [
@@ -170,9 +170,10 @@ class RestaurantResponse(RestaurantBase):
     location_count: int = 0
     floor_count: int = 0
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RestaurantListResponse(BaseModel):
@@ -204,7 +205,7 @@ class LocationBase(BaseModel):
     seating_capacity: Optional[int] = Field(None, ge=0, le=10000)
     parking_spaces: Optional[int] = Field(None, ge=0, le=10000)
 
-    @validator("name", "manager_name")
+    @field_validator("name", "manager_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()
@@ -277,9 +278,10 @@ class LocationResponse(LocationBase):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class LocationListResponse(BaseModel):
@@ -312,15 +314,12 @@ class FloorBase(BaseModel):
     allows_reservations: bool = Field(
         True, description="Allow reservations on this floor"
     )
-    service_charge_percent: Optional[Decimal] = Field(
+    service_charge_percent: Optional[Annotated[Decimal, Field(None, ge=0, le=100, max_digits=5, decimal_places=2)]] = Field(
         None,
-        ge=0,
-        le=100,
-        decimal_places=2,
         description="Floor-specific service charge",
     )
 
-    @validator("name", "display_name")
+    @field_validator("name", "display_name", mode="after")
     def validate_names(cls, v):
         if v:
             v = v.strip()
@@ -359,9 +358,7 @@ class FloorUpdate(BaseModel):
     max_capacity: Optional[int] = Field(None, ge=0, le=10000)
 
     allows_reservations: Optional[bool] = None
-    service_charge_percent: Optional[Decimal] = Field(
-        None, ge=0, le=100, decimal_places=2
-    )
+    service_charge_percent: Optional[Annotated[Decimal, Field(None, ge=0, le=100, max_digits=5, decimal_places=2)]] = None
 
     layout_config: Optional[Dict[str, Any]] = None
     features: Optional[Dict[str, Any]] = None
@@ -386,9 +383,10 @@ class FloorResponse(FloorBase):
     table_count: int = 0
     active_table_count: int = 0
 
-    class Config:
-        orm_mode = True
-        json_encoders = {datetime: lambda v: v.isoformat(), Decimal: lambda v: float(v)}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class FloorListResponse(BaseModel):
