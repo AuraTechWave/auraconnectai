@@ -8,7 +8,7 @@ and providing proper configuration validation.
 import os
 from typing import List, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from .secrets import get_required_secret, get_optional_secret
@@ -83,16 +83,18 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False)  # Default to False for safety
     log_level: str = Field(default="INFO", env="LOG_LEVEL")
     
-    @field_validator("debug", mode='before')
+    @field_validator("debug", mode="before")
     @classmethod
-    def set_debug_based_on_environment(cls, v, info):
+    def set_debug_based_on_environment(
+        cls, v: Optional[bool], info: ValidationInfo
+    ) -> bool:
         """Set debug based on environment if not explicitly set."""
-        env = info.data.get("environment", "development").lower()
+        env = (info.data.get("environment") or "development").lower()
         if env == "production":
             return False  # Never allow debug in production
-        elif env == "development" and v is None:
+        if env == "development" and v is None:
             return True  # Default to True in development
-        return v
+        return bool(v) if v is not None else False
 
     # External POS Webhook Configuration
     WEBHOOK_MAX_RETRY_ATTEMPTS: int = 3
