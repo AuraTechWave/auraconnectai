@@ -10,7 +10,7 @@ Provides request/response models for:
 - Tax rules
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 from decimal import Decimal
@@ -41,9 +41,10 @@ class TaxRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        json_encoders = {Decimal: str, datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # Payroll Configuration Schemas
@@ -60,8 +61,7 @@ class PayrollConfigurationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PayrollConfigurationCreate(BaseModel):
@@ -94,9 +94,10 @@ class StaffPayPolicyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        json_encoders = {Decimal: str}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class StaffPayPolicyCreate(BaseModel):
@@ -130,9 +131,10 @@ class OvertimeRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        json_encoders = {Decimal: str}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class OvertimeRuleCreate(BaseModel):
@@ -162,9 +164,10 @@ class RoleBasedPayRateResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
-        json_encoders = {Decimal: str}
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class RoleBasedPayRateCreate(BaseModel):
@@ -177,7 +180,7 @@ class RoleBasedPayRateCreate(BaseModel):
     effective_date: Optional[datetime] = None
     expiry_date: Optional[datetime] = None
 
-    @validator("effective_date", pre=True, always=True)
+    @field_validator("effective_date", mode="before")
     def set_effective_date(cls, v):
         return v or datetime.utcnow()
 
@@ -288,8 +291,7 @@ class PayrollJobResponse(BaseModel):
     metadata: Dict[str, Any]
     tenant_id: Optional[int] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PayrollJobCreate(BaseModel):

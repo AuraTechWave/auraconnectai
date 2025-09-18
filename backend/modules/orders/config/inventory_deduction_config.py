@@ -5,7 +5,7 @@ Configuration for inventory deduction behavior.
 """
 
 from typing import Optional
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 from enum import Enum
 
 

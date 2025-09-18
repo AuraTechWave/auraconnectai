@@ -68,7 +68,7 @@ export const TenantGuard: React.FC<TenantGuardProps> = ({
   }
 
   if (error) {
-    return <ErrorMessage type="error" message={error} />;
+    return <ErrorMessage type="error" message={error} onRetry={() => window.location.reload()} />;
   }
 
   if (!hasAccess) {

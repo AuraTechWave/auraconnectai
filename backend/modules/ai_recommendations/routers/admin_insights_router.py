@@ -65,7 +65,7 @@ async def get_feedback_summary(
 @require_permission("ai.view_insights")
 async def get_model_performance(
     days: int = Query(7, ge=1, le=90),
-    group_by: str = Query("model_type", regex="^(model_type|domain|endpoint)$"),
+    group_by: str = Query("model_type", pattern="^(model_type|domain|endpoint)$"),
     min_requests: int = Query(10, ge=1, description="Minimum requests to include"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -122,7 +122,7 @@ async def get_domain_insights(
 @require_permission("ai.view_insights")
 async def get_feedback_trends(
     days: int = Query(30, ge=7, le=90),
-    interval: str = Query("daily", regex="^(hourly|daily|weekly)$"),
+    interval: str = Query("daily", pattern="^(hourly|daily|weekly)$"),
     model_type: Optional[str] = None,
     domain: Optional[str] = None,
     current_user: User = Depends(get_current_user),
@@ -188,7 +188,7 @@ async def get_feedback_details(
 @router.get("/metrics/export")
 @require_permission("ai.export_data")
 async def export_metrics(
-    format: str = Query("json", regex="^(json|csv)$"),
+    format: str = Query("json", pattern="^(json|csv)$"),
     days: int = Query(30, ge=1, le=365),
     include_feedback: bool = Query(True),
     include_performance: bool = Query(True),
@@ -259,7 +259,7 @@ async def compare_models(
     model_types: List[str] = Query(..., description="Model types to compare"),
     metric: str = Query(
         "average_rating",
-        regex="^(average_rating|success_rate|response_time|confidence_score)$",
+        pattern="^(average_rating|success_rate|response_time|confidence_score)$",
     ),
     days: int = Query(30, ge=1, le=90),
     current_user: User = Depends(get_current_user),

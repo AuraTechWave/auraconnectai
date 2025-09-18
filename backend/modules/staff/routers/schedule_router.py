@@ -84,7 +84,7 @@ async def get_schedule_preview_paginated(
     department_id: Optional[int] = Query(None),
     role_id: Optional[int] = Query(None),
     location_id: Optional[int] = Query(None),
-    sort_by: str = Query("name", regex="^(name|role|department)$"),
+    sort_by: str = Query("name", pattern="^(name|role|department)$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

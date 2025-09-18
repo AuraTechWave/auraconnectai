@@ -7,7 +7,7 @@ Defines request/response models for webhook management
 and event notification payloads.
 """
 
-from pydantic import BaseModel, Field, validator, HttpUrl
+from pydantic import BaseModel, Field, field_validator, HttpUrl
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -65,13 +65,13 @@ class WebhookSubscriptionRequest(BaseModel):
         None, description="Optional retry policy configuration"
     )
 
-    @validator("event_types")
+    @field_validator("event_types", mode="after")
     def validate_event_types(cls, v):
         if len(set(v)) != len(v):
             raise ValueError("event_types cannot contain duplicates")
         return v
 
-    @validator("headers")
+    @field_validator("headers", mode="after")
     def validate_headers(cls, v):
         if v:
             # Prevent overriding critical headers

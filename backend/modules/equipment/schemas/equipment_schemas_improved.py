@@ -4,8 +4,8 @@
 Improved Pydantic schemas with comprehensive validation for Equipment module.
 """
 
-from pydantic import BaseModel, Field, validator, root_validator
-from typing import Optional, List, Literal
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from typing import Optional, List, Literal, Annotated
 from datetime import datetime, date
 from decimal import Decimal
 import re
@@ -45,13 +45,13 @@ class EquipmentBase(BaseModel):
         None, max_length=200, description="Physical location of equipment"
     )
 
-    @validator("equipment_name", "equipment_type")
+    @field_validator("equipment_name", "equipment_type", mode="after")
     def validate_not_empty(cls, v):
         if v and not v.strip():
             raise ValueError("Cannot be empty or whitespace only")
         return v.strip() if v else v
 
-    @validator("serial_number")
+    @field_validator("serial_number", mode="after")
     def validate_serial_number(cls, v):
         if v:
             # Remove spaces and convert to uppercase
@@ -69,8 +69,8 @@ class EquipmentCreate(EquipmentBase):
 
     purchase_date: Optional[date] = Field(None, description="Date of purchase")
     warranty_expiry: Optional[date] = Field(None, description="Warranty expiry date")
-    purchase_cost: Optional[Decimal] = Field(
-        None, gt=0, decimal_places=2, description="Purchase cost"
+    purchase_cost: Optional[Annotated[Decimal, Field(None, gt=0, max_digits=10, decimal_places=2)]] = Field(
+        None, description="Purchase cost"
     )
     is_critical: bool = Field(
         False, description="Whether equipment is critical for operations"
@@ -82,7 +82,7 @@ class EquipmentCreate(EquipmentBase):
         None, max_length=1000, description="General maintenance notes"
     )
 
-    @root_validator
+    @model_validator(mode='before')
     def validate_dates(cls, values):
         purchase_date = values.get("purchase_date")
         warranty_expiry = values.get("warranty_expiry")
@@ -96,7 +96,7 @@ class EquipmentCreate(EquipmentBase):
 
         return values
 
-    @validator("purchase_cost")
+    @field_validator("purchase_cost", mode="after")
     def validate_cost(cls, v):
         if v is not None and v > Decimal("1000000"):
             raise ValueError("Purchase cost seems unusually high. Please verify.")
@@ -118,7 +118,7 @@ class EquipmentUpdate(BaseModel):
     maintenance_interval_days: Optional[int] = Field(None, gt=0, le=3650)
     maintenance_notes: Optional[str] = Field(None, max_length=1000)
 
-    @validator("warranty_expiry")
+    @field_validator("warranty_expiry", mode="after")
     def validate_warranty_expiry(cls, v):
         if v and v < date.today():
             # Warning, but allow updating to past date
@@ -147,13 +147,10 @@ class Equipment(EquipmentBase):
     created_by: int
     updated_by: Optional[int]
 
-    class Config:
-        orm_mode = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v),
-        }
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class MaintenanceRecordBase(BaseModel):
@@ -166,17 +163,17 @@ class MaintenanceRecordBase(BaseModel):
     estimated_duration_hours: Optional[float] = Field(
         None, gt=0, le=168, description="Estimated duration in hours"  # Max 1 week
     )
-    estimated_cost: Optional[Decimal] = Field(
-        None, ge=0, decimal_places=2, description="Estimated cost"
+    estimated_cost: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = Field(
+        None, description="Estimated cost"
     )
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         if v < date.today():
             raise ValueError("Scheduled date cannot be in the past")
         return v
 
-    @validator("estimated_cost")
+    @field_validator("estimated_cost", mode="after")
     def validate_estimated_cost(cls, v):
         if v is not None and v > Decimal("100000"):
             raise ValueError("Estimated cost seems unusually high. Please verify.")
@@ -199,13 +196,13 @@ class MaintenanceRecordUpdate(BaseModel):
     scheduled_date: Optional[date] = None
     description: Optional[str] = Field(None, max_length=1000)
     estimated_duration_hours: Optional[float] = Field(None, gt=0, le=168)
-    estimated_cost: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    estimated_cost: Optional[Annotated[Decimal, Field(None, ge=0, max_digits=10, decimal_places=2)]] = None
     assigned_to: Optional[str] = Field(None, max_length=100)
     priority: Optional[int] = Field(None, ge=1, le=5)
     status: Optional[MaintenanceStatus] = None
     notes: Optional[str] = Field(None, max_length=2000)
 
-    @validator("scheduled_date")
+    @field_validator("scheduled_date", mode="after")
     def validate_scheduled_date(cls, v):
         # Allow past dates for updates (rescheduling)
         return v
@@ -224,7 +221,7 @@ class MaintenanceRecordComplete(BaseModel):
     actual_duration_hours: float = Field(
         ..., gt=0, le=168, description="Actual duration in hours"
     )
-    cost: Decimal = Field(..., ge=0, decimal_places=2, description="Actual cost")
+    cost: Annotated[Decimal, Field(..., ge=0, max_digits=10, decimal_places=2)] = Field(..., description="Actual cost")
     downtime_hours: float = Field(
         0, ge=0, le=168, description="Equipment downtime in hours"
     )
@@ -233,19 +230,19 @@ class MaintenanceRecordComplete(BaseModel):
     )
     notes: Optional[str] = Field(None, max_length=2000, description="Completion notes")
 
-    @validator("date_performed")
+    @field_validator("date_performed", mode="after")
     def validate_date_performed(cls, v):
         if v > date.today():
             raise ValueError("Performance date cannot be in the future")
         return v
 
-    @validator("cost")
+    @field_validator("cost", mode="after")
     def validate_cost(cls, v):
         if v > Decimal("100000"):
             raise ValueError("Cost seems unusually high. Please verify.")
         return v
 
-    @root_validator
+    @model_validator(mode='before')
     def validate_durations(cls, values):
         actual = values.get("actual_duration_hours")
         downtime = values.get("downtime_hours")
@@ -275,13 +272,10 @@ class MaintenanceRecord(MaintenanceRecordBase):
     created_by: int
     updated_by: Optional[int]
 
-    class Config:
-        orm_mode = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-            date: lambda v: v.isoformat(),
-            Decimal: lambda v: float(v),
-        }
+    model_config = ConfigDict(from_attributes=True)
+
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class EquipmentWithMaintenance(Equipment):
@@ -322,7 +316,7 @@ class MaintenanceSearchParams(BaseModel):
     limit: int = Field(50, ge=1, le=500)
     offset: int = Field(0, ge=0)
 
-    @root_validator
+    @model_validator(mode='before')
     def validate_date_range(cls, values):
         date_from = values.get("date_from")
         date_to = values.get("date_to")
@@ -368,6 +362,6 @@ class MaintenanceSummary(BaseModel):
     average_downtime_hours: float = Field(..., ge=0)
     critical_equipment_down: int = Field(..., ge=0)
 
-    @validator("average_downtime_hours")
+    @field_validator("average_downtime_hours", mode="after")
     def round_average(cls, v):
         return round(v, 2)

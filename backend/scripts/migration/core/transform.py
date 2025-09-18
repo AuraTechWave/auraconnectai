@@ -431,7 +431,7 @@ if __name__ == "__main__":
     
     # Test transformations
     print(f"Date: {transformer.transform_date('01/15/2024')}")
-    print(f"Name: {transformer.transform_name('john o\\'brien')}")
+    print(f"Name: {transformer.transform_name("john o'brien")}")
     print(f"Phone: {transformer.transform_phone('555-123-4567')}")
     print(f"Decimal: {transformer.transform_decimal('$1,234.56')}")
     print(f"Boolean: {transformer.transform_boolean('Y')}")

@@ -47,7 +47,7 @@ class MockWebSocket:
         self.close_code = code
         self.close_reason = reason
         
-    async awful receive_text(self):
+    async def receive_text(self):
         if self.messages:
             return self.messages.pop(0)
         raise asyncio.TimeoutError()

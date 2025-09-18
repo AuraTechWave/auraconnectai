@@ -6,7 +6,7 @@ Schemas for settings and configuration management.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 import json
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
@@ -15,10 +15,10 @@ from ..models.settings_models import SettingCategory, SettingType, SettingScope
 # ========== Setting Schemas ==========
 
 
-class SettingBase(BaseModel):
+class SettingBase(BaseModel, ConfigDict):
     """Base setting schema"""
 
-    key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
+    key: str = Field(..., max_length=100, pattern="^[a-z][a-z0-9_]*$")
     category: SettingCategory
     label: str = Field(..., max_length=200)
     description: Optional[str] = None
@@ -32,19 +32,19 @@ class SettingBase(BaseModel):
 class SettingCreate(BaseModel):
     """Create setting request"""
 
-    key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
+    key: str = Field(..., max_length=100, pattern="^[a-z][a-z0-9_]*$")
     value: Union[str, int, float, bool, dict, list]
     scope: SettingScope
     restaurant_id: Optional[int] = None
     location_id: Optional[int] = None
     user_id: Optional[int] = None
 
-    @root_validator
-    def validate_scope_ids(cls, values):
-        scope = values.get("scope")
-        restaurant_id = values.get("restaurant_id")
-        location_id = values.get("location_id")
-        user_id = values.get("user_id")
+    @model_validator(mode="after")
+    def validate_scope_ids(self):
+        scope = self.scope
+        restaurant_id = self.restaurant_id
+        location_id = self.location_id
+        user_id = self.user_id
 
         if scope == SettingScope.RESTAURANT and not restaurant_id:
             raise ValueError("restaurant_id required for restaurant scope")
@@ -55,7 +55,7 @@ class SettingCreate(BaseModel):
         elif scope == SettingScope.SYSTEM and (restaurant_id or location_id or user_id):
             raise ValueError("No IDs should be provided for system scope")
 
-        return values
+        return self
 
 
 class SettingUpdate(BaseModel):
@@ -90,11 +90,12 @@ class SettingResponse(BaseModel):
     modified_at: datetime
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
-    @validator("value", pre=True)
+    @field_validator("value", mode="before")
     def parse_value(cls, v, values):
         if isinstance(v, str):
             try:
@@ -136,7 +137,7 @@ class BulkSettingUpdate(BaseModel):
 class SettingDefinitionCreate(BaseModel):
     """Create setting definition"""
 
-    key: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
+    key: str = Field(..., max_length=100, pattern="^[a-z][a-z0-9_]*$")
     category: SettingCategory
     scope: SettingScope
     value_type: SettingType
@@ -184,9 +185,10 @@ class SettingDefinitionResponse(BaseModel):
     removed_version: Optional[str]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Setting Group Schemas ==========
@@ -195,7 +197,7 @@ class SettingDefinitionResponse(BaseModel):
 class SettingGroupCreate(BaseModel):
     """Create setting group"""
 
-    name: str = Field(..., max_length=100, regex="^[a-z][a-z0-9_]*$")
+    name: str = Field(..., max_length=100, pattern="^[a-z][a-z0-9_]*$")
     label: str = Field(..., max_length=200)
     description: Optional[str] = None
     category: SettingCategory
@@ -221,9 +223,10 @@ class SettingGroupResponse(BaseModel):
     is_advanced: bool
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Configuration Template Schemas ==========
@@ -258,9 +261,10 @@ class ConfigurationTemplateResponse(BaseModel):
     tags: List[str]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class ApplyTemplateRequest(BaseModel):
@@ -277,7 +281,7 @@ class ApplyTemplateRequest(BaseModel):
 class FeatureFlagCreate(BaseModel):
     """Create feature flag"""
 
-    key: str = Field(..., max_length=100, regex="^[A-Z][A-Z0-9_]*$")
+    key: str = Field(..., max_length=100, pattern="^[A-Z][A-Z0-9_]*$")
     name: str = Field(..., max_length=200)
     description: Optional[str] = None
     is_enabled: bool = False
@@ -326,9 +330,10 @@ class FeatureFlagResponse(BaseModel):
     tags: List[str]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class FeatureFlagStatus(BaseModel):
@@ -374,9 +379,10 @@ class APIKeyResponse(BaseModel):
     rate_limit_per_day: Optional[int]
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class APIKeyCreateResponse(APIKeyResponse):
@@ -392,7 +398,7 @@ class WebhookCreate(BaseModel):
     """Create webhook"""
 
     name: str = Field(..., max_length=100)
-    url: str = Field(..., max_length=500, regex="^https?://")
+    url: str = Field(..., max_length=500, pattern="^https?://")
     description: Optional[str] = None
     events: List[str] = Field(..., min_items=1)
     secret: Optional[str] = Field(None, min_length=32)
@@ -406,7 +412,7 @@ class WebhookUpdate(BaseModel):
     """Update webhook"""
 
     name: Optional[str] = Field(None, max_length=100)
-    url: Optional[str] = Field(None, max_length=500, regex="^https?://")
+    url: Optional[str] = Field(None, max_length=500, pattern="^https?://")
     description: Optional[str] = None
     events: Optional[List[str]] = Field(None, min_items=1)
     secret: Optional[str] = Field(None, min_length=32)
@@ -438,9 +444,10 @@ class WebhookResponse(BaseModel):
     failure_count: int
     created_at: datetime
     updated_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 class WebhookTestRequest(BaseModel):
@@ -480,9 +487,10 @@ class SettingHistoryResponse(BaseModel):
     change_reason: Optional[str]
     ip_address: Optional[str]
     user_agent: Optional[str]
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    # Custom JSON encoders need to be handled differently in v2
+    # Consider using model_serializer if needed
 
 
 # ========== Filters and Search ==========

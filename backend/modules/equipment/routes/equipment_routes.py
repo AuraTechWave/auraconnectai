@@ -57,9 +57,9 @@ async def search_equipment(
         None, description="Filter equipment needing maintenance"
     ),
     sort_by: str = Query(
-        "equipment_name", regex="^(equipment_name|next_due_date|status|created_at)$"
+        "equipment_name", pattern="^(equipment_name|next_due_date|status|created_at)$"
     ),
-    sort_order: str = Query("asc", regex="^(asc|desc)$"),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -181,9 +181,9 @@ async def search_maintenance_records(
         None, description="Filter by person who performed maintenance"
     ),
     sort_by: str = Query(
-        "scheduled_date", regex="^(scheduled_date|date_performed|status|cost)$"
+        "scheduled_date", pattern="^(scheduled_date|date_performed|status|cost)$"
     ),
-    sort_order: str = Query("desc", regex="^(asc|desc)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=500),
     db: Session = Depends(get_db),
