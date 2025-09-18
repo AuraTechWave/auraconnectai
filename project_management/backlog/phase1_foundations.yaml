@@ -1,0 +1,88 @@
+repo: AuraTechWave/auraconnectai
+default_labels:
+  - roadmap
+  - priority-high
+issues:
+  - title: Stabilize FastAPI startup pipeline
+    labels:
+      - backend
+      - tech-debt
+    body: |
+      ## Summary
+      FastAPI fails to boot because of missing imports and router wiring. Restore the inventory router import, remove dead includes, and add a startup smoke test so regressions are caught quickly.
+
+      ## Acceptance Criteria
+      - `uvicorn backend.app.main:app` launches with default env vars.
+      - Missing router imports (e.g., `order_inventory_router`) are restored or registration removed.
+      - Add a minimal pytest smoke test that instantiates the app and hits `/`.
+      - Document required env vars in `.env.example` for local startup.
+
+  - title: Align order ORM models with service expectations
+    labels:
+      - backend
+      - database
+    body: |
+      ## Summary
+      Order services reference fields like `completed_at`, `cancelled_at`, and `is_cancelled` that do not exist on the SQLAlchemy models. Add the missing columns + Alembic migrations and update services/tests accordingly.
+
+      ## Acceptance Criteria
+      - Order ORM gains the timestamps/flags needed by service layer and tests.
+      - New migration adds columns with sensible defaults/backfill logic.
+      - Service layer updated to use boolean flags rather than missing attributes.
+      - Tests cover order completion/cancellation flows end-to-end.
+
+  - title: Replace mock auth with RBAC-backed user store
+    labels:
+      - backend
+      - security
+    body: |
+      ## Summary
+      Authentication still uses mock in-memory users, breaking RBAC/tenant enforcement. Integrate the `core.rbac_models` user tables, wire login to the real DB, and ensure permission checks succeed.
+
+      ## Acceptance Criteria
+      - Login uses database-backed users with hashed passwords.
+      - RBAC permission checks import the correct models and pass with seeded roles.
+      - Tenant middleware reads restaurant/location IDs from JWTs created at login.
+      - Seed script creates an initial admin user with documented creds.
+
+  - title: Provision local infrastructure with Docker Compose
+    labels:
+      - devops
+      - infrastructure
+    body: |
+      ## Summary
+      The current Dockerfile and compose stack don’t install dependencies or provide Postgres/Redis. Create production-like Dockerfiles and a compose file that boots backend + frontend + Postgres + Redis for local work.
+
+      ## Acceptance Criteria
+      - Backend Dockerfile installs dependencies and runs migrations on start.
+      - docker-compose.yml spins up backend, frontend, Postgres, and Redis.
+      - README documents `docker compose up` workflow and required env vars.
+      - Add CI smoke job (or script) to build images.
+
+  - title: Draft API integration backlog for admin frontend
+    labels:
+      - frontend
+      - planning
+    body: |
+      ## Summary
+      Most admin views use mock data. Audit the pages, list required endpoints/state, and produce a task breakdown so the frontend can be wired to the real API.
+
+      ## Acceptance Criteria
+      - Inventory of admin routes/screens with current mock status.
+      - Mapping of each to required backend endpoints/data contracts.
+      - Follow-up issues created/linked for implementation.
+      - Include technical risks (websockets, auth guards, etc.).
+
+  - title: Define QA automation strategy
+    labels:
+      - qa
+      - planning
+    body: |
+      ## Summary
+      We need an automation approach (pytest, Playwright, mobile testing) to keep quality high. Document the test pyramid, coverage targets, and immediate test gaps for Phase 1.
+
+      ## Acceptance Criteria
+      - Document outlining unit/integration/e2e strategy per surface.
+      - Tooling decisions + setup steps (pytest plugins, Playwright config, etc.).
+      - Backlog of priority test cases with owners.
+      - Plan incorporated into project board.
