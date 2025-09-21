@@ -38,6 +38,7 @@ class OrderItemUpdate(BaseModel):
     price: float
     notes: Optional[str] = None
     special_instructions: Optional[List[SpecialInstructionBase]] = None
+    is_cancelled: Optional[bool] = None
 
 
 class OrderItemOut(BaseModel):
@@ -50,6 +51,7 @@ class OrderItemOut(BaseModel):
     special_instructions: Optional[List[SpecialInstructionBase]] = None
     created_at: datetime
     updated_at: datetime
+    is_cancelled: bool = False
 
     @classmethod
     def from_orm_with_instructions(cls, orm_obj):
@@ -64,6 +66,7 @@ class OrderItemOut(BaseModel):
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class TagBase(BaseModel):
@@ -180,9 +183,17 @@ class OrderOut(OrderBase):
     tags: Optional[List[TagOut]] = []
     category: Optional[CategoryOut] = None
     attachments: Optional[List[OrderAttachmentOut]] = []
+    completed_at: Optional[datetime] = None
+    completed_by_id: Optional[int] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by_id: Optional[int] = None
+    cancellation_reason: Optional[str] = None
+    is_cancelled: bool = False
+    metadata: Optional[Dict[str, Any]] = Field(default=None, alias="metadata_json")
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class MultiItemRuleRequest(BaseModel):

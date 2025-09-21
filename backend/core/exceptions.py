@@ -65,6 +65,12 @@ class AuthenticationError(APIError):
         )
 
 
+class UnauthorizedException(AuthenticationError):
+    """Backward-compatible alias for authentication failures."""
+
+    pass
+
+
 class PermissionError(APIError):
     """Permission denied error"""
 

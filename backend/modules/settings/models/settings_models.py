@@ -22,7 +22,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, Any, Optional
 
-from core.database import Base, TimestampMixin
+from core.database import Base
+from core.mixins import TimestampMixin
 
 
 class SettingCategory(str, Enum):

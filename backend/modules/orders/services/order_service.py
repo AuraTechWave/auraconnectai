@@ -1,7 +1,8 @@
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import List, Optional
+from decimal import Decimal
+from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import case, and_
 from fastapi import HTTPException, UploadFile
@@ -51,6 +52,97 @@ from ..schemas.routing_schemas import RouteEvaluationRequest
 from core.compliance import AuditLog
 
 logger = logging.getLogger(__name__)
+
+
+def create_order_with_items(
+    db: Session,
+    order_data: Dict[str, Any],
+    items_data: List[Dict[str, Any]],
+    *,
+    commit: bool = True,
+) -> Order:
+    """Create an order together with order items and basic totals.
+
+    This helper is used by splitting logic and tests that need a quick way
+    to persist an order plus its line items without reaching for the full
+    controller stack.
+
+    Args:
+        db: Active SQLAlchemy session.
+        order_data: Mapping of order column values.
+        items_data: List of dictionaries describing order items. Supports
+            ``menu_item_id``, ``quantity``, ``price`` and optional fields like
+            ``notes`` or ``special_instructions``.
+        commit: When True (default) the session is committed and the order is
+            refreshed before returning. Set to False when composing larger
+            unit-of-work flows.
+
+    Returns:
+        The persisted ``Order`` instance.
+    """
+
+    order = Order(**order_data)
+    db.add(order)
+    db.flush()  # obtain primary key for FK usage
+
+    subtotal = Decimal("0")
+    created_items: List[OrderItem] = []
+
+    allowed_item_keys = {
+        "menu_item_id",
+        "quantity",
+        "price",
+        "pricing_type",
+        "pricing_source",
+        "adjustment_reason",
+        "original_price",
+        "notes",
+        "special_instructions",
+    }
+
+    for item_payload in items_data:
+        if "menu_item_id" not in item_payload:
+            raise ValueError("Order item payload must include 'menu_item_id'")
+
+        quantity = item_payload.get("quantity", 1) or 0
+        price = item_payload.get("price", 0)
+
+        line_total = Decimal(str(price)) * Decimal(str(quantity))
+        subtotal += line_total
+
+        mapped_payload = {
+            key: item_payload[key]
+            for key in allowed_item_keys
+            if key in item_payload
+        }
+        mapped_payload["order_id"] = order.id
+        mapped_payload.setdefault("quantity", quantity)
+        mapped_payload.setdefault("price", price)
+
+        order_item = OrderItem(**mapped_payload)
+        db.add(order_item)
+        created_items.append(order_item)
+
+    # Ensure monetary fields are populated when not provided
+    if order.subtotal is None:
+        order.subtotal = subtotal
+
+    tax_amount = Decimal(str(order.tax_amount)) if order.tax_amount is not None else Decimal("0")
+    discount_amount = (
+        Decimal(str(order.discount_amount)) if order.discount_amount is not None else Decimal("0")
+    )
+
+    if order.total_amount is None:
+        order.total_amount = order.subtotal + tax_amount
+
+    if order.final_amount is None:
+        order.final_amount = order.total_amount - discount_amount
+
+    if commit:
+        db.commit()
+        db.refresh(order)
+
+    return order
 
 
 def serialize_instructions_to_notes(instructions: List[SpecialInstructionBase]) -> str:
@@ -1474,6 +1566,10 @@ async def cancel_stale_orders(
                 continue
 
             order.status = OrderStatus.CANCELLED.value
+            order.cancelled_at = datetime.utcnow()
+            order.cancelled_by_id = system_user_id
+            order.cancellation_reason = "auto_cancellation_stale_order"
+            order.is_cancelled = True
 
             await log_order_audit_event(
                 db=db,

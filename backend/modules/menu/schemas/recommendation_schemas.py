@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
 
-class MenuItemRecommendation(BaseModel, ConfigDict):
+class MenuItemRecommendation(BaseModel):
     menu_item_id: int
     name: str
     description: Optional[str] = None

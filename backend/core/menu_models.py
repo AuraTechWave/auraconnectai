@@ -28,6 +28,7 @@ class MenuCategory(Base, TimestampMixin):
     description = Column(Text, nullable=True)
     display_order = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
+    restaurant_id = Column(Integer, nullable=True, index=True)
     parent_category_id = Column(
         Integer, ForeignKey("menu_categories.id"), nullable=True
     )
@@ -55,6 +56,7 @@ class MenuItem(Base, TimestampMixin):
     price = Column(Float, nullable=False)
     category_id = Column(Integer, ForeignKey("menu_categories.id"), nullable=False)
     sku = Column(String(50), nullable=True, unique=True, index=True)
+    restaurant_id = Column(Integer, nullable=True, index=True)
 
     # Status and availability
     is_active = Column(Boolean, nullable=False, default=True)

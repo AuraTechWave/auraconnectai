@@ -68,14 +68,16 @@ class OrderInventoryIntegrationService:
                 )
 
             # Validate order status
-            if order.status == OrderStatus.COMPLETED:
+            current_status = order.status
+
+            if current_status == OrderStatus.COMPLETED.value:
                 return {
                     "success": True,
                     "message": "Order is already completed",
                     "inventory_deducted": False,
                 }
 
-            if order.status == OrderStatus.CANCELLED:
+            if current_status == OrderStatus.CANCELLED.value or order.is_cancelled:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Cannot complete a cancelled order",
@@ -86,10 +88,11 @@ class OrderInventoryIntegrationService:
 
             try:
                 # Update order status
-                old_status = order.status
-                order.status = OrderStatus.COMPLETED
+                old_status = current_status
+                order.status = OrderStatus.COMPLETED.value
                 order.completed_at = datetime.utcnow()
-                order.completed_by = user_id
+                order.completed_by_id = user_id
+                order.is_cancelled = False
 
                 inventory_result = None
 
@@ -120,7 +123,11 @@ class OrderInventoryIntegrationService:
                             user_id=user_id,
                             deduction_result=inventory_result,
                             metadata={
-                                "previous_status": old_status.value,
+                                "previous_status": (
+                                    old_status.value
+                                    if isinstance(old_status, OrderStatus)
+                                    else old_status
+                                ),
                                 "completion_time": order.completed_at.isoformat(),
                             },
                         )
@@ -195,7 +202,7 @@ class OrderInventoryIntegrationService:
                 )
 
             # Check if order can be cancelled
-            if order.status == OrderStatus.CANCELLED:
+            if order.status == OrderStatus.CANCELLED or order.is_cancelled:
                 return {
                     "success": True,
                     "message": "Order is already cancelled",
@@ -210,8 +217,9 @@ class OrderInventoryIntegrationService:
                 old_status = order.status
                 order.status = OrderStatus.CANCELLED
                 order.cancelled_at = datetime.utcnow()
-                order.cancelled_by = user_id
+                order.cancelled_by_id = user_id
                 order.cancellation_reason = reason
+                order.is_cancelled = True
 
                 reversal_result = None
 
@@ -306,13 +314,13 @@ class OrderInventoryIntegrationService:
             )
 
             # Update order metadata
-            if not order.metadata:
-                order.metadata = {}
+            if not order.metadata_json:
+                order.metadata_json = {}
 
-            if "partial_fulfillments" not in order.metadata:
-                order.metadata["partial_fulfillments"] = []
+            if "partial_fulfillments" not in order.metadata_json:
+                order.metadata_json["partial_fulfillments"] = []
 
-            order.metadata["partial_fulfillments"].append(
+            order.metadata_json["partial_fulfillments"].append(
                 {
                     "timestamp": datetime.utcnow().isoformat(),
                     "user_id": user_id,

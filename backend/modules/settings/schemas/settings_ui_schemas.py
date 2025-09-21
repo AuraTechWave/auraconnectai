@@ -4,15 +4,15 @@ UI-specific schemas for settings configuration interface.
 These schemas are optimized for frontend consumption and UI rendering.
 """
 
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Literal
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
 
 
-class UIFieldType(str, Enum, ConfigDict):
+class UIFieldType(str, Enum):
     """UI field types for rendering"""
     TEXT = "text"
     NUMBER = "number"
@@ -182,7 +182,7 @@ class SettingsExportRequest(BaseModel):
     categories: Optional[List[SettingCategory]] = None
     include_sensitive: bool = False
     include_metadata: bool = True
-    format: str = Field("json", enum=["json", "yaml", "env"])
+    format: Literal["json", "yaml", "env"] = "json"
     restaurant_id: Optional[int] = None
 
 
@@ -191,7 +191,7 @@ class SettingsImportRequest(BaseModel):
     
     data: Dict[str, Any]
     scope: SettingScope
-    merge_strategy: str = Field("override", enum=["override", "merge", "skip_existing"])
+    merge_strategy: Literal["override", "merge", "skip_existing"] = "override"
     validate_only: bool = False
     restaurant_id: Optional[int] = None
 

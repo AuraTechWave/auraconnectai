@@ -12,8 +12,14 @@ Comprehensive payroll processing module with:
 - API v1 with batch processing, webhooks, and audit trail
 """
 
-from .routes.payroll_routes import router as payroll_router
-from .routes.v1.payroll_v1_routes import router as payroll_v1_router
+import os
+
+if os.getenv("AURACONNECT_IMPORT_PAYROLL_ROUTERS", "1") == "1":  # pragma: no cover - runtime toggle
+    from .routes.payroll_routes import router as payroll_router
+    from .routes.v1.payroll_v1_routes import router as payroll_v1_router
+else:  # pragma: no cover - lightweight mode for tests
+    payroll_router = None
+    payroll_v1_router = None
 
 __version__ = "4.0.0"
 __all__ = ["payroll_router", "payroll_v1_router"]
