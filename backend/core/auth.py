@@ -7,7 +7,7 @@ payroll and other sensitive endpoints.
 
 import os
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Sequence, Union
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -509,6 +509,20 @@ def require_roles(required_roles: List[str]):
         return current_user
 
     return check_roles
+
+
+def require_role(role: Union[str, Sequence[str]]):
+    """Shorthand dependency for one or multiple roles."""
+
+    if isinstance(role, str):
+        roles = [role]
+    else:
+        roles = list(role)
+
+    if not roles:
+        raise ValueError("require_role expects at least one role")
+
+    return require_roles(roles)
 
 
 def require_tenant_access(tenant_id: int):

@@ -1,6 +1,20 @@
-# backend/modules/menu/models/__init__.py
+"""Menu models package exposing recipe and core menu entities.
 
-from .recipe_models import (
+Historically this package provided ORM models for both recipes and menu
+items. Most of the canonical implementations now live in
+``core.menu_models``; this module re-exports them so existing imports
+continue to function.
+"""
+
+from core.menu_models import (  # type: ignore F401
+    MenuItem,
+    MenuCategory,
+    ModifierGroup,
+    Modifier,
+    MenuItemModifier,
+    MenuItemInventory,
+)
+from .recipe_models import (  # type: ignore F401
     Recipe,
     RecipeIngredient,
     RecipeSubRecipe,
@@ -11,7 +25,19 @@ from .recipe_models import (
     UnitType,
 )
 
+# Backwards compatible aliases used by several modules and tests
+Category = MenuCategory
+Product = MenuItem
+
 __all__ = [
+    "MenuItem",
+    "MenuCategory",
+    "ModifierGroup",
+    "Modifier",
+    "MenuItemModifier",
+    "MenuItemInventory",
+    "Category",
+    "Product",
     "Recipe",
     "RecipeIngredient",
     "RecipeSubRecipe",

@@ -2,11 +2,11 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from decimal import Decimal
 
 
-class FeedbackSummaryResponse(BaseModel, ConfigDict):
+class FeedbackSummaryResponse(BaseModel):
     """Summary of feedback across models and domains"""
 
     time_period: Dict[str, datetime]

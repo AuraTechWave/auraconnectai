@@ -22,6 +22,28 @@ from core.database import Base
 from core.mixins import TimestampMixin
 from datetime import datetime
 from enum import Enum
+import os
+
+if os.getenv("AURACONNECT_ENABLE_PAYMENT_MODELS", "1") == "1":
+    try:  # pragma: no cover - ensures payment models are registered when available
+        from modules.payments.models.payment_models import (  # noqa: F401
+            CustomerPaymentMethod,
+            Payment,
+        )
+    except Exception:  # pragma: no cover - payment module may be optional in focused tests
+        CustomerPaymentMethod = None  # type: ignore
+        Payment = None  # type: ignore
+else:  # pragma: no cover - disable heavy payment models for lightweight tests
+    CustomerPaymentMethod = None  # type: ignore
+    Payment = None  # type: ignore
+
+if os.getenv("AURACONNECT_ENABLE_RESERVATION_MODELS", "1") == "1":
+    try:  # pragma: no cover - import reservation models when available
+        from modules.reservations.models.reservation_models import Reservation  # noqa: F401
+    except Exception:  # pragma: no cover - optional in focused tests
+        Reservation = None  # type: ignore
+else:  # pragma: no cover - disable heavy reservation models for lightweight tests
+    Reservation = None  # type: ignore
 
 
 class CustomerStatus(str, Enum):
@@ -142,12 +164,13 @@ class Customer(Base, TimestampMixin):
 
     # Relationships
     addresses = relationship(
-        "CustomerAddress", back_populates="customer", cascade="all, delete-orphan"
+        "CustomerAddress",
+        primaryjoin="Customer.id==CustomerAddress.customer_id",
+        foreign_keys="CustomerAddress.customer_id",
+        back_populates="customer",
+        cascade="all, delete-orphan",
     )
     orders = relationship("Order", back_populates="customer")
-    payment_methods = relationship(
-        "CustomerPaymentMethod", back_populates="customer", cascade="all, delete-orphan"
-    )
     notifications = relationship(
         "CustomerNotification", back_populates="customer", cascade="all, delete-orphan"
     )
@@ -162,14 +185,10 @@ class Customer(Base, TimestampMixin):
     preferences = relationship(
         "CustomerPreference", back_populates="customer", cascade="all, delete-orphan"
     )
-    reservations = relationship(
-        "Reservation", back_populates="customer", cascade="all, delete-orphan"
-    )
 
     # Order tracking relationships
     order_trackings = relationship("CustomerOrderTracking", back_populates="customer")
     order_notifications = relationship("OrderNotification", back_populates="customer")
-    referred_customers = relationship("Customer", backref="referrer")
 
     # Indexes for performance
     __table_args__ = (
@@ -191,6 +210,34 @@ class Customer(Base, TimestampMixin):
 
     def __repr__(self):
         return f"<Customer(id={self.id}, email='{self.email}', tier='{self.tier}')>"
+
+
+if CustomerPaymentMethod is not None:
+    Customer.payment_methods = relationship(
+        "CustomerPaymentMethod",
+        primaryjoin="Customer.id==CustomerPaymentMethod.customer_id",
+        foreign_keys="CustomerPaymentMethod.customer_id",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
+
+if Payment is not None:
+    Customer.payments = relationship(
+        "Payment",
+        primaryjoin="Customer.id==Payment.customer_id",
+        foreign_keys="Payment.customer_id",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
+
+if Reservation is not None:
+    Customer.reservations = relationship(
+        "Reservation",
+        primaryjoin="Customer.id==Reservation.customer_id",
+        foreign_keys="Reservation.customer_id",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
 
 
 class CustomerAddress(Base, TimestampMixin):
@@ -229,7 +276,12 @@ class CustomerAddress(Base, TimestampMixin):
     deleted_at = Column(DateTime, nullable=True)
 
     # Relationships
-    customer = relationship("Customer", back_populates="addresses")
+    customer = relationship(
+        "Customer",
+        primaryjoin="Customer.id==CustomerAddress.customer_id",
+        foreign_keys=[customer_id],
+        back_populates="addresses",
+    )
 
     def __repr__(self):
         return (

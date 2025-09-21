@@ -95,12 +95,21 @@ class RBACUser(Base):
 
     # RBAC relationships
     roles = relationship(
-        "RBACRole", secondary=user_roles, back_populates="users", lazy="dynamic"
+        "RBACRole",
+        secondary=user_roles,
+        primaryjoin=lambda: RBACUser.id == user_roles.c.user_id,
+        secondaryjoin=lambda: RBACRole.id == user_roles.c.role_id,
+        foreign_keys=lambda: [user_roles.c.user_id, user_roles.c.role_id],
+        back_populates="users",
+        lazy="dynamic",
     )
 
     # Direct permissions (override role permissions)
     direct_permissions = relationship(
-        "UserPermission", back_populates="user", cascade="all, delete-orphan"
+        "UserPermission",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys=lambda: [UserPermission.__table__.c.user_id],
     )
 
     def get_effective_permissions(self, tenant_id=None):
@@ -181,7 +190,14 @@ class RBACRole(Base):
     tenant_ids = Column(JSONB, default=list)  # Empty list = available to all tenants
 
     # RBAC relationships
-    users = relationship("RBACUser", secondary=user_roles, back_populates="roles")
+    users = relationship(
+        "RBACUser",
+        secondary=user_roles,
+        primaryjoin=lambda: RBACRole.id == user_roles.c.role_id,
+        secondaryjoin=lambda: RBACUser.id == user_roles.c.user_id,
+        foreign_keys=lambda: [user_roles.c.role_id, user_roles.c.user_id],
+        back_populates="roles",
+    )
 
     permissions = relationship(
         "RBACPermission", secondary=role_permissions, back_populates="roles"
@@ -273,7 +289,11 @@ class UserPermission(Base):
     reason = Column(Text, nullable=True)
 
     # Relationships
-    user = relationship("RBACUser", back_populates="direct_permissions")
+    user = relationship(
+        "RBACUser",
+        back_populates="direct_permissions",
+        foreign_keys=[user_id],
+    )
     granted_by_user = relationship("RBACUser", foreign_keys=[granted_by])
 
 

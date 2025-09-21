@@ -6,7 +6,7 @@ Comprehensive schemas for loyalty and rewards system.
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from decimal import Decimal
 
 from ..models.rewards_models import RewardType, RewardStatus, TriggerType
@@ -15,7 +15,7 @@ from ..models.rewards_models import RewardType, RewardStatus, TriggerType
 # ========== Loyalty Program Schemas ==========
 
 
-class LoyaltyProgramBase(BaseModel, ConfigDict):
+class LoyaltyProgramBase(BaseModel):
     """Base loyalty program schema"""
 
     name: str = Field(..., max_length=100)
@@ -196,11 +196,11 @@ class PointsTransfer(BaseModel):
     points: int = Field(..., gt=0)
     reason: Optional[str] = Field("Points transfer", max_length=200)
 
-    @root_validator
-    def validate_transfer(cls, values):
-        if info.data.get("from_customer_id") == info.data.get("to_customer_id"):
+    @model_validator(mode="after")
+    def validate_transfer(cls, model):
+        if model.from_customer_id == model.to_customer_id:
             raise ValueError("Cannot transfer points to the same customer")
-        return values
+        return model
 
 
 # ========== Reward Template Schemas ==========
@@ -339,21 +339,18 @@ class BulkRewardIssuance(BaseModel):
     reason: str = Field(..., min_length=5, max_length=200)
     notify_customers: bool = True
 
-    @root_validator
-    def validate_targeting(cls, values):
-        customer_ids = info.data.get("customer_ids")
-        customer_criteria = info.data.get("customer_criteria")
-
-        if not customer_ids and not customer_criteria:
+    @model_validator(mode="after")
+    def validate_targeting(cls, model):
+        if not model.customer_ids and not model.customer_criteria:
             raise ValueError(
                 "Either customer_ids or customer_criteria must be provided"
             )
-        if customer_ids and customer_criteria:
+        if model.customer_ids and model.customer_criteria:
             raise ValueError(
                 "Provide either customer_ids or customer_criteria, not both"
             )
 
-        return values
+        return model
 
 
 class CustomerRewardResponse(CustomerRewardBase):

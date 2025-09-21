@@ -4,7 +4,7 @@
 Pydantic schemas for Kitchen Display System.
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -12,7 +12,7 @@ from enum import Enum
 from ..models.kds_models import StationType, StationStatus, DisplayStatus
 
 
-class ItemStatusUpdate(BaseModel, ConfigDict):
+class ItemStatusUpdate(BaseModel):
     """Schema for updating item status"""
     
     status: DisplayStatus

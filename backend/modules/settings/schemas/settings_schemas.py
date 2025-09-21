@@ -6,7 +6,7 @@ Schemas for settings and configuration management.
 
 from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 import json
 
 from ..models.settings_models import SettingCategory, SettingType, SettingScope
@@ -15,7 +15,7 @@ from ..models.settings_models import SettingCategory, SettingType, SettingScope
 # ========== Setting Schemas ==========
 
 
-class SettingBase(BaseModel, ConfigDict):
+class SettingBase(BaseModel):
     """Base setting schema"""
 
     key: str = Field(..., max_length=100, pattern="^[a-z][a-z0-9_]*$")

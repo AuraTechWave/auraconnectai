@@ -18,6 +18,15 @@ from core.mixins import TimestampMixin
 from ..enums.order_enums import OrderPriority
 from typing import Optional
 from datetime import datetime
+import os
+
+if os.getenv("AURACONNECT_ENABLE_PAYMENT_MODELS", "1") == "1":
+    try:  # pragma: no cover - allow lightweight imports without payment module
+        from modules.payments.models.payment_models import Payment  # noqa: F401
+    except Exception:  # pragma: no cover - optional dependency in focused test runs
+        Payment = None  # type: ignore
+else:  # pragma: no cover - disable heavy payment models for lightweight tests
+    Payment = None  # type: ignore
 
 
 order_tags = Table(
@@ -51,6 +60,17 @@ class Order(Base, TimestampMixin):
     )
     priority_updated_at = Column(DateTime(timezone=True), nullable=True)
     external_id = Column(String, nullable=True, index=True)
+    completed_at = Column(DateTime, nullable=True, index=True)
+    completed_by_id = Column(
+        Integer, ForeignKey("staff_members.id"), nullable=True, index=True
+    )
+    cancelled_at = Column(DateTime, nullable=True, index=True)
+    cancelled_by_id = Column(
+        Integer, ForeignKey("staff_members.id"), nullable=True, index=True
+    )
+    cancellation_reason = Column(Text, nullable=True)
+    is_cancelled = Column(Boolean, nullable=False, default=False, index=True)
+    metadata_json = Column("metadata", JSONB, nullable=True, default=dict)
 
     fraud_risk_score = Column(Numeric(5, 2), nullable=True, default=0.0)
     fraud_status = Column(String, nullable=False, default="pending")
@@ -99,6 +119,12 @@ class Order(Base, TimestampMixin):
         "CustomerOrderTracking", back_populates="order", uselist=False
     )
     notifications = relationship("OrderNotification", back_populates="order")
+    completed_by = relationship(
+        "StaffMember", foreign_keys=[completed_by_id], backref="completed_orders"
+    )
+    cancelled_by = relationship(
+        "StaffMember", foreign_keys=[cancelled_by_id], backref="cancelled_orders"
+    )
 
     def update_priority(
         self, new_priority: OrderPriority, user_id: Optional[int] = None
@@ -115,6 +141,16 @@ class Order(Base, TimestampMixin):
         }
 
 
+if Payment is not None:
+    Order.payments = relationship(
+        "Payment",
+        primaryjoin="Order.id==Payment.order_id",
+        foreign_keys="Payment.order_id",
+        back_populates="order",
+        cascade="all, delete-orphan",
+    )
+
+
 class OrderItem(Base, TimestampMixin):
     __tablename__ = "order_items"
 
@@ -129,6 +165,7 @@ class OrderItem(Base, TimestampMixin):
     original_price = Column(Numeric(10, 2), nullable=True)
     notes = Column(Text, nullable=True)
     special_instructions = Column(JSONB, nullable=True)
+    is_cancelled = Column(Boolean, nullable=False, default=False, index=True)
 
     order = relationship("Order", back_populates="order_items")
 

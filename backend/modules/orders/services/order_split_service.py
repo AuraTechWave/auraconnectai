@@ -629,6 +629,13 @@ class OrderSplitService:
 
                     # Mark split order as cancelled
                     split_order.status = OrderStatus.CANCELLED
+                    split_order.is_cancelled = True
+                    split_order.cancelled_at = datetime.utcnow()
+                    split_order.cancelled_by_id = current_user_id
+                    split_order.cancellation_reason = (
+                        split_order.cancellation_reason
+                        or "merged_back_to_parent_order"
+                    )
                     split_order.customer_notes = (
                         f"Merged back to order #{parent_order_id}"
                     )
@@ -657,6 +664,12 @@ class OrderSplitService:
 
                     # Mark split order as cancelled
                     split_order.status = OrderStatus.CANCELLED
+                    split_order.is_cancelled = True
+                    split_order.cancelled_at = datetime.utcnow()
+                    split_order.cancelled_by_id = current_user_id
+                    split_order.cancellation_reason = (
+                        split_order.cancellation_reason or "merged_into_child_order"
+                    )
                     split_order.customer_notes = f"Merged into order #{merged_order.id}"
 
                 # Calculate totals for new order
