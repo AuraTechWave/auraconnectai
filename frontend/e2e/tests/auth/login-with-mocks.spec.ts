@@ -1,14 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { MockAPI } from '../../utils/mock-api';
+import { test, expect } from '../../fixtures/test-fixtures';
 
 test.describe('Login Tests with Mocks', () => {
-  let mockAPI: MockAPI;
-
-  test.beforeEach(async ({ page }) => {
-    mockAPI = new MockAPI(page);
-    await mockAPI.setupAuthMocks();
-  });
-
+  
   test('successful login with mocked API', async ({ page }) => {
     // Navigate to login page
     await page.goto('/login');

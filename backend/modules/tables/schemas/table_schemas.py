@@ -2,7 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, FieldValidationInfo
 from decimal import Decimal
 
 from ..models.table_models import (
@@ -10,7 +10,7 @@ from ..models.table_models import (
     TableShape,
     FloorStatus,
     ReservationStatus,
-, ConfigDict)
+)
 
 
 # Floor Schemas
@@ -79,15 +79,15 @@ class TableBase(BaseModel):
     preferred_capacity: Optional[int] = None
 
     @field_validator("preferred_capacity", mode="after")
-    def validate_preferred_capacity(cls, v, values):
-        if v is not None:
+    def validate_preferred_capacity(cls, value, info: FieldValidationInfo):
+        if value is not None:
             min_cap = info.data.get("min_capacity", 1)
             max_cap = info.data.get("max_capacity")
-            if max_cap and (v < min_cap or v > max_cap):
+            if max_cap and (value < min_cap or value > max_cap):
                 raise ValueError(
                     "Preferred capacity must be between min and max capacity"
                 )
-        return v
+        return value
 
 
 class TableLayoutData(BaseModel):

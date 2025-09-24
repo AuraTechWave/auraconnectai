@@ -178,7 +178,7 @@ class PredictiveRealtimeService:
                 
                 # Check for stock alerts across all products
                 from core.inventory_models import Inventory
-from core.menu_models import MenuItemInventory
+                from core.menu_models import MenuItemInventory
                 from modules.menu.models import MenuItem
                 
                 # Get low stock items

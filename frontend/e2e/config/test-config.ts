@@ -68,7 +68,8 @@ export const TEST_CONFIG = {
   FEATURES: {
     SKIP_CLEANUP: process.env.E2E_SKIP_CLEANUP === 'true',
     VERBOSE_LOGGING: process.env.E2E_VERBOSE === 'true',
-    USE_STORAGE_STATE: process.env.E2E_USE_STORAGE_STATE !== 'false' // default true
+    USE_STORAGE_STATE: process.env.E2E_USE_STORAGE_STATE !== 'false', // default true
+    USE_MOCK_API: process.env.E2E_USE_MOCK_API !== 'false',
   },
   
   // Test Data

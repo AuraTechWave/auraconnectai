@@ -1,9 +1,11 @@
 import { test as base, expect } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
 import { TEST_CONFIG } from '../config/test-config';
+import { MockAPI } from '../utils/mock-api';
 
 // Define custom fixtures
 type MyFixtures = {
+  mockAPI: MockAPI | null;
   loginPage: LoginPage;
   authenticatedPage: LoginPage;
   testUser: typeof TEST_CONFIG.TEST_USERS.CUSTOMER;
@@ -11,20 +13,36 @@ type MyFixtures = {
 
 // Extend base test with custom fixtures
 export const test = base.extend<MyFixtures>({
+  mockAPI: async ({ page }, use) => {
+    let mock: MockAPI | null = null;
+
+    if (TEST_CONFIG.FEATURES.USE_MOCK_API) {
+      mock = new MockAPI(page);
+      await mock.setupAllMocks();
+    }
+
+    await use(mock);
+
+    if (mock) {
+      await mock.teardown();
+    }
+  },
+
   // Login page fixture
-  loginPage: async ({ page }, use) => {
+  loginPage: async ({ page, mockAPI: _mockAPI }, use) => {
     const loginPage = new LoginPage(page);
     await use(loginPage);
   },
 
   // Authenticated page fixture (simplified for now)
-  authenticatedPage: async ({ page }, use) => {
+  authenticatedPage: async ({ page, mockAPI: _mockAPI }, use) => {
     const loginPage = new LoginPage(page);
     
-    // For now, just set mock auth token
+    // For now, just set mock auth token to simulate authenticated state
     await page.goto('/');
     await page.evaluate(() => {
-      localStorage.setItem('authToken', 'mock-test-token');
+      localStorage.setItem('authToken', 'mock-jwt-token');
+      localStorage.setItem('refreshToken', 'mock-refresh-token');
     });
     
     await use(loginPage);

@@ -4,7 +4,7 @@ from typing import List, Optional, Dict, Any
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, FieldValidationInfo
 
 from core.database import get_db
 from core.auth import get_current_user, require_permission, User
@@ -16,7 +16,7 @@ from ..models.split_bill_models import (
     SplitStatus,
     ParticipantStatus,
     TipMethod,
-, ConfigDict)
+)
 from ..models.payment_models import PaymentGateway
 
 router = APIRouter(prefix="/splits", tags=["Split Bills"])
@@ -70,25 +70,25 @@ class CreateSplitRequest(BaseModel):
         return v
 
     @field_validator("split_config", mode="after")
-    def validate_split_config(cls, v, values):
-        if "split_method" in values:
+    def validate_split_config(cls, value, info: FieldValidationInfo):
+        if "split_method" in info.data:
             method = info.data["split_method"]
 
             if method == SplitMethod.PERCENTAGE:
-                if not v or "percentages" not in v:
+                if not value or "percentages" not in value:
                     raise ValueError(
                         "Percentage split requires 'percentages' in split_config"
                     )
 
             elif method == SplitMethod.AMOUNT:
-                if not v or "amounts" not in v:
+                if not value or "amounts" not in value:
                     raise ValueError("Amount split requires 'amounts' in split_config")
 
             elif method == SplitMethod.ITEM:
-                if not v or "items" not in v:
+                if not value or "items" not in value:
                     raise ValueError("Item split requires 'items' in split_config")
 
-        return v
+        return value
 
 
 class UpdateParticipantStatusRequest(BaseModel):

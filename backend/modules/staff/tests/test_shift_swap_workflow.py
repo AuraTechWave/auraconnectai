@@ -66,18 +66,6 @@ class TestShiftSwapWorkflow:
         """Create test shifts"""
         staff1, staff2 = test_staff
         return ShiftFactory.create_pair(staff1, staff2, test_location, test_role)
-            role_id=test_role.id,
-            role=test_role,
-            location_id=test_location.id,
-            location=test_location,
-            date=tomorrow.date(),
-            start_time=tomorrow.replace(hour=10, minute=0),
-            end_time=tomorrow.replace(hour=18, minute=0),
-            shift_type=ShiftType.REGULAR,
-            status=ShiftStatus.SCHEDULED
-        )
-        
-        return shift1, shift2
     
     @pytest.fixture
     def test_swap(self, test_staff, test_shifts):

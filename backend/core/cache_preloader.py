@@ -255,7 +255,7 @@ class CachePreloader:
         self.preload_queue: List[PatternAnalysis] = []
         self.is_running = False
         
-    asyncختار_preload_candidates(self) -> List[PatternAnalysis]:
+    async def _get_preload_candidates(self) -> List[PatternAnalysis]:
         """Select candidates for preloading based on current time and patterns."""
         current_hour = datetime.utcnow().hour
         patterns = self.analyzer.analyze_patterns()

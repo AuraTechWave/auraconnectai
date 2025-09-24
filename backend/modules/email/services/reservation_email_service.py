@@ -467,9 +467,7 @@ class ReservationEmailService:
             <strong>Time:</strong> {vars['reservation_time']}<br>
             <strong>Party Size:</strong> {vars['party_size']} guests<br>
             <strong>Confirmation Code:</strong> {vars['confirmation_code']}</p>
-            {% if special_requests %}
-            <p><strong>Special Requests:</strong> {vars['special_requests']}</p>
-            {% endif %}
+            {f"<p><strong>Special Requests:</strong> {vars['special_requests']}</p>" if vars.get('special_requests') else ""}
         </div>
         
         <h3>Location</h3>
