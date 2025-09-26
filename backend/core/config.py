@@ -36,6 +36,7 @@ else:  # pragma: no cover - primary path on Pydantic v2
         kwargs.pop("always", None)
         mode = "before" if pre else "after"
         return field_validator(*fields, mode=mode, **kwargs)
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from .secrets import get_required_secret, get_optional_secret
