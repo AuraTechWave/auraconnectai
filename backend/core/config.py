@@ -9,34 +9,6 @@ import os
 from typing import List, Optional
 
 from pydantic import Field, ValidationInfo, field_validator
-
-# Backwards compatibility: ensure legacy ``@validator`` references don't crash
-try:  # pragma: no cover - optional on Pydantic v1
-    from pydantic import validator as _legacy_validator  # type: ignore
-except ImportError:  # pragma: no cover - running on Pydantic v2 only
-    _legacy_validator = None
-
-
-if _legacy_validator is not None:
-    # Expose the original decorator so older modules keep working when this
-    # module is imported under Pydantic v1 (used in historical migrations).
-    validator = _legacy_validator  # type: ignore[assignment]
-else:  # pragma: no cover - primary path on Pydantic v2
-    def validator(*fields, pre: bool = False, **kwargs):
-        """Thin shim that maps legacy ``@validator`` usage to ``field_validator``.
-
-        Older code paths may still depend on ``@validator`` being present when
-        this module imports, particularly during Alembic migrations that execute
-        historical models. Pydantic v2 removed the decorator, so we provide a
-        minimal shim that forwards to ``field_validator`` while ignoring options
-        that no longer have an effect (for example ``always=True``).
-        """
-
-        # ``always`` is no longer recognised in v2; discard it if provided.
-        kwargs.pop("always", None)
-        mode = "before" if pre else "after"
-        return field_validator(*fields, mode=mode, **kwargs)
-
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from .secrets import get_required_secret, get_optional_secret
