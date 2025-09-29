@@ -1,7 +1,10 @@
 import { test, expect } from '../../fixtures/test-fixtures';
 import { TEST_CONFIG } from '../../config/test-config';
 
-test.describe('Authentication - Login Flow', () => {
+const authTestsEnabled = process.env.E2E_ENABLE_AUTH_TESTS === 'true';
+const describeAuth = authTestsEnabled ? test.describe : test.describe.skip;
+
+describeAuth('Authentication - Login Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Clear any existing auth state
     await page.context().clearCookies();

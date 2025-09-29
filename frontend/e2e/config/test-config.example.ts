@@ -5,6 +5,10 @@
 export const TEST_CONFIG = {
   // API Configuration
   API_BASE_URL: process.env.E2E_API_BASE_URL || 'http://localhost:8000',
+
+  // Auth E2E coverage is disabled by default because the application currently
+  // ships with mock authentication flows. Set E2E_ENABLE_AUTH_TESTS="true" when
+  // real auth endpoints are available and you want to run the suites below.
   
   // Test User Credentials - MUST be set via environment variables
   TEST_USERS: {

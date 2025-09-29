@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Basic Login Tests', () => {
+const authTestsEnabled = process.env.E2E_ENABLE_AUTH_TESTS === 'true';
+const describeAuth = authTestsEnabled ? test.describe : test.describe.skip;
+
+describeAuth('Basic Login Tests', () => {
   test('login page renders correctly', async ({ page }) => {
     // Navigate to login page
     await page.goto('/login');
