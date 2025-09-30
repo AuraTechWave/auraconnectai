@@ -44,3 +44,5 @@ auraconnectai-review.zip
 # Storybook
 *storybook.log
 storybook-static
+# Local test database
+backend/test.db

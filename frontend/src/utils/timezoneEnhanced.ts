@@ -1,6 +1,6 @@
 import { 
-  zonedTimeToUtc, 
-  utcToZonedTime, 
+  fromZonedTime as zonedTimeToUtc, 
+  toZonedTime as utcToZonedTime, 
   formatInTimeZone,
   getTimezoneOffset 
 } from 'date-fns-tz';

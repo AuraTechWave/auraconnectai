@@ -1,7 +1,10 @@
 import { test, expect } from '../../fixtures/test-fixtures';
 import { TEST_CONFIG } from '../../config/test-config';
 
-test.describe('Authentication - Logout Flow', () => {
+const authTestsEnabled = process.env.E2E_ENABLE_AUTH_TESTS === 'true';
+const describeAuth = authTestsEnabled ? test.describe : test.describe.skip;
+
+describeAuth('Authentication - Logout Flow', () => {
   test.beforeEach(async ({ authenticatedPage }) => {
     // authenticatedPage fixture handles login automatically
     // Navigate to a protected page

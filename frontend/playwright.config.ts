@@ -80,13 +80,16 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: process.env.SKIP_WEBSERVER === 'true' ? undefined : {
-    command: process.env.CI ? 'npm run start:ci || npm start' : 'npm start',
+    command: process.env.CI 
+      ? 'TSC_COMPILE_ON_ERROR=true ESLINT_NO_DEV_ERRORS=true CI=true npm start' 
+      : 'TSC_COMPILE_ON_ERROR=true ESLINT_NO_DEV_ERRORS=true npm start',
     url: process.env.E2E_BASE_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: process.env.CI ? 180 * 1000 : 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',
     env: {
+      NODE_ENV: 'test',
       REACT_APP_API_URL: process.env.E2E_API_BASE_URL || 'http://localhost:8000',
       REACT_APP_ENVIRONMENT: 'test',
       REACT_APP_API_VERSION: 'v1',
@@ -100,7 +103,9 @@ export default defineConfig({
       REACT_APP_SUPPORTED_LANGUAGES: 'en',
       TSC_COMPILE_ON_ERROR: 'true',
       ESLINT_NO_DEV_ERRORS: 'true',
-      GENERATE_SOURCEMAP: 'false'
+      GENERATE_SOURCEMAP: 'false',
+      SKIP_PREFLIGHT_CHECK: 'true',
+      CI: process.env.CI || 'false'
     }
   },
 });
