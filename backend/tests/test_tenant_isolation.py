@@ -473,30 +473,36 @@ class TestMiddlewareIntegration:
         request.client = Mock(host='127.0.0.1')
         request.headers = {'Authorization': 'Bearer mock_token'}
         
+        from core.auth import TokenData
+
         # Mock token verification
         with patch('core.tenant_context.verify_token') as mock_verify:
-            mock_verify.return_value = {
-                'sub': 100,  # user_id
-                'restaurant_id': 1,
-                'location_id': 10
-            }
-            
+            mock_verify.return_value = TokenData(
+                user_id=100,
+                username='tenant-user',
+                email='tenant@example.com',
+                roles=['manager'],
+                tenant_ids=[1],
+            )
+
             # Create middleware
             middleware = TenantIsolationMiddleware(app=Mock())
-            
+
             # Mock call_next
             async def call_next(req):
                 # Verify context was set
                 context = TenantContext.get()
                 assert context is not None
                 assert context['restaurant_id'] == 1
-                assert context['location_id'] == 10
+                assert context['tenant_id'] == 1
                 assert context['user_id'] == 100
+                assert context['roles'] == ['manager']
                 return Response(content='OK')
-            
+
             # Process request
+            request.headers['X-Tenant-ID'] = '1'
             response = await middleware.dispatch(request, call_next)
-            
+
             # Verify context was cleared after request
             assert TenantContext.get() is None
     

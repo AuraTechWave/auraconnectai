@@ -6,16 +6,29 @@ payroll and other sensitive endpoints.
 """
 
 import os
+import inspect
+from functools import wraps
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict, Any, Set, TYPE_CHECKING
+from contextlib import contextmanager
+
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 import secrets
 import logging
+
 from .secrets import get_required_secret
+from .database import SessionLocal
+from .rbac_models import user_roles
+from .auth_context import AuthContextData, get_auth_context, set_auth_context
+
+if TYPE_CHECKING:
+    from .rbac_service import RBACService
+    from .rbac_models import RBACUser
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +63,7 @@ class TokenData(BaseModel):
 
     user_id: Optional[int] = None
     username: Optional[str] = None
+    email: Optional[str] = None
     roles: List[str] = []
     tenant_ids: List[int] = []
     session_id: Optional[str] = None
@@ -67,45 +81,84 @@ class User(BaseModel):
     is_active: bool = True
 
 
-# TODO: Replace with real database integration
-# This is a temporary placeholder for development only
-# In production, users should be managed through a proper database
-if os.getenv("ENVIRONMENT", "development").lower() == "development":
-    # Development-only mock users
-    logger.warning("Using mock users - DO NOT USE IN PRODUCTION")
-    MOCK_USERS = {
-        "admin": {
-            "id": 1,
-            "username": "admin",
-            "email": "admin@auraconnect.ai",
-            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-            "roles": ["admin", "payroll_manager", "staff_manager"],
-            "tenant_ids": [1, 2, 3],
-            "is_active": True,
-        },
-        "payroll_clerk": {
-            "id": 2,
-            "username": "payroll_clerk",
-            "email": "payroll@auraconnect.ai",
-            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-            "roles": ["payroll_clerk"],
-            "tenant_ids": [1],
-            "is_active": True,
-        },
-        "manager": {
-            "id": 3,
-            "username": "manager",
-            "email": "manager@auraconnect.ai",
-            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-            "roles": ["manager", "staff_viewer"],
-            "tenant_ids": [1],
-            "is_active": True,
-        },
-    }
-else:
-    # Production environment - no mock users allowed
-    MOCK_USERS = {}
-    logger.info("Mock users disabled in production environment")
+MOCK_USERS: Dict[str, Dict[str, Any]] = {}
+
+
+@contextmanager
+def _get_sync_session() -> Session:
+    """Yield a database session for synchronous helpers."""
+
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def _build_rbac_service(db: Session) -> "RBACService":
+    """Construct an RBAC service instance lazily to avoid circular imports."""
+
+    from .rbac_service import RBACService  # Local import to prevent circular dependency
+
+    return RBACService(db)
+
+
+def _collect_active_tenant_ids(
+    rbac_user: "RBACUser", rbac_service: "RBACService"
+) -> List[int]:
+    """Collect all tenant IDs available to a user."""
+
+    tenant_ids: Set[int] = set()
+
+    if rbac_user.accessible_tenant_ids:
+        for tenant_id in rbac_user.accessible_tenant_ids:
+            if tenant_id is not None:
+                tenant_ids.add(int(tenant_id))
+
+    if rbac_user.default_tenant_id is not None:
+        tenant_ids.add(int(rbac_user.default_tenant_id))
+
+    assignments = (
+        rbac_service.db.query(user_roles.c.tenant_id)
+        .filter(
+            user_roles.c.user_id == rbac_user.id,
+            user_roles.c.is_active == True,  # noqa: E712 - SQLAlchemy boolean comparison
+        )
+        .all()
+    )
+
+    for assignment in assignments:
+        tenant_value = None
+
+        if hasattr(assignment, "tenant_id"):
+            tenant_value = assignment.tenant_id
+        elif hasattr(assignment, "_mapping"):
+            tenant_value = assignment._mapping.get("tenant_id")
+        elif isinstance(assignment, (list, tuple)) and assignment:
+            tenant_value = assignment[0]
+
+        if tenant_value is not None:
+            tenant_ids.add(int(tenant_value))
+
+    return sorted(tenant_ids)
+
+
+def _rbac_user_to_auth_user(
+    rbac_user: "RBACUser", rbac_service: "RBACService"
+) -> User:
+    """Convert RBAC user model into lightweight auth representation."""
+
+    roles = [role.name for role in rbac_service.get_user_roles(rbac_user.id)]
+    tenant_ids = _collect_active_tenant_ids(rbac_user, rbac_service)
+
+    return User(
+        id=rbac_user.id,
+        username=rbac_user.username,
+        email=rbac_user.email,
+        roles=roles,
+        tenant_ids=tenant_ids,
+        is_active=rbac_user.is_active,
+    )
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -128,32 +181,54 @@ def needs_password_rehash(hashed_password: str) -> bool:
     return password_security.needs_rehash(hashed_password)
 
 
-def get_user(username: str) -> Optional[User]:
-    """Get user by username."""
-    # In production, this should query the database
-    if os.getenv("ENVIRONMENT", "development").lower() != "development":
-        logger.error("Attempted to use mock user system in production")
-        return None
-    
-    user_data = MOCK_USERS.get(username)
-    if user_data:
-        return User(**user_data)
+def get_user(
+    username: Optional[str] = None, *, user_id: Optional[int] = None
+) -> Optional[User]:
+    """Retrieve a user from the RBAC store or legacy mock cache."""
+
+    rbac_user: Optional[RBACUser] = None
+
+    with _get_sync_session() as db:
+        rbac_service = _build_rbac_service(db)
+
+        if user_id is not None:
+            rbac_user = rbac_service.get_user_by_id(user_id)
+
+        if rbac_user is None and username:
+            rbac_user = rbac_service.get_user_by_username(username)
+
+        if rbac_user:
+            return _rbac_user_to_auth_user(rbac_user, rbac_service)
+
+    if username:
+        user_data = MOCK_USERS.get(username)
+        if user_data:
+            logger.warning("Falling back to legacy mock user for %s", username)
+            return User(**user_data)
+
     return None
 
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
-    """Authenticate user with username and password."""
-    # In production, this should query the database
-    if os.getenv("ENVIRONMENT", "development").lower() != "development":
-        logger.error("Attempted to use mock authentication in production")
-        return None
-    
+    """Authenticate user with username and password against the RBAC store."""
+
+    with _get_sync_session() as db:
+        rbac_service = _build_rbac_service(db)
+        rbac_user = rbac_service.authenticate_user(username, password)
+
+        if rbac_user:
+            if needs_password_rehash(rbac_user.hashed_password):
+                rbac_user.hashed_password = get_password_hash(password)
+                db.commit()
+
+            return _rbac_user_to_auth_user(rbac_user, rbac_service)
+
     user_data = MOCK_USERS.get(username)
-    if not user_data:
-        return None
-    if not verify_password(password, user_data["hashed_password"]):
-        return None
-    return User(**user_data)
+    if user_data and verify_password(password, user_data.get("hashed_password", "")):
+        logger.warning("Authenticating against legacy mock user store for %s", username)
+        return User(**user_data)
+
+    return None
 
 
 def generate_token_id() -> str:
@@ -293,6 +368,7 @@ def verify_token(
             return None
             
         username: str = payload.get("username")
+        email: Optional[str] = payload.get("email")
         roles: List[str] = payload.get("roles", [])
         tenant_ids: List[int] = payload.get("tenant_ids", [])
         session_id: str = payload.get("session_id")
@@ -313,6 +389,7 @@ def verify_token(
         return TokenData(
             user_id=user_id,
             username=username,
+            email=email,
             roles=roles,
             tenant_ids=tenant_ids,
             session_id=session_id,
@@ -350,6 +427,7 @@ def refresh_access_token(refresh_token: str) -> Optional[dict]:
     new_token_data = {
         "sub": str(token_data.user_id),
         "username": token_data.username,
+        "email": token_data.email,
         "roles": token_data.roles,
         "tenant_ids": token_data.tenant_ids,
     }
@@ -388,6 +466,7 @@ def create_user_session(user: User, request: Optional[Request] = None) -> dict:
     token_data = {
         "sub": str(user.id),
         "username": user.username,
+        "email": user.email,
         "roles": user.roles,
         "tenant_ids": user.tenant_ids,
     }
@@ -473,15 +552,46 @@ def logout_user(token: str, logout_all_sessions: bool = False) -> bool:
         return False
 
 
-async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-) -> User:
-    """Get current authenticated user."""
-    credentials_exception = HTTPException(
+DEFAULT_CONTEXT_EMAIL_DOMAIN = "auraconnect.local"
+
+
+def _credentials_exception() -> HTTPException:
+    return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def _build_auth_context(token_data: TokenData) -> AuthContextData:
+    if token_data.user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing user identifier",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    roles = list(token_data.roles or [])
+    tenant_ids = list(token_data.tenant_ids or [])
+    active_tenant_id = tenant_ids[0] if tenant_ids else None
+
+    return AuthContextData(
+        user_id=token_data.user_id,
+        username=token_data.username or "",
+        roles=roles,
+        tenant_ids=tenant_ids,
+        active_tenant_id=active_tenant_id,
+        email=token_data.email,
+    )
+
+
+def _ensure_auth_context(
+    credentials: Optional[HTTPAuthorizationCredentials],
+    credentials_exception: HTTPException,
+) -> AuthContextData:
+    context = get_auth_context()
+    if context:
+        return context
 
     if not credentials:
         raise credentials_exception
@@ -490,42 +600,201 @@ async def get_current_user(
     if token_data is None:
         raise credentials_exception
 
-    user = get_user(username=token_data.username)
-    if user is None:
+    context = _build_auth_context(token_data)
+    set_auth_context(context)
+    return context
+
+
+def _user_from_context(context: AuthContextData) -> User:
+    fallback_username = context.username or f"user-{context.user_id}"
+    fallback_email = context.email or f"{fallback_username}@{DEFAULT_CONTEXT_EMAIL_DOMAIN}"
+
+    source_user = get_user(user_id=context.user_id, username=context.username or None)
+    roles = context.roles
+    tenant_ids = context.tenant_ids
+
+    if source_user:
+        return User(
+            id=source_user.id,
+            username=source_user.username,
+            email=source_user.email or fallback_email,
+            roles=roles or source_user.roles,
+            tenant_ids=tenant_ids or source_user.tenant_ids,
+            is_active=source_user.is_active,
+        )
+
+    return User(
+        id=context.user_id,
+        username=fallback_username,
+        email=fallback_email,
+        roles=roles,
+        tenant_ids=tenant_ids,
+        is_active=True,
+    )
+
+
+def _current_user_from_context() -> User:
+    context = get_auth_context()
+    if context is None:
+        raise _credentials_exception()
+    return _user_from_context(context)
+
+
+class AuthorizationRequirement:
+    """Callable that can act as a FastAPI dependency or decorator."""
+
+    def __init__(self, check_fn, error_detail: str):
+        self._check_fn = check_fn
+        self._error_detail = error_detail
+
+    def __call__(self, maybe_callable=None):
+        if maybe_callable is not None and callable(maybe_callable):
+            return self._decorate(maybe_callable)
+        return self._dependency()
+
+    def _dependency(self) -> User:
+        user = _current_user_from_context()
+        if not self._check_fn(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=self._error_detail,
+            )
+        return user
+
+    def _decorate(self, func):
+        if inspect.iscoroutinefunction(func):
+
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                self._dependency()
+                return await func(*args, **kwargs)
+
+            return async_wrapper
+
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            self._dependency()
+            return func(*args, **kwargs)
+
+        return sync_wrapper
+
+
+PERMISSION_ROLE_MAP: Dict[str, List[str]] = {
+    "admin:recipes": ["admin"],
+    "manager:recipes": ["admin", "manager"],
+    "permission.name": ["admin"],
+    "ai.configure_alerts": ["admin", "ai_admin"],
+    "ai.export_data": ["admin", "ai_admin"],
+    "ai.view_insights": ["admin", "ai_admin", "analytics_viewer", "manager"],
+    "analytics:read": ["admin", "analytics_admin", "analytics_viewer", "manager"],
+    "inventory:create": ["admin", "inventory_admin", "manager"],
+    "inventory:delete": ["admin", "inventory_admin"],
+    "inventory:read": ["admin", "inventory_admin", "manager", "staff"],
+    "inventory:update": ["admin", "inventory_admin", "manager"],
+    "manage_tips": ["admin", "manager", "payroll_manager"],
+    "menu:create": ["admin", "menu_admin", "manager"],
+    "menu:delete": ["admin", "menu_admin"],
+    "menu:read": ["admin", "menu_admin", "manager", "staff"],
+    "menu:update": ["admin", "menu_admin", "manager"],
+    "order:delete": ["admin", "manager"],
+    "order:manage_kitchen": ["admin", "manager", "kitchen_manager"],
+    "order:read": ["admin", "manager", "staff"],
+    "order:write": ["admin", "manager"],
+    "order.split": ["admin", "manager", "staff"],
+    "payroll:approve": ["admin", "payroll_manager"],
+    "payroll:export": ["admin", "payroll_manager"],
+    "payroll:read": ["admin", "payroll_manager", "payroll_clerk"],
+    "payroll:write": ["admin", "payroll_manager"],
+    "pricing.apply": ["admin", "pricing_admin", "manager", "staff"],
+    "pricing.create": ["admin", "pricing_admin", "manager"],
+    "pricing.delete": ["admin", "pricing_admin"],
+    "pricing.update": ["admin", "pricing_admin", "manager"],
+    "pricing.view_metrics": ["admin", "pricing_admin", "manager", "analytics_viewer"],
+    "refunds.approve": ["admin", "refund_admin", "manager"],
+    "refunds.create": ["admin", "refund_admin", "manager", "staff"],
+    "refunds.manage": ["admin", "refund_admin", "manager"],
+    "refunds.manage_policies": ["admin", "refund_admin"],
+    "refunds.process": ["admin", "refund_admin"],
+    "refunds.view": ["admin", "refund_admin", "manager", "staff"],
+    "refunds.view_statistics": ["admin", "refund_admin", "manager", "analytics_viewer"],
+    "schedule.manage": ["admin", "schedule_admin", "manager", "scheduler"],
+    "schedule.publish": ["admin", "schedule_admin", "manager"],
+    "staff:delete": ["admin", "staff_manager"],
+    "staff:manage_schedule": ["admin", "staff_manager", "manager"],
+    "staff:read": ["admin", "staff_manager", "manager", "staff_viewer"],
+    "staff:write": ["admin", "staff_manager", "manager"],
+    "system:audit": ["admin", "system_admin"],
+    "system:read": ["admin", "system_admin"],
+    "system:write": ["admin", "system_admin"],
+    "tables.manage_layout": ["admin", "table_admin", "manager"],
+    "tables.manage_reservations": ["admin", "table_admin", "manager", "host"],
+    "tables.manage_sessions": ["admin", "table_admin", "manager", "host"],
+    "tables.update_status": ["admin", "table_admin", "manager", "host", "server"],
+    "tables.view_analytics": ["admin", "table_admin", "manager", "analytics_viewer"],
+    "tax.admin": ["admin", "tax_admin"],
+    "tax.audit": ["admin", "tax_admin", "tax_manager"],
+    "tax.calculate": ["admin", "tax_admin", "tax_manager"],
+    "tax.file": ["admin", "tax_admin", "tax_manager"],
+    "tax.pay": ["admin", "tax_admin", "tax_manager"],
+    "tax.report": ["admin", "tax_admin", "tax_manager"],
+    "tax.view": ["admin", "tax_admin", "tax_manager", "tax_viewer"],
+    "user:delete": ["admin"],
+    "user:manage_roles": ["admin"],
+    "user:read": ["admin", "system_admin"],
+    "user:write": ["admin", "system_admin"],
+}
+
+
+async def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> User:
+    """Resolve the current authenticated user from the request context."""
+
+    credentials_exception = _credentials_exception()
+    context = _ensure_auth_context(credentials, credentials_exception)
+    user = _user_from_context(context)
+
+    if not user.is_active:
         raise credentials_exception
 
     return user
 
 
+
 def require_roles(required_roles: List[str]):
-    """Dependency factory for role-based authorization."""
+    """Enforce that the current user holds at least one of the specified roles."""
 
-    def check_roles(current_user: User = Depends(get_current_user)) -> User:
-        if not any(role in current_user.roles for role in required_roles):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Operation requires one of these roles: {required_roles}",
-            )
-        return current_user
+    required_set = set(required_roles)
 
-    return check_roles
+    def check(user: User) -> bool:
+        user_roles = set(user.roles or [])
+        if "admin" in user_roles:
+            return True
+        return bool(user_roles & required_set)
+
+    error_detail = f"Operation requires one of these roles: {required_roles}"
+    return AuthorizationRequirement(check, error_detail)
+
 
 
 def require_tenant_access(tenant_id: int):
-    """Dependency factory for tenant-based authorization."""
+    """Ensure the active tenant matches the required tenant identifier."""
 
-    def check_tenant_access(current_user: User = Depends(get_current_user)) -> User:
-        if (
-            tenant_id not in current_user.tenant_ids
-            and "admin" not in current_user.roles
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied for this tenant",
-            )
-        return current_user
+    expected_tenant = int(tenant_id)
 
-    return check_tenant_access
+    def check(user: User) -> bool:
+        user_roles = set(user.roles or [])
+        if "admin" in user_roles:
+            return True
+
+        context = get_auth_context()
+        if context and context.active_tenant_id is not None:
+            return context.active_tenant_id == expected_tenant
+
+        tenants = context.tenant_ids if context else user.tenant_ids or []
+        return expected_tenant in tenants
+
+    return AuthorizationRequirement(check, "Access denied for this tenant")
 
 
 # Common role dependencies
@@ -537,77 +806,25 @@ require_staff_access = require_roles(
 )
 
 
-# Add permission function factory to support require_permission("tax.admin") pattern
-def require_permission(permission: str):
-    """
-    Create a dependency that requires specific permission.
+def require_permission(permission: str, *, allow_admin: bool = True) -> AuthorizationRequirement:
+    """Construct an authorization requirement for the supplied permission string."""
 
-    Can be used in two ways:
-    1. As a decorator: @require_permission("permission.name")
-    2. As a dependency: Depends(require_permission("permission.name"))
-    """
-    # Map permission strings to roles
-    permission_role_map = {
-        "tax.admin": ["admin", "tax_admin"],
-        "tax.write": ["admin", "tax_admin", "tax_manager"],
-        "tax.read": ["admin", "tax_admin", "tax_manager", "tax_viewer"],
-        "tax.view": ["admin", "tax_admin", "tax_manager", "tax_viewer"],
-        "tax.report": ["admin", "tax_admin", "tax_manager"],
-        "menu:create": ["admin", "manager", "menu_admin"],
-        "menu:read": ["admin", "manager", "menu_admin", "staff"],
-        "menu:update": ["admin", "manager", "menu_admin"],
-        "menu:delete": ["admin", "menu_admin"],
-        "inventory:create": ["admin", "manager", "inventory_admin"],
-        "inventory:read": ["admin", "manager", "inventory_admin", "staff"],
-        "inventory:update": ["admin", "manager", "inventory_admin"],
-        "inventory:delete": ["admin", "inventory_admin"],
-        # Schedule permissions
-        "schedule.publish": ["admin", "schedule_admin", "manager"],
-        "schedule.manage": ["admin", "schedule_admin", "manager", "scheduler"],
-        # Refund permissions
-        "refunds.create": ["admin", "refund_admin", "manager", "staff"],
-        "refunds.view": ["admin", "refund_admin", "manager", "staff"],
-        "refunds.approve": ["admin", "refund_admin", "manager"],
-        "refunds.process": ["admin", "refund_admin"],
-        "refunds.view_statistics": ["admin", "refund_admin", "manager"],
-        "refunds.manage_policies": ["admin", "refund_admin"],
-        "refunds.manage": ["admin", "refund_admin", "manager"],
-        # Table permissions
-        "tables.manage_layout": ["admin", "table_admin", "manager"],
-        "tables.manage_sessions": ["admin", "table_admin", "manager", "host"],
-        "tables.update_status": ["admin", "table_admin", "manager", "host", "server"],
-        "tables.manage_reservations": ["admin", "table_admin", "manager", "host"],
-        "tables.view_analytics": ["admin", "table_admin", "manager"],
-        # Pricing permissions
-        "pricing.create": ["admin", "pricing_admin", "manager"],
-        "pricing.update": ["admin", "pricing_admin", "manager"],
-        "pricing.delete": ["admin", "pricing_admin"],
-        "pricing.view_metrics": ["admin", "pricing_admin", "manager"],
-        "pricing.apply": ["admin", "pricing_admin", "manager", "staff"],
-        # AI permissions
-        "ai.view_insights": ["admin", "ai_admin", "analytics_viewer"],
-        "ai.export_data": ["admin", "ai_admin"],
-        "ai.configure_alerts": ["admin", "ai_admin"],
-    }
-    roles = permission_role_map.get(permission, ["admin"])
+    allowed_roles = set(PERMISSION_ROLE_MAP.get(permission, []))
 
-    # When used as decorator, just return the function as-is
-    # The actual permission check happens via the current_user dependency
-    def decorator(func):
-        # Simply return the function unchanged
-        # FastAPI will handle the dependency injection via the function parameters
-        return func
+    def check(user: User) -> bool:
+        user_roles = set(user.roles or [])
+        if allow_admin and "admin" in user_roles:
+            return True
+        if not allowed_roles:
+            return False
+        return bool(user_roles & allowed_roles)
 
-    return decorator
+    return AuthorizationRequirement(
+        check,
+        error_detail=f"Missing required permission: {permission}",
+    )
 
 
-# Tenant support (placeholder)
-async def get_current_tenant() -> Optional[int]:
-    """Get current tenant ID - placeholder for multi-tenant support"""
-    return None
-
-
-# Optional authentication (for public endpoints that can be enhanced with auth)
 async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
@@ -615,8 +832,15 @@ async def get_current_user_optional(
     if not credentials:
         return None
 
-    token_data = verify_token(credentials.credentials)
-    if token_data is None:
+    try:
+        context = _ensure_auth_context(credentials, _credentials_exception())
+    except HTTPException:
         return None
 
-    return get_user(username=token_data.username)
+    return _user_from_context(context)
+
+
+# Tenant support (placeholder)
+async def get_current_tenant() -> Optional[int]:
+    """Get current tenant ID - placeholder for multi-tenant support"""
+    return None

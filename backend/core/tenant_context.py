@@ -1,23 +1,26 @@
-"""Tenant Context Management for Multi-Tenant Isolation
+"""Tenant Context Management for Multi-Tenant Isolation.
 
 This module provides middleware and utilities for enforcing tenant isolation
 across all database queries and API operations in the AuraConnect system.
 """
 
 import logging
-from typing import Optional, List, Dict, Any, Type
+from typing import Optional, Dict, Any, Type, List
 from contextvars import ContextVar
 from datetime import datetime
 from fastapi import Request, HTTPException, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session, Query, Mapper
-from sqlalchemy import event, and_, or_, inspect
-from sqlalchemy.sql import Select
+from sqlalchemy.orm import Session, Query
+from sqlalchemy import event, and_
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from core.auth import verify_token
-from core.database import SessionLocal
+from core.auth import TokenData, verify_token
+from core.auth_context import (
+    AuthContextData,
+    clear_auth_context,
+    set_auth_context,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +38,21 @@ class TenantContext:
         restaurant_id: Optional[int] = None,
         location_id: Optional[int] = None,
         user_id: Optional[int] = None,
+        tenant_id: Optional[int] = None,
+        tenant_ids: Optional[List[int]] = None,
+        roles: Optional[List[str]] = None,
+        username: Optional[str] = None,
     ):
-        """Set the tenant context for the current request"""
+        """Set the tenant context for the current request."""
+        effective_restaurant_id = restaurant_id if restaurant_id is not None else tenant_id
         context = {
-            "restaurant_id": restaurant_id,
+            "restaurant_id": effective_restaurant_id,
             "location_id": location_id,
+            "tenant_id": tenant_id or effective_restaurant_id,
+            "tenant_ids": tenant_ids or [],
+            "roles": roles or [],
             "user_id": user_id,
+            "username": username,
             "timestamp": datetime.utcnow(),
         }
         _tenant_context.set(context)
@@ -55,7 +67,12 @@ class TenantContext:
     def get_restaurant_id() -> Optional[int]:
         """Get the current restaurant ID from context"""
         context = _tenant_context.get()
-        return context.get("restaurant_id") if context else None
+        if not context:
+            return None
+        restaurant_id = context.get("restaurant_id")
+        if restaurant_id is None:
+            restaurant_id = context.get("tenant_id")
+        return restaurant_id
 
     @staticmethod
     def get_location_id() -> Optional[int]:
@@ -70,6 +87,12 @@ class TenantContext:
         return context.get("user_id") if context else None
 
     @staticmethod
+    def get_tenant_id() -> Optional[int]:
+        """Get the current tenant ID from context."""
+        context = _tenant_context.get()
+        return context.get("tenant_id") if context else None
+
+    @staticmethod
     def clear():
         """Clear the tenant context"""
         _tenant_context.set(None)
@@ -79,7 +102,9 @@ class TenantContext:
         """Ensure tenant context is set, raise exception if not"""
         context = _tenant_context.get()
         if not context or (
-            context.get("restaurant_id") is None and context.get("location_id") is None
+            context.get("restaurant_id") is None
+            and context.get("location_id") is None
+            and context.get("tenant_id") is None
         ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -105,89 +130,154 @@ class TenantIsolationMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
-        """Process request and set tenant context"""
+        """Process request, enforce authentication and establish tenant context."""
+
+        # Always clear any prior context at the start of a request
+        TenantContext.clear()
+        clear_auth_context()
 
         # Skip tenant isolation for exempt paths
         if any(request.url.path.startswith(path) for path in self.EXEMPT_PATHS):
             return await call_next(request)
 
-        # Clear any previous context
-        TenantContext.clear()
-
         try:
-            # Extract tenant information from JWT token
-            tenant_info = await self._extract_tenant_info(request)
-
-            if not tenant_info:
-                # Log potential cross-tenant access attempt
+            token_data = await self._extract_token_data(request)
+            if token_data is None:
                 logger.warning(
-                    f"No tenant context found for request: {request.method} {request.url.path} "
-                    f"from {request.client.host if request.client else 'unknown'}"
+                    "Tenant context denied for %s %s (missing or invalid token)",
+                    request.method,
+                    request.url.path,
                 )
-                return JSONResponse(
+                raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    content={"detail": "Tenant context required for this operation"},
+                    detail="Tenant context required for this operation",
                 )
 
-            # Set tenant context
+            active_tenant_id = self._resolve_active_tenant_id(request, token_data)
+            if active_tenant_id is None:
+                logger.warning(
+                    "Unable to resolve tenant for user %s on %s %s",
+                    token_data.user_id,
+                    request.method,
+                    request.url.path,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Valid tenant selection required",
+                )
+
+            roles = token_data.roles or []
+            tenant_ids = token_data.tenant_ids or []
+
+            # Persist tenant context for downstream code paths
             TenantContext.set(
-                restaurant_id=tenant_info.get("restaurant_id"),
-                location_id=tenant_info.get("location_id"),
-                user_id=tenant_info.get("user_id"),
+                restaurant_id=active_tenant_id,
+                tenant_id=active_tenant_id,
+                tenant_ids=tenant_ids,
+                roles=roles,
+                user_id=token_data.user_id,
+                username=token_data.username,
             )
 
-            # Log the request with tenant context
+            # Store auth context so services can retrieve roles/tenant data
+            set_auth_context(
+                AuthContextData(
+                    user_id=token_data.user_id,
+                    username=token_data.username or "",
+                    roles=roles,
+                    tenant_ids=tenant_ids,
+                    active_tenant_id=active_tenant_id,
+                    email=getattr(token_data, "email", None),
+                )
+            )
+
+            # Populate request state for middleware that inspects it later
+            request.state.user_id = token_data.user_id
+            request.state.user_roles = roles
+            request.state.user_role = roles[0] if roles else None
+            request.state.tenant_id = active_tenant_id
+            request.state.tenant_ids = tenant_ids
+            request.state.username = token_data.username
+
             logger.info(
-                f"Request with tenant context - Restaurant: {tenant_info.get('restaurant_id')}, "
-                f"Location: {tenant_info.get('location_id')}, User: {tenant_info.get('user_id')}, "
-                f"Path: {request.method} {request.url.path}"
+                "Tenant context established for user %s (tenant %s) on %s %s",
+                token_data.username or token_data.user_id,
+                active_tenant_id,
+                request.method,
+                request.url.path,
             )
 
-            # Process the request
             response = await call_next(request)
-
-            # Clear context after request
-            TenantContext.clear()
-
             return response
 
-        except HTTPException as e:
-            # Clear context on error
-            TenantContext.clear()
-            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
-        except Exception as e:
-            # Clear context on error
-            TenantContext.clear()
-            logger.error(f"Error in tenant isolation middleware: {str(e)}")
+        except HTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.exception("Error in tenant isolation middleware: %s", exc)
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"detail": "Internal server error"},
             )
+        finally:
+            # Ensure contexts are cleared once the response is generated
+            TenantContext.clear()
+            clear_auth_context()
 
-    async def _extract_tenant_info(self, request: Request) -> Optional[Dict[str, Any]]:
-        """Extract tenant information from request (JWT token)"""
+    async def _extract_token_data(self, request: Request) -> Optional[TokenData]:
+        """Extract and validate the JWT token from the incoming request."""
 
-        # Get authorization header
         auth_header = request.headers.get("Authorization")
-        if not auth_header or not auth_header.startswith("Bearer "):
+        if not auth_header or not auth_header.lower().startswith("bearer "):
             return None
 
-        token = auth_header.split(" ")[1]
-
-        try:
-            # Verify token and extract payload
-            payload = verify_token(token)
-
-            # Extract tenant information from token payload
-            # This assumes the JWT contains restaurant_id and/or location_id claims
-            return {
-                "restaurant_id": payload.get("restaurant_id"),
-                "location_id": payload.get("location_id"),
-                "user_id": payload.get("sub"),  # Standard JWT subject claim
-            }
-        except Exception as e:
-            logger.error(f"Error extracting tenant info from token: {str(e)}")
+        token = auth_header.split(" ", 1)[1].strip()
+        token_data = verify_token(token)
+        if token_data is None or token_data.user_id is None:
             return None
+        return token_data
+
+    def _resolve_active_tenant_id(
+        self, request: Request, token_data: TokenData
+    ) -> Optional[int]:
+        """Determine which tenant should be active for this request."""
+
+        candidate = self._extract_candidate_tenant(request)
+        token_tenants = token_data.tenant_ids or []
+
+        if candidate is not None:
+            if candidate in token_tenants:
+                return candidate
+            logger.warning(
+                "Tenant override %s rejected for user %s", candidate, token_data.user_id
+            )
+            return None
+
+        if token_tenants:
+            return token_tenants[0]
+
+        return None
+
+    @staticmethod
+    def _extract_candidate_tenant(request: Request) -> Optional[int]:
+        """Read tenant overrides from headers or query parameters."""
+
+        header_value = request.headers.get("X-Tenant-ID")
+        if header_value:
+            try:
+                return int(header_value)
+            except ValueError:
+                logger.warning("Invalid X-Tenant-ID header value: %s", header_value)
+                return None
+
+        query_value = request.query_params.get("tenant_id")
+        if query_value:
+            try:
+                return int(query_value)
+            except ValueError:
+                logger.warning("Invalid tenant_id query parameter: %s", query_value)
+                return None
+
+        return None
 
 
 class CrossTenantAccessLogger:
