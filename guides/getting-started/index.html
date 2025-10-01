@@ -1,0 +1,330 @@
+<!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Comprehensive restaurant management platform documentation"><meta name=author content=AuraTechWave><link href=https://docs.auraconnect.com/guides/getting-started/ rel=canonical><link href=../developer-personas/ rel=prev><link href=../developer-personas/ rel=next><link rel=icon href=../../assets/favicon.ico><meta name=generator content="mkdocs-1.6.1, mkdocs-material-9.6.21"><title>Quick Start - AuraConnect Documentation</title><link rel=stylesheet href=../../assets/stylesheets/main.2a3383ac.min.css><link rel=stylesheet href=../../assets/stylesheets/palette.06af60db.min.css><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback"><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script><script id=__analytics>function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-XXXXXXXXXX"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-XXXXXXXXXX",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script><script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script></head> <body dir=ltr data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#getting-started-with-auraconnect class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <div data-md-color-scheme=default data-md-component=outdated hidden> </div> <header class="md-header md-header--shadow md-header--lifted" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=../.. title="AuraConnect Documentation" class="md-header__button md-logo" aria-label="AuraConnect Documentation" data-md-component=logo> <img src=../../assets/logo.png alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> AuraConnect Documentation </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> Quick Start </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to dark mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to light mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=Search placeholder=Search autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg> </label> <nav class=md-search__options aria-label=Search> <a href=javascript:void(0) class="md-search__icon md-icon" title=Share aria-label=Share data-clipboard data-clipboard-text data-md-component=search-share tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg> </a> <button type=reset class="md-search__icon md-icon" title=Clear aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> </button> </nav> <div class=md-search__suggest data-md-component=search-suggest></div> </form> <div class=md-search__output> <div class=md-search__scrollwrap tabindex=0 data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> Initializing search </div> <ol class=md-search-result__list role=presentation></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/AuraTechWave/auraconnectai title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> auraconnectai </div> </a> </div> </nav> <nav class=md-tabs aria-label=Tabs data-md-component=tabs> <div class=md-grid> <ul class=md-tabs__list> <li class=md-tabs__item> <a href=../.. class=md-tabs__link> Home </a> </li> <li class="md-tabs__item md-tabs__item--active"> <a href=./ class=md-tabs__link> Getting Started </a> </li> <li class=md-tabs__item> <a href=../../modules/ class=md-tabs__link> Core Modules </a> </li> <li class=md-tabs__item> <a href=../../architecture/ class=md-tabs__link> Architecture </a> </li> <li class=md-tabs__item> <a href=../../api/ class=md-tabs__link> API Reference </a> </li> <li class=md-tabs__item> <a href=../../feature_docs/ class=md-tabs__link> Feature Documentation </a> </li> <li class=md-tabs__item> <a href=../../deployment/ class=md-tabs__link> Deployment </a> </li> <li class=md-tabs__item> <a href=../../dev/ class=md-tabs__link> Developer Guide </a> </li> </ul> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=../.. title="AuraConnect Documentation" class="md-nav__button md-logo" aria-label="AuraConnect Documentation" data-md-component=logo> <img src=../../assets/logo.png alt=logo> </a> AuraConnect Documentation </label> <div class=md-nav__source> <a href=https://github.com/AuraTechWave/auraconnectai title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> auraconnectai </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../.. class=md-nav__link> <span class=md-ellipsis> Home </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested"> <input class="md-nav__toggle md-toggle " type=checkbox id=__nav_2 checked> <label class=md-nav__link for=__nav_2 id=__nav_2_label tabindex> <span class=md-ellipsis> Getting Started </span> <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav data-md-level=1 aria-labelledby=__nav_2_label aria-expanded=true> <label class=md-nav__title for=__nav_2> <span class="md-nav__icon md-icon"></span> Getting Started </label> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--active"> <input class="md-nav__toggle md-toggle" type=checkbox id=__toc> <label class="md-nav__link md-nav__link--active" for=__toc> <span class=md-ellipsis> Quick Start </span> <span class="md-nav__icon md-icon"></span> </label> <a href=./ class="md-nav__link md-nav__link--active"> <span class=md-ellipsis> Quick Start </span> </a> <nav class="md-nav md-nav--secondary" aria-label="Table of contents"> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> Table of contents </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#table-of-contents class=md-nav__link> <span class=md-ellipsis> Table of Contents </span> </a> </li> <li class=md-nav__item> <a href=#prerequisites class=md-nav__link> <span class=md-ellipsis> Prerequisites </span> </a> <nav class=md-nav aria-label=Prerequisites> <ul class=md-nav__list> <li class=md-nav__item> <a href=#system-requirements class=md-nav__link> <span class=md-ellipsis> System Requirements </span> </a> </li> <li class=md-nav__item> <a href=#software-requirements class=md-nav__link> <span class=md-ellipsis> Software Requirements </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#quick-start-with-docker class=md-nav__link> <span class=md-ellipsis> Quick Start with Docker </span> </a> <nav class=md-nav aria-label="Quick Start with Docker"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#1-clone-the-repository class=md-nav__link> <span class=md-ellipsis> 1. Clone the Repository </span> </a> </li> <li class=md-nav__item> <a href=#2-configure-environment class=md-nav__link> <span class=md-ellipsis> 2. Configure Environment </span> </a> </li> <li class=md-nav__item> <a href=#3-start-all-services class=md-nav__link> <span class=md-ellipsis> 3. Start All Services </span> </a> </li> <li class=md-nav__item> <a href=#4-initialize-the-database class=md-nav__link> <span class=md-ellipsis> 4. Initialize the Database </span> </a> </li> <li class=md-nav__item> <a href=#5-access-the-application class=md-nav__link> <span class=md-ellipsis> 5. Access the Application </span> </a> </li> <li class=md-nav__item> <a href=#default-credentials class=md-nav__link> <span class=md-ellipsis> Default Credentials </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#local-development-setup class=md-nav__link> <span class=md-ellipsis> Local Development Setup </span> </a> <nav class=md-nav aria-label="Local Development Setup"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#1-backend-setup class=md-nav__link> <span class=md-ellipsis> 1. Backend Setup </span> </a> </li> <li class=md-nav__item> <a href=#2-database-setup class=md-nav__link> <span class=md-ellipsis> 2. Database Setup </span> </a> </li> <li class=md-nav__item> <a href=#3-start-backend-services class=md-nav__link> <span class=md-ellipsis> 3. Start Backend Services </span> </a> </li> <li class=md-nav__item> <a href=#4-frontend-setup class=md-nav__link> <span class=md-ellipsis> 4. Frontend Setup </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#understanding-the-architecture class=md-nav__link> <span class=md-ellipsis> Understanding the Architecture </span> </a> <nav class=md-nav aria-label="Understanding the Architecture"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#key-services class=md-nav__link> <span class=md-ellipsis> Key Services </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#first-steps class=md-nav__link> <span class=md-ellipsis> First Steps </span> </a> <nav class=md-nav aria-label="First Steps"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#1-create-your-first-restaurant class=md-nav__link> <span class=md-ellipsis> 1. Create Your First Restaurant </span> </a> </li> <li class=md-nav__item> <a href=#2-set-up-menu-categories class=md-nav__link> <span class=md-ellipsis> 2. Set Up Menu Categories </span> </a> </li> <li class=md-nav__item> <a href=#3-add-your-first-employee class=md-nav__link> <span class=md-ellipsis> 3. Add Your First Employee </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#common-tasks class=md-nav__link> <span class=md-ellipsis> Common Tasks </span> </a> <nav class=md-nav aria-label="Common Tasks"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#running-tests class=md-nav__link> <span class=md-ellipsis> Running Tests </span> </a> </li> <li class=md-nav__item> <a href=#database-operations class=md-nav__link> <span class=md-ellipsis> Database Operations </span> </a> </li> <li class=md-nav__item> <a href=#monitoring-logs class=md-nav__link> <span class=md-ellipsis> Monitoring Logs </span> </a> </li> <li class=md-nav__item> <a href=#clearing-cache class=md-nav__link> <span class=md-ellipsis> Clearing Cache </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#troubleshooting class=md-nav__link> <span class=md-ellipsis> Troubleshooting </span> </a> <nav class=md-nav aria-label=Troubleshooting> <ul class=md-nav__list> <li class=md-nav__item> <a href=#common-issues class=md-nav__link> <span class=md-ellipsis> Common Issues </span> </a> </li> <li class=md-nav__item> <a href=#debug-mode class=md-nav__link> <span class=md-ellipsis> Debug Mode </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#configuration-options class=md-nav__link> <span class=md-ellipsis> Configuration Options </span> </a> <nav class=md-nav aria-label="Configuration Options"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#environment-variables class=md-nav__link> <span class=md-ellipsis> Environment Variables </span> </a> </li> <li class=md-nav__item> <a href=#service-ports class=md-nav__link> <span class=md-ellipsis> Service Ports </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#development-tips class=md-nav__link> <span class=md-ellipsis> Development Tips </span> </a> <nav class=md-nav aria-label="Development Tips"> <ul class=md-nav__list> <li class=md-nav__item> <a href=#1-use-the-api-documentation class=md-nav__link> <span class=md-ellipsis> 1. Use the API Documentation </span> </a> </li> <li class=md-nav__item> <a href=#2-enable-hot-reload class=md-nav__link> <span class=md-ellipsis> 2. Enable Hot Reload </span> </a> </li> <li class=md-nav__item> <a href=#3-use-docker-volumes class=md-nav__link> <span class=md-ellipsis> 3. Use Docker Volumes </span> </a> </li> <li class=md-nav__item> <a href=#4-vs-code-extensions class=md-nav__link> <span class=md-ellipsis> 4. VS Code Extensions </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=#next-steps class=md-nav__link> <span class=md-ellipsis> Next Steps </span> </a> </li> <li class=md-nav__item> <a href=#getting-help class=md-nav__link> <span class=md-ellipsis> Getting Help </span> </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../developer-personas/ class=md-nav__link> <span class=md-ellipsis> Developer Personas </span> </a> </li> <li class=md-nav__item> <a href=../customer-web-app/ class=md-nav__link> <span class=md-ellipsis> Customer Web App </span> </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../modules/ class=md-nav__link> <span class=md-ellipsis> Core Modules </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../architecture/ class=md-nav__link> <span class=md-ellipsis> Architecture </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../api/ class=md-nav__link> <span class=md-ellipsis> API Reference </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../feature_docs/ class=md-nav__link> <span class=md-ellipsis> Feature Documentation </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../deployment/ class=md-nav__link> <span class=md-ellipsis> Deployment </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../../dev/ class=md-nav__link> <span class=md-ellipsis> Developer Guide </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <h1 id=getting-started-with-auraconnect>Getting Started with AuraConnect<a class=headerlink href=#getting-started-with-auraconnect title="Permanent link">&para;</a></h1> <p><strong>Version: 1.0.0</strong> | Last Updated: January 2025</p> <p>Welcome to AuraConnect! This guide will help you get up and running with the platform quickly. Whether you're setting up a development environment or deploying to production, we'll walk you through each step.</p> <h2 id=table-of-contents>Table of Contents<a class=headerlink href=#table-of-contents title="Permanent link">&para;</a></h2> <ol> <li><a href=#prerequisites>Prerequisites</a></li> <li><a href=#quick-start-with-docker>Quick Start with Docker</a></li> <li><a href=#local-development-setup>Local Development Setup</a></li> <li><a href=#understanding-the-architecture>Understanding the Architecture</a></li> <li><a href=#first-steps>First Steps</a></li> <li><a href=#common-tasks>Common Tasks</a></li> <li><a href=#troubleshooting>Troubleshooting</a></li> <li><a href=#next-steps>Next Steps</a></li> </ol> <h2 id=prerequisites>Prerequisites<a class=headerlink href=#prerequisites title="Permanent link">&para;</a></h2> <h3 id=system-requirements>System Requirements<a class=headerlink href=#system-requirements title="Permanent link">&para;</a></h3> <ul> <li><strong>Operating System</strong>: Linux, macOS, or Windows with WSL2</li> <li><strong>Memory</strong>: Minimum 8GB RAM (16GB recommended)</li> <li><strong>Storage</strong>: At least 10GB free space</li> <li><strong>CPU</strong>: 4+ cores recommended</li> </ul> <h3 id=software-requirements>Software Requirements<a class=headerlink href=#software-requirements title="Permanent link">&para;</a></h3> <ul> <li><strong>Docker</strong>: Version 20.10+</li> <li><strong>Docker Compose</strong>: Version 2.0+</li> <li><strong>Python</strong>: Version 3.11+</li> <li><strong>Node.js</strong>: Version 18+ (for frontend)</li> <li><strong>PostgreSQL</strong>: Version 14+ (if running locally)</li> <li><strong>Redis</strong>: Version 6+ (if running locally)</li> <li><strong>Git</strong>: For version control</li> </ul> <h2 id=quick-start-with-docker>Quick Start with Docker<a class=headerlink href=#quick-start-with-docker title="Permanent link">&para;</a></h2> <p>The fastest way to get started is using Docker Compose, which sets up the entire stack automatically.</p> <h3 id=1-clone-the-repository>1. Clone the Repository<a class=headerlink href=#1-clone-the-repository title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code>git<span class=w> </span>clone<span class=w> </span>https://github.com/AuraTechWave/auraconnectai.git
+<span class=nb>cd</span><span class=w> </span>auraconnectai
+</code></pre></div> <h3 id=2-configure-environment>2. Configure Environment<a class=headerlink href=#2-configure-environment title="Permanent link">&para;</a></h3> <p>Create the following <code>.env</code> files:</p> <p><strong>Root <code>.env.example</code></strong>: <div class=highlight><pre><span></span><code><span class=c1># Environment</span>
+<span class=nv>ENVIRONMENT</span><span class=o>=</span>development
+<span class=nv>DEBUG</span><span class=o>=</span>True
+
+<span class=c1># Docker Compose Settings</span>
+<span class=nv>COMPOSE_PROJECT_NAME</span><span class=o>=</span>auraconnect
+</code></pre></div></p> <p><strong>Backend <code>.env.example</code></strong>: <div class=highlight><pre><span></span><code><span class=c1># Core Settings</span>
+<span class=nv>ENVIRONMENT</span><span class=o>=</span>development
+<span class=nv>DEBUG</span><span class=o>=</span>True
+<span class=nv>PROJECT_NAME</span><span class=o>=</span>AuraConnect
+<span class=nv>VERSION</span><span class=o>=</span><span class=m>1</span>.0.0
+
+<span class=c1># Security</span>
+<span class=nv>SECRET_KEY</span><span class=o>=</span>your-secret-key-here-change-in-production
+<span class=nv>JWT_SECRET_KEY</span><span class=o>=</span>your-jwt-secret-key-change-in-production
+<span class=nv>JWT_ALGORITHM</span><span class=o>=</span>HS256
+<span class=nv>JWT_ACCESS_TOKEN_EXPIRE_MINUTES</span><span class=o>=</span><span class=m>30</span>
+<span class=nv>JWT_REFRESH_TOKEN_EXPIRE_DAYS</span><span class=o>=</span><span class=m>7</span>
+
+<span class=c1># Database</span>
+<span class=nv>DATABASE_URL</span><span class=o>=</span>postgresql://postgres:postgres@localhost:5432/auraconnect
+<span class=nv>DATABASE_POOL_SIZE</span><span class=o>=</span><span class=m>20</span>
+<span class=nv>DATABASE_MAX_OVERFLOW</span><span class=o>=</span><span class=m>40</span>
+
+<span class=c1># Redis</span>
+<span class=nv>REDIS_URL</span><span class=o>=</span>redis://localhost:6379/0
+<span class=nv>REDIS_CACHE_TTL</span><span class=o>=</span><span class=m>3600</span>
+
+<span class=c1># CORS</span>
+<span class=nv>CORS_ORIGINS</span><span class=o>=</span>http://localhost:3000,http://localhost:3001
+
+<span class=c1># External Services (Optional)</span>
+<span class=nv>STRIPE_API_KEY</span><span class=o>=</span>sk_test_your_stripe_key
+<span class=nv>STRIPE_WEBHOOK_SECRET</span><span class=o>=</span>whsec_your_webhook_secret
+<span class=nv>TWILIO_ACCOUNT_SID</span><span class=o>=</span>your_twilio_sid
+<span class=nv>TWILIO_AUTH_TOKEN</span><span class=o>=</span>your_twilio_token
+<span class=nv>SENDGRID_API_KEY</span><span class=o>=</span>your_sendgrid_key
+<span class=nv>AWS_ACCESS_KEY_ID</span><span class=o>=</span>your_aws_key
+<span class=nv>AWS_SECRET_ACCESS_KEY</span><span class=o>=</span>your_aws_secret
+<span class=nv>AWS_REGION</span><span class=o>=</span>us-east-1
+
+<span class=c1># Feature Flags</span>
+<span class=nv>ENABLE_AI_RECOMMENDATIONS</span><span class=o>=</span>False
+<span class=nv>ENABLE_ANALYTICS</span><span class=o>=</span>True
+<span class=nv>ENABLE_NOTIFICATIONS</span><span class=o>=</span>True
+
+<span class=c1># Rate Limiting</span>
+<span class=nv>RATE_LIMIT_ENABLED</span><span class=o>=</span>True
+<span class=nv>RATE_LIMIT_PER_MINUTE</span><span class=o>=</span><span class=m>60</span>
+</code></pre></div></p> <p><strong>Frontend <code>.env.example</code></strong>: <div class=highlight><pre><span></span><code><span class=c1># API Configuration</span>
+<span class=nv>REACT_APP_API_URL</span><span class=o>=</span>http://localhost:8000
+<span class=nv>REACT_APP_API_VERSION</span><span class=o>=</span>v1
+
+<span class=c1># Features</span>
+<span class=nv>REACT_APP_ENABLE_ANALYTICS</span><span class=o>=</span><span class=nb>true</span>
+<span class=nv>REACT_APP_ENABLE_NOTIFICATIONS</span><span class=o>=</span><span class=nb>true</span>
+
+<span class=c1># Third Party Keys (public)</span>
+<span class=nv>REACT_APP_GOOGLE_MAPS_API_KEY</span><span class=o>=</span>your_google_maps_key
+<span class=nv>REACT_APP_STRIPE_PUBLISHABLE_KEY</span><span class=o>=</span>pk_test_your_publishable_key
+</code></pre></div></p> <div class=highlight><pre><span></span><code><span class=c1># Copy and configure environment files</span>
+cp<span class=w> </span>.env.example<span class=w> </span>.env
+cp<span class=w> </span>backend/.env.example<span class=w> </span>backend/.env
+cp<span class=w> </span>frontend/.env.example<span class=w> </span>frontend/.env
+
+<span class=c1># Edit the files with your actual values</span>
+<span class=c1># IMPORTANT: Never commit .env files to version control!</span>
+</code></pre></div> <h3 id=3-start-all-services>3. Start All Services<a class=headerlink href=#3-start-all-services title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Build and start all services</span>
+docker-compose<span class=w> </span>up<span class=w> </span>-d
+
+<span class=c1># Wait for services to be healthy</span>
+docker-compose<span class=w> </span>ps
+
+<span class=c1># View logs</span>
+docker-compose<span class=w> </span>logs<span class=w> </span>-f
+</code></pre></div> <h3 id=4-initialize-the-database>4. Initialize the Database<a class=headerlink href=#4-initialize-the-database title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Run database migrations</span>
+docker-compose<span class=w> </span><span class=nb>exec</span><span class=w> </span>backend<span class=w> </span>alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># Load demo data (optional)</span>
+docker-compose<span class=w> </span><span class=nb>exec</span><span class=w> </span>backend<span class=w> </span>python<span class=w> </span>scripts/seed_demo_data.py
+</code></pre></div> <h3 id=5-access-the-application>5. Access the Application<a class=headerlink href=#5-access-the-application title="Permanent link">&para;</a></h3> <ul> <li><strong>Frontend</strong>: http://localhost:3000</li> <li><strong>API Documentation</strong>: http://localhost:8000/docs</li> <li><strong>Admin Portal</strong>: http://localhost:3000/admin</li> <li><strong>PgAdmin</strong>: http://localhost:5050 (if enabled)</li> <li><strong>Redis Commander</strong>: http://localhost:8081 (if enabled)</li> </ul> <h3 id=default-credentials>Default Credentials<a class=headerlink href=#default-credentials title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code>Admin User:
+- Email: admin@auraconnect.com
+- Password: admin123
+
+Demo Restaurant:
+- Email: demo@restaurant.com
+- Password: demo123
+</code></pre></div> <h2 id=local-development-setup>Local Development Setup<a class=headerlink href=#local-development-setup title="Permanent link">&para;</a></h2> <p>For active development, you may prefer running services locally.</p> <h3 id=1-backend-setup>1. Backend Setup<a class=headerlink href=#1-backend-setup title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=nb>cd</span><span class=w> </span>backend
+
+<span class=c1># Create virtual environment</span>
+python<span class=w> </span>-m<span class=w> </span>venv<span class=w> </span>venv
+<span class=nb>source</span><span class=w> </span>venv/bin/activate<span class=w>  </span><span class=c1># On Windows: venv\Scripts\activate</span>
+
+<span class=c1># Install dependencies</span>
+pip<span class=w> </span>install<span class=w> </span>-r<span class=w> </span>requirements.txt
+pip<span class=w> </span>install<span class=w> </span>-r<span class=w> </span>requirements-dev.txt
+
+<span class=c1># Setup pre-commit hooks</span>
+pre-commit<span class=w> </span>install
+</code></pre></div> <h3 id=2-database-setup>2. Database Setup<a class=headerlink href=#2-database-setup title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Start PostgreSQL and Redis</span>
+docker-compose<span class=w> </span>up<span class=w> </span>-d<span class=w> </span>postgres<span class=w> </span>redis
+
+<span class=c1># Or install locally:</span>
+<span class=c1># PostgreSQL: https://www.postgresql.org/download/</span>
+<span class=c1># Redis: https://redis.io/download</span>
+
+<span class=c1># Create database</span>
+createdb<span class=w> </span>auraconnect
+
+<span class=c1># Run migrations</span>
+alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># Seed data (optional)</span>
+python<span class=w> </span>scripts/seed_demo_data.py
+</code></pre></div> <h3 id=3-start-backend-services>3. Start Backend Services<a class=headerlink href=#3-start-backend-services title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Start main API server</span>
+uvicorn<span class=w> </span>main:app<span class=w> </span>--reload<span class=w> </span>--host<span class=w> </span><span class=m>0</span>.0.0.0<span class=w> </span>--port<span class=w> </span><span class=m>8000</span>
+
+<span class=c1># In separate terminals, start other services:</span>
+<span class=c1># Orders service</span>
+<span class=nb>cd</span><span class=w> </span>modules/orders<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span>uvicorn<span class=w> </span>main:app<span class=w> </span>--reload<span class=w> </span>--port<span class=w> </span><span class=m>8002</span>
+
+<span class=c1># Menu service</span>
+<span class=nb>cd</span><span class=w> </span>modules/menu<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span>uvicorn<span class=w> </span>main:app<span class=w> </span>--reload<span class=w> </span>--port<span class=w> </span><span class=m>8001</span>
+
+<span class=c1># Start Celery worker (for background tasks)</span>
+celery<span class=w> </span>-A<span class=w> </span>tasks<span class=w> </span>worker<span class=w> </span>--loglevel<span class=o>=</span>info
+
+<span class=c1># Start Celery beat (for scheduled tasks)</span>
+celery<span class=w> </span>-A<span class=w> </span>tasks<span class=w> </span>beat<span class=w> </span>--loglevel<span class=o>=</span>info
+</code></pre></div> <h3 id=4-frontend-setup>4. Frontend Setup<a class=headerlink href=#4-frontend-setup title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=nb>cd</span><span class=w> </span>frontend
+
+<span class=c1># Install dependencies</span>
+npm<span class=w> </span>install
+
+<span class=c1># Start development server</span>
+npm<span class=w> </span>run<span class=w> </span>dev
+
+<span class=c1># The app will be available at http://localhost:3000</span>
+</code></pre></div> <h2 id=understanding-the-architecture>Understanding the Architecture<a class=headerlink href=#understanding-the-architecture title="Permanent link">&para;</a></h2> <p>AuraConnect uses a microservices architecture:</p> <div class=highlight><pre><span></span><code>┌───────────────────────┐
+│   Frontend (React)   │
+└──────────┬───────────┘
+            │
+┌──────────┴───────────┐
+│   API Gateway (Nginx) │
+└──────────┬───────────┘
+            │
+┌───────────┴────────────┐
+│    Backend Services    │
+│ ┌───────┐ ┌────────┐  │
+│ │ Auth   │ │ Orders │  │
+│ └───────┘ └────────┘  │
+│ ┌───────┐ ┌────────┐  │
+│ │ Menu   │ │ Staff  │  │
+│ └───────┘ └────────┘  │
+└───────────┬────────────┘
+            │
+┌───────────┴────────────┐
+│   Data &amp; Infrastructure │
+│ ┌──────────┐ ┌───────┐ │
+│ │PostgreSQL│ │ Redis │ │
+│ └──────────┘ └───────┘ │
+└─────────────────────────┘
+</code></pre></div> <h3 id=key-services>Key Services<a class=headerlink href=#key-services title="Permanent link">&para;</a></h3> <ul> <li><strong>Auth Service</strong>: Handles authentication and authorization</li> <li><strong>Orders Service</strong>: Manages order processing</li> <li><strong>Menu Service</strong>: Handles menu items and pricing</li> <li><strong>Staff Service</strong>: Employee management and scheduling</li> <li><strong>Payroll Service</strong>: Payroll processing and tax calculations</li> </ul> <h2 id=first-steps>First Steps<a class=headerlink href=#first-steps title="Permanent link">&para;</a></h2> <h3 id=1-create-your-first-restaurant>1. Create Your First Restaurant<a class=headerlink href=#1-create-your-first-restaurant title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Using the API</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>requests</span>
+
+<span class=n>headers</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&quot;Authorization&quot;</span><span class=p>:</span> <span class=s2>&quot;Bearer &lt;admin_token&gt;&quot;</span><span class=p>}</span>
+
+<span class=n>restaurant_data</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;My Restaurant&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;timezone&quot;</span><span class=p>:</span> <span class=s2>&quot;America/New_York&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;currency&quot;</span><span class=p>:</span> <span class=s2>&quot;USD&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;locations&quot;</span><span class=p>:</span> <span class=p>[</span>
+        <span class=p>{</span>
+            <span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;Main Street&quot;</span><span class=p>,</span>
+            <span class=s2>&quot;address&quot;</span><span class=p>:</span> <span class=s2>&quot;123 Main St&quot;</span><span class=p>,</span>
+            <span class=s2>&quot;city&quot;</span><span class=p>:</span> <span class=s2>&quot;New York&quot;</span><span class=p>,</span>
+            <span class=s2>&quot;state&quot;</span><span class=p>:</span> <span class=s2>&quot;NY&quot;</span><span class=p>,</span>
+            <span class=s2>&quot;zip_code&quot;</span><span class=p>:</span> <span class=s2>&quot;10001&quot;</span><span class=p>,</span>
+            <span class=s2>&quot;phone&quot;</span><span class=p>:</span> <span class=s2>&quot;(555) 123-4567&quot;</span>
+        <span class=p>}</span>
+    <span class=p>]</span>
+<span class=p>}</span>
+
+<span class=n>response</span> <span class=o>=</span> <span class=n>requests</span><span class=o>.</span><span class=n>post</span><span class=p>(</span>
+    <span class=s2>&quot;http://localhost:8000/api/v1/restaurants&quot;</span><span class=p>,</span>
+    <span class=n>json</span><span class=o>=</span><span class=n>restaurant_data</span><span class=p>,</span>
+    <span class=n>headers</span><span class=o>=</span><span class=n>headers</span>
+<span class=p>)</span>
+</code></pre></div> <h3 id=2-set-up-menu-categories>2. Set Up Menu Categories<a class=headerlink href=#2-set-up-menu-categories title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=n>categories</span> <span class=o>=</span> <span class=p>[</span>
+    <span class=p>{</span><span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;Appetizers&quot;</span><span class=p>,</span> <span class=s2>&quot;display_order&quot;</span><span class=p>:</span> <span class=mi>1</span><span class=p>},</span>
+    <span class=p>{</span><span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;Main Courses&quot;</span><span class=p>,</span> <span class=s2>&quot;display_order&quot;</span><span class=p>:</span> <span class=mi>2</span><span class=p>},</span>
+    <span class=p>{</span><span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;Desserts&quot;</span><span class=p>,</span> <span class=s2>&quot;display_order&quot;</span><span class=p>:</span> <span class=mi>3</span><span class=p>},</span>
+    <span class=p>{</span><span class=s2>&quot;name&quot;</span><span class=p>:</span> <span class=s2>&quot;Beverages&quot;</span><span class=p>,</span> <span class=s2>&quot;display_order&quot;</span><span class=p>:</span> <span class=mi>4</span><span class=p>}</span>
+<span class=p>]</span>
+
+<span class=k>for</span> <span class=n>category</span> <span class=ow>in</span> <span class=n>categories</span><span class=p>:</span>
+    <span class=n>response</span> <span class=o>=</span> <span class=n>requests</span><span class=o>.</span><span class=n>post</span><span class=p>(</span>
+        <span class=s2>&quot;http://localhost:8001/api/v1/menu/categories&quot;</span><span class=p>,</span>
+        <span class=n>json</span><span class=o>=</span><span class=n>category</span><span class=p>,</span>
+        <span class=n>headers</span><span class=o>=</span><span class=n>headers</span>
+    <span class=p>)</span>
+</code></pre></div> <h3 id=3-add-your-first-employee>3. Add Your First Employee<a class=headerlink href=#3-add-your-first-employee title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=n>employee_data</span> <span class=o>=</span> <span class=p>{</span>
+    <span class=s2>&quot;first_name&quot;</span><span class=p>:</span> <span class=s2>&quot;John&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;last_name&quot;</span><span class=p>:</span> <span class=s2>&quot;Doe&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;email&quot;</span><span class=p>:</span> <span class=s2>&quot;john.doe@myrestaurant.com&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;role&quot;</span><span class=p>:</span> <span class=s2>&quot;manager&quot;</span><span class=p>,</span>
+    <span class=s2>&quot;location_ids&quot;</span><span class=p>:</span> <span class=p>[</span><span class=mi>1</span><span class=p>],</span>
+    <span class=s2>&quot;hourly_rate&quot;</span><span class=p>:</span> <span class=s2>&quot;25.00&quot;</span>
+<span class=p>}</span>
+
+<span class=n>response</span> <span class=o>=</span> <span class=n>requests</span><span class=o>.</span><span class=n>post</span><span class=p>(</span>
+    <span class=s2>&quot;http://localhost:8005/api/v1/staff/employees&quot;</span><span class=p>,</span>
+    <span class=n>json</span><span class=o>=</span><span class=n>employee_data</span><span class=p>,</span>
+    <span class=n>headers</span><span class=o>=</span><span class=n>headers</span>
+<span class=p>)</span>
+</code></pre></div> <h2 id=common-tasks>Common Tasks<a class=headerlink href=#common-tasks title="Permanent link">&para;</a></h2> <h3 id=running-tests>Running Tests<a class=headerlink href=#running-tests title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Backend tests</span>
+<span class=nb>cd</span><span class=w> </span>backend
+pytest<span class=w> </span>tests/<span class=w> </span>-v
+
+<span class=c1># With coverage</span>
+pytest<span class=w> </span>tests/<span class=w> </span>--cov<span class=o>=</span>modules<span class=w> </span>--cov-report<span class=o>=</span>html
+
+<span class=c1># Frontend tests</span>
+<span class=nb>cd</span><span class=w> </span>frontend
+npm<span class=w> </span><span class=nb>test</span>
+npm<span class=w> </span>run<span class=w> </span>test:coverage
+</code></pre></div> <h3 id=database-operations>Database Operations<a class=headerlink href=#database-operations title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Create a new migration</span>
+alembic<span class=w> </span>revision<span class=w> </span>--autogenerate<span class=w> </span>-m<span class=w> </span><span class=s2>&quot;Add new table&quot;</span>
+
+<span class=c1># Apply migrations</span>
+alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># Rollback one migration</span>
+alembic<span class=w> </span>downgrade<span class=w> </span>-1
+
+<span class=c1># Database backup</span>
+pg_dump<span class=w> </span>auraconnect<span class=w> </span>&gt;<span class=w> </span>backup.sql
+
+<span class=c1># Restore database</span>
+psql<span class=w> </span>auraconnect<span class=w> </span>&lt;<span class=w> </span>backup.sql
+</code></pre></div> <h3 id=monitoring-logs>Monitoring Logs<a class=headerlink href=#monitoring-logs title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># All services</span>
+docker-compose<span class=w> </span>logs<span class=w> </span>-f
+
+<span class=c1># Specific service</span>
+docker-compose<span class=w> </span>logs<span class=w> </span>-f<span class=w> </span>backend
+
+<span class=c1># With timestamps</span>
+docker-compose<span class=w> </span>logs<span class=w> </span>-f<span class=w> </span>--timestamps
+
+<span class=c1># Last 100 lines</span>
+docker-compose<span class=w> </span>logs<span class=w> </span>--tail<span class=o>=</span><span class=m>100</span>
+</code></pre></div> <h3 id=clearing-cache>Clearing Cache<a class=headerlink href=#clearing-cache title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Clear Redis cache</span>
+docker-compose<span class=w> </span><span class=nb>exec</span><span class=w> </span>redis<span class=w> </span>redis-cli<span class=w> </span>FLUSHALL
+
+<span class=c1># Or using Python</span>
+python<span class=w> </span>-c<span class=w> </span><span class=s2>&quot;import redis; redis.Redis().flushall()&quot;</span>
+</code></pre></div> <h2 id=troubleshooting>Troubleshooting<a class=headerlink href=#troubleshooting title="Permanent link">&para;</a></h2> <h3 id=common-issues>Common Issues<a class=headerlink href=#common-issues title="Permanent link">&para;</a></h3> <h4 id=1-port-already-in-use>1. Port Already in Use<a class=headerlink href=#1-port-already-in-use title="Permanent link">&para;</a></h4> <div class=highlight><pre><span></span><code><span class=c1># Find process using port</span>
+lsof<span class=w> </span>-i<span class=w> </span>:8000<span class=w>  </span><span class=c1># macOS/Linux</span>
+netstat<span class=w> </span>-ano<span class=w> </span><span class=p>|</span><span class=w> </span>findstr<span class=w> </span>:8000<span class=w>  </span><span class=c1># Windows</span>
+
+<span class=c1># Kill process</span>
+<span class=nb>kill</span><span class=w> </span>-9<span class=w> </span>&lt;PID&gt;<span class=w>  </span><span class=c1># macOS/Linux</span>
+taskkill<span class=w> </span>/PID<span class=w> </span>&lt;PID&gt;<span class=w> </span>/F<span class=w>  </span><span class=c1># Windows</span>
+</code></pre></div> <h4 id=2-database-connection-error>2. Database Connection Error<a class=headerlink href=#2-database-connection-error title="Permanent link">&para;</a></h4> <div class=highlight><pre><span></span><code><span class=c1># Check PostgreSQL is running</span>
+docker-compose<span class=w> </span>ps<span class=w> </span>postgres
+
+<span class=c1># Check connection</span>
+psql<span class=w> </span>-h<span class=w> </span>localhost<span class=w> </span>-U<span class=w> </span>postgres<span class=w> </span>-d<span class=w> </span>auraconnect
+
+<span class=c1># Reset database</span>
+docker-compose<span class=w> </span>down<span class=w> </span>-v
+docker-compose<span class=w> </span>up<span class=w> </span>-d<span class=w> </span>postgres
+alembic<span class=w> </span>upgrade<span class=w> </span>head
+</code></pre></div> <h4 id=3-redis-connection-error>3. Redis Connection Error<a class=headerlink href=#3-redis-connection-error title="Permanent link">&para;</a></h4> <div class=highlight><pre><span></span><code><span class=c1># Check Redis is running</span>
+docker-compose<span class=w> </span>ps<span class=w> </span>redis
+
+<span class=c1># Test connection</span>
+redis-cli<span class=w> </span>ping
+<span class=c1># Should return: PONG</span>
+</code></pre></div> <h4 id=4-frontend-build-issues>4. Frontend Build Issues<a class=headerlink href=#4-frontend-build-issues title="Permanent link">&para;</a></h4> <div class=highlight><pre><span></span><code><span class=c1># Clear cache and reinstall</span>
+rm<span class=w> </span>-rf<span class=w> </span>node_modules<span class=w> </span>package-lock.json
+npm<span class=w> </span>cache<span class=w> </span>clean<span class=w> </span>--force
+npm<span class=w> </span>install
+</code></pre></div> <h3 id=debug-mode>Debug Mode<a class=headerlink href=#debug-mode title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Enable debug logging</span>
+<span class=nb>export</span><span class=w> </span><span class=nv>DEBUG</span><span class=o>=</span>True
+<span class=nb>export</span><span class=w> </span><span class=nv>LOG_LEVEL</span><span class=o>=</span>DEBUG
+
+<span class=c1># Run with verbose output</span>
+uvicorn<span class=w> </span>main:app<span class=w> </span>--reload<span class=w> </span>--log-level<span class=w> </span>debug
+</code></pre></div> <h2 id=configuration-options>Configuration Options<a class=headerlink href=#configuration-options title="Permanent link">&para;</a></h2> <h3 id=environment-variables>Environment Variables<a class=headerlink href=#environment-variables title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Core Settings</span>
+<span class=nv>ENVIRONMENT</span><span class=o>=</span>development
+<span class=nv>DEBUG</span><span class=o>=</span>True
+<span class=nv>SECRET_KEY</span><span class=o>=</span>your-secret-key
+
+<span class=c1># Database</span>
+<span class=nv>DATABASE_URL</span><span class=o>=</span>postgresql://user:password@localhost:5432/auraconnect
+<span class=nv>DATABASE_POOL_SIZE</span><span class=o>=</span><span class=m>20</span>
+
+<span class=c1># Redis</span>
+<span class=nv>REDIS_URL</span><span class=o>=</span>redis://localhost:6379/0
+
+<span class=c1># JWT Settings</span>
+<span class=nv>JWT_SECRET_KEY</span><span class=o>=</span>your-jwt-secret
+<span class=nv>JWT_ALGORITHM</span><span class=o>=</span>HS256
+<span class=nv>JWT_EXPIRATION_MINUTES</span><span class=o>=</span><span class=m>30</span>
+
+<span class=c1># External Services</span>
+<span class=nv>STRIPE_API_KEY</span><span class=o>=</span>sk_test_...
+<span class=nv>TWILIO_ACCOUNT_SID</span><span class=o>=</span>AC...
+<span class=nv>SENDGRID_API_KEY</span><span class=o>=</span>SG...
+
+<span class=c1># Feature Flags</span>
+<span class=nv>ENABLE_ANALYTICS</span><span class=o>=</span>True
+<span class=nv>ENABLE_AI_RECOMMENDATIONS</span><span class=o>=</span>False
+</code></pre></div> <h3 id=service-ports>Service Ports<a class=headerlink href=#service-ports title="Permanent link">&para;</a></h3> <table> <thead> <tr> <th>Service</th> <th>Default Port</th> <th>Environment Variable</th> </tr> </thead> <tbody> <tr> <td>Main API</td> <td>8000</td> <td>API_PORT</td> </tr> <tr> <td>Menu Service</td> <td>8001</td> <td>MENU_SERVICE_PORT</td> </tr> <tr> <td>Orders Service</td> <td>8002</td> <td>ORDERS_SERVICE_PORT</td> </tr> <tr> <td>Frontend</td> <td>3000</td> <td>FRONTEND_PORT</td> </tr> <tr> <td>PostgreSQL</td> <td>5432</td> <td>POSTGRES_PORT</td> </tr> <tr> <td>Redis</td> <td>6379</td> <td>REDIS_PORT</td> </tr> </tbody> </table> <h2 id=development-tips>Development Tips<a class=headerlink href=#development-tips title="Permanent link">&para;</a></h2> <h3 id=1-use-the-api-documentation>1. Use the API Documentation<a class=headerlink href=#1-use-the-api-documentation title="Permanent link">&para;</a></h3> <p>The interactive API docs at http://localhost:8000/docs are your best friend. You can: - Explore all endpoints - Try API calls directly - View request/response schemas - Download OpenAPI spec</p> <h3 id=2-enable-hot-reload>2. Enable Hot Reload<a class=headerlink href=#2-enable-hot-reload title="Permanent link">&para;</a></h3> <p>For faster development: <div class=highlight><pre><span></span><code><span class=c1># Backend</span>
+uvicorn<span class=w> </span>main:app<span class=w> </span>--reload
+
+<span class=c1># Frontend</span>
+npm<span class=w> </span>run<span class=w> </span>dev
+</code></pre></div></p> <h3 id=3-use-docker-volumes>3. Use Docker Volumes<a class=headerlink href=#3-use-docker-volumes title="Permanent link">&para;</a></h3> <p>For persistent development data: <div class=highlight><pre><span></span><code><span class=c1># docker-compose.override.yml</span>
+<span class=nt>services</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>postgres</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./data/postgres:/var/lib/postgresql/data</span>
+<span class=w>  </span><span class=nt>redis</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./data/redis:/data</span>
+</code></pre></div></p> <h3 id=4-vs-code-extensions>4. VS Code Extensions<a class=headerlink href=#4-vs-code-extensions title="Permanent link">&para;</a></h3> <p>Recommended extensions: - Python - Pylance - ESLint - Prettier - Docker - PostgreSQL - Thunder Client (API testing)</p> <h2 id=next-steps>Next Steps<a class=headerlink href=#next-steps title="Permanent link">&para;</a></h2> <ol> <li><strong>Explore the Modules</strong></li> <li><a href=../../modules/orders/ >Orders Module</a></li> <li><a href=../../modules/menu/ >Menu Module</a></li> <li> <p><a href=../../modules/staff/ >Staff Module</a></p> </li> <li> <p><strong>Learn the Architecture</strong></p> </li> <li><a href=../../architecture/ >Architecture Overview</a></li> <li><a href=../../api/ >API Reference</a></li> <li> <p><a href=../../modules/ >Database Schema</a></p> </li> <li> <p><strong>Set Up Your Restaurant</strong></p> </li> <li>Configure locations</li> <li>Import menu items</li> <li>Add staff members</li> <li> <p>Set up payment processing</p> </li> <li> <p><strong>Deploy to Production</strong></p> </li> <li><a href=../../deployment/ >Deployment Guide</a></li> <li><a href=../../architecture/#security-architecture>Security Checklist</a></li> <li><a href=../../architecture/ >Performance Tuning</a></li> </ol> <h2 id=getting-help>Getting Help<a class=headerlink href=#getting-help title="Permanent link">&para;</a></h2> <ul> <li><strong>Documentation</strong>: https://docs.auraconnect.com</li> <li><strong>API Reference</strong>: http://localhost:8000/docs</li> <li><strong>GitHub Issues</strong>: https://github.com/AuraTechWave/auraconnectai/issues</li> <li><strong>Discord Community</strong>: https://discord.gg/auraconnect</li> <li><strong>Email Support</strong>: support@auratechwave.com</li> </ul> <hr> <p><em>Happy coding! Welcome to the AuraConnect community!</em> 🚀</p> </article> </div> <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button type=button class="md-top md-icon" data-md-component=top hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg> Back to top </button> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> <div class=md-copyright__highlight> &copy; 2025 <a href=https://auratechwave.com target=_blank rel=noopener>AuraTechWave</a> </div> </div> <div class=md-social> <a href=https://github.com/AuraTechWave target=_blank rel=noopener title=github.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 512 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg> </a> <a href=https://twitter.com/auraconnect target=_blank rel=noopener title=twitter.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 512 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M459.4 151.7c.3 4.5.3 9.1.3 13.6 0 138.7-105.6 298.6-298.6 298.6-59.5 0-114.7-17.2-161.1-47.1 8.4 1 16.6 1.3 25.3 1.3 49.1 0 94.2-16.6 130.3-44.8-46.1-1-84.8-31.2-98.1-72.8 6.5 1 13 1.6 19.8 1.6 9.4 0 18.8-1.3 27.6-3.6-48.1-9.7-84.1-52-84.1-103v-1.3c14 7.8 30.2 12.7 47.4 13.3-28.3-18.8-46.8-51-46.8-87.4 0-19.5 5.2-37.4 14.3-53C87.4 130.8 165 172.4 252.1 176.9c-1.6-7.8-2.6-15.9-2.6-24C249.5 95.1 296.3 48 354.4 48c30.2 0 57.5 12.7 76.7 33.1 23.7-4.5 46.5-13.3 66.6-25.3-7.8 24.4-24.4 44.8-46.1 57.8 21.1-2.3 41.6-8.1 60.4-16.2-14.3 20.8-32.2 39.3-52.6 54.3"/></svg> </a> <a href=https://linkedin.com/company/auratechwave target=_blank rel=noopener title=linkedin.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg> </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <div class=md-consent data-md-component=consent id=__consent hidden> <div class=md-consent__overlay></div> <aside class=md-consent__inner> <form class="md-consent__form md-grid md-typeset" name=consent> <h4>Cookie consent</h4> <p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p> <input class=md-toggle type=checkbox id=__settings> <div class=md-consent__settings> <ul class=task-list> <li class=task-list-item> <label class=task-list-control> <input type=checkbox name=analytics checked> <span class=task-list-indicator></span> Google Analytics </label> </li> <li class=task-list-item> <label class=task-list-control> <input type=checkbox name=github checked> <span class=task-list-indicator></span> GitHub </label> </li> </ul> </div> <div class=md-consent__controls> <button class="md-button md-button--primary">Accept</button> <label class=md-button for=__settings>Manage settings</label> </div> </form> </aside> </div> <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script> <script id=__config type=application/json>{"base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.indexes", "navigation.top", "navigation.path", "navigation.prune", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.annotate", "content.code.copy", "content.tabs.link", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script> <script src=../../assets/javascripts/bundle.f55a23d4.min.js></script> </body> </html>

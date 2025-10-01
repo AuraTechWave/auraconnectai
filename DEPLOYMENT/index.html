@@ -1,0 +1,1079 @@
+<!doctype html><html lang=en class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Comprehensive restaurant management platform documentation"><meta name=author content=AuraTechWave><link href=https://docs.auraconnect.com/DEPLOYMENT/ rel=canonical><link rel=icon href=../assets/favicon.ico><meta name=generator content="mkdocs-1.6.1, mkdocs-material-9.6.21"><title>Deployment Guide - AuraConnect - AuraConnect Documentation</title><link rel=stylesheet href=../assets/stylesheets/main.2a3383ac.min.css><link rel=stylesheet href=../assets/stylesheets/palette.06af60db.min.css><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback"><style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style><script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script><script id=__analytics>function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-XXXXXXXXXX"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-XXXXXXXXXX",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script><script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script></head> <body dir=ltr data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#deployment-guide-auraconnect class=md-skip> Skip to content </a> </div> <div data-md-component=announce> </div> <div data-md-color-scheme=default data-md-component=outdated hidden> </div> <header class="md-header md-header--shadow md-header--lifted" data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=.. title="AuraConnect Documentation" class="md-header__button md-logo" aria-label="AuraConnect Documentation" data-md-component=logo> <img src=../assets/logo.png alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> AuraConnect Documentation </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> Deployment Guide - AuraConnect </span> </div> </div> </div> <form class=md-header__option data-md-component=palette> <input class=md-option data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme=default data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to dark mode" type=radio name=__palette id=__palette_0> <label class="md-header__button md-icon" title="Switch to dark mode" for=__palette_1 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> <input class=md-option data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme=slate data-md-color-primary=indigo data-md-color-accent=indigo aria-label="Switch to light mode" type=radio name=__palette id=__palette_1> <label class="md-header__button md-icon" title="Switch to light mode" for=__palette_0 hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg> </label> </form> <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=Search placeholder=Search autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg> </label> <nav class=md-search__options aria-label=Search> <a href=javascript:void(0) class="md-search__icon md-icon" title=Share aria-label=Share data-clipboard data-clipboard-text data-md-component=search-share tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg> </a> <button type=reset class="md-search__icon md-icon" title=Clear aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg> </button> </nav> <div class=md-search__suggest data-md-component=search-suggest></div> </form> <div class=md-search__output> <div class=md-search__scrollwrap tabindex=0 data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> Initializing search </div> <ol class=md-search-result__list role=presentation></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/AuraTechWave/auraconnectai title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> auraconnectai </div> </a> </div> </nav> <nav class=md-tabs aria-label=Tabs data-md-component=tabs> <div class=md-grid> <ul class=md-tabs__list> <li class=md-tabs__item> <a href=.. class=md-tabs__link> Home </a> </li> <li class=md-tabs__item> <a href=../guides/getting-started/ class=md-tabs__link> Getting Started </a> </li> <li class=md-tabs__item> <a href=../modules/ class=md-tabs__link> Core Modules </a> </li> <li class=md-tabs__item> <a href=../architecture/ class=md-tabs__link> Architecture </a> </li> <li class=md-tabs__item> <a href=../api/ class=md-tabs__link> API Reference </a> </li> <li class=md-tabs__item> <a href=../feature_docs/ class=md-tabs__link> Feature Documentation </a> </li> <li class=md-tabs__item> <a href=../deployment/ class=md-tabs__link> Deployment </a> </li> <li class=md-tabs__item> <a href=../dev/ class=md-tabs__link> Developer Guide </a> </li> </ul> </div> </nav> </header> <div class=md-container data-md-component=container> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=.. title="AuraConnect Documentation" class="md-nav__button md-logo" aria-label="AuraConnect Documentation" data-md-component=logo> <img src=../assets/logo.png alt=logo> </a> AuraConnect Documentation </label> <div class=md-nav__source> <a href=https://github.com/AuraTechWave/auraconnectai title="Go to repository" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg> </div> <div class=md-source__repository> auraconnectai </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=.. class=md-nav__link> <span class=md-ellipsis> Home </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../guides/getting-started/ class=md-nav__link> <span class=md-ellipsis> Getting Started </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../modules/ class=md-nav__link> <span class=md-ellipsis> Core Modules </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../architecture/ class=md-nav__link> <span class=md-ellipsis> Architecture </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../api/ class=md-nav__link> <span class=md-ellipsis> API Reference </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../feature_docs/ class=md-nav__link> <span class=md-ellipsis> Feature Documentation </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../deployment/ class=md-nav__link> <span class=md-ellipsis> Deployment </span> <span class="md-nav__icon md-icon"></span> </a> </li> <li class="md-nav__item md-nav__item--pruned md-nav__item--nested"> <a href=../dev/ class=md-nav__link> <span class=md-ellipsis> Developer Guide </span> <span class="md-nav__icon md-icon"></span> </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <h1 id=deployment-guide-auraconnect>Deployment Guide - AuraConnect<a class=headerlink href=#deployment-guide-auraconnect title="Permanent link">&para;</a></h1> <p><strong>Version: 1.0.0</strong> | Last Updated: January 2025</p> <h2 id=table-of-contents>Table of Contents<a class=headerlink href=#table-of-contents title="Permanent link">&para;</a></h2> <ol> <li><a href=#deployment-overview>Deployment Overview</a></li> <li><a href=#pre-deployment-checklist>Pre-Deployment Checklist</a></li> <li><a href=#docker-deployment>Docker Deployment</a></li> <li><a href=#kubernetes-deployment>Kubernetes Deployment</a></li> <li><a href=#aws-deployment>AWS Deployment</a></li> <li><a href=#railway-deployment>Railway Deployment</a></li> <li><a href=#database-migration-strategy>Database Migration Strategy</a></li> <li><a href=#environment-configuration>Environment Configuration</a></li> <li><a href=#monitoring--logging>Monitoring &amp; Logging</a></li> <li><a href=#rollback-procedures>Rollback Procedures</a></li> <li><a href=#production-best-practices>Production Best Practices</a></li> </ol> <h2 id=deployment-overview>Deployment Overview<a class=headerlink href=#deployment-overview title="Permanent link">&para;</a></h2> <p>AuraConnect supports multiple deployment strategies to accommodate different infrastructure requirements and scale.</p> <h3 id=deployment-options>Deployment Options<a class=headerlink href=#deployment-options title="Permanent link">&para;</a></h3> <table> <thead> <tr> <th>Platform</th> <th>Best For</th> <th>Complexity</th> <th>Cost</th> </tr> </thead> <tbody> <tr> <td>Docker Compose</td> <td>Small-medium deployments</td> <td>Low</td> <td>$</td> </tr> <tr> <td>Kubernetes</td> <td>Large scale, multi-region</td> <td>High</td> <td>$$$</td> </tr> <tr> <td>AWS ECS/Fargate</td> <td>AWS-native deployments</td> <td>Medium</td> <td>$$</td> </tr> <tr> <td>Railway</td> <td>Quick deployments, startups</td> <td>Low</td> <td>$</td> </tr> </tbody> </table> <h2 id=pre-deployment-checklist>Pre-Deployment Checklist<a class=headerlink href=#pre-deployment-checklist title="Permanent link">&para;</a></h2> <h3 id=security-checklist>Security Checklist<a class=headerlink href=#security-checklist title="Permanent link">&para;</a></h3> <ul class=task-list> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> All secrets in environment variables</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> SSL certificates configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Database backups enabled</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Security headers configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Rate limiting enabled</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> CORS properly configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> JWT secrets rotated</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Admin credentials changed</li> </ul> <h3 id=performance-checklist>Performance Checklist<a class=headerlink href=#performance-checklist title="Permanent link">&para;</a></h3> <ul class=task-list> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Database indexes created</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Redis caching configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Static assets CDN ready</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Image optimization complete</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Gzip compression enabled</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Connection pooling configured</li> </ul> <h3 id=monitoring-checklist>Monitoring Checklist<a class=headerlink href=#monitoring-checklist title="Permanent link">&para;</a></h3> <ul class=task-list> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Logging configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Error tracking enabled</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Health checks implemented</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Metrics collection setup</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Alerts configured</li> <li class=task-list-item><label class=task-list-control><input type=checkbox disabled><span class=task-list-indicator></span></label> Backup verification</li> </ul> <h2 id=docker-deployment>Docker Deployment<a class=headerlink href=#docker-deployment title="Permanent link">&para;</a></h2> <h3 id=production-docker-compose>Production Docker Compose<a class=headerlink href=#production-docker-compose title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># docker-compose.prod.yml</span>
+<span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s>&#39;3.8&#39;</span>
+
+<span class=nt>services</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>nginx</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">nginx:alpine</span>
+<span class=w>    </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&quot;80:80&quot;</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&quot;443:443&quot;</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./nginx/nginx.conf:/etc/nginx/nginx.conf</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./nginx/ssl:/etc/nginx/ssl</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">static_volume:/app/static</span>
+<span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">frontend</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+
+<span class=w>  </span><span class=nt>backend</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>build</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./backend</span>
+<span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.prod</span>
+<span class=w>    </span><span class=nt>environment</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">ENVIRONMENT=production</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=${DATABASE_URL}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_URL=${REDIS_URL}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">JWT_SECRET_KEY=${JWT_SECRET_KEY}</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">static_volume:/app/static</span>
+<span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">db</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class="p p-Indicator">[</span><span class=s>&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class=w> </span><span class=s>&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class=w> </span><span class=s>&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class=w> </span><span class=s>&quot;http://localhost:8000/health&quot;</span><span class="p p-Indicator">]</span>
+<span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+
+<span class=w>  </span><span class=nt>frontend</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>build</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./frontend</span>
+<span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.prod</span>
+<span class=w>      </span><span class=nt>args</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">REACT_APP_API_URL=${REACT_APP_API_URL}</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+
+<span class=w>  </span><span class=nt>db</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres:14-alpine</span>
+<span class=w>    </span><span class=nt>environment</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_DB=${POSTGRES_DB}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_USER=${POSTGRES_USER}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_PASSWORD=${POSTGRES_PASSWORD}</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./backups:/backups</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class="p p-Indicator">&gt;</span>
+<span class=w>      </span><span class=no>postgres</span>
+<span class=w>      </span><span class=no>-c shared_buffers=256MB</span>
+<span class=w>      </span><span class=no>-c max_connections=200</span>
+<span class=w>      </span><span class=no>-c effective_cache_size=1GB</span>
+
+<span class=w>  </span><span class=nt>redis</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis:6-alpine</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis-server --requirepass ${REDIS_PASSWORD}</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis_data:/data</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+
+<span class=w>  </span><span class=nt>celery</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>build</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./backend</span>
+<span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.prod</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">celery -A tasks worker --loglevel=info</span>
+<span class=w>    </span><span class=nt>environment</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">ENVIRONMENT=production</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=${DATABASE_URL}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_URL=${REDIS_URL}</span>
+<span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">db</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+
+<span class=w>  </span><span class=nt>celery-beat</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>build</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./backend</span>
+<span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.prod</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">celery -A tasks beat --loglevel=info</span>
+<span class=w>    </span><span class=nt>environment</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">ENVIRONMENT=production</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=${DATABASE_URL}</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">REDIS_URL=${REDIS_URL}</span>
+<span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">redis</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">db</span>
+<span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+
+<span class=nt>volumes</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>postgres_data</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>redis_data</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>static_volume</span><span class=p>:</span>
+</code></pre></div> <h3 id=backend-dockerfile-production>Backend Dockerfile (Production)<a class=headerlink href=#backend-dockerfile-production title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c># backend/Dockerfile.prod</span>
+<span class=k>FROM</span><span class=w> </span><span class=s>python:3.11-slim</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=s>builder</span>
+
+<span class=c># Install build dependencies</span>
+<span class=k>RUN</span><span class=w> </span>apt-get<span class=w> </span>update<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span>apt-get<span class=w> </span>install<span class=w> </span>-y<span class=w> </span><span class=se>\</span>
+<span class=w>    </span>build-essential<span class=w> </span><span class=se>\</span>
+<span class=w>    </span>libpq-dev<span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=o>&amp;&amp;</span><span class=w> </span>rm<span class=w> </span>-rf<span class=w> </span>/var/lib/apt/lists/*
+
+<span class=c># Create virtual environment</span>
+<span class=k>RUN</span><span class=w> </span>python<span class=w> </span>-m<span class=w> </span>venv<span class=w> </span>/opt/venv
+<span class=k>ENV</span><span class=w> </span><span class=nv>PATH</span><span class=o>=</span><span class=s2>&quot;/opt/venv/bin:</span><span class=nv>$PATH</span><span class=s2>&quot;</span>
+
+<span class=c># Install Python dependencies</span>
+<span class=k>COPY</span><span class=w> </span>requirements.txt<span class=w> </span>.
+<span class=k>RUN</span><span class=w> </span>pip<span class=w> </span>install<span class=w> </span>--upgrade<span class=w> </span>pip<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span>pip<span class=w> </span>install<span class=w> </span>--no-cache-dir<span class=w> </span>-r<span class=w> </span>requirements.txt
+
+<span class=c># Production stage</span>
+<span class=k>FROM</span><span class=w> </span><span class=s>python:3.11-slim</span>
+
+<span class=c># Install runtime dependencies</span>
+<span class=k>RUN</span><span class=w> </span>apt-get<span class=w> </span>update<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span>apt-get<span class=w> </span>install<span class=w> </span>-y<span class=w> </span><span class=se>\</span>
+<span class=w>    </span>libpq-dev<span class=w> </span><span class=se>\</span>
+<span class=w>    </span>curl<span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=o>&amp;&amp;</span><span class=w> </span>rm<span class=w> </span>-rf<span class=w> </span>/var/lib/apt/lists/*
+
+<span class=c># Copy virtual environment from builder</span>
+<span class=k>COPY</span><span class=w> </span>--from<span class=o>=</span>builder<span class=w> </span>/opt/venv<span class=w> </span>/opt/venv
+<span class=k>ENV</span><span class=w> </span><span class=nv>PATH</span><span class=o>=</span><span class=s2>&quot;/opt/venv/bin:</span><span class=nv>$PATH</span><span class=s2>&quot;</span>
+
+<span class=c># Create non-root user</span>
+<span class=k>RUN</span><span class=w> </span>useradd<span class=w> </span>-m<span class=w> </span>-u<span class=w> </span><span class=m>1000</span><span class=w> </span>appuser
+
+<span class=c># Set working directory</span>
+<span class=k>WORKDIR</span><span class=w> </span><span class=s>/app</span>
+
+<span class=c># Copy application code</span>
+<span class=k>COPY</span><span class=w> </span>--chown<span class=o>=</span>appuser:appuser<span class=w> </span>.<span class=w> </span>.
+
+<span class=c># Switch to non-root user</span>
+<span class=k>USER</span><span class=w> </span><span class=s>appuser</span>
+
+<span class=c># Expose port</span>
+<span class=k>EXPOSE</span><span class=w> </span><span class=s>8000</span>
+
+<span class=c># Health check</span>
+<span class=k>HEALTHCHECK</span><span class=w> </span>--interval<span class=o>=</span>30s<span class=w> </span>--timeout<span class=o>=</span>10s<span class=w> </span>--start-period<span class=o>=</span>5s<span class=w> </span>--retries<span class=o>=</span><span class=m>3</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span>CMD<span class=w> </span>curl<span class=w> </span>-f<span class=w> </span>http://localhost:8000/health<span class=w> </span><span class=o>||</span><span class=w> </span><span class=nb>exit</span><span class=w> </span><span class=m>1</span>
+
+<span class=c># Run gunicorn</span>
+<span class=k>CMD</span><span class=w> </span><span class=o>[</span><span class=s2>&quot;gunicorn&quot;</span>,<span class=w> </span><span class=s2>&quot;main:app&quot;</span>,<span class=w> </span><span class=se>\</span>
+<span class=w>     </span><span class=s2>&quot;--workers&quot;</span>,<span class=w> </span><span class=s2>&quot;4&quot;</span>,<span class=w> </span><span class=se>\</span>
+<span class=w>     </span><span class=s2>&quot;--worker-class&quot;</span>,<span class=w> </span><span class=s2>&quot;uvicorn.workers.UvicornWorker&quot;</span>,<span class=w> </span><span class=se>\</span>
+<span class=w>     </span><span class=s2>&quot;--bind&quot;</span>,<span class=w> </span><span class=s2>&quot;0.0.0.0:8000&quot;</span>,<span class=w> </span><span class=se>\</span>
+<span class=w>     </span><span class=s2>&quot;--access-logfile&quot;</span>,<span class=w> </span><span class=s2>&quot;-&quot;</span>,<span class=w> </span><span class=se>\</span>
+<span class=w>     </span><span class=s2>&quot;--error-logfile&quot;</span>,<span class=w> </span><span class=s2>&quot;-&quot;</span><span class=o>]</span>
+</code></pre></div> <h3 id=frontend-dockerfile-production>Frontend Dockerfile (Production)<a class=headerlink href=#frontend-dockerfile-production title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c># frontend/Dockerfile.prod</span>
+<span class=c># Build stage</span>
+<span class=k>FROM</span><span class=w> </span><span class=s>node:18-alpine</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=s>builder</span>
+
+<span class=k>WORKDIR</span><span class=w> </span><span class=s>/app</span>
+
+<span class=c># Copy package files</span>
+<span class=k>COPY</span><span class=w> </span>package*.json<span class=w> </span>./
+
+<span class=c># Install dependencies</span>
+<span class=k>RUN</span><span class=w> </span>npm<span class=w> </span>ci<span class=w> </span>--only<span class=o>=</span>production
+
+<span class=c># Copy source code</span>
+<span class=k>COPY</span><span class=w> </span>.<span class=w> </span>.
+
+<span class=c># Build arguments</span>
+<span class=k>ARG</span><span class=w> </span>REACT_APP_API_URL
+<span class=k>ENV</span><span class=w> </span><span class=nv>REACT_APP_API_URL</span><span class=o>=</span><span class=nv>$REACT_APP_API_URL</span>
+
+<span class=c># Build application</span>
+<span class=k>RUN</span><span class=w> </span>npm<span class=w> </span>run<span class=w> </span>build
+
+<span class=c># Production stage</span>
+<span class=k>FROM</span><span class=w> </span><span class=s>nginx:alpine</span>
+
+<span class=c># Copy custom nginx config</span>
+<span class=k>COPY</span><span class=w> </span>nginx.conf<span class=w> </span>/etc/nginx/nginx.conf
+
+<span class=c># Copy built files from builder</span>
+<span class=k>COPY</span><span class=w> </span>--from<span class=o>=</span>builder<span class=w> </span>/app/build<span class=w> </span>/usr/share/nginx/html
+
+<span class=c># Add security headers</span>
+<span class=k>RUN</span><span class=w> </span><span class=nb>echo</span><span class=w> </span><span class=s1>&#39;add_header X-Frame-Options &quot;SAMEORIGIN&quot; always;&#39;</span><span class=w> </span>&gt;&gt;<span class=w> </span>/etc/nginx/conf.d/security.conf<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=nb>echo</span><span class=w> </span><span class=s1>&#39;add_header X-Content-Type-Options &quot;nosniff&quot; always;&#39;</span><span class=w> </span>&gt;&gt;<span class=w> </span>/etc/nginx/conf.d/security.conf<span class=w> </span><span class=o>&amp;&amp;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=nb>echo</span><span class=w> </span><span class=s1>&#39;add_header X-XSS-Protection &quot;1; mode=block&quot; always;&#39;</span><span class=w> </span>&gt;&gt;<span class=w> </span>/etc/nginx/conf.d/security.conf
+
+<span class=k>EXPOSE</span><span class=w> </span><span class=s>80</span>
+
+<span class=k>CMD</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;nginx&quot;</span><span class=p>,</span><span class=w> </span><span class=s2>&quot;-g&quot;</span><span class=p>,</span><span class=w> </span><span class=s2>&quot;daemon off;&quot;</span><span class=p>]</span>
+</code></pre></div> <h3 id=deployment-commands>Deployment Commands<a class=headerlink href=#deployment-commands title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Build and deploy</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span>build
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span>up<span class=w> </span>-d
+
+<span class=c1># Run migrations</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span><span class=nb>exec</span><span class=w> </span>backend<span class=w> </span>alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># Scale services</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span>up<span class=w> </span>-d<span class=w> </span>--scale<span class=w> </span><span class=nv>backend</span><span class=o>=</span><span class=m>3</span>
+
+<span class=c1># View logs</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span>logs<span class=w> </span>-f<span class=w> </span>backend
+
+<span class=c1># Backup database</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span><span class=nb>exec</span><span class=w> </span>db<span class=w> </span>pg_dump<span class=w> </span>-U<span class=w> </span>postgres<span class=w> </span>auraconnect<span class=w> </span>&gt;<span class=w> </span>backup.sql
+</code></pre></div> <h2 id=kubernetes-deployment>Kubernetes Deployment<a class=headerlink href=#kubernetes-deployment title="Permanent link">&para;</a></h2> <h3 id=kubernetes-architecture>Kubernetes Architecture<a class=headerlink href=#kubernetes-architecture title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># k8s/namespace.yaml</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+</code></pre></div> <h3 id=backend-deployment>Backend Deployment<a class=headerlink href=#backend-deployment title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># k8s/backend-deployment.yaml</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=nt>spec</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class=w>  </span><span class=nt>selector</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>  </span><span class=nt>template</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>metadata</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>labels</span><span class=p>:</span>
+<span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>    </span><span class=nt>spec</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>containers</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect/backend:latest</span>
+<span class=w>        </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class=w>        </span><span class=nt>env</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">ENVIRONMENT</span>
+<span class=w>          </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s>&quot;production&quot;</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL</span>
+<span class=w>          </span><span class=nt>valueFrom</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>secretKeyRef</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">app-secrets</span>
+<span class=w>              </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">database-url</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">JWT_SECRET_KEY</span>
+<span class=w>          </span><span class=nt>valueFrom</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>secretKeyRef</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">app-secrets</span>
+<span class=w>              </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">jwt-secret</span>
+<span class=w>        </span><span class=nt>resources</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>requests</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s>&quot;256Mi&quot;</span>
+<span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s>&quot;250m&quot;</span>
+<span class=w>          </span><span class=nt>limits</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s>&quot;512Mi&quot;</span>
+<span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s>&quot;500m&quot;</span>
+<span class=w>        </span><span class=nt>livenessProbe</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>httpGet</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class=w>            </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class=w>          </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class=w>          </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class=w>        </span><span class=nt>readinessProbe</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>httpGet</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/ready</span>
+<span class=w>            </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class=w>          </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class=w>          </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class=nn>---</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend-service</span>
+<span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=nt>spec</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>selector</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>  </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class=w>    </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+<span class=w>  </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+</code></pre></div> <h3 id=database-statefulset>Database StatefulSet<a class=headerlink href=#database-statefulset title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># k8s/postgres-statefulset.yaml</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">StatefulSet</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=nt>spec</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>serviceName</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class=w>  </span><span class=nt>selector</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class=w>  </span><span class=nt>template</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>metadata</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>labels</span><span class=p>:</span>
+<span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class=w>    </span><span class=nt>spec</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>containers</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres:14-alpine</span>
+<span class=w>        </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class=w>        </span><span class=nt>env</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_DB</span>
+<span class=w>          </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_USER</span>
+<span class=w>          </span><span class=nt>valueFrom</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>secretKeyRef</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres-secrets</span>
+<span class=w>              </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">username</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">POSTGRES_PASSWORD</span>
+<span class=w>          </span><span class=nt>valueFrom</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>secretKeyRef</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres-secrets</span>
+<span class=w>              </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">password</span>
+<span class=w>        </span><span class=nt>volumeMounts</span><span class=p>:</span>
+<span class=w>        </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres-storage</span>
+<span class=w>          </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/var/lib/postgresql/data</span>
+<span class=w>        </span><span class=nt>resources</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>requests</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s>&quot;1Gi&quot;</span>
+<span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s>&quot;500m&quot;</span>
+<span class=w>          </span><span class=nt>limits</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s>&quot;2Gi&quot;</span>
+<span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s>&quot;1000m&quot;</span>
+<span class=w>  </span><span class=nt>volumeClaimTemplates</span><span class=p>:</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>metadata</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">postgres-storage</span>
+<span class=w>    </span><span class=nt>spec</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>accessModes</span><span class=p>:</span><span class=w> </span><span class="p p-Indicator">[</span><span class=s>&quot;ReadWriteOnce&quot;</span><span class="p p-Indicator">]</span>
+<span class=w>      </span><span class=nt>resources</span><span class=p>:</span>
+<span class=w>        </span><span class=nt>requests</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">20Gi</span>
+</code></pre></div> <h3 id=ingress-configuration>Ingress Configuration<a class=headerlink href=#ingress-configuration title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># k8s/ingress.yaml</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect-ingress</span>
+<span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=w>  </span><span class=nt>annotations</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>kubernetes.io/ingress.class</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<span class=w>    </span><span class=nt>cert-manager.io/cluster-issuer</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">letsencrypt-prod</span>
+<span class=w>    </span><span class=nt>nginx.ingress.kubernetes.io/rate-limit</span><span class=p>:</span><span class=w> </span><span class=s>&quot;100&quot;</span>
+<span class=nt>spec</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>tls</span><span class=p>:</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>hosts</span><span class=p>:</span>
+<span class=w>    </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">api.auraconnect.com</span>
+<span class=w>    </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">app.auraconnect.com</span>
+<span class=w>    </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect-tls</span>
+<span class=w>  </span><span class=nt>rules</span><span class=p>:</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">api.auraconnect.com</span>
+<span class=w>    </span><span class=nt>http</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>paths</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class=w>        </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Prefix</span>
+<span class=w>        </span><span class=nt>backend</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>service</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend-service</span>
+<span class=w>            </span><span class=nt>port</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">app.auraconnect.com</span>
+<span class=w>    </span><span class=nt>http</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>paths</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<span class=w>        </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Prefix</span>
+<span class=w>        </span><span class=nt>backend</span><span class=p>:</span>
+<span class=w>          </span><span class=nt>service</span><span class=p>:</span>
+<span class=w>            </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">frontend-service</span>
+<span class=w>            </span><span class=nt>port</span><span class=p>:</span>
+<span class=w>              </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</code></pre></div> <h3 id=horizontal-pod-autoscaler>Horizontal Pod Autoscaler<a class=headerlink href=#horizontal-pod-autoscaler title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># k8s/hpa.yaml</span>
+<span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">autoscaling/v2</span>
+<span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">HorizontalPodAutoscaler</span>
+<span class=nt>metadata</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend-hpa</span>
+<span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">auraconnect</span>
+<span class=nt>spec</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>scaleTargetRef</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class=w>    </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">backend</span>
+<span class=w>  </span><span class=nt>minReplicas</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class=w>  </span><span class=nt>maxReplicas</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class=w>  </span><span class=nt>metrics</span><span class=p>:</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class=w>    </span><span class=nt>resource</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class=w>      </span><span class=nt>target</span><span class=p>:</span>
+<span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class=w>        </span><span class=nt>averageUtilization</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">70</span>
+<span class=w>  </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class=w>    </span><span class=nt>resource</span><span class=p>:</span>
+<span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">memory</span>
+<span class=w>      </span><span class=nt>target</span><span class=p>:</span>
+<span class=w>        </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class=w>        </span><span class=nt>averageUtilization</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</code></pre></div> <h3 id=deploy-to-kubernetes>Deploy to Kubernetes<a class=headerlink href=#deploy-to-kubernetes title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Create namespace</span>
+kubectl<span class=w> </span>apply<span class=w> </span>-f<span class=w> </span>k8s/namespace.yaml
+
+<span class=c1># Create secrets</span>
+kubectl<span class=w> </span>create<span class=w> </span>secret<span class=w> </span>generic<span class=w> </span>app-secrets<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--from-literal<span class=o>=</span>database-url<span class=o>=</span><span class=nv>$DATABASE_URL</span><span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--from-literal<span class=o>=</span>jwt-secret<span class=o>=</span><span class=nv>$JWT_SECRET_KEY</span><span class=w> </span><span class=se>\</span>
+<span class=w>  </span>-n<span class=w> </span>auraconnect
+
+<span class=c1># Deploy all resources</span>
+kubectl<span class=w> </span>apply<span class=w> </span>-f<span class=w> </span>k8s/
+
+<span class=c1># Check deployment status</span>
+kubectl<span class=w> </span>get<span class=w> </span>all<span class=w> </span>-n<span class=w> </span>auraconnect
+
+<span class=c1># View logs</span>
+kubectl<span class=w> </span>logs<span class=w> </span>-f<span class=w> </span>deployment/backend<span class=w> </span>-n<span class=w> </span>auraconnect
+
+<span class=c1># Scale deployment</span>
+kubectl<span class=w> </span>scale<span class=w> </span>deployment<span class=w> </span>backend<span class=w> </span>--replicas<span class=o>=</span><span class=m>5</span><span class=w> </span>-n<span class=w> </span>auraconnect
+</code></pre></div> <h2 id=aws-deployment>AWS Deployment<a class=headerlink href=#aws-deployment title="Permanent link">&para;</a></h2> <h3 id=aws-architecture>AWS Architecture<a class=headerlink href=#aws-architecture title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code>┌─────────────────┐
+│   CloudFront    │
+└────────┬────────┘
+         │
+┌────────┴────────┐
+│   ALB (HTTPS)   │
+└────────┬────────┘
+         │
+┌────────┴────────┐
+│   ECS Fargate   │
+│  ┌───────────┐  │
+│  │  Backend  │  │
+│  │  Service  │  │
+│  └───────────┘  │
+└────────┬────────┘
+         │
+┌────────┴────────┐
+│      RDS        │
+│   PostgreSQL    │
+└─────────────────┘
+</code></pre></div> <h3 id=terraform-configuration>Terraform Configuration<a class=headerlink href=#terraform-configuration title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># terraform/main.tf</span>
+<span class=kr>provider</span><span class=w> </span><span class=nv>&quot;aws&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>region</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>var.aws_region</span>
+<span class=p>}</span>
+
+<span class=c1># VPC</span>
+<span class=kr>module</span><span class=w> </span><span class=nv>&quot;vpc&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>source</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;terraform-aws-modules/vpc/aws&quot;</span>
+
+<span class=w>  </span><span class=na>name</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-vpc&quot;</span>
+<span class=w>  </span><span class=na>cidr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;10.0.0.0/16&quot;</span>
+
+<span class=w>  </span><span class=na>azs</span><span class=w>             </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;${var.aws_region}a&quot;, &quot;${var.aws_region}b&quot;</span><span class=p>]</span>
+<span class=w>  </span><span class=na>private_subnets</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;10.0.1.0/24&quot;, &quot;10.0.2.0/24&quot;</span><span class=p>]</span>
+<span class=w>  </span><span class=na>public_subnets</span><span class=w>  </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;10.0.101.0/24&quot;, &quot;10.0.102.0/24&quot;</span><span class=p>]</span>
+
+<span class=w>  </span><span class=na>enable_nat_gateway</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+<span class=w>  </span><span class=na>enable_vpn_gateway</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+
+<span class=w>  </span><span class=nb>tags</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>Environment</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;production&quot;</span>
+<span class=w>  </span><span class=p>}</span>
+<span class=p>}</span>
+
+<span class=c1># RDS PostgreSQL</span>
+<span class=kr>resource</span><span class=w> </span><span class=nc>&quot;aws_db_instance&quot;</span><span class=w> </span><span class=nv>&quot;postgres&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>identifier</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-db&quot;</span>
+
+<span class=w>  </span><span class=na>engine</span><span class=w>         </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;postgres&quot;</span>
+<span class=w>  </span><span class=na>engine_version</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;14.7&quot;</span>
+<span class=w>  </span><span class=na>instance_class</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;db.t3.medium&quot;</span>
+
+<span class=w>  </span><span class=na>allocated_storage</span><span class=w>     </span><span class=o>=</span><span class=w> </span><span class=m>100</span>
+<span class=w>  </span><span class=na>storage_encrypted</span><span class=w>     </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+<span class=w>  </span><span class=na>storage_type</span><span class=w>         </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;gp3&quot;</span>
+
+<span class=w>  </span><span class=na>db_name</span><span class=w>  </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect&quot;</span>
+<span class=w>  </span><span class=na>username</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>var.db_username</span>
+<span class=w>  </span><span class=na>password</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>var.db_password</span>
+
+<span class=w>  </span><span class=na>vpc_security_group_ids</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=nv>aws_security_group.rds.id</span><span class=p>]</span>
+<span class=w>  </span><span class=na>db_subnet_group_name</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=nv>aws_db_subnet_group.main.name</span>
+
+<span class=w>  </span><span class=na>backup_retention_period</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=m>30</span>
+<span class=w>  </span><span class=na>backup_window</span><span class=w>          </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;03:00-04:00&quot;</span>
+<span class=w>  </span><span class=na>maintenance_window</span><span class=w>     </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;sun:04:00-sun:05:00&quot;</span>
+
+<span class=w>  </span><span class=na>multi_az</span><span class=w>               </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+<span class=w>  </span><span class=na>deletion_protection</span><span class=w>    </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+
+<span class=w>  </span><span class=nb>tags</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>Name</span><span class=w>        </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-db&quot;</span>
+<span class=w>    </span><span class=na>Environment</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;production&quot;</span>
+<span class=w>  </span><span class=p>}</span>
+<span class=p>}</span>
+
+<span class=c1># ECS Cluster</span>
+<span class=kr>resource</span><span class=w> </span><span class=nc>&quot;aws_ecs_cluster&quot;</span><span class=w> </span><span class=nv>&quot;main&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>name</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-cluster&quot;</span>
+
+<span class=w>  </span><span class=nb>setting</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>name</span><span class=w>  </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;containerInsights&quot;</span>
+<span class=w>    </span><span class=na>value</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;enabled&quot;</span>
+<span class=w>  </span><span class=p>}</span>
+<span class=p>}</span>
+
+<span class=c1># ECS Task Definition</span>
+<span class=kr>resource</span><span class=w> </span><span class=nc>&quot;aws_ecs_task_definition&quot;</span><span class=w> </span><span class=nv>&quot;backend&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>family</span><span class=w>                   </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-backend&quot;</span>
+<span class=w>  </span><span class=na>network_mode</span><span class=w>             </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;awsvpc&quot;</span>
+<span class=w>  </span><span class=na>requires_compatibilities</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=s2>&quot;FARGATE&quot;</span><span class=p>]</span>
+<span class=w>  </span><span class=na>cpu</span><span class=w>                      </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;1024&quot;</span>
+<span class=w>  </span><span class=na>memory</span><span class=w>                   </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;2048&quot;</span>
+
+<span class=w>  </span><span class=na>container_definitions</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nf>jsonencode</span><span class=p>([</span>
+<span class=w>    </span><span class=p>{</span>
+<span class=w>      </span><span class=na>name</span><span class=w>  </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;backend&quot;</span>
+<span class=w>      </span><span class=na>image</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;${aws_ecr_repository.backend.repository_url}:latest&quot;</span>
+
+<span class=w>      </span><span class=na>portMappings</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span>
+<span class=w>        </span><span class=p>{</span>
+<span class=w>          </span><span class=na>containerPort</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=m>8000</span>
+<span class=w>          </span><span class=na>protocol</span><span class=w>      </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;tcp&quot;</span>
+<span class=w>        </span><span class=p>}</span>
+<span class=w>      </span><span class=p>]</span>
+
+<span class=w>      </span><span class=na>environment</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span>
+<span class=w>        </span><span class=p>{</span>
+<span class=w>          </span><span class=na>name</span><span class=w>  </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;ENVIRONMENT&quot;</span>
+<span class=w>          </span><span class=na>value</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;production&quot;</span>
+<span class=w>        </span><span class=p>}</span>
+<span class=w>      </span><span class=p>]</span>
+
+<span class=w>      </span><span class=na>secrets</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span>
+<span class=w>        </span><span class=p>{</span>
+<span class=w>          </span><span class=na>name</span><span class=w>      </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;DATABASE_URL&quot;</span>
+<span class=w>          </span><span class=na>valueFrom</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>aws_secretsmanager_secret.db_url.arn</span>
+<span class=w>        </span><span class=p>},</span>
+<span class=w>        </span><span class=p>{</span>
+<span class=w>          </span><span class=na>name</span><span class=w>      </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;JWT_SECRET_KEY&quot;</span>
+<span class=w>          </span><span class=na>valueFrom</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>aws_secretsmanager_secret.jwt_secret.arn</span>
+<span class=w>        </span><span class=p>}</span>
+<span class=w>      </span><span class=p>]</span>
+
+<span class=w>      </span><span class=nb>logConfiguration</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span>
+<span class=w>        </span><span class=na>logDriver</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;awslogs&quot;</span>
+<span class=w>        </span><span class=nb>options</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span>
+<span class=w>          </span><span class=s2>&quot;awslogs-group&quot;</span><span class=w>         </span><span class=o>=</span><span class=w> </span><span class=nv>aws_cloudwatch_log_group.backend.name</span>
+<span class=w>          </span><span class=s2>&quot;awslogs-region&quot;</span><span class=w>        </span><span class=o>=</span><span class=w> </span><span class=nv>var.aws_region</span>
+<span class=w>          </span><span class=s2>&quot;awslogs-stream-prefix&quot;</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;backend&quot;</span>
+<span class=w>        </span><span class=p>}</span>
+<span class=w>      </span><span class=p>}</span>
+<span class=w>    </span><span class=p>}</span>
+<span class=w>  </span><span class=p>])</span>
+<span class=p>}</span>
+
+<span class=c1># ECS Service</span>
+<span class=kr>resource</span><span class=w> </span><span class=nc>&quot;aws_ecs_service&quot;</span><span class=w> </span><span class=nv>&quot;backend&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>name</span><span class=w>            </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-backend&quot;</span>
+<span class=w>  </span><span class=na>cluster</span><span class=w>         </span><span class=o>=</span><span class=w> </span><span class=nv>aws_ecs_cluster.main.id</span>
+<span class=w>  </span><span class=na>task_definition</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>aws_ecs_task_definition.backend.arn</span>
+<span class=w>  </span><span class=na>desired_count</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=m>3</span>
+<span class=w>  </span><span class=na>launch_type</span><span class=w>     </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;FARGATE&quot;</span>
+
+<span class=w>  </span><span class=nb>network_configuration</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>subnets</span><span class=w>         </span><span class=o>=</span><span class=w> </span><span class=nv>module.vpc.private_subnets</span>
+<span class=w>    </span><span class=na>security_groups</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=nv>aws_security_group.backend.id</span><span class=p>]</span>
+<span class=w>  </span><span class=p>}</span>
+
+<span class=w>  </span><span class=nb>load_balancer</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>target_group_arn</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=nv>aws_lb_target_group.backend.arn</span>
+<span class=w>    </span><span class=na>container_name</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;backend&quot;</span>
+<span class=w>    </span><span class=na>container_port</span><span class=w>   </span><span class=o>=</span><span class=w> </span><span class=m>8000</span>
+<span class=w>  </span><span class=p>}</span>
+
+<span class=w>  </span><span class=na>health_check_grace_period_seconds</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=m>60</span>
+<span class=p>}</span>
+
+<span class=c1># Application Load Balancer</span>
+<span class=kr>resource</span><span class=w> </span><span class=nc>&quot;aws_lb&quot;</span><span class=w> </span><span class=nv>&quot;main&quot;</span><span class=w> </span><span class=p>{</span>
+<span class=w>  </span><span class=na>name</span><span class=w>               </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-alb&quot;</span>
+<span class=w>  </span><span class=na>internal</span><span class=w>           </span><span class=o>=</span><span class=w> </span><span class=no>false</span>
+<span class=w>  </span><span class=na>load_balancer_type</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;application&quot;</span>
+<span class=w>  </span><span class=na>security_groups</span><span class=w>    </span><span class=o>=</span><span class=w> </span><span class=p>[</span><span class=nv>aws_security_group.alb.id</span><span class=p>]</span>
+<span class=w>  </span><span class=na>subnets</span><span class=w>           </span><span class=o>=</span><span class=w> </span><span class=nv>module.vpc.public_subnets</span>
+
+<span class=w>  </span><span class=na>enable_deletion_protection</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+<span class=w>  </span><span class=na>enable_http2</span><span class=w>              </span><span class=o>=</span><span class=w> </span><span class=no>true</span>
+
+<span class=w>  </span><span class=nb>tags</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>{</span>
+<span class=w>    </span><span class=na>Name</span><span class=w>        </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;auraconnect-alb&quot;</span>
+<span class=w>    </span><span class=na>Environment</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;production&quot;</span>
+<span class=w>  </span><span class=p>}</span>
+<span class=p>}</span>
+</code></pre></div> <h3 id=aws-deployment-script>AWS Deployment Script<a class=headerlink href=#aws-deployment-script title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=ch>#!/bin/bash</span>
+<span class=c1># deploy-aws.sh</span>
+
+<span class=c1># Build and push Docker image</span>
+aws<span class=w> </span>ecr<span class=w> </span>get-login-password<span class=w> </span>--region<span class=w> </span>us-east-1<span class=w> </span><span class=p>|</span><span class=w> </span>docker<span class=w> </span>login<span class=w> </span>--username<span class=w> </span>AWS<span class=w> </span>--password-stdin<span class=w> </span><span class=nv>$ECR_REPOSITORY</span>
+docker<span class=w> </span>build<span class=w> </span>-t<span class=w> </span>auraconnect-backend<span class=w> </span>./backend
+docker<span class=w> </span>tag<span class=w> </span>auraconnect-backend:latest<span class=w> </span><span class=nv>$ECR_REPOSITORY</span>:latest
+docker<span class=w> </span>push<span class=w> </span><span class=nv>$ECR_REPOSITORY</span>:latest
+
+<span class=c1># Update ECS service</span>
+aws<span class=w> </span>ecs<span class=w> </span>update-service<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--cluster<span class=w> </span>auraconnect-cluster<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--service<span class=w> </span>auraconnect-backend<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--force-new-deployment
+
+<span class=c1># Run database migrations</span>
+aws<span class=w> </span>ecs<span class=w> </span>run-task<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--cluster<span class=w> </span>auraconnect-cluster<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--task-definition<span class=w> </span>auraconnect-migration<span class=w> </span><span class=se>\</span>
+<span class=w>  </span>--network-configuration<span class=w> </span><span class=s2>&quot;awsvpcConfiguration={subnets=[</span><span class=nv>$PRIVATE_SUBNET_IDS</span><span class=s2>],securityGroups=[</span><span class=nv>$SECURITY_GROUP_ID</span><span class=s2>]}&quot;</span>
+</code></pre></div> <h2 id=railway-deployment>Railway Deployment<a class=headerlink href=#railway-deployment title="Permanent link">&para;</a></h2> <h3 id=railway-configuration>Railway Configuration<a class=headerlink href=#railway-configuration title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># railway.toml</span>
+<span class=k>[build]</span>
+<span class=n>builder</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;DOCKERFILE&quot;</span>
+<span class=n>dockerfilePath</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;./backend/Dockerfile.prod&quot;</span>
+
+<span class=k>[deploy]</span>
+<span class=n>startCommand</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT&quot;</span>
+<span class=n>healthcheckPath</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;/health&quot;</span>
+<span class=n>healthcheckTimeout</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>30</span>
+<span class=n>restartPolicyType</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;ON_FAILURE&quot;</span>
+<span class=n>restartPolicyMaxRetries</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>3</span>
+
+<span class=k>[environments.production]</span>
+<span class=n>ENVIRONMENT</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s2>&quot;production&quot;</span>
+</code></pre></div> <h3 id=railway-deployment-steps>Railway Deployment Steps<a class=headerlink href=#railway-deployment-steps title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Install Railway CLI</span>
+npm<span class=w> </span>install<span class=w> </span>-g<span class=w> </span>@railway/cli
+
+<span class=c1># Login to Railway</span>
+railway<span class=w> </span>login
+
+<span class=c1># Initialize project</span>
+railway<span class=w> </span>init
+
+<span class=c1># Link to GitHub repo</span>
+railway<span class=w> </span>link
+
+<span class=c1># Add PostgreSQL plugin</span>
+railway<span class=w> </span>add<span class=w> </span>postgresql
+
+<span class=c1># Add Redis plugin</span>
+railway<span class=w> </span>add<span class=w> </span>redis
+
+<span class=c1># Set environment variables</span>
+railway<span class=w> </span>variables<span class=w> </span><span class=nb>set</span><span class=w> </span><span class=nv>JWT_SECRET_KEY</span><span class=o>=</span><span class=nv>$JWT_SECRET_KEY</span>
+railway<span class=w> </span>variables<span class=w> </span><span class=nb>set</span><span class=w> </span><span class=nv>STRIPE_API_KEY</span><span class=o>=</span><span class=nv>$STRIPE_API_KEY</span>
+
+<span class=c1># Deploy</span>
+railway<span class=w> </span>up
+
+<span class=c1># Run migrations</span>
+railway<span class=w> </span>run<span class=w> </span>alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># View logs</span>
+railway<span class=w> </span>logs
+</code></pre></div> <h2 id=database-migration-strategy>Database Migration Strategy<a class=headerlink href=#database-migration-strategy title="Permanent link">&para;</a></h2> <h3 id=safe-migration-process>Safe Migration Process<a class=headerlink href=#safe-migration-process title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># scripts/safe_migrate.py</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>sys</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>time</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>alembic</span><span class=w> </span><span class=kn>import</span> <span class=n>command</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>alembic.config</span><span class=w> </span><span class=kn>import</span> <span class=n>Config</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>sqlalchemy</span><span class=w> </span><span class=kn>import</span> <span class=n>create_engine</span><span class=p>,</span> <span class=n>text</span>
+
+<span class=k>def</span><span class=w> </span><span class=nf>safe_migrate</span><span class=p>():</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Perform safe database migration with backup&quot;&quot;&quot;</span>
+
+    <span class=c1># 1. Create backup</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Creating database backup...&quot;</span><span class=p>)</span>
+    <span class=n>engine</span> <span class=o>=</span> <span class=n>create_engine</span><span class=p>(</span><span class=n>DATABASE_URL</span><span class=p>)</span>
+
+    <span class=k>with</span> <span class=n>engine</span><span class=o>.</span><span class=n>connect</span><span class=p>()</span> <span class=k>as</span> <span class=n>conn</span><span class=p>:</span>
+        <span class=n>conn</span><span class=o>.</span><span class=n>execute</span><span class=p>(</span><span class=n>text</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;&quot;&quot;</span>
+<span class=s2>            SELECT pg_terminate_backend(pid)</span>
+<span class=s2>            FROM pg_stat_activity</span>
+<span class=s2>            WHERE datname = &#39;auraconnect&#39;</span>
+<span class=s2>            AND pid &lt;&gt; pg_backend_pid()</span>
+<span class=s2>        &quot;&quot;&quot;</span><span class=p>))</span>
+
+        <span class=n>backup_name</span> <span class=o>=</span> <span class=sa>f</span><span class=s2>&quot;backup_</span><span class=si>{</span><span class=nb>int</span><span class=p>(</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>())</span><span class=si>}</span><span class=s2>.sql&quot;</span>
+        <span class=n>os</span><span class=o>.</span><span class=n>system</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;pg_dump </span><span class=si>{</span><span class=n>DATABASE_URL</span><span class=si>}</span><span class=s2> &gt; backups/</span><span class=si>{</span><span class=n>backup_name</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+
+    <span class=c1># 2. Run migration</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Running migrations...&quot;</span><span class=p>)</span>
+    <span class=n>alembic_cfg</span> <span class=o>=</span> <span class=n>Config</span><span class=p>(</span><span class=s2>&quot;alembic.ini&quot;</span><span class=p>)</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=n>command</span><span class=o>.</span><span class=n>upgrade</span><span class=p>(</span><span class=n>alembic_cfg</span><span class=p>,</span> <span class=s2>&quot;head&quot;</span><span class=p>)</span>
+        <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Migration completed successfully!&quot;</span><span class=p>)</span>
+    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Migration failed: </span><span class=si>{</span><span class=n>e</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Restore backup with: psql </span><span class=si>{</span><span class=n>DATABASE_URL</span><span class=si>}</span><span class=s2> &lt; backups/</span><span class=si>{</span><span class=n>backup_name</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+
+    <span class=c1># 3. Verify migration</span>
+    <span class=nb>print</span><span class=p>(</span><span class=s2>&quot;Verifying migration...&quot;</span><span class=p>)</span>
+    <span class=k>with</span> <span class=n>engine</span><span class=o>.</span><span class=n>connect</span><span class=p>()</span> <span class=k>as</span> <span class=n>conn</span><span class=p>:</span>
+        <span class=n>result</span> <span class=o>=</span> <span class=n>conn</span><span class=o>.</span><span class=n>execute</span><span class=p>(</span><span class=n>text</span><span class=p>(</span><span class=s2>&quot;SELECT version_num FROM alembic_version&quot;</span><span class=p>))</span>
+        <span class=n>version</span> <span class=o>=</span> <span class=n>result</span><span class=o>.</span><span class=n>scalar</span><span class=p>()</span>
+        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Current database version: </span><span class=si>{</span><span class=n>version</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+
+<span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&quot;__main__&quot;</span><span class=p>:</span>
+    <span class=n>safe_migrate</span><span class=p>()</span>
+</code></pre></div> <h3 id=zero-downtime-migration>Zero-Downtime Migration<a class=headerlink href=#zero-downtime-migration title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Blue-Green deployment for migrations</span>
+
+<span class=c1># 1. Create new database</span>
+createdb<span class=w> </span>auraconnect_new
+
+<span class=c1># 2. Restore from production</span>
+pg_dump<span class=w> </span>auraconnect<span class=w> </span><span class=p>|</span><span class=w> </span>psql<span class=w> </span>auraconnect_new
+
+<span class=c1># 3. Run migrations on new database</span>
+<span class=nv>DATABASE_URL</span><span class=o>=</span>postgresql://localhost/auraconnect_new<span class=w> </span>alembic<span class=w> </span>upgrade<span class=w> </span>head
+
+<span class=c1># 4. Switch application to new database</span>
+<span class=c1># Update environment variable and restart services</span>
+
+<span class=c1># 5. Keep old database for rollback</span>
+<span class=c1># After verification, drop old database</span>
+</code></pre></div> <h2 id=environment-configuration>Environment Configuration<a class=headerlink href=#environment-configuration title="Permanent link">&para;</a></h2> <h3 id=production-environment-variables>Production Environment Variables<a class=headerlink href=#production-environment-variables title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># .env.production</span>
+<span class=c1># Core Settings</span>
+<span class=nv>ENVIRONMENT</span><span class=o>=</span>production
+<span class=nv>DEBUG</span><span class=o>=</span>False
+<span class=nv>LOG_LEVEL</span><span class=o>=</span>INFO
+
+<span class=c1># Security</span>
+<span class=nv>SECRET_KEY</span><span class=o>=</span>&lt;generate-with-openssl-rand-hex-32&gt;
+<span class=nv>JWT_SECRET_KEY</span><span class=o>=</span>&lt;generate-with-openssl-rand-hex-32&gt;
+<span class=nv>JWT_ALGORITHM</span><span class=o>=</span>HS256
+<span class=nv>ALLOWED_HOSTS</span><span class=o>=</span>api.auraconnect.com,app.auraconnect.com
+
+<span class=c1># Database</span>
+<span class=nv>DATABASE_URL</span><span class=o>=</span>postgresql://user:pass@rds.amazonaws.com:5432/auraconnect
+<span class=nv>DATABASE_POOL_SIZE</span><span class=o>=</span><span class=m>50</span>
+<span class=nv>DATABASE_MAX_OVERFLOW</span><span class=o>=</span><span class=m>100</span>
+<span class=nv>DATABASE_POOL_TIMEOUT</span><span class=o>=</span><span class=m>30</span>
+
+<span class=c1># Redis</span>
+<span class=nv>REDIS_URL</span><span class=o>=</span>redis://:&lt;password&gt;@redis.auraconnect.com:6379/0
+<span class=nv>REDIS_MAX_CONNECTIONS</span><span class=o>=</span><span class=m>100</span>
+
+<span class=c1># Email</span>
+<span class=nv>EMAIL_HOST</span><span class=o>=</span>smtp.sendgrid.net
+<span class=nv>EMAIL_PORT</span><span class=o>=</span><span class=m>587</span>
+<span class=nv>EMAIL_HOST_USER</span><span class=o>=</span>apikey
+<span class=nv>EMAIL_HOST_PASSWORD</span><span class=o>=</span>&lt;sendgrid-api-key&gt;
+<span class=nv>EMAIL_USE_TLS</span><span class=o>=</span>True
+<span class=nv>DEFAULT_FROM_EMAIL</span><span class=o>=</span>noreply@auraconnect.com
+
+<span class=c1># Storage</span>
+<span class=nv>AWS_ACCESS_KEY_ID</span><span class=o>=</span>&lt;aws-access-key&gt;
+<span class=nv>AWS_SECRET_ACCESS_KEY</span><span class=o>=</span>&lt;aws-secret-key&gt;
+<span class=nv>AWS_STORAGE_BUCKET_NAME</span><span class=o>=</span>auraconnect-assets
+<span class=nv>AWS_S3_REGION_NAME</span><span class=o>=</span>us-east-1
+
+<span class=c1># Monitoring</span>
+<span class=nv>SENTRY_DSN</span><span class=o>=</span>https://&lt;key&gt;@sentry.io/&lt;project&gt;
+<span class=nv>NEW_RELIC_LICENSE_KEY</span><span class=o>=</span>&lt;new-relic-key&gt;
+
+<span class=c1># Feature Flags</span>
+<span class=nv>ENABLE_ANALYTICS</span><span class=o>=</span>True
+<span class=nv>ENABLE_AI_RECOMMENDATIONS</span><span class=o>=</span>True
+<span class=nv>MAINTENANCE_MODE</span><span class=o>=</span>False
+</code></pre></div> <h3 id=secrets-management>Secrets Management<a class=headerlink href=#secrets-management title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># core/secrets.py</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>boto3</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>functools</span><span class=w> </span><span class=kn>import</span> <span class=n>lru_cache</span>
+
+<span class=k>class</span><span class=w> </span><span class=nc>SecretsManager</span><span class=p>:</span>
+    <span class=k>def</span><span class=w> </span><span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+        <span class=bp>self</span><span class=o>.</span><span class=n>client</span> <span class=o>=</span> <span class=n>boto3</span><span class=o>.</span><span class=n>client</span><span class=p>(</span><span class=s1>&#39;secretsmanager&#39;</span><span class=p>)</span>
+
+    <span class=nd>@lru_cache</span><span class=p>(</span><span class=n>maxsize</span><span class=o>=</span><span class=mi>128</span><span class=p>)</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>get_secret</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>secret_name</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>str</span><span class=p>:</span>
+<span class=w>        </span><span class=sd>&quot;&quot;&quot;Retrieve secret from AWS Secrets Manager&quot;&quot;&quot;</span>
+        <span class=k>try</span><span class=p>:</span>
+            <span class=n>response</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get_secret_value</span><span class=p>(</span><span class=n>SecretId</span><span class=o>=</span><span class=n>secret_name</span><span class=p>)</span>
+            <span class=k>return</span> <span class=n>response</span><span class=p>[</span><span class=s1>&#39;SecretString&#39;</span><span class=p>]</span>
+        <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+            <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Failed to retrieve secret </span><span class=si>{</span><span class=n>secret_name</span><span class=si>}</span><span class=s2>: </span><span class=si>{</span><span class=n>e</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+            <span class=k>raise</span>
+
+<span class=n>secrets_manager</span> <span class=o>=</span> <span class=n>SecretsManager</span><span class=p>()</span>
+
+<span class=c1># Usage</span>
+<span class=n>DATABASE_URL</span> <span class=o>=</span> <span class=n>secrets_manager</span><span class=o>.</span><span class=n>get_secret</span><span class=p>(</span><span class=s2>&quot;auraconnect/database-url&quot;</span><span class=p>)</span>
+</code></pre></div> <h2 id=monitoring-logging>Monitoring &amp; Logging<a class=headerlink href=#monitoring-logging title="Permanent link">&para;</a></h2> <h3 id=logging-configuration>Logging Configuration<a class=headerlink href=#logging-configuration title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># core/logging_config.py</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>logging</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>json</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>pythonjsonlogger</span><span class=w> </span><span class=kn>import</span> <span class=n>jsonlogger</span>
+
+<span class=k>def</span><span class=w> </span><span class=nf>setup_logging</span><span class=p>():</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Configure structured logging for production&quot;&quot;&quot;</span>
+
+    <span class=c1># JSON formatter</span>
+    <span class=n>formatter</span> <span class=o>=</span> <span class=n>jsonlogger</span><span class=o>.</span><span class=n>JsonFormatter</span><span class=p>(</span>
+        <span class=s1>&#39;</span><span class=si>%(timestamp)s</span><span class=s1> </span><span class=si>%(level)s</span><span class=s1> </span><span class=si>%(name)s</span><span class=s1> </span><span class=si>%(message)s</span><span class=s1>&#39;</span><span class=p>,</span>
+        <span class=n>timestamp</span><span class=o>=</span><span class=kc>True</span>
+    <span class=p>)</span>
+
+    <span class=c1># Console handler</span>
+    <span class=n>console_handler</span> <span class=o>=</span> <span class=n>logging</span><span class=o>.</span><span class=n>StreamHandler</span><span class=p>()</span>
+    <span class=n>console_handler</span><span class=o>.</span><span class=n>setFormatter</span><span class=p>(</span><span class=n>formatter</span><span class=p>)</span>
+
+    <span class=c1># File handler with rotation</span>
+    <span class=kn>from</span><span class=w> </span><span class=nn>logging.handlers</span><span class=w> </span><span class=kn>import</span> <span class=n>RotatingFileHandler</span>
+    <span class=n>file_handler</span> <span class=o>=</span> <span class=n>RotatingFileHandler</span><span class=p>(</span>
+        <span class=s1>&#39;logs/auraconnect.log&#39;</span><span class=p>,</span>
+        <span class=n>maxBytes</span><span class=o>=</span><span class=mi>10485760</span><span class=p>,</span>  <span class=c1># 10MB</span>
+        <span class=n>backupCount</span><span class=o>=</span><span class=mi>5</span>
+    <span class=p>)</span>
+    <span class=n>file_handler</span><span class=o>.</span><span class=n>setFormatter</span><span class=p>(</span><span class=n>formatter</span><span class=p>)</span>
+
+    <span class=c1># Root logger</span>
+    <span class=n>root_logger</span> <span class=o>=</span> <span class=n>logging</span><span class=o>.</span><span class=n>getLogger</span><span class=p>()</span>
+    <span class=n>root_logger</span><span class=o>.</span><span class=n>setLevel</span><span class=p>(</span><span class=n>logging</span><span class=o>.</span><span class=n>INFO</span><span class=p>)</span>
+    <span class=n>root_logger</span><span class=o>.</span><span class=n>addHandler</span><span class=p>(</span><span class=n>console_handler</span><span class=p>)</span>
+    <span class=n>root_logger</span><span class=o>.</span><span class=n>addHandler</span><span class=p>(</span><span class=n>file_handler</span><span class=p>)</span>
+
+    <span class=c1># Suppress noisy libraries</span>
+    <span class=n>logging</span><span class=o>.</span><span class=n>getLogger</span><span class=p>(</span><span class=s1>&#39;urllib3&#39;</span><span class=p>)</span><span class=o>.</span><span class=n>setLevel</span><span class=p>(</span><span class=n>logging</span><span class=o>.</span><span class=n>WARNING</span><span class=p>)</span>
+    <span class=n>logging</span><span class=o>.</span><span class=n>getLogger</span><span class=p>(</span><span class=s1>&#39;botocore&#39;</span><span class=p>)</span><span class=o>.</span><span class=n>setLevel</span><span class=p>(</span><span class=n>logging</span><span class=o>.</span><span class=n>WARNING</span><span class=p>)</span>
+</code></pre></div> <h3 id=health-checks>Health Checks<a class=headerlink href=#health-checks title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># core/health.py</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>fastapi</span><span class=w> </span><span class=kn>import</span> <span class=n>APIRouter</span><span class=p>,</span> <span class=n>Response</span><span class=p>,</span> <span class=n>status</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>sqlalchemy</span><span class=w> </span><span class=kn>import</span> <span class=n>text</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>redis</span>
+
+<span class=n>router</span> <span class=o>=</span> <span class=n>APIRouter</span><span class=p>()</span>
+
+<span class=nd>@router</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;/health&quot;</span><span class=p>)</span>
+<span class=k>async</span> <span class=k>def</span><span class=w> </span><span class=nf>health_check</span><span class=p>():</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Basic health check&quot;&quot;&quot;</span>
+    <span class=k>return</span> <span class=p>{</span><span class=s2>&quot;status&quot;</span><span class=p>:</span> <span class=s2>&quot;healthy&quot;</span><span class=p>}</span>
+
+<span class=nd>@router</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&quot;/ready&quot;</span><span class=p>)</span>
+<span class=k>async</span> <span class=k>def</span><span class=w> </span><span class=nf>readiness_check</span><span class=p>(</span><span class=n>response</span><span class=p>:</span> <span class=n>Response</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Detailed readiness check&quot;&quot;&quot;</span>
+    <span class=n>checks</span> <span class=o>=</span> <span class=p>{</span>
+        <span class=s2>&quot;database&quot;</span><span class=p>:</span> <span class=kc>False</span><span class=p>,</span>
+        <span class=s2>&quot;redis&quot;</span><span class=p>:</span> <span class=kc>False</span><span class=p>,</span>
+        <span class=s2>&quot;migrations&quot;</span><span class=p>:</span> <span class=kc>False</span>
+    <span class=p>}</span>
+
+    <span class=c1># Check database</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=n>db</span><span class=o>.</span><span class=n>execute</span><span class=p>(</span><span class=n>text</span><span class=p>(</span><span class=s2>&quot;SELECT 1&quot;</span><span class=p>))</span>
+        <span class=n>checks</span><span class=p>[</span><span class=s2>&quot;database&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=kc>True</span>
+    <span class=k>except</span><span class=p>:</span>
+        <span class=k>pass</span>
+
+    <span class=c1># Check Redis</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=n>r</span> <span class=o>=</span> <span class=n>redis</span><span class=o>.</span><span class=n>from_url</span><span class=p>(</span><span class=n>settings</span><span class=o>.</span><span class=n>REDIS_URL</span><span class=p>)</span>
+        <span class=n>r</span><span class=o>.</span><span class=n>ping</span><span class=p>()</span>
+        <span class=n>checks</span><span class=p>[</span><span class=s2>&quot;redis&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=kc>True</span>
+    <span class=k>except</span><span class=p>:</span>
+        <span class=k>pass</span>
+
+    <span class=c1># Check migrations</span>
+    <span class=k>try</span><span class=p>:</span>
+        <span class=n>result</span> <span class=o>=</span> <span class=n>db</span><span class=o>.</span><span class=n>execute</span><span class=p>(</span><span class=n>text</span><span class=p>(</span><span class=s2>&quot;SELECT version_num FROM alembic_version&quot;</span><span class=p>))</span>
+        <span class=k>if</span> <span class=n>result</span><span class=o>.</span><span class=n>scalar</span><span class=p>():</span>
+            <span class=n>checks</span><span class=p>[</span><span class=s2>&quot;migrations&quot;</span><span class=p>]</span> <span class=o>=</span> <span class=kc>True</span>
+    <span class=k>except</span><span class=p>:</span>
+        <span class=k>pass</span>
+
+    <span class=c1># Set response status</span>
+    <span class=k>if</span> <span class=ow>not</span> <span class=nb>all</span><span class=p>(</span><span class=n>checks</span><span class=o>.</span><span class=n>values</span><span class=p>()):</span>
+        <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>=</span> <span class=n>status</span><span class=o>.</span><span class=n>HTTP_503_SERVICE_UNAVAILABLE</span>
+
+    <span class=k>return</span> <span class=p>{</span>
+        <span class=s2>&quot;status&quot;</span><span class=p>:</span> <span class=s2>&quot;ready&quot;</span> <span class=k>if</span> <span class=nb>all</span><span class=p>(</span><span class=n>checks</span><span class=o>.</span><span class=n>values</span><span class=p>())</span> <span class=k>else</span> <span class=s2>&quot;not ready&quot;</span><span class=p>,</span>
+        <span class=s2>&quot;checks&quot;</span><span class=p>:</span> <span class=n>checks</span>
+    <span class=p>}</span>
+</code></pre></div> <h3 id=monitoring-stack>Monitoring Stack<a class=headerlink href=#monitoring-stack title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># docker-compose.monitoring.yml</span>
+<span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s>&#39;3.8&#39;</span>
+
+<span class=nt>services</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:latest</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./prometheus.yml:/etc/prometheus/prometheus.yml</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">prometheus_data:/prometheus</span>
+<span class=w>    </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&quot;9090:9090&quot;</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&#39;--config.file=/etc/prometheus/prometheus.yml&#39;</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&#39;--storage.tsdb.path=/prometheus&#39;</span>
+
+<span class=w>  </span><span class=nt>grafana</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:latest</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">grafana_data:/var/lib/grafana</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./grafana/dashboards:/etc/grafana/provisioning/dashboards</span>
+<span class=w>    </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&quot;3001:3000&quot;</span>
+<span class=w>    </span><span class=nt>environment</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}</span>
+
+<span class=w>  </span><span class=nt>loki</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">grafana/loki:latest</span>
+<span class=w>    </span><span class=nt>ports</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=s>&quot;3100:3100&quot;</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./loki-config.yaml:/etc/loki/local-config.yaml</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">loki_data:/loki</span>
+
+<span class=w>  </span><span class=nt>promtail</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">grafana/promtail:latest</span>
+<span class=w>    </span><span class=nt>volumes</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">/var/log:/var/log</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">./promtail-config.yaml:/etc/promtail/config.yml</span>
+<span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class="l l-Scalar l-Scalar-Plain">-config.file=/etc/promtail/config.yml</span>
+
+<span class=nt>volumes</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>prometheus_data</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>grafana_data</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>loki_data</span><span class=p>:</span>
+</code></pre></div> <h2 id=rollback-procedures>Rollback Procedures<a class=headerlink href=#rollback-procedures title="Permanent link">&para;</a></h2> <h3 id=automated-rollback>Automated Rollback<a class=headerlink href=#automated-rollback title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=ch>#!/bin/bash</span>
+<span class=c1># rollback.sh</span>
+
+<span class=nv>DEPLOYMENT_ID</span><span class=o>=</span><span class=nv>$1</span>
+<span class=nv>PREVIOUS_VERSION</span><span class=o>=</span><span class=nv>$2</span>
+
+<span class=nb>echo</span><span class=w> </span><span class=s2>&quot;Starting rollback to version </span><span class=nv>$PREVIOUS_VERSION</span><span class=s2>...&quot;</span>
+
+<span class=c1># 1. Tag current version as failed</span>
+docker<span class=w> </span>tag<span class=w> </span>auraconnect:latest<span class=w> </span>auraconnect:failed-<span class=nv>$DEPLOYMENT_ID</span>
+
+<span class=c1># 2. Restore previous version</span>
+docker<span class=w> </span>tag<span class=w> </span>auraconnect:<span class=nv>$PREVIOUS_VERSION</span><span class=w> </span>auraconnect:latest
+
+<span class=c1># 3. Update services</span>
+docker-compose<span class=w> </span>-f<span class=w> </span>docker-compose.prod.yml<span class=w> </span>up<span class=w> </span>-d<span class=w> </span>--no-deps<span class=w> </span>backend
+
+<span class=c1># 4. Verify health</span>
+sleep<span class=w> </span><span class=m>30</span>
+<span class=nv>HEALTH_CHECK</span><span class=o>=</span><span class=k>$(</span>curl<span class=w> </span>-s<span class=w> </span>http://localhost:8000/health<span class=w> </span><span class=p>|</span><span class=w> </span>jq<span class=w> </span>-r<span class=w> </span>.status<span class=k>)</span>
+
+<span class=k>if</span><span class=w> </span><span class=o>[</span><span class=w> </span><span class=s2>&quot;</span><span class=nv>$HEALTH_CHECK</span><span class=s2>&quot;</span><span class=w> </span>!<span class=o>=</span><span class=w> </span><span class=s2>&quot;healthy&quot;</span><span class=w> </span><span class=o>]</span><span class=p>;</span><span class=w> </span><span class=k>then</span>
+<span class=w>    </span><span class=nb>echo</span><span class=w> </span><span class=s2>&quot;Rollback failed! Health check not passing&quot;</span>
+<span class=w>    </span><span class=nb>exit</span><span class=w> </span><span class=m>1</span>
+<span class=k>fi</span>
+
+<span class=nb>echo</span><span class=w> </span><span class=s2>&quot;Rollback completed successfully&quot;</span>
+
+<span class=c1># 5. Optional: Rollback database if needed</span>
+<span class=c1># psql $DATABASE_URL &lt; backups/backup_$PREVIOUS_VERSION.sql</span>
+</code></pre></div> <h3 id=database-rollback>Database Rollback<a class=headerlink href=#database-rollback title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># scripts/db_rollback.py</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>alembic</span><span class=w> </span><span class=kn>import</span> <span class=n>command</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>alembic.config</span><span class=w> </span><span class=kn>import</span> <span class=n>Config</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>sys</span>
+
+<span class=k>def</span><span class=w> </span><span class=nf>rollback_migration</span><span class=p>(</span><span class=n>steps</span><span class=o>=</span><span class=mi>1</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Rollback database migration by N steps&quot;&quot;&quot;</span>
+
+    <span class=n>alembic_cfg</span> <span class=o>=</span> <span class=n>Config</span><span class=p>(</span><span class=s2>&quot;alembic.ini&quot;</span><span class=p>)</span>
+
+    <span class=k>try</span><span class=p>:</span>
+        <span class=c1># Downgrade by N steps</span>
+        <span class=n>command</span><span class=o>.</span><span class=n>downgrade</span><span class=p>(</span><span class=n>alembic_cfg</span><span class=p>,</span> <span class=sa>f</span><span class=s2>&quot;-</span><span class=si>{</span><span class=n>steps</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Successfully rolled back </span><span class=si>{</span><span class=n>steps</span><span class=si>}</span><span class=s2> migration(s)&quot;</span><span class=p>)</span>
+    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+        <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&quot;Rollback failed: </span><span class=si>{</span><span class=n>e</span><span class=si>}</span><span class=s2>&quot;</span><span class=p>)</span>
+        <span class=n>sys</span><span class=o>.</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+
+<span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s2>&quot;__main__&quot;</span><span class=p>:</span>
+    <span class=n>steps</span> <span class=o>=</span> <span class=nb>int</span><span class=p>(</span><span class=n>sys</span><span class=o>.</span><span class=n>argv</span><span class=p>[</span><span class=mi>1</span><span class=p>])</span> <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>sys</span><span class=o>.</span><span class=n>argv</span><span class=p>)</span> <span class=o>&gt;</span> <span class=mi>1</span> <span class=k>else</span> <span class=mi>1</span>
+    <span class=n>rollback_migration</span><span class=p>(</span><span class=n>steps</span><span class=p>)</span>
+</code></pre></div> <h2 id=production-best-practices>Production Best Practices<a class=headerlink href=#production-best-practices title="Permanent link">&para;</a></h2> <h3 id=1-security-hardening>1. Security Hardening<a class=headerlink href=#1-security-hardening title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># nginx/security.conf</span>
+<span class=c1># Security headers</span>
+<span class=k>add_header</span><span class=w> </span><span class=s>X-Frame-Options</span><span class=w> </span><span class=s>&quot;SAMEORIGIN&quot;</span><span class=w> </span><span class=s>always</span><span class=p>;</span>
+<span class=k>add_header</span><span class=w> </span><span class=s>X-Content-Type-Options</span><span class=w> </span><span class=s>&quot;nosniff&quot;</span><span class=w> </span><span class=s>always</span><span class=p>;</span>
+<span class=k>add_header</span><span class=w> </span><span class=s>X-XSS-Protection</span><span class=w> </span><span class=s>&quot;1</span><span class=p>;</span><span class=w> </span><span class=k>mode=block&quot;</span><span class=w> </span><span class=s>always</span><span class=p>;</span>
+<span class=k>add_header</span><span class=w> </span><span class=s>Referrer-Policy</span><span class=w> </span><span class=s>&quot;strict-origin-when-cross-origin&quot;</span><span class=w> </span><span class=s>always</span><span class=p>;</span>
+<span class=k>add_header</span><span class=w> </span><span class=s>Content-Security-Policy</span><span class=w> </span><span class=s>&quot;default-src</span><span class=w> </span><span class=s>&#39;self&#39;</span><span class=p>;</span><span class=w> </span><span class=k>script-src</span><span class=w> </span><span class=s>&#39;self&#39;</span><span class=w> </span><span class=s>&#39;unsafe-inline&#39;</span><span class=p>;</span><span class=w> </span><span class=k>style-src</span><span class=w> </span><span class=s>&#39;self&#39;</span><span class=w> </span><span class=s>&#39;unsafe-inline&#39;</span><span class=p>;</span><span class=k>&quot;</span><span class=w> </span><span class=s>always</span><span class=p>;</span>
+
+<span class=c1># Hide nginx version</span>
+<span class=k>server_tokens</span><span class=w> </span><span class=no>off</span><span class=p>;</span>
+
+<span class=c1># Limit request size</span>
+<span class=k>client_max_body_size</span><span class=w> </span><span class=s>10M</span><span class=p>;</span>
+
+<span class=c1># Rate limiting</span>
+<span class=k>limit_req_zone</span><span class=w> </span><span class=nv>$binary_remote_addr</span><span class=w> </span><span class=s>zone=api:10m</span><span class=w> </span><span class=s>rate=10r/s</span><span class=p>;</span>
+<span class=k>limit_req</span><span class=w> </span><span class=s>zone=api</span><span class=w> </span><span class=s>burst=20</span><span class=w> </span><span class=s>nodelay</span><span class=p>;</span>
+</code></pre></div> <h3 id=2-performance-optimization>2. Performance Optimization<a class=headerlink href=#2-performance-optimization title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=c1># Caching configuration</span>
+<span class=kn>from</span><span class=w> </span><span class=nn>functools</span><span class=w> </span><span class=kn>import</span> <span class=n>lru_cache</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>redis</span>
+<span class=kn>import</span><span class=w> </span><span class=nn>pickle</span>
+
+<span class=n>redis_client</span> <span class=o>=</span> <span class=n>redis</span><span class=o>.</span><span class=n>from_url</span><span class=p>(</span><span class=n>settings</span><span class=o>.</span><span class=n>REDIS_URL</span><span class=p>)</span>
+
+<span class=k>def</span><span class=w> </span><span class=nf>cache_result</span><span class=p>(</span><span class=n>ttl</span><span class=o>=</span><span class=mi>3600</span><span class=p>):</span>
+<span class=w>    </span><span class=sd>&quot;&quot;&quot;Cache function results in Redis&quot;&quot;&quot;</span>
+    <span class=k>def</span><span class=w> </span><span class=nf>decorator</span><span class=p>(</span><span class=n>func</span><span class=p>):</span>
+        <span class=k>def</span><span class=w> </span><span class=nf>wrapper</span><span class=p>(</span><span class=o>*</span><span class=n>args</span><span class=p>,</span> <span class=o>**</span><span class=n>kwargs</span><span class=p>):</span>
+            <span class=c1># Create cache key</span>
+            <span class=n>cache_key</span> <span class=o>=</span> <span class=sa>f</span><span class=s2>&quot;</span><span class=si>{</span><span class=n>func</span><span class=o>.</span><span class=vm>__name__</span><span class=si>}</span><span class=s2>:</span><span class=si>{</span><span class=nb>str</span><span class=p>(</span><span class=n>args</span><span class=p>)</span><span class=si>}</span><span class=s2>:</span><span class=si>{</span><span class=nb>str</span><span class=p>(</span><span class=n>kwargs</span><span class=p>)</span><span class=si>}</span><span class=s2>&quot;</span>
+
+            <span class=c1># Try to get from cache</span>
+            <span class=n>cached</span> <span class=o>=</span> <span class=n>redis_client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=n>cache_key</span><span class=p>)</span>
+            <span class=k>if</span> <span class=n>cached</span><span class=p>:</span>
+                <span class=k>return</span> <span class=n>pickle</span><span class=o>.</span><span class=n>loads</span><span class=p>(</span><span class=n>cached</span><span class=p>)</span>
+
+            <span class=c1># Execute function</span>
+            <span class=n>result</span> <span class=o>=</span> <span class=n>func</span><span class=p>(</span><span class=o>*</span><span class=n>args</span><span class=p>,</span> <span class=o>**</span><span class=n>kwargs</span><span class=p>)</span>
+
+            <span class=c1># Store in cache</span>
+            <span class=n>redis_client</span><span class=o>.</span><span class=n>setex</span><span class=p>(</span>
+                <span class=n>cache_key</span><span class=p>,</span>
+                <span class=n>ttl</span><span class=p>,</span>
+                <span class=n>pickle</span><span class=o>.</span><span class=n>dumps</span><span class=p>(</span><span class=n>result</span><span class=p>)</span>
+            <span class=p>)</span>
+
+            <span class=k>return</span> <span class=n>result</span>
+        <span class=k>return</span> <span class=n>wrapper</span>
+    <span class=k>return</span> <span class=n>decorator</span>
+
+<span class=c1># Usage</span>
+<span class=nd>@cache_result</span><span class=p>(</span><span class=n>ttl</span><span class=o>=</span><span class=mi>300</span><span class=p>)</span>
+<span class=k>def</span><span class=w> </span><span class=nf>get_menu_items</span><span class=p>(</span><span class=n>restaurant_id</span><span class=p>:</span> <span class=nb>int</span><span class=p>):</span>
+    <span class=k>return</span> <span class=n>db</span><span class=o>.</span><span class=n>query</span><span class=p>(</span><span class=n>MenuItem</span><span class=p>)</span><span class=o>.</span><span class=n>filter_by</span><span class=p>(</span><span class=n>restaurant_id</span><span class=o>=</span><span class=n>restaurant_id</span><span class=p>)</span><span class=o>.</span><span class=n>all</span><span class=p>()</span>
+</code></pre></div> <h3 id=3-backup-strategy>3. Backup Strategy<a class=headerlink href=#3-backup-strategy title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=ch>#!/bin/bash</span>
+<span class=c1># backup.sh</span>
+
+<span class=c1># Configuration</span>
+<span class=nv>BACKUP_DIR</span><span class=o>=</span><span class=s2>&quot;/backups&quot;</span>
+<span class=nv>S3_BUCKET</span><span class=o>=</span><span class=s2>&quot;auraconnect-backups&quot;</span>
+<span class=nv>RETENTION_DAYS</span><span class=o>=</span><span class=m>30</span>
+
+<span class=c1># Create backup</span>
+<span class=nv>TIMESTAMP</span><span class=o>=</span><span class=k>$(</span>date<span class=w> </span>+%Y%m%d_%H%M%S<span class=k>)</span>
+<span class=nv>BACKUP_FILE</span><span class=o>=</span><span class=s2>&quot;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/auraconnect_</span><span class=nv>$TIMESTAMP</span><span class=s2>.sql&quot;</span>
+
+<span class=c1># Dump database</span>
+pg_dump<span class=w> </span><span class=nv>$DATABASE_URL</span><span class=w> </span>&gt;<span class=w> </span><span class=nv>$BACKUP_FILE</span>
+
+<span class=c1># Compress</span>
+gzip<span class=w> </span><span class=nv>$BACKUP_FILE</span>
+
+<span class=c1># Upload to S3</span>
+aws<span class=w> </span>s3<span class=w> </span>cp<span class=w> </span><span class=s2>&quot;</span><span class=nv>$BACKUP_FILE</span><span class=s2>.gz&quot;</span><span class=w> </span><span class=s2>&quot;s3://</span><span class=nv>$S3_BUCKET</span><span class=s2>/postgres/&quot;</span>
+
+<span class=c1># Clean old backups</span>
+find<span class=w> </span><span class=nv>$BACKUP_DIR</span><span class=w> </span>-name<span class=w> </span><span class=s2>&quot;*.sql.gz&quot;</span><span class=w> </span>-mtime<span class=w> </span>+<span class=nv>$RETENTION_DAYS</span><span class=w> </span>-delete
+
+<span class=c1># Clean old S3 backups</span>
+aws<span class=w> </span>s3<span class=w> </span>ls<span class=w> </span><span class=s2>&quot;s3://</span><span class=nv>$S3_BUCKET</span><span class=s2>/postgres/&quot;</span><span class=w> </span><span class=p>|</span><span class=w> </span><span class=se>\</span>
+<span class=w>  </span>awk<span class=w> </span><span class=s1>&#39;{print $4}&#39;</span><span class=w> </span><span class=p>|</span><span class=w> </span><span class=se>\</span>
+<span class=w>  </span><span class=k>while</span><span class=w> </span><span class=nb>read</span><span class=w> </span>-r<span class=w> </span>file<span class=p>;</span><span class=w> </span><span class=k>do</span>
+<span class=w>    </span><span class=k>if</span><span class=w> </span><span class=o>[[</span><span class=w> </span><span class=k>$(</span>aws<span class=w> </span>s3api<span class=w> </span>head-object<span class=w> </span>--bucket<span class=w> </span><span class=nv>$S3_BUCKET</span><span class=w> </span>--key<span class=w> </span><span class=s2>&quot;postgres/</span><span class=nv>$file</span><span class=s2>&quot;</span><span class=w> </span><span class=p>|</span><span class=w> </span><span class=se>\</span>
+<span class=w>      </span>jq<span class=w> </span>-r<span class=w> </span><span class=s1>&#39;.LastModified&#39;</span><span class=w> </span><span class=p>|</span><span class=w> </span><span class=se>\</span>
+<span class=w>      </span>xargs<span class=w> </span>-I<span class=w> </span><span class=o>{}</span><span class=w> </span>date<span class=w> </span>-d<span class=w> </span><span class=o>{}</span><span class=w> </span>+%s<span class=k>)</span><span class=w> </span>-lt<span class=w> </span><span class=k>$(</span>date<span class=w> </span>-d<span class=w> </span><span class=s2>&quot;</span><span class=nv>$RETENTION_DAYS</span><span class=s2> days ago&quot;</span><span class=w> </span>+%s<span class=k>)</span><span class=w> </span><span class=o>]]</span><span class=p>;</span><span class=w> </span><span class=k>then</span>
+<span class=w>      </span>aws<span class=w> </span>s3<span class=w> </span>rm<span class=w> </span><span class=s2>&quot;s3://</span><span class=nv>$S3_BUCKET</span><span class=s2>/postgres/</span><span class=nv>$file</span><span class=s2>&quot;</span>
+<span class=w>    </span><span class=k>fi</span>
+<span class=w>  </span><span class=k>done</span>
+</code></pre></div> <h3 id=4-deployment-checklist>4. Deployment Checklist<a class=headerlink href=#4-deployment-checklist title="Permanent link">&para;</a></h3> <div class=highlight><pre><span></span><code><span class=gu>## Pre-Deployment</span>
+<span class=k>- [ ]</span> All tests passing
+<span class=k>- [ ]</span> Security scan completed
+<span class=k>- [ ]</span> Performance benchmarks met
+<span class=k>- [ ]</span> Documentation updated
+<span class=k>- [ ]</span> Backup created
+<span class=k>- [ ]</span> Rollback plan ready
+
+<span class=gu>## Deployment</span>
+<span class=k>- [ ]</span> Tag release version
+<span class=k>- [ ]</span> Deploy to staging
+<span class=k>- [ ]</span> Run smoke tests
+<span class=k>- [ ]</span> Deploy to production (canary/blue-green)
+<span class=k>- [ ]</span> Monitor metrics
+
+<span class=gu>## Post-Deployment</span>
+<span class=k>- [ ]</span> Verify all services healthy
+<span class=k>- [ ]</span> Check error rates
+<span class=k>- [ ]</span> Monitor performance metrics
+<span class=k>- [ ]</span> Test critical user flows
+<span class=k>- [ ]</span> Update status page
+</code></pre></div> <hr> <p><em>For deployment support, contact the DevOps team at devops@auratechwave.com</em></p> </article> </div> <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script> <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script> </div> <button type=button class="md-top md-icon" data-md-component=top hidden> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg> Back to top </button> </main> <footer class=md-footer> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-copyright> <div class=md-copyright__highlight> &copy; 2025 <a href=https://auratechwave.com target=_blank rel=noopener>AuraTechWave</a> </div> </div> <div class=md-social> <a href=https://github.com/AuraTechWave target=_blank rel=noopener title=github.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 512 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg> </a> <a href=https://twitter.com/auraconnect target=_blank rel=noopener title=twitter.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 512 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M459.4 151.7c.3 4.5.3 9.1.3 13.6 0 138.7-105.6 298.6-298.6 298.6-59.5 0-114.7-17.2-161.1-47.1 8.4 1 16.6 1.3 25.3 1.3 49.1 0 94.2-16.6 130.3-44.8-46.1-1-84.8-31.2-98.1-72.8 6.5 1 13 1.6 19.8 1.6 9.4 0 18.8-1.3 27.6-3.6-48.1-9.7-84.1-52-84.1-103v-1.3c14 7.8 30.2 12.7 47.4 13.3-28.3-18.8-46.8-51-46.8-87.4 0-19.5 5.2-37.4 14.3-53C87.4 130.8 165 172.4 252.1 176.9c-1.6-7.8-2.6-15.9-2.6-24C249.5 95.1 296.3 48 354.4 48c30.2 0 57.5 12.7 76.7 33.1 23.7-4.5 46.5-13.3 66.6-25.3-7.8 24.4-24.4 44.8-46.1 57.8 21.1-2.3 41.6-8.1 60.4-16.2-14.3 20.8-32.2 39.3-52.6 54.3"/></svg> </a> <a href=https://linkedin.com/company/auratechwave target=_blank rel=noopener title=linkedin.com class=md-social__link> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 448 512"><!-- Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"/></svg> </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <div class=md-consent data-md-component=consent id=__consent hidden> <div class=md-consent__overlay></div> <aside class=md-consent__inner> <form class="md-consent__form md-grid md-typeset" name=consent> <h4>Cookie consent</h4> <p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p> <input class=md-toggle type=checkbox id=__settings> <div class=md-consent__settings> <ul class=task-list> <li class=task-list-item> <label class=task-list-control> <input type=checkbox name=analytics checked> <span class=task-list-indicator></span> Google Analytics </label> </li> <li class=task-list-item> <label class=task-list-control> <input type=checkbox name=github checked> <span class=task-list-indicator></span> GitHub </label> </li> </ul> </div> <div class=md-consent__controls> <button class="md-button md-button--primary">Accept</button> <label class=md-button for=__settings>Manage settings</label> </div> </form> </aside> </div> <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script> <script id=__config type=application/json>{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.indexes", "navigation.top", "navigation.path", "navigation.prune", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.code.annotate", "content.code.copy", "content.tabs.link", "announce.dismiss"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script> <script src=../assets/javascripts/bundle.f55a23d4.min.js></script> </body> </html>
