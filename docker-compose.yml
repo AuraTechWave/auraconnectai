@@ -1,21 +1,84 @@
-
-version: '3.8'
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: auraconnect
+      POSTGRES_USER: auraconnect
+      POSTGRES_PASSWORD: auraconnect
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auraconnect -d auraconnect"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    environment:
+      DATABASE_URL: postgresql://auraconnect:auraconnect@postgres:5432/auraconnect
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: development
+      LOG_LEVEL: info
+      JWT_SECRET_KEY: local-dev-jwt-secret-key-change
+      SECRET_KEY: local-dev-secret-key-change
+      SESSION_SECRET: local-dev-session-secret-change
+      PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+    command:
+      - uvicorn
+      - app.app_factory:create_app
+      - --factory
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      HOST: 0.0.0.0
+      PORT: 3000
+      REACT_APP_API_BASE_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_started
     ports:
       - "3000:3000"
-  mobile:
-    build:
-      context: .
-      dockerfile: Dockerfile.mobile
-    ports:
-      - "19000:19000"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:
+  frontend_node_modules:

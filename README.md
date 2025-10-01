@@ -38,6 +38,7 @@ AuraConnect is an enterprise-grade restaurant management platform that revolutio
 | [📦 Module Documentation](docs/modules/README.md) | Detailed documentation for each module |
 | [🔌 API Reference](docs/api/README.md) | Complete API documentation |
 | [💻 Development Guide](docs/development/README.md) | Development setup and best practices |
+| [🤖 Repository Guidelines](AGENTS.md) | Contributor quick reference for agents and tooling |
 | [🚢 Deployment Guide](docs/deployment/README.md) | Production deployment instructions |
 
 ## 🏛️ System Architecture
@@ -166,13 +167,25 @@ Get AuraConnect running in minutes with Docker:
 # Clone and start
 git clone https://github.com/AuraTechWave/auraconnectai.git
 cd auraconnectai
-docker-compose up -d
+docker compose up --build
 
 # Access applications
 # API Docs: http://localhost:8000/docs
 # Frontend: http://localhost:3000
 # Admin: admin@restaurant.com / admin123
 ```
+
+The compose stack launches Postgres (port 5432), Redis (port 6379), the FastAPI backend (port 8000) and the React frontend (port 3000). Override any of the baked-in defaults by exporting environment variables before running `docker compose up` (Compose automatically injects shell environment variables) or by creating an override file. At minimum the backend expects:
+
+- `DATABASE_URL`
+- `REDIS_URL`
+- `JWT_SECRET_KEY`
+- `SECRET_KEY`
+- `SESSION_SECRET`
+
+Migrations run automatically on backend boot. If the historical Alembic chain is still broken in your environment, the service logs a warning and keeps running; export `MIGRATION_STRICT=true` to fail hard, or `SKIP_MIGRATIONS=true` to bypass the upgrade entirely while you repair the chain. When the full application fails to load (missing routers, migrations, etc.), the container falls back to a lightweight health API by default. Set `ALLOW_MINIMAL_FALLBACK=false` to surface the original exception once your environment is ready.
+
+See `backend/.env.example` for values to copy into your local overrides.
 
 For detailed setup instructions, see our [Quick Start Guide](docs/guides/quick-start.md).
 
