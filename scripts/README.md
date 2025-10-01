@@ -16,6 +16,9 @@ Creates boilerplate files and structure for the Shift Scheduling & Attendance sy
 ### `create_github_issues.py`
 Bulk-creates GitHub issues from a YAML backlog using the GitHub CLI. Pass a spec file (see `project_management/backlog/phase1_foundations.yaml`) and the script will call `gh issue create` for each entry. Supports a `--dry-run` flag to preview commands.
 
+### `docker-smoke-build.sh`
+Runs a lightweight `docker compose build` for the backend and frontend images. Use it locally or wire it into CI to catch Docker build regressions early.
+
 ---
 
 > 💡 Tip: Run these scripts from the project root directory.
